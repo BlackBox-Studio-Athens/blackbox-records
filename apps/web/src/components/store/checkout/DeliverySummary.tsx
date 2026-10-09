@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { taxCollectionDisclosure } from '@blackbox/api-client/public';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import {
   readDeliveryQuote,
@@ -105,11 +106,17 @@ export function DeliverySummary({
           )}
         </dl>
       )}
-      {isDrawer ? (
-        <p>
-          VAT is included, never added again. Greece-only BOX NOW locker delivery. We arrange your locker with you
-          before dispatch.
+      {(!isDrawer || quote?.taxCollectionMode) && (
+        <p data-tax-disclosure>
+          {quote?.taxCollectionMode
+            ? taxCollectionDisclosure(quote.taxCollectionMode)
+            : loading
+              ? 'Checking tax collection…'
+              : 'Tax details are shown before payment.'}
         </p>
+      )}
+      {isDrawer ? (
+        <p>Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.</p>
       ) : (
         <PurchaseInformation presentation="checkout" />
       )}

@@ -3,6 +3,36 @@ import { describe, expect, it } from 'vitest';
 import { DeliverySummary } from './DeliverySummary';
 
 describe('delivery summary', () => {
+  it.each(['review', 'drawer'] as const)(
+    'discloses the quoted collection mode in %s without an exemption claim',
+    (presentation) => {
+      const quote = {
+        tier: 'small' as const,
+        amountMinor: 250,
+        totalAmountMinor: 2730,
+        merchandiseGrossMinor: 2480,
+        currencyCode: 'EUR' as const,
+      };
+      const html = renderToStaticMarkup(
+        <DeliverySummary
+          loading={false}
+          presentation={presentation}
+          quote={{ ...quote, taxCollectionMode: 'NO_TAX_COLLECTED' }}
+        />,
+      );
+      expect(html).toContain('No VAT is calculated or collected at checkout.');
+      expect(html).not.toContain('VAT is included');
+      expect(html).not.toContain('tax-exempt');
+      const inclusive = renderToStaticMarkup(
+        <DeliverySummary
+          loading={false}
+          presentation={presentation}
+          quote={{ ...quote, taxCollectionMode: 'STRIPE_AUTOMATIC_TAX' }}
+        />,
+      );
+      expect(inclusive).toContain('VAT is included, never added again.');
+    },
+  );
   it('uses authoritative amounts and locker copy in the drawer without a duplicate total', () => {
     const html = renderToStaticMarkup(
       <DeliverySummary
@@ -21,9 +51,7 @@ describe('delivery summary', () => {
     expect(html).toContain('>BOX NOW locker delivery</dt>');
     expect(html).toContain('€45.00');
     expect(html).toContain('€3.50');
-    expect(html).toContain(
-      'VAT is included, never added again. Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.',
-    );
+    expect(html).toContain('Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.');
     expect(html).not.toContain('Total, VAT included');
     expect(html).not.toContain('€48.50');
     expect(html).not.toContain('[DELIVERY FEE]');

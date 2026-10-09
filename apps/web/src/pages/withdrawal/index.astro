@@ -1,0 +1,42 @@
+---
+import InternalPageHero from '@/components/InternalPageHero.astro';
+import WithdrawalForm from '@/components/store/checkout/WithdrawalForm';
+import SiteLayout from '@/layouts/SiteLayout.astro';
+import { createProjectRelativeUrl } from '@/platform/config/site';
+---
+
+<SiteLayout
+  pageTitle="Withdraw from an order"
+  pageDescription="Send BlackBox Records an online withdrawal declaration and receive a dated acknowledgement."
+>
+  <InternalPageHero sectionLabel="Store" title="Withdraw from an order" />
+  <section class="layout-container py-10" aria-label="Online withdrawal">
+    <div class="max-w-2xl space-y-6 text-sm leading-7">
+      <p>
+        Use this form to tell BlackBox Records that you withdraw from an online purchase. Review your declaration before
+        confirming. We will record it and send an acknowledgement with the date and time.
+      </p>
+      <p>
+        You can also withdraw by emailing{' '}
+        <a class="underline" href="mailto:orders@blackboxrecordsathens.com">
+          orders@blackboxrecordsathens.com
+        </a>{' '}
+        with your name and order reference or identifying details.
+      </p>
+      <WithdrawalForm client:load />
+      <noscript>
+        <p>
+          The online form needs JavaScript. You can send your withdrawal declaration by email using the address above.
+        </p>
+      </noscript>
+      <p>
+        <a
+          class="inline-flex min-h-11 items-center underline underline-offset-4"
+          href={createProjectRelativeUrl('/terms/#returns')}
+        >
+          Returns and refunds information
+        </a>
+      </p>
+    </div>
+  </section>
+</SiteLayout>

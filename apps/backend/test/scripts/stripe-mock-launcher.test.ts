@@ -7,6 +7,41 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 describe('stripe-mock local launcher proxy', () => {
+  it('retains explicit disabled tax and zero collection in Session and line reads', () => {
+    const checkoutSessions = new Map();
+    const checkoutLineItems = new Map();
+    const created = JSON.parse(
+      patchStripeMockResponse({
+        checkoutSessions,
+        checkoutLineItems,
+        method: 'POST',
+        url: '/v1/checkout/sessions',
+        body: JSON.stringify({ id: 'cs_test_no_tax', object: 'checkout.session' }),
+        requestBody: new URLSearchParams({
+          'line_items[0][price]': 'price_mock_disintegration_black_vinyl_lp',
+          'line_items[0][quantity]': '1',
+          'automatic_tax[enabled]': 'false',
+          'shipping_options[0][shipping_rate_data][fixed_amount][amount]': '250',
+        }).toString(),
+      }),
+    );
+    expect(created).toMatchObject({
+      amount_total: 3050,
+      automatic_tax: { enabled: false, status: null },
+      shipping_cost: { amount_total: 250, amount_tax: 0, taxes: [] },
+      total_details: { amount_tax: 0 },
+    });
+    const lines = JSON.parse(
+      patchStripeMockResponse({
+        checkoutLineItems,
+        method: 'GET',
+        url: '/v1/checkout/sessions/cs_test_no_tax/line_items',
+        requestBody: '',
+        body: '{"data":[{}]}',
+      }),
+    );
+    expect(lines.data).toMatchObject([{ amount_total: 2800, amount_subtotal: 2800, amount_tax: 0, taxes: [] }]);
+  });
   it('updates only retained Local sessions so webhook payment and subsequent provider reads agree', async () => {
     const upstream = createServer((_request, response) => {
       response.setHeader('content-type', 'application/json');

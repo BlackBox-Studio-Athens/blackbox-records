@@ -265,14 +265,14 @@
                       "integer",
                       "null"
                     ],
-                    "exclusiveMinimum": 0
+                    "minimum": 0
                   },
                   "totalVatMinor": {
                     "type": [
                       "integer",
                       "null"
                     ],
-                    "exclusiveMinimum": 0
+                    "minimum": 0
                   },
                   "currencyCode": {
                     "type": "string",
@@ -376,7 +376,7 @@
                             "integer",
                             "null"
                           ],
-                          "exclusiveMinimum": 0
+                          "minimum": 0
                         },
                         "taxRatePercent": {
                           "type": [
@@ -557,6 +557,17 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "taxCollectionMode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "STRIPE_AUTOMATIC_TAX",
+              "NO_TAX_COLLECTED",
+              null
             ]
           },
           "acceptedDeliveryAmountMinor": {
@@ -2388,6 +2399,103 @@
           },
           "404": {
             "description": "Checkout order not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/order-withdrawals": {
+      "get": {
+        "operationId": "listInternalOrderWithdrawals",
+        "tags": [
+          "Internal Orders"
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent withdrawal support records and delivery state. No payment or stock mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "contract": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "submittedAt": {
+                        "type": "string"
+                      },
+                      "deliveries": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "kind": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "attemptCount": {
+                              "type": "number"
+                            },
+                            "safeReason": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "status",
+                            "attemptCount",
+                            "safeReason"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "contract",
+                      "email",
+                      "submittedAt",
+                      "deliveries"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
             "content": {
               "application/problem+json": {
                 "schema": {

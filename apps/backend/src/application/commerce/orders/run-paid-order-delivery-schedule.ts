@@ -11,6 +11,8 @@ import type { AppBindings } from '../../../platform/env';
 import { createBindingLogger, normalizeUnknownError } from '../../../platform/observability';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
+import { D1OrderWithdrawalRepository } from '../../../infrastructure/persistence/d1-order-withdrawal-repository';
+import { drainWithdrawalDeliveries } from './order-withdrawal';
 import { D1PreorderEstimateDeliveryRepository } from '../../../infrastructure/persistence/d1-preorder-estimate-delivery-repository';
 import { createPrismaClient, PrismaOrderStateRepository } from '../../../infrastructure/persistence/prisma';
 import { createEmailRuntimeServices } from '../../../infrastructure/resend';
@@ -65,6 +67,16 @@ export async function runPaidOrderDeliverySchedule(
       status: 'completed',
     });
 
+    event = 'withdrawal_delivery_schedule_outcome';
+    const withdrawals = await drainWithdrawalDeliveries({
+      ...emailRuntime,
+      repository: new D1OrderWithdrawalRepository(bindings.COMMERCE_DB),
+      now: scheduledAt,
+      limit: Math.max(0, SCHEDULED_DELIVERY_LIMIT - results.length - notices.length),
+      logger,
+    });
+    logger.info({ event, processedCount: withdrawals, status: 'completed' });
+
     // Alerts run last and only in the rows order email left, so they never delay it.
     event = 'availability_alert_schedule_outcome';
     const availabilityAlertsEnabled =
@@ -76,7 +88,7 @@ export async function runPaidOrderDeliverySchedule(
       config: emailRuntime.config,
       ...(options.itemNames ? { itemNames: options.itemNames } : {}),
       // A zero limit still expires old requests without claiming alerts or consuming send budget.
-      limit: availabilityAlertsEnabled ? SCHEDULED_DELIVERY_LIMIT - results.length - notices.length : 0,
+      limit: availabilityAlertsEnabled ? SCHEDULED_DELIVERY_LIMIT - results.length - notices.length - withdrawals : 0,
       logger,
       provider: emailRuntime.provider,
       repository: new D1AvailabilityAlertRepository(bindings.COMMERCE_DB),

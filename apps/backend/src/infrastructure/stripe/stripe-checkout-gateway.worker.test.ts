@@ -35,6 +35,112 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
+  it('explicitly expands shipping tax entries on Session reads', async () => {
+    const retrieve = vi.fn().mockResolvedValue({ id: 'cs_test_expanded' });
+    const gateway = new StripeCheckoutGateway({ checkout: { sessions: { retrieve } } } as never, 'pmc_test');
+    await gateway.readCheckoutSession(checkoutSessionId('cs_test_expanded'));
+    expect(retrieve).toHaveBeenCalledWith('cs_test_expanded', { expand: ['shipping_cost.taxes'] });
+  });
+  it.each([false, true, undefined])('distinguishes automatic tax enabled=%s from absent evidence', async (enabled) => {
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            retrieve: async () => ({
+              id: 'cs_test_flag',
+              ...(enabled === undefined ? {} : { automatic_tax: { enabled, status: enabled ? 'complete' : null } }),
+            }),
+          },
+        },
+      } as never,
+      'pmc_test',
+    );
+    expect((await gateway.readCheckoutSession(checkoutSessionId('cs_test_flag'))).monetary).toMatchObject({
+      automaticTaxEnabled: enabled ?? null,
+      automaticTaxStatus: enabled ? 'complete' : null,
+      deliveryVatMinor: null,
+      totalVatMinor: null,
+      deliveryAppliedTaxCount: null,
+    });
+  });
+  it.each([
+    'synthetic-uat-no-tax-collected-2026-10-09-v1',
+    'owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1',
+    'unknown-no-tax-collected',
+  ])('uses only an explicit accepted policy for %s', async (reference) => {
+    const create = vi
+      .fn()
+      .mockResolvedValue({ id: 'cs_test_mode', url: 'https://checkout.stripe.test/mode', expires_at: 1800000000 });
+    const gateway = new StripeCheckoutGateway({ checkout: { sessions: { create } } } as never, 'pmc_test');
+    const request = {
+      monetaryPolicy: {
+        acceptedDeliveryAmountMinor: 250,
+        acceptedParcelTier: 'small' as const,
+        monetaryPolicyReference: reference,
+      },
+      cancelUrl: 'https://example.com/cancel',
+      successUrl: 'https://example.com/return',
+      checkoutExpiresAt: new Date('2026-10-09T12:00:00Z'),
+      orderId: 'order_mode',
+      storeItemSlug: storeItemSlug('test'),
+      stripePriceId: stripePriceId('price_mode'),
+      variantId: variantId('variant_mode'),
+    };
+    if (reference === 'unknown-no-tax-collected') {
+      await expect(gateway.createHostedCheckoutSession(request)).rejects.toThrow(CheckoutConfigurationError);
+      expect(create).not.toHaveBeenCalled();
+    } else {
+      await gateway.createHostedCheckoutSession(request);
+      const params = create.mock.calls[0]![0];
+      expect(params).toMatchObject({
+        automatic_tax: { enabled: false },
+        tax_id_collection: { enabled: false },
+        line_items: [{ price: 'price_mode', quantity: 1 }],
+        shipping_options: [{ shipping_rate_data: { fixed_amount: { amount: 250, currency: 'eur' } } }],
+      });
+      expect(params.line_items[0]).not.toHaveProperty('tax_rates');
+      expect(params).not.toHaveProperty('customer_update');
+    }
+  });
+  it('retains no-tax evidence rather than replacing missing amounts or rates with zero', async () => {
+    const gateway = new StripeCheckoutGateway(
+      {
+        checkout: {
+          sessions: {
+            retrieve: async () => ({
+              id: 'cs_test_zero',
+              automatic_tax: { enabled: false, status: null },
+              shipping_cost: { amount_tax: 0, taxes: [] },
+              total_details: { amount_tax: 0 },
+            }),
+            listLineItems: async () => ({
+              data: [
+                {
+                  quantity: 1,
+                  amount_total: 2480,
+                  amount_tax: 0,
+                  taxes: [],
+                  price: { id: 'price_zero', tax_behavior: 'inclusive' },
+                },
+              ],
+              has_more: false,
+            }),
+          },
+        },
+      } as never,
+      'pmc_test',
+    );
+    expect((await gateway.readCheckoutSession(checkoutSessionId('cs_test_zero'))).monetary).toMatchObject({
+      automaticTaxEnabled: false,
+      automaticTaxStatus: null,
+      deliveryVatMinor: 0,
+      deliveryAppliedTaxCount: 0,
+      totalVatMinor: 0,
+    });
+    expect(await gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_zero'))).toMatchObject([
+      { lineVatMinor: 0, taxRatePercent: null, appliedTaxCount: 0 },
+    ]);
+  });
   it('reads every finalized tax line and enforces immutable custom Price bounds', async () => {
     const line = {
       id: 'li_first',
@@ -382,6 +488,7 @@ describe('StripeCheckoutGateway', () => {
     await expect(gateway.readCheckoutSessionLineItems(checkoutSessionId('cs_test_123'))).resolves.toEqual([
       {
         lineAmountMinor: 3700,
+        appliedTaxCount: null,
         customAmountValid: false,
         lineVatMinor: null,
         taxRatePercent: null,

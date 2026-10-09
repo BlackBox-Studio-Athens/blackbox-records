@@ -1,4 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { resolveTaxCollectionMode } from '../../../domain/commerce';
 
 import {
   readPaidCheckoutFulfillment,
@@ -61,8 +62,8 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
     amountTotalMinor: z.number().int().positive(),
     merchandiseGrossMinor: z.number().int().positive().nullable(),
     deliveryGrossMinor: z.number().int().positive().nullable(),
-    deliveryVatMinor: z.number().int().positive().nullable(),
-    totalVatMinor: z.number().int().positive().nullable(),
+    deliveryVatMinor: z.number().int().nonnegative().nullable(),
+    totalVatMinor: z.number().int().nonnegative().nullable(),
     currencyCode: z.literal('EUR'),
     kind: z.literal('current'),
     lines: z.array(
@@ -75,7 +76,7 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
           .nullable(),
         displayName: z.string().min(1),
         lineAmountMinor: z.number().int().positive(),
-        lineVatMinor: z.number().int().positive().nullable(),
+        lineVatMinor: z.number().int().nonnegative().nullable(),
         taxRatePercent: z.number().positive().nullable(),
         optionLabel: z.string().nullable(),
         quantity: z.number().int().positive(),
@@ -119,6 +120,7 @@ const checkoutOrderSchema = z
     deliveries: z.array(paidOrderDeliverySchema),
     fulfillment: paidOrderFulfillmentSchema,
     monetaryPolicyReference: z.string().nullable(),
+    taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).nullable().optional(),
     acceptedDeliveryAmountMinor: z.number().int().positive().nullable(),
     acceptedParcelTier: z.enum(['small', 'medium']).nullable(),
     needsReviewReason: z.string().nullable(),
@@ -317,6 +319,7 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
     })),
     fulfillment: toPaidFulfillmentResponse(order),
     monetaryPolicyReference: order.monetaryPolicyReference ?? null,
+    taxCollectionMode: resolveTaxCollectionMode(order.monetaryPolicyReference),
     acceptedDeliveryAmountMinor: order.acceptedDeliveryAmountMinor ?? null,
     acceptedParcelTier: order.acceptedParcelTier ?? null,
     needsReviewReason: order.needsReviewReason,

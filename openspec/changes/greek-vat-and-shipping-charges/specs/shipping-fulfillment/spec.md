@@ -2,7 +2,7 @@
 
 ### Requirement: Delivery Charge is explicit and applied once
 
-The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or €3.50 gross for Medium (350 EUR cents)**, including VAT, once per eligible Greek BOX NOW order according to its supported configured packing profile. The shopper amount MUST be disclosed before payment, use the selected taxable VAT Treatment, and remain distinct from the carrier's invoice cost and merchandise stock. The initial policy has no free-shipping threshold, per-item fee or island surcharge; BlackBox absorbs carrier and packaging cost differences for accepted orders. Owner-authorized assumed dimensions MUST remain labelled assumed until measured evidence exists.
+The system MUST initially charge **€2.50 Small / €3.50 Medium (250/350 EUR cents)** gross, including VAT, once per eligible Greek BOX NOW order according to its supported packing profile. The charge MUST be disclosed before payment, use the selected taxable VAT Treatment and remain distinct from carrier cost and merchandise stock. No free-shipping threshold, per-item fee or island surcharge applies; BlackBox absorbs accepted-order carrier/packing differences.
 
 #### Scenario: Separate delivery is charged
 
@@ -10,6 +10,7 @@ The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or �
 - **THEN** the applicable €2.50 Small or €3.50 Medium order-level Delivery Charge appears separately and contributes once to the gross total
 - **AND** merchandise quantity contributes to packed-size validation without multiplying the charge per item
 - **AND** delivery is not represented as a stock-bearing Store Item.
+- **AND** owner-authorized assumed dimensions remain labelled assumed until measured evidence exists.
 
 #### Scenario: The complete cart determines the parcel tier
 
@@ -21,7 +22,7 @@ The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or �
 
 ### Requirement: Packing eligibility accounts for the complete protected cart
 
-The system MUST select the smallest supported package whose configured usable dimensions and gross-weight limit accommodate every cart unit under the supported flat-stack method. It MUST account for quantities, item protection and outer packaging, validate sealed outer geometry against the carrier's tier limits, and keep profile authority outside the browser. Under the 2026-10-08 owner instruction, expressly assumed profiles MAY support explicitly assigned eligible PRD variants with a dated assumption-labelled policy reference. Actual measurements MUST remain Unknown until observed; a Local/UAT catch-all MUST NOT silently qualify all PRD products.
+The system MUST select the smallest supported package fitting every protected cart unit under flat stacking, accounting for quantity, usable dimensions, gross weight and outer packaging. It MUST validate sealed outer geometry against carrier tier limits and keep profile authority outside the browser. The 2026-10-08 owner-authorized assumed PRD profiles MAY support explicit eligible assignments with dated assumed provenance; actual measurements remain Unknown until observed.
 
 #### Scenario: Provisional UAT packing
 
@@ -29,6 +30,7 @@ The system MUST select the smallest supported package whose configured usable di
 - **WHEN** measured profiles are not yet available
 - **THEN** the Worker may use the explicit synthetic profiles and a synthetic accepted-policy reference
 - **AND** this UAT test authorization alone enables neither PRD nor UAT without a test key; the explicitly authorized PRD assumed-profile scenario below has its own supported assignments/reference
+- **AND** a Local/UAT catch-all does not silently qualify all PRD products
 - **AND** successful provider tests do not establish measured packing or fiscal acceptance.
 
 #### Scenario: The owner authorizes an assumed vinyl parcel for PRD

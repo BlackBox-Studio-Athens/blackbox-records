@@ -16,6 +16,7 @@
     "boundaries": {
       "status": "closed",
       "exports": [
+        "./WithdrawalForm.tsx",
         "./public-checkout-api.ts",
         "./public-checkout-presentation.ts",
         "./CheckoutOrderSummary.tsx",

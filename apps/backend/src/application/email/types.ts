@@ -92,6 +92,7 @@ export type PaidOrderEmailShopperContact = {
 };
 
 export type PaidOrderEmailInput = {
+  taxCollectionMode?: 'STRIPE_AUTOMATIC_TAX' | 'NO_TAX_COLLECTED' | null;
   merchandiseGrossMinor?: number | null;
   deliveryGrossMinor?: number | null;
   totalVatMinor?: number | null;

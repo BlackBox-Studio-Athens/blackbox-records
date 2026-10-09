@@ -2,6 +2,16 @@
 
 Track final PRD-open launch gates for native commerce after UAT evidence.
 
+## Accepted execution disposition — 2026-10-09
+
+The owner-authorized execution sequence accepts sandbox-paid proof plus genuine LIVE unpaid application Session inspection and expiry as the launch provider-proof exception. This supersedes earlier wording requiring another final approval round or an actual LIVE purchase/refund before cutover. Technical acceptance, the current UAT provider-proof handoff, PRD promotion, independently accepted PRD content and origin checks still precede activation/routing. Live charge/refund receipt emails, settlement, physical dispatch and the minimum 24-hour stability window remain unobserved; no sandbox result is relabelled as live proof.
+
+The accepted monetary mode is `NO_TAX_COLLECTED`: preserve approved gross item and once-per-order delivery amounts with zero tax collected, no top-up and no exemption or fiscal-compliance claim. The two explicitly assigned assumed LP profiles remain eligible; other unassigned products remain ineligible. Source-bound local evidence is in the [monetary child](../greek-vat-and-shipping-charges/evidence.md). The current 99-row migration map and protected catalog/stock stay intact.
+
+The parent accepted the six-file release-control/origin patch and the no-tax implementation handoff. Both exact private policy drafts are saved pending in their respective CMS workspaces; publication and hosted readback remain separate acceptance steps. The accepted [UAT cleanup receipt](../../../.codex-artifacts/stripe-migration-delegation/uat-order-cleanup-20261009.json) records removal of test orders/deliveries with catalog and stock preserved; do not replay deleted paid events.
+
+Keep `PRD_AVAILABILITY_ALERTS_APPROVED` absent or false. General selling authority does not authorize notifications to retained subscribers. No synthetic PRD withdrawal, receipt or other email is authorized for this proof. Retain immediate checkout stop and the Holding Page rollback target.
+
 The single [commerce operations runbook](../../../docs/commerce-operations.md) covers failed-webhook resend, terminal paid-order review/contact/refund, delivery checks, and manual dispatch. [Archived paid-order correction evidence](../archive/2026-09-22-fix-paid-order-reconciliation/evidence.md) retains its old-account diagnostics and limits. The [accepted Fast UAT result](../../../.codex-artifacts/stripe-migration-delegation/uat-fast-finish-20261008-final.json) now proves the designated-account core repair, signed/replay and two paid cases; broader UAT and exact PRD acceptance remain open. Full migration has resumed under the existing plan and simplified process, with no public launch or live-payment grant. Necessary operating ownership is supplied by the 2026-10-08 private attestation. PRD launch controls remain closed.
 
 ## Current owner authority — 2026-10-08

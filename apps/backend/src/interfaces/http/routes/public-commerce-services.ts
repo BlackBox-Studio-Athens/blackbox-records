@@ -17,9 +17,9 @@ import {
   VariantMismatchError,
   createPackingPolicy,
   quoteDelivery,
-  hostedMonetaryPolicyReference,
+  currentMonetaryPolicyReference,
   deliveryCharges,
-  vatDisclosure,
+  taxCollectionDisclosure,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../platform/env';
@@ -41,20 +41,30 @@ import {
 } from '../../../application/commerce/catalog-sync';
 import type { AppLogger } from '../../../platform/observability';
 import { readStoreListingPrices } from '../../../application/commerce/checkout/readers';
-import type { VariantId } from '../../../domain/commerce';
+import { resolveTaxCollectionMode, type VariantId } from '../../../domain/commerce';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 
 export async function readPublicStoreCapabilities(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
+  const mode = resolveTaxCollectionMode(
+    currentMonetaryPolicyReference(productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget),
+  )!;
   return {
     ...(await readStoreCapabilities(createFeatureFlagReader(bindings, logger))),
-    pricing: { vatDisclosure, deliveryCharges, currencyCode: 'EUR' as const },
+    pricing: {
+      vatDisclosure: taxCollectionDisclosure(mode),
+      taxCollectionMode: mode,
+      deliveryCharges,
+      currencyCode: 'EUR' as const,
+    },
   };
 }
 
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const target = productEnvironmentProfile.workerDeploymentTarget;
+  const monetaryPolicyReference = currentMonetaryPolicyReference(target);
+  const taxCollectionMode = resolveTaxCollectionMode(monetaryPolicyReference)!;
   const packingPolicy = createPackingPolicy(target, /^[sr]k_test_/.test(bindings.STRIPE_SECRET_KEY));
   const prisma = createPrismaClient(bindings);
   const storeItems = new PrismaStoreItemOptionRepository(prisma);
@@ -150,7 +160,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       }
       const totalAmountMinor = merchandiseGrossMinor === null ? null : merchandiseGrossMinor + quote.amountMinor;
       if (totalAmountMinor !== null && !Number.isSafeInteger(totalAmountMinor)) return null;
-      return { ...quote, merchandiseGrossMinor, totalAmountMinor };
+      return { ...quote, merchandiseGrossMinor, totalAmountMinor, taxCollectionMode };
     },
     requestAvailabilityAlert: async (storeItemSlug: string, email: string) =>
       requestAvailabilityAlert(
@@ -188,9 +198,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         createFeatureFlagReader(bindings, logger),
         {
           packingPolicy,
-          monetaryPolicyReference: packingPolicy.allowSynthetic
-            ? `synthetic-${target}-inclusive-v1`
-            : hostedMonetaryPolicyReference,
+          monetaryPolicyReference,
           productEnvironment: productEnvironmentProfile.productEnvironment,
         },
       ),

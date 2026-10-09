@@ -75,6 +75,12 @@ export type {
   ClaimedAvailabilityAlert,
 } from './availability-alert-repository';
 export type { OperatorStockRepository } from './operator-stock-repository';
+export type {
+  OrderWithdrawal,
+  OrderWithdrawalRepository,
+  WithdrawalDeclaration,
+  WithdrawalDelivery,
+} from './order-withdrawal-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';
 export type {

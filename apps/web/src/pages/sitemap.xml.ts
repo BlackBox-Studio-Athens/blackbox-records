@@ -20,6 +20,7 @@ export async function GET() {
     '/',
     '/about/',
     '/terms/',
+    '/withdrawal/',
     ...(getPurchaseInformation() ? ['/privacy/'] : []),
     '/artists/',
     '/releases/',

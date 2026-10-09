@@ -469,7 +469,10 @@ function monetaryRows(order: PaidOrderEmailInput): Array<[string, string]> {
       `BOX NOW ${order.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
       format(order.deliveryGrossMinor),
     ],
-    ['Including VAT', format(order.totalVatMinor)],
+    [
+      order.taxCollectionMode === 'NO_TAX_COLLECTED' ? 'VAT collected at checkout' : 'Including VAT',
+      format(order.totalVatMinor),
+    ],
   ];
 }
 

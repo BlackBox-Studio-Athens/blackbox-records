@@ -67,6 +67,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/order-withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInternalOrderWithdrawals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/orders": {
         parameters: {
             query?: never;
@@ -603,6 +619,8 @@ export type components = {
             statusUpdatedAt: string;
             storeItemSlug: string;
             stripePaymentIntentId: string | null;
+            /** @enum {string|null} */
+            taxCollectionMode?: "STRIPE_AUTOMATIC_TAX" | "NO_TAX_COLLECTED" | null;
             /** Format: date-time */
             updatedAt: string;
             variantId: string;
@@ -987,6 +1005,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InternalApiDescription"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    listInternalOrderWithdrawals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent withdrawal support records and delivery state. No payment or stock mutation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        contract: string;
+                        deliveries: {
+                            attemptCount: number;
+                            kind: string;
+                            safeReason: string | null;
+                            status: string;
+                        }[];
+                        email: string;
+                        id: string;
+                        name: string;
+                        submittedAt: string;
+                    }[];
                 };
             };
             /** @description Operator authentication failed. */

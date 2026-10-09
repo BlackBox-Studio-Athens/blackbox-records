@@ -75,6 +75,7 @@ export type CheckoutSessionLineItem = {
 };
 
 export type FinalizedCheckoutSessionLineItem = {
+  appliedTaxCount?: number | null;
   customAmountValid?: boolean;
   lineVatMinor?: number | null;
   taxRatePercent?: number | null;
@@ -113,6 +114,8 @@ export type StripeCheckoutAddressSnapshot = {
 
 export type StripeCheckoutSessionState = {
   monetary?: {
+    automaticTaxEnabled?: boolean | null;
+    deliveryAppliedTaxCount?: number | null;
     automaticTaxStatus: string | null;
     deliveryGrossMinor: number | null;
     deliveryVatMinor: number | null;

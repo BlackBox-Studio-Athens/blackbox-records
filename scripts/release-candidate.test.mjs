@@ -181,7 +181,7 @@ const released = reply({
 });
 const home = (title) => reply(`<title>${title}</title>`, { 'X-Release-SHA': sha });
 
-test('PRD verify refuses a Worker with native checkout enabled, and a wrong backend URL', async (t) => {
+test('PRD promotion preserves independent checkout controls and rejects a wrong backend URL', async (t) => {
   t.mock.method(console, 'log', () => {});
   const routes = (enabled) => ({
     [preflightUrl]: preflight({ 'X-Release-Run-Number': '9' }),
@@ -189,10 +189,7 @@ test('PRD verify refuses a Worker with native checkout enabled, and a wrong back
     [`${site}/release.json`]: reply('', { status: 404 }),
   });
   await main('verify', 'prd', { env: prdEnv, fetch: canned(routes(false)) });
-  await assert.rejects(
-    main('verify', 'prd', { env: prdEnv, fetch: canned(routes(true)) }),
-    /disabled PRD readiness only/,
-  );
+  await main('verify', 'prd', { env: prdEnv, fetch: canned(routes(true)) });
   await assert.rejects(
     main('verify', 'prd', {
       env: { ...prdEnv, PRD_PUBLIC_BACKEND_BASE_URL: 'https://example.com' },

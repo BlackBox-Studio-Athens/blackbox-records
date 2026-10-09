@@ -75,15 +75,20 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
     { tier: 'medium', delivery: 350, deliveryVat: 68, gross: 2480, quantity: 1, vat: 480, custom: false },
     { tier: 'small', delivery: 250, deliveryVat: 48, gross: 3000, quantity: 3, vat: 581, custom: false },
     { tier: 'small', delivery: 250, deliveryVat: 48, gross: 2480, quantity: 1, vat: 480, custom: true },
+    { tier: 'small', delivery: 250, deliveryVat: 0, gross: 2480, quantity: 1, vat: 0, custom: false },
+    { tier: 'medium', delivery: 350, deliveryVat: 0, gross: 3000, quantity: 3, vat: 0, custom: false },
+    { tier: 'small', delivery: 250, deliveryVat: 0, gross: 2480, quantity: 1, vat: 0, custom: true },
   ] as const)('atomically preserves inclusive $tier money and line-rounded VAT for $quantity units', async (sale) => {
     const seeded = await seedPendingCheckout();
     const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
     const orders = new PrismaOrderStateRepository(prisma);
     try {
+      const noTax = sale.vat === 0;
+      const reference = noTax ? 'synthetic-uat-no-tax-collected-2026-10-09-v1' : 'synthetic-local-inclusive-v1';
       await env.COMMERCE_DB.prepare(
         'UPDATE "CheckoutOrder" SET "acceptedDeliveryAmountMinor" = ?, "acceptedParcelTier" = ?, "monetaryPolicyReference" = ? WHERE "id" = ?',
       )
-        .bind(sale.delivery, sale.tier, 'synthetic-seller-regime-v1', seeded.orderId)
+        .bind(sale.delivery, sale.tier, reference, seeded.orderId)
         .run();
       await env.COMMERCE_DB.prepare(
         'UPDATE "CheckoutOrderLine" SET "quantity" = ?, "unitAmountMinor" = ?, "lineAmountMinor" = ? WHERE "orderId" = ?',
@@ -101,13 +106,15 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
         orderId: seeded.orderId,
         amountTotalMinor: sale.gross + sale.delivery,
         monetary: {
-          automaticTaxStatus: 'complete',
+          automaticTaxStatus: noTax ? null : 'complete',
+          automaticTaxEnabled: !noTax,
+          deliveryAppliedTaxCount: noTax ? 0 : 1,
           deliveryGrossMinor: sale.delivery,
           deliveryVatMinor: sale.deliveryVat,
           totalVatMinor: sale.vat + sale.deliveryVat,
           discountMinor: 0,
           parcelTier: sale.tier,
-          policyReference: 'synthetic-seller-regime-v1',
+          policyReference: reference,
         },
       });
       const lines = [
@@ -117,7 +124,8 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
           lineAmountMinor: sale.gross,
           lineVatMinor: sale.vat,
           customAmountValid: sale.custom,
-          taxRatePercent: 24,
+          taxRatePercent: noTax ? null : 24,
+          appliedTaxCount: noTax ? 0 : 1,
           currencyCode: 'EUR',
           taxInclusive: true,
           discountMinor: 0,
@@ -136,7 +144,8 @@ describe('D1PaidCheckoutFinalizationRepository', () => {
         deliveryGrossMinor: sale.delivery,
         deliveryVatMinor: sale.deliveryVat,
         totalVatMinor: sale.vat + sale.deliveryVat,
-        lines: [expect.objectContaining({ lineVatMinor: sale.vat, taxRatePercent: 24 })],
+        monetaryPolicyReference: reference,
+        lines: [expect.objectContaining({ lineVatMinor: sale.vat, taxRatePercent: noTax ? null : 24 })],
       });
       expect(paid!.amountTotalMinor! - paid!.totalVatMinor!).toBe(
         sale.gross + sale.delivery - sale.vat - sale.deliveryVat,

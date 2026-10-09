@@ -6,6 +6,7 @@ import { registerInternalOrderRoutes } from '../../../application/commerce/order
 import { registerInternalPriceRoutes } from './register-internal-price-routes';
 import { registerInternalSetupRoutes } from './register-internal-setup-routes';
 import { registerInternalPublicationRoutes } from './register-internal-publication-routes';
+import { registerInternalWithdrawalRoutes } from './register-withdrawal-routes';
 import { registerInternalStockRoutes } from '../stock/register-internal-stock-routes';
 
 export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocument: () => object): void {
@@ -16,6 +17,7 @@ export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocume
     apiLink({ href: '/api/internal/inventory', rel: 'inventory' }),
     apiLink({ href: '/api/internal/variants', rel: 'variants' }),
     apiLink({ href: '/api/internal/orders', rel: 'orders' }),
+    apiLink({ href: '/api/internal/order-withdrawals', rel: 'order-withdrawals' }),
   ];
 
   app.openapi(getInternalApiDiscoveryRoute, (context) =>
@@ -26,6 +28,7 @@ export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocume
   );
 
   registerInternalOrderRoutes(app);
+  registerInternalWithdrawalRoutes(app);
   registerInternalStockRoutes(app);
   registerInternalPriceRoutes(app);
   registerInternalSetupRoutes(app);

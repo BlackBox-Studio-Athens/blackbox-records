@@ -1,5 +1,6 @@
 ---
 import InternalPageHero from '@/components/InternalPageHero.astro';
+import { priceDisclosure } from '@blackbox/api-client/public';
 import StoreItemCard from '@/components/store/StoreItemCard.astro';
 import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import SiteLayout from '@/layouts/SiteLayout.astro';
@@ -37,7 +38,7 @@ const catalogId = 'all-store-catalog';
     </div>
     <StoreCategoryNavigation activeCategoryId={category.id} categories={discoverableCategories} />
     <p class="layout-container store-purchase-note">
-      VAT included. Shipping calculated in your cart.{' '}
+      {priceDisclosure}{' '}
       <a class="underline" href={createProjectRelativeUrl('/terms/')}>
         Delivery rates and terms
       </a>

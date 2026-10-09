@@ -15,7 +15,7 @@ import type {
   PaidOrderDeliveryKind,
   PaidOrderDeliverySafeReason,
 } from '../../../domain/commerce/repositories/spi';
-import { createCheckoutOrderReferenceToken } from '../../../domain/commerce';
+import { createCheckoutOrderReferenceToken, resolveTaxCollectionMode } from '../../../domain/commerce';
 
 export type {
   ClaimedPaidOrderDelivery,
@@ -86,6 +86,7 @@ export async function attemptPaidOrderDelivery(input: {
 function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailInput {
   return {
     amountTotalMinor: order.amountTotalMinor,
+    taxCollectionMode: resolveTaxCollectionMode(order.monetaryPolicyReference),
     merchandiseGrossMinor: order.merchandiseGrossMinor,
     deliveryGrossMinor: order.deliveryGrossMinor,
     totalVatMinor: order.totalVatMinor,

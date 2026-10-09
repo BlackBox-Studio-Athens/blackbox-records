@@ -13,6 +13,8 @@ export type NewsletterRegistrationBody = PublicApiComponents['schemas']['Newslet
 export type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
 export type ServicesInquiryBody = PublicApiComponents['schemas']['ServicesInquiryBody'];
 export type ServicesInquiryResponse = PublicApiComponents['schemas']['ServicesInquiryResponse'];
+export type WithdrawalDeclaration = PublicApiComponents['schemas']['WithdrawalDeclaration'];
+export type WithdrawalReceipt = PublicApiComponents['schemas']['WithdrawalReceipt'];
 export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 export type BackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
@@ -147,6 +149,15 @@ export async function submitPublicServicesInquiry(
   const request = fetcher.path('/api/services/inquiries').method('post').create();
 
   return readPublicCheckoutResponse(() => request(body), 'Services inquiry is temporarily unavailable.');
+}
+
+export async function submitPublicWithdrawal(body: WithdrawalDeclaration): Promise<WithdrawalReceipt> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
+  const request = fetcher.path('/api/store/withdrawals').method('post').create();
+  return readPublicCheckoutResponse(
+    () => request(body),
+    'Could not record your declaration. Try again or email orders@blackboxrecordsathens.com.',
+  );
 }
 
 async function readPublicCheckoutResponse<TResponse>(

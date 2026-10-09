@@ -12,7 +12,9 @@ export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): 
   return {
     amountTotalMinor: readAmountTotalMinor(session.amount_total),
     monetary: {
+      automaticTaxEnabled: typeof session.automatic_tax?.enabled === 'boolean' ? session.automatic_tax.enabled : null,
       automaticTaxStatus: session.automatic_tax?.enabled ? session.automatic_tax.status : null,
+      deliveryAppliedTaxCount: Array.isArray(session.shipping_cost?.taxes) ? session.shipping_cost.taxes.length : null,
       deliveryGrossMinor: session.shipping_cost?.amount_total ?? null,
       deliveryVatMinor: session.shipping_cost?.amount_tax ?? null,
       totalVatMinor: session.total_details?.amount_tax ?? null,

@@ -6,14 +6,21 @@ Define the fail-closed evidence, data, provider, approval, cutover, and rollback
 
 ### Requirement: Production launch gates
 
-The system MUST block PRD native-commerce activation until required technical prerequisite acceptance is complete and live payment, domain, webhook, Worker, D1, emergency-disable, rollback and sole-approver evidence identifies the accepted launch code and content. The 2026-10-08 requested scope is unrestricted selling with no participant/order cap or end date. Declared Tax/fiscal deferrals and assumed packing MUST remain honest unresolved evidence, not successful compliance or measurement. The authorized bounded live smoke precedes public cutover; archive paperwork alone is not an additional runtime gate.
+The system MUST block PRD native-commerce activation until required technical acceptance and the owner's accepted provider-proof disposition identify the launch code and content, including domain, webhook, Worker, D1, emergency-disable and rollback evidence.
+
+#### Scenario: Owner proof disposition is reviewed
+
+The 2026-10-08 scope is unrestricted selling with no participant/order cap or end date. Tax/fiscal deferrals and assumed packing remain unresolved evidence, without compliance or measurement claims. The 2026-10-09 owner-authorized exception accepts sandbox-paid proof plus genuine LIVE unpaid application Session inspection and expiry before cutover. Live charge/refund, receipt emails, settlement, physical dispatch and 24-hour stability remain unobserved. Archive paperwork alone adds no runtime gate.
+
+- **WHEN** launch evidence is reviewed
+- **THEN** the recorded exception and unobserved outcomes are preserved without relabelling sandbox proof as live proof.
 
 #### Scenario: Launch is requested
 
 - **GIVEN** new-account Stripe test-mode evidence exists
 - **WHEN** PRD launch is considered
 - **THEN** live Stripe credentials, live Products/Prices, Payment Method Configuration, production webhook endpoint, production Worker/D1 configuration, paid-delivery schedule, and final origin evidence are verified first
-- **AND** `PRD_LAUNCH_APPROVED` remains absent until the user gives explicit final approval
+- **AND** `PRD_LAUNCH_APPROVED` remains absent until the accepted technical and provider-proof conditions of the user's recorded authorization pass
 - **AND** `native_checkout_enabled` remains an independent runtime control.
 
 #### Scenario: Prerequisite implementation evidence is reviewed
@@ -34,14 +41,21 @@ The system MUST block PRD native-commerce activation until required technical pr
 
 ### Requirement: Requested selling scope preserves controls and receipts
 
-The system MUST follow the owner's 2026-10-08 unrestricted selling scope after technical readiness without adding cohort, order-limit or end-date restrictions. It MUST retain the independent launch/runtime controls, immediate checkout stop and ordinary Stripe payment/refund receipts. Availability-alert sends MUST stay suppressed while PRD checkout is closed. The owner-accepted Tax evidence and fiscal-provider/myDATA/credit/filing deferrals apply to this uncapped scope and MUST remain unresolved evidence, without a legal exemption or successful fiscal-acceptance claim.
+The system MUST follow the owner's unrestricted selling scope after technical readiness, retain independent launch/runtime controls, immediate checkout stop and ordinary Stripe payment/refund receipts, and suppress availability alerts without separate explicit send authorization.
+
+#### Scenario: Selling authority is evaluated
+
+No cohort, order-limit or end-date restriction is added. Owner-accepted Tax evidence and fiscal-provider/myDATA/credit/filing deferrals apply to this uncapped scope and remain unresolved, without legal-exemption or fiscal-acceptance claims. `PRD_AVAILABILITY_ALERTS_APPROVED` stays absent or false; public selling authority alone does not authorize retained subscriber notifications.
+
+- **WHEN** public selling is authorized
+- **THEN** deferred fiscal evidence stays open and subscriber notifications remain suppressed without separate explicit authorization.
 
 #### Scenario: A customer pays in the approved scope
 
 - **GIVEN** the supplied seller/account inputs, technical acceptance and final user activation decision are recorded
 - **WHEN** an eligible customer completes a real payment
 - **THEN** normal provider calculation, authorized assumed-profile shipping, stock, order and delivery checks apply, and the configured Stripe payment receipt uses accurate seller/contact and transaction details
-- **AND** the authorized smoke proves payment and refund receipt delivery to an approved recipient; sandbox manual receipts alone do not prove live automatic delivery
+- **AND** live payment/refund receipt delivery remains unobserved under the recorded proof exception; sandbox receipts alone do not prove live automatic delivery
 - **AND** paid invoice creation and fiscal connectors are not prerequisites for ordinary payment receipts
 - **AND** purchase returns, policies and customer-email links reach the accepted PRD site, with the apex held until approved cutover.
 
@@ -64,7 +78,7 @@ The system MUST follow the owner's 2026-10-08 unrestricted selling scope after t
 - **WHEN** scheduled delivery runs with due availability alerts
 - **THEN** availability-alert sending is suppressed and pending requests retain their existing retention policy
 - **AND** paid-order delivery and estimate notices continue normally
-- **AND** availability alerts resume only for approved public selling.
+- **AND** availability alerts resume only after separate explicit subscriber-send authorization and the existing public-selling controls pass.
 
 ### Requirement: Exact launch tree
 
@@ -183,11 +197,11 @@ The system MUST use PRD's own accepted immutable CMS snapshot and runtime D1 cat
 
 ### Requirement: Canonical production cutover
 
-The system MUST prepare and verify every final public-origin dependency in the accepted full-site artifact before approval, then expose that artifact at the apex only after the approved live smoke succeeds.
+The system MUST prepare and verify every final public-origin dependency in the accepted full-site artifact, then expose it at the apex only after the recorded authorization's technical conditions and accepted provider-proof disposition pass.
 
 #### Scenario: Public apex is cut over
 
-- **GIVEN** the exact launch tree has approval and a successful bounded live checkout smoke
+- **GIVEN** the exact launch tree has approval and accepted sandbox-paid plus genuine LIVE unpaid application Session inspection/expiry proof
 - **WHEN** the apex moves from the Holding Page to production `main`
 - **THEN** `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, public checkout returns, shopper-facing email links, sitemap/metadata and affected assertions use `https://blackboxrecordsathens.com/`
 - **AND** catalog/email images keep their verified PRD asset URLs without requiring an asset-host migration
@@ -200,7 +214,7 @@ The system MUST prepare and verify every final public-origin dependency in the a
 - **THEN** its canonical metadata, CMS, and shopper-facing links already target the final apex
 - **AND** catalog/email images remain reachable on the PRD asset host while the apex serves Holding Page
 - **AND** technical and apex checkout return origins are explicitly allowlisted for smoke and public use respectively
-- **AND** successful smoke is followed by routing cutover, without code or generated-asset changes that would invalidate acceptance.
+- **AND** accepted provider proof is followed by routing cutover, without code or generated-asset changes that would invalidate acceptance.
 
 #### Scenario: Code or content rollback is prepared
 
@@ -230,9 +244,10 @@ The system MUST treat the user's explicit approval as the only final go/no-go au
 
 #### Scenario: User approves launch
 
-- **WHEN** required technical pre-activation evidence passes, the current assumptions/deferrals are recorded and the user explicitly approves the bounded live smoke and conditional public cutover
+- **WHEN** required technical pre-activation evidence passes and the recorded user authorization's assumptions, deferrals and provider-proof exception are satisfied
 - **THEN** `PRD_LAUNCH_APPROVED=true` may be deployed for the accepted Worker configuration
-- **AND** one bounded live checkout smoke runs before apex cutover.
+- **AND** sandbox-paid and genuine LIVE unpaid application Session inspection/expiry proof is accepted before apex cutover
+- **AND** live charge/refund receipt emails, settlement, physical dispatch and 24-hour stability remain unobserved until separately evidenced.
 
 #### Scenario: Stability window is accepted
 

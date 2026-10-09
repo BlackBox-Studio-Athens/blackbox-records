@@ -15,6 +15,7 @@ import {
   createCartQuantity,
   parseCheckoutSessionId,
   parseStripePriceId,
+  resolveTaxCollectionMode,
   type CheckoutSessionId,
 } from '../../domain/commerce';
 import type { AppBindings } from '../../platform/env';
@@ -33,8 +34,10 @@ export class StripeCheckoutGateway implements CheckoutGateway {
 
   public async createHostedCheckoutSession(request: HostedCheckoutSessionRequest): Promise<HostedCheckoutSession> {
     const policy = request.monetaryPolicy;
+    const taxCollectionMode = resolveTaxCollectionMode(policy?.monetaryPolicyReference);
     if (
       !policy ||
+      !taxCollectionMode ||
       !Number.isSafeInteger(policy.acceptedDeliveryAmountMinor) ||
       policy.acceptedDeliveryAmountMinor <= 0 ||
       !['small', 'medium'].includes(policy.acceptedParcelTier) ||
@@ -60,7 +63,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       session = await this.stripe.checkout.sessions.create(
         {
           expires_at: Math.floor(request.checkoutExpiresAt.getTime() / 1000),
-          automatic_tax: { enabled: true },
+          automatic_tax: { enabled: taxCollectionMode === 'STRIPE_AUTOMATIC_TAX' },
           adaptive_pricing: { enabled: false },
           allow_promotion_codes: false,
           tax_id_collection: { enabled: false },
@@ -131,7 +134,9 @@ export class StripeCheckoutGateway implements CheckoutGateway {
   }
 
   public async readCheckoutSession(checkoutSessionId: CheckoutSessionId): Promise<StripeCheckoutSessionState> {
-    const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId);
+    const session = await this.stripe.checkout.sessions.retrieve(checkoutSessionId, {
+      expand: ['shipping_cost.taxes'],
+    });
 
     return toStripeCheckoutSessionState(session);
   }
@@ -168,6 +173,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
             lineItem.amount_total >= (lineItem.price.custom_unit_amount.minimum ?? 1) &&
             lineItem.amount_total <= (lineItem.price.custom_unit_amount.maximum ?? Number.MAX_SAFE_INTEGER),
           lineVatMinor: lineItem.amount_tax ?? null,
+          appliedTaxCount: Array.isArray(lineItem.taxes) ? lineItem.taxes.length : null,
           taxRatePercent: lineItem.taxes?.length === 1 ? lineItem.taxes[0]!.rate.percentage : null,
           currencyCode: lineItem.currency?.toUpperCase() ?? null,
           taxInclusive: lineItem.price?.tax_behavior === 'inclusive',

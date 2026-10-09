@@ -1,5 +1,7 @@
 ## Context
 
+**9 October 2026 selected collection behavior:** the latest owner instruction chooses explicit `NO_TAX_COLLECTED` for new agreements under the existing natural-person seller, with unchanged gross prices and no exemption/registration/compliance claim. Consume the VAT child's immutable policy/reconciliation/disclosure implementation and affected sandbox proof. Positive VAT is no longer a prerequisite for this explicitly selected mode; actual zero provider collection, gross totals, receipts, stock/outbox integrity and truthful identity remain requirements. Tax/accountant/fiscal follow-up remains deferred. This supersedes earlier taxed-only language below and changes no launch, publication or live-payment authority.
+
 The repository now has a verified Holding Page, hosted Pages UAT/PRD, EmDash Content/Items/Stock/Orders in the combined CMS Worker, accepted-snapshot public rendering, and independent code/catalog/launch controls. Remaining launch work is current-account provider and operational proof, approved shopper wording, exact-code-and-content acceptance, and public-origin cutover. Sveltia and compiled repository catalog paths are retired.
 
 The public apex must not imply readiness before those gates close. UAT data and Stripe test-mode objects are evidence only, not production seed material.
@@ -23,17 +25,21 @@ The public apex must not imply readiness before those gates close. UAT data and 
 
 ## Decisions
 
+### Current execution disposition — 2026-10-09
+
+The [accepted execution disposition](README.md#accepted-execution-disposition--2026-10-09) controls the sequence below: existing owner authorization remains in force, subject to accepted technical readiness and the current UAT provider-proof handoff. Sandbox-paid plus genuine LIVE unpaid application Session inspection/expiry is the accepted launch proof exception. Earlier references to a new final decision or successful live purchase/refund are superseded by that disposition. Live charge/refund receipt emails, settlement, physical dispatch and 24-hour stability remain unobserved. Keep `PRD_AVAILABILITY_ALERTS_APPROVED` absent or false until separate explicit subscriber-send authorization.
+
 ### Public apex remains on Holding Page until final approval
 
-`https://blackboxrecordsathens.com/` continues serving the verified Holding Page until every exact-tree gate passes and the user gives the sole final go/no-go approval. The holding branch remains the immediate rollback target through the stability window.
+`https://blackboxrecordsathens.com/` continues serving the verified Holding Page until every exact-tree gate and the recorded authorization's provider-proof conditions pass. The holding branch remains the immediate rollback target through the stability window.
 
 ### Current selling scope follows technical readiness
 
-The owner's [2026-10-08 decision](../migrate-stripe-to-blackboxrecords/evidence.md#owner-decisions--2026-10-08) requests unrestricted selling after actual technical readiness and supersedes the 2026-10-06 restricted beta. No participant list, order cap, end date or cohort/access implementation is required. The necessary operating owner is attested privately. Keep checkout closed and the apex on Holding Page during preparation; live smoke and the user's final activation decision remain required. This planning revision performs no activation.
+The owner's [2026-10-08 decision](../migrate-stripe-to-blackboxrecords/evidence.md#owner-decisions--2026-10-08) requests unrestricted selling after actual technical readiness and supersedes the 2026-10-06 restricted beta. No participant list, order cap, end date or cohort/access implementation is required. The necessary operating owner is attested privately. Keep checkout closed and the apex on Holding Page during preparation; the recorded activation authorization remains conditional on technical and accepted provider proof. This planning revision performs no activation.
 
 Ordinary Stripe payment/refund receipts, truthful seller/support details, working provider calculations, supported assumed packing, stock/order/webhook integrity and operational recovery remain technical acceptance requirements. The owner authorizes the existing assumed vinyl profile within explicit eligible-product assignments; real measurements remain Unknown. Actual Tax evidence and fiscal-provider/myDATA/credit/filing automation are deferred for this uncapped scope, without inventing registration, rates or compliance. Keep IRIS deferred. Reuse the two checkout controls and immediate stop on failure, and preserve account/seller provenance. The later official-account switch is follow-up work, using fresh evidence and retained BlackBoxRecords refund/dispute access.
 
-The existing Notify me delivery schedule requires `PRD_AVAILABILITY_ALERTS_APPROVED=true` alongside the existing launch and runtime checkout controls for PRD alerts. This optional Worker input defaults off when absent, false or invalid; keep it absent or false throughout closed preparation and verify its setting for accepted public selling. Deploy and verify the guard before PRD rebinding. A zero alert-drain limit suppresses claims and send-budget changes while retaining the existing cleanup policy; paid-order delivery and estimate notices keep running first. Local and UAT alert delivery remain unchanged; use the existing UAT sink for delivery proof. No separate scheduler or cohort alert system is needed.
+The existing Notify me delivery schedule requires `PRD_AVAILABILITY_ALERTS_APPROVED=true` alongside the existing launch and runtime checkout controls for PRD alerts. This optional Worker input defaults off when absent, false or invalid; keep it absent or false throughout closed preparation and keep it absent or false until separate explicit subscriber-send authorization. Deploy and verify the guard before PRD rebinding. A zero alert-drain limit suppresses claims and send-budget changes while retaining the existing cleanup policy; paid-order delivery and estimate notices keep running first. Local and UAT alert delivery remain unchanged; use the existing UAT sink for delivery proof. No separate scheduler or cohort alert system is needed.
 
 ### One exact commit owns launch
 
@@ -49,7 +55,7 @@ PRD editorial content comes from its own accepted immutable CMS snapshot; runtim
 
 During closed preparation, verify purchase/return, policy and customer-email links through the technical PRD origin while the apex serves Holding Page. Stage final apex-origin settings for the requested public scope before candidate acceptance and live smoke.
 
-For full public launch, prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After successful smoke, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
+For full public launch, prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After accepted provider proof under the recorded exception, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
 
 ### Destination Stripe acceptance precedes live preparation
 
@@ -83,7 +89,7 @@ Use an owner-approved manual runbook covering paid/review/failed-delivery checks
 
 Record the selected separately charged delivery policy, who owns tax/receipt/invoice handling, and the exact checkout total expected. Configure and verify the approved model before launch; finish the bounded monetary implementation below before accepting this gate. Do not infer tax treatment, invent policy terms, or assume Stripe sends the receipt promised by the return page. Inventory existing public information, then publish the approved missing shipping timing/rates, return/refund process, contact, and privacy content in accessible storefront links. Verify against Stripe's [website checklist](https://docs.stripe.com/get-started/checklist/website); this is operational readiness, not a legal determination.
 
-The bounded child [greek-vat-and-shipping-charges](../greek-vat-and-shipping-charges/proposal.md) owns the VAT/delivery monetary contract and fiscal handoff. Taxable VAT-inclusive prices, Stripe Tax and the long-term Stripe-connected fiscal/filing choice remain selected; the migration supplies seller inputs. Greece-only manual BOX NOW remains €2.50 Small / €3.50 Medium gross once per order, using the explicitly authorized assumed profile and retained capacity safeguards until measured evidence exists. Reuse the child's UI/provider/order evidence for tasks 2.7–2.9 and 3.8. Tax/fiscal evidence follows the current uncapped-scope deferral; ordinary payment receipts establish no fiscal/myDATA/remittance acceptance. This parent retains live smoke and final activation.
+The bounded child [greek-vat-and-shipping-charges](../greek-vat-and-shipping-charges/proposal.md) owns the VAT/delivery monetary contract and fiscal handoff. The current `NO_TAX_COLLECTED` mode preserves gross charges without collected tax; VAT-inclusive/Stripe Tax and fiscal-provider work remain later follow-up; the migration supplies seller inputs. Greece-only manual BOX NOW remains €2.50 Small / €3.50 Medium gross once per order, using the explicitly authorized assumed profile and retained capacity safeguards until measured evidence exists. Reuse the child's UI/provider/order evidence for tasks 2.7–2.9 and 3.8. Tax/fiscal evidence follows the current uncapped-scope deferral; ordinary payment receipts establish no fiscal/myDATA/remittance acceptance. This parent retains provider-proof acceptance and the authorized activation sequence.
 
 The bounded child [complete-shopper-purchase-information](../complete-shopper-purchase-information/proposal.md) owns the remaining public content and its placement. Task 2.7 accepts its publication evidence; VAT task 4.4 supplies policy inputs and checks consistency against the same evidence. Neither child must wait for the other's archival to exchange evidence, and the parent retains final launch acceptance.
 
@@ -91,7 +97,7 @@ The bounded child [complete-shopper-purchase-information](../complete-shopper-pu
 
 Live catalog mutation requires the migration operator command's one-run, false-by-default confirmation; the release workflow's former `confirm_live_catalog_changes` input is removed. Shopper launch requires `PRD_LAUNCH_APPROVED=true`. Runtime checkout also requires `native_checkout_enabled=true`. Catalog preparation cannot set either checkout control.
 
-Before accepting the selling candidate, remove the temporary checkout-disabled promotion assertion in `scripts/release-candidate.mjs` and update its test. Preserve candidate provenance, monotonic release order and the two independent checkout controls. Verify code can still be promoted after activation without a release enabling or disabling checkout. Preparation continues to require closed checkout until final approval.
+The selling candidate removes the temporary checkout-disabled promotion assertion in `scripts/release-candidate.mjs` and updates its test. Preserve candidate provenance, monotonic release order and the two independent checkout controls. Verify code can still be promoted after activation without a release enabling or disabling checkout. Preparation continues to require closed checkout until final approval.
 
 ### Delivery remains Greece-only
 
@@ -109,7 +115,7 @@ Raw performance output is stored under ignored `.codex-artifacts/runtime-perform
 
 ### User is sole final approver
 
-No other reviewer or automated result can create launch approval. After all preparation and exact-tree checks pass, the user gives the sole final go/no-go decision.
+No other reviewer or automated result can create launch approval. The recorded user authorization permits execution after its technical and provider-proof conditions pass; no new final approval round is required.
 
 ## Risks / Trade-offs
 
@@ -128,7 +134,7 @@ No other reviewer or automated result can create launch approval. After all prep
 5. Prepare live Stripe, PRD D1, Worker bindings, Access, Cron, email, catalog, approved shopper policies, and the manual operating handoff while checkout remains closed.
 6. Run `pnpm validate`, affected generation/publication checks, strict OpenSpec validation and browser acceptance against the selected code and PRD snapshot. Reuse that candidate's passing CI end-to-end and Chromium/Firefox staff-preview suites; local whole-project suites require a maintainer grant. No routine compiled catalog generation or stock seeding.
 7. Set the runtime feature flag true while launch approval remains absent and prove checkout stays closed.
-8. After the user's final approval for the recorded uncapped scope, set `PRD_LAUNCH_APPROVED=true` and run the bounded live payment/refund/receipt smoke. Cut over the public apex only after accepted technical evidence, successful smoke and the approved cutover decision.
+8. After accepted technical readiness, UAT provider proof and PRD code/content checks, execute the recorded conditional activation sequence. Accept sandbox-paid plus genuine LIVE unpaid application Session inspection/expiry proof before apex cutover; actual live payment/refund receipt delivery and settlement remain unobserved.
 9. Keep the Holding Page rollback target for at least 24 hours, then retire holding-only dependencies and archive this change after accepted stability.
 
 ## Open Questions

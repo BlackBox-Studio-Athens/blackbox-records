@@ -14,7 +14,8 @@ const result = spawnSync(process.execPath, ['scripts/build-public.mjs', target],
   windowsHide: true,
   env: {
     ...process.env,
-    ASTRO_SITE_URL: `https://blackbox-records-web${target === 'uat' ? '-uat' : ''}.pages.dev`,
+    ASTRO_SITE_URL:
+      target === 'prd' ? 'https://blackboxrecordsathens.com' : 'https://blackbox-records-web-uat.pages.dev',
     ASTRO_BASE_PATH: '/',
     PUBLIC_BACKEND_BASE_URL: process.env[`${target.toUpperCase()}_PUBLIC_BACKEND_BASE_URL`],
     SHOW_REVIEW_SITE_MARKER: target === 'uat' ? 'true' : 'false',

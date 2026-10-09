@@ -140,6 +140,27 @@ describe('Private order workspace concurrency', () => {
 });
 
 describe('Order facts and notification language', () => {
+  it('labels zero tax collection separately from tax liability and an unapplied rate', () => {
+    if (exampleOrder.fulfillment.kind !== 'current') throw new Error('Expected paid fixture');
+    const html = renderToStaticMarkup(
+      <OrderDetail
+        order={{
+          ...exampleOrder,
+          taxCollectionMode: 'NO_TAX_COLLECTED',
+          fulfillment: {
+            ...exampleOrder.fulfillment,
+            deliveryVatMinor: 0,
+            totalVatMinor: 0,
+            lines: exampleOrder.fulfillment.lines.map((line) => ({ ...line, lineVatMinor: 0, taxRatePercent: null })),
+          },
+        }}
+      />,
+    );
+    expect(html).toContain('VAT collected at checkout');
+    expect(html).toContain('€0.00');
+    expect(html).toContain('Not applied');
+    expect(html).not.toContain('Total VAT (included)');
+  });
   it('renders complete multi-line data, unknown historical VAT and escaped private text', () => {
     const html = renderToStaticMarkup(<OrderDetail order={exampleOrder} />);
     expect(html).toContain('Example LP');

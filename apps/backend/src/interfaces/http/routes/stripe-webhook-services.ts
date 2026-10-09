@@ -10,7 +10,7 @@ import {
   CatalogReconciler,
   createRuntimeCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
-import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
+import { reconcileCheckoutSession, type CheckoutReconciliation } from '../../../application/commerce/checkout';
 import { EmailConfigurationError } from '../../../application/email';
 import { readPaidCheckoutFulfillment, type StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
 import { parseCheckoutSessionId } from '../../../domain/commerce';
@@ -62,11 +62,25 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
     applyPaidCheckoutReconciliation: (
       reconciliation: CheckoutReconciliation,
     ): Promise<ApplyPaidCheckoutReconciliationResult> =>
-      checkoutGateway
-        .readCheckoutSessionLineItems(reconciliation.source.checkoutSessionId)
-        .then((lineItems) =>
-          applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, reconciliation, new Date(), lineItems),
-        ),
+      Promise.all([
+        checkoutGateway.readCheckoutSession(reconciliation.source.checkoutSessionId),
+        checkoutGateway.readCheckoutSessionLineItems(reconciliation.source.checkoutSessionId),
+      ]).then(([session, lineItems]) => {
+        const providerReconciliation = reconcileCheckoutSession(session);
+        if (
+          session.checkoutSessionId !== reconciliation.source.checkoutSessionId ||
+          providerReconciliation.recommendedOrderStatus !== 'paid'
+        ) {
+          throw new Error('Paid Checkout Session evidence is unavailable.');
+        }
+        return applyPaidCheckoutReconciliation(
+          orders,
+          paidCheckoutFinalizer,
+          providerReconciliation,
+          new Date(),
+          lineItems,
+        );
+      }),
     disconnect: async () => prisma.$disconnect(),
     logger,
     findStoreItemByStripeProductId: async (productId: string) => {

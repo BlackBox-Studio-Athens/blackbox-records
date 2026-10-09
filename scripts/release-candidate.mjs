@@ -138,15 +138,6 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
   });
   assert.ok(worker.ok, 'Worker is unavailable.');
   if (command === 'verify') {
-    if (target === 'prd') {
-      const capabilities = await fetch(capabilitiesUrl, { signal: AbortSignal.timeout(30_000) });
-      assert.ok(capabilities.ok, 'Worker is unavailable.');
-      assert.equal(
-        (await capabilities.json()).nativeCheckout.enabled,
-        false,
-        'This promotion path is for disabled PRD readiness only.',
-      );
-    }
     // A target never moves to an older candidate; an unreachable or empty target has nothing to order against.
     validateOrder(release, await json(`${site}/release.json`, true));
     const runNumber = worker.headers.get('X-Release-Run-Number');

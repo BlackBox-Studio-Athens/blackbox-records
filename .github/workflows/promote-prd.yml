@@ -1,4 +1,4 @@
-# Promotes the release UAT serves to disabled PRD. Dispatching this workflow is the confirmation; it takes no inputs.
+# Promotes the release UAT serves to PRD; checkout and launch remain independent runtime controls. Dispatching this workflow is the confirmation; it takes no inputs.
 # The browser suites and the UAT smoke already passed in the candidate's push run.
 name: Promote UAT to PRD
 on: workflow_dispatch

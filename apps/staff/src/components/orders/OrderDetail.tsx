@@ -212,8 +212,14 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
                     </small>
                   )}
                   <small>
-                    Unit {money(line.unitAmountMinor)} · VAT {money(line.lineVatMinor)} · Tax rate{' '}
-                    {line.taxRatePercent === null ? 'Unknown' : `${line.taxRatePercent}%`}
+                    Unit {money(line.unitAmountMinor)} · VAT{' '}
+                    {order.taxCollectionMode === 'NO_TAX_COLLECTED' ? 'collected ' : ''}
+                    {money(line.lineVatMinor)} · Tax rate{' '}
+                    {line.taxRatePercent === null
+                      ? order.taxCollectionMode === 'NO_TAX_COLLECTED'
+                        ? 'Not applied'
+                        : 'Unknown'
+                      : `${line.taxRatePercent}%`}
                   </small>
                 </div>
                 <span>Qty {line.quantity}</span>
@@ -224,12 +230,22 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
           <dl className="order-totals">
             <Fact label="Merchandise">{money(fulfillment.merchandiseGrossMinor)}</Fact>
             <Fact label="Delivery">{money(fulfillment.deliveryGrossMinor)}</Fact>
-            <Fact label="Delivery VAT">{money(fulfillment.deliveryVatMinor)}</Fact>
+            <Fact label={order.taxCollectionMode === 'NO_TAX_COLLECTED' ? 'Delivery VAT collected' : 'Delivery VAT'}>
+              {money(fulfillment.deliveryVatMinor)}
+            </Fact>
             <Fact label="Total">{money(fulfillment.amountTotalMinor)}</Fact>
-            <Fact label="Total VAT (included)">{money(fulfillment.totalVatMinor)}</Fact>
+            <Fact
+              label={
+                order.taxCollectionMode === 'NO_TAX_COLLECTED' ? 'VAT collected at checkout' : 'Total VAT (included)'
+              }
+            >
+              {money(fulfillment.totalVatMinor)}
+            </Fact>
           </dl>
           <p className="order-muted order-money-note">
             Amounts are the saved EUR order facts. Unknown historical values do not mean zero or tax-exempt.
+            {order.taxCollectionMode === 'NO_TAX_COLLECTED' &&
+              ' Zero records collection at checkout, not the seller’s tax liability or fiscal net amount.'}
           </p>
         </section>
       )}

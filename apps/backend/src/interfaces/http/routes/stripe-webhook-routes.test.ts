@@ -201,7 +201,9 @@ describe('Stripe webhook routes', () => {
           amountTotalMinor: 2730,
           currencyCode: 'EUR',
           monetary: {
+            automaticTaxEnabled: true,
             automaticTaxStatus: 'complete',
+            deliveryAppliedTaxCount: null,
             deliveryGrossMinor: 250,
             deliveryVatMinor: 48,
             totalVatMinor: 528,

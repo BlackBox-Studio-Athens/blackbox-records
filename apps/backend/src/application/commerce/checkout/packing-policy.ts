@@ -1,9 +1,17 @@
 import type { ItemPackingProfile, PackagePackingProfile, PackingPolicy } from './packing';
 import { deliveryCharges } from '@blackbox/api-client/public';
 
-export { deliveryCharges, vatDisclosure } from '@blackbox/api-client/public';
+export { deliveryCharges, priceDisclosure, taxCollectionDisclosure } from '@blackbox/api-client/public';
 
-export const hostedMonetaryPolicyReference = 'owner-assumed-vinyl-packing-inclusive-tariff-prd-2026-10-08-v1';
+export const hostedMonetaryPolicyReference = 'owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1';
+
+export function currentMonetaryPolicyReference(target: 'local' | 'uat' | 'prd'): string {
+  return target === 'prd'
+    ? hostedMonetaryPolicyReference
+    : target === 'uat'
+      ? 'synthetic-uat-no-tax-collected-2026-10-09-v1'
+      : 'synthetic-local-no-tax-collected-2026-10-09-v1';
+}
 
 // Owner-authorized assumptions for the explicitly assigned LP editions; real measurements remain unknown.
 const assumedReference = { measurementReference: 'owner-assumed-vinyl-parcel-2026-10-08' };

@@ -7686,6 +7686,12 @@ html[data-store-coverflow-capable]
   font: 400 0.875rem/1.6 var(--font-sans);
 }
 
+.checkout-review__delivery > p[data-tax-disclosure] {
+  min-height: 2lh;
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.7 var(--font-sans);
+}
+
 .checkout-review__amounts {
   display: flex;
   flex-direction: column;

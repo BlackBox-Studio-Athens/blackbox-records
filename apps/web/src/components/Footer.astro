@@ -56,6 +56,7 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
       <h3 class="site-footer-heading">Sitemap</h3>
       <ul class="site-footer-nav-list">
         {[
+          { title: 'Withdraw from an order', url: '/withdrawal/' as const },
           ...(getPurchaseInformation() ? [{ title: 'Privacy information', url: '/privacy/' as const }] : []),
           ...footerNavigationItems,
         ].map((item) => (

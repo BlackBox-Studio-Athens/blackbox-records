@@ -234,6 +234,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/store/withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submitWithdrawal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -315,6 +331,8 @@ export type components = {
                 /** @enum {string} */
                 currencyCode: "EUR";
                 merchandiseGrossMinor: number | null;
+                /** @enum {string} */
+                taxCollectionMode?: "STRIPE_AUTOMATIC_TAX" | "NO_TAX_COLLECTED";
                 /** @enum {string} */
                 tier: "small" | "medium";
                 totalAmountMinor: number | null;
@@ -489,8 +507,28 @@ export type components = {
                     medium: number;
                     small: number;
                 };
+                /** @enum {string} */
+                taxCollectionMode?: "STRIPE_AUTOMATIC_TAX" | "NO_TAX_COLLECTED";
                 vatDisclosure: string;
             };
+        };
+        WithdrawalDeclaration: {
+            /** @enum {boolean} */
+            confirmed: true;
+            contract: string;
+            /** Format: email */
+            email: string;
+            name: string;
+            /** Format: uuid */
+            submissionId: string;
+        };
+        WithdrawalReceipt: {
+            receiptId: string;
+            receiptText: string;
+            /** @enum {string} */
+            status: "received";
+            /** Format: date-time */
+            submittedAt: string;
         };
     };
     responses: never;
@@ -875,6 +913,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicApiDescription"];
+                };
+            };
+        };
+    };
+    submitWithdrawal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WithdrawalDeclaration"];
+            };
+        };
+        responses: {
+            /** @description Declaration durably recorded; acknowledgement delivery queued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WithdrawalReceipt"];
+                };
+            };
+            /** @description Invalid declaration. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Submission identity already used for another declaration. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Too many submissions. Email withdrawal remains available. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Recording unavailable. Email withdrawal remains available. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };

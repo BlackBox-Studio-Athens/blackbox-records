@@ -26,6 +26,7 @@ export {
 } from './services-inquiry';
 export type { ServicesInquiryInput, ServicesInquiryOutcomeLogger, ServicesInquiryService } from './services-inquiry';
 export { sendTransactionalEmail } from './transactional-email';
+export { sendWithdrawalEmail, withdrawalReceiptText, WITHDRAWAL_SUPPORT_EMAIL } from './withdrawal-email';
 export type {
   EmailProviderOperationResult,
   EmailProviderGateway,

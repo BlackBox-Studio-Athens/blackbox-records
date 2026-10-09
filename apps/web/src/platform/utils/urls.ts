@@ -17,7 +17,7 @@ export function isCurrentPath(pathname: string, itemUrl: string) {
 
 // One link model for the header, the phone Menu and the footer: a page link keeps the same
 // address, accent and current-page state on every surface. Astro and React spread it alike.
-export function navigationLinkAttributes(url: SitePagePath, currentPathname: string) {
+export function navigationLinkAttributes(url: SitePagePath | '/withdrawal/', currentPathname: string) {
   return {
     href: createProjectRelativeUrl(url),
     'aria-current': isCurrentPath(currentPathname, url) ? ('page' as const) : undefined,

@@ -81,6 +81,13 @@
                 ],
                 "exclusiveMinimum": 0
               },
+              "taxCollectionMode": {
+                "type": "string",
+                "enum": [
+                  "STRIPE_AUTOMATIC_TAX",
+                  "NO_TAX_COLLECTED"
+                ]
+              },
               "totalAmountMinor": {
                 "type": [
                   "integer",
@@ -190,6 +197,13 @@
             "properties": {
               "vatDisclosure": {
                 "type": "string"
+              },
+              "taxCollectionMode": {
+                "type": "string",
+                "enum": [
+                  "STRIPE_AUTOMATIC_TAX",
+                  "NO_TAX_COLLECTED"
+                ]
               },
               "deliveryCharges": {
                 "type": "object",
@@ -1108,6 +1122,72 @@
           "service"
         ],
         "additionalProperties": false
+      },
+      "WithdrawalReceipt": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "received"
+            ]
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receiptText": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "receiptId",
+          "submittedAt",
+          "receiptText"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawalDeclaration": {
+        "type": "object",
+        "properties": {
+          "submissionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "contract": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "submissionId",
+          "name",
+          "contract",
+          "email",
+          "confirmed"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -1651,6 +1731,76 @@
           },
           "503": {
             "description": "Services inquiry submission is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/withdrawals": {
+      "post": {
+        "operationId": "submitWithdrawal",
+        "tags": [
+          "Store"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawalDeclaration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Declaration durably recorded; acknowledgement delivery queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid declaration.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Submission identity already used for another declaration.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many submissions. Email withdrawal remains available.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Recording unavailable. Email withdrawal remains available.",
             "content": {
               "application/problem+json": {
                 "schema": {

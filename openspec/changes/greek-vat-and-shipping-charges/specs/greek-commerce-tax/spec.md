@@ -4,9 +4,16 @@ Define the approved VAT treatment, monetary evidence and fiscal-document handoff
 
 ## ADDED Requirements
 
-### Requirement: Stripe account facts support the selected taxable checkout
+### Requirement: Stripe account facts support the selected collection mode
 
-The system MUST use the supplied seller/account accepted by the migration and retain the selected ordinary taxable, VAT-inclusive treatment for the accepted physical audio catalog. Existing advertised amounts MUST remain consumer gross prices. The 2026-10-08 owner instruction defers actual Tax evidence and fiscal automation for the requested uncapped scope. Unknown origin, registration, accepted rates and compliance MUST NOT be invented or inferred from approved UAT fixtures. Working provider calculation/reconciliation retains its specific technical dependencies; unavailable facts or access MUST NOT be represented as successful inspection or prevent unrelated implementation with explicit assumptions.
+The system MUST use the migration's actual natural-person seller/account and preserve advertised gross prices. The 2026-10-09 owner instruction explicitly selects `NO_TAX_COLLECTED` for new agreements and defers actual legal tax treatment/fiscal automation. This selection MUST NOT be inferred from missing registration or described as exemption, zero rating, lawful trading or zero tax liability. Earlier inclusive agreements MUST retain their own immutable policy reference and treatment.
+
+#### Scenario: Explicit no-collection agreement is selected
+
+- **WHEN** the configured Local, UAT or PRD policy explicitly selects `NO_TAX_COLLECTED`
+- **THEN** the provider request explicitly disables automatic tax, applies no manual rates or exemption fields, and retains existing Price IDs/gross amounts and the selected delivery charge
+- **AND** the quote and checkout disclose that VAT is not calculated or collected, without an included-VAT or exemption claim
+- **AND** an unknown policy reference fails closed rather than being interpreted from a substring or current global setting.
 
 #### Scenario: Seller details already exist in Stripe
 
@@ -19,7 +26,8 @@ The system MUST use the supplied seller/account accepted by the migration and re
 
 - **WHEN** required tax registration, origin, product classification or fiscal setup is absent or contradictory
 - **THEN** affected tax or fiscal evidence remains incomplete/deferred, while a required provider calculation failure remains a specific technical gap
-- **AND** unknown treatment cannot become a zero-tax/default-rate sale or a claim that tax collection or remittance is configured.
+- **AND** missing facts alone cannot select zero tax or a default rate; the explicit no-collection agreement records collection behavior only, leaving actual liability/registration unknown.
+- **AND** unavailable facts or access are not represented as successful inspection or used to prevent unrelated implementation with explicit assumptions.
 
 #### Scenario: Existing advertised prices are retained
 
@@ -36,11 +44,11 @@ The system MUST use the supplied seller/account accepted by the migration and re
 
 ### Requirement: Provider tax configuration is explicit and verified
 
-The system MUST use Stripe Tax as its single tax-calculation path, with explicit inclusive consumer Prices and delivery treatment. Catalog promotion MUST preserve valid Price Authority and report incompatible tax configuration before checkout use.
+The system MUST use Stripe Tax as its single calculation path for accepted automatic-tax agreements and explicitly disable calculation for accepted no-collection agreements. Existing inclusive Price metadata MUST remain unchanged; that conditional setting alone establishes no collected VAT or registration. Catalog promotion MUST preserve Price Authority and gross amounts.
 
 #### Scenario: Automatic tax is used
 
-- **WHEN** a supported checkout is created
+- **WHEN** an accepted automatic-tax checkout is created
 - **THEN** the actual seller origin, required registration, item codes, shipping treatment and inclusive behavior are verified in the correct provider environment
 - **AND** missing registration or calculation failure is not accepted as legitimate exemption
 - **AND** manual rates are not also applied.
@@ -54,6 +62,14 @@ The system MUST use Stripe Tax as its single tax-calculation path, with explicit
 ### Requirement: Paid monetary facts reconcile and remain immutable
 
 The system MUST verify and retain an Order Monetary Snapshot containing merchandise gross, Delivery Charge gross and accepted Small/Medium tier, line and delivery VAT, total VAT, currency and the applied treatment, using authoritative finalized payment facts. For the accepted inclusive no-discount model, gross order total MUST equal merchandise gross plus delivery gross; VAT MUST be included once.
+
+#### Scenario: No tax was collected by the provider
+
+- **GIVEN** an immutable no-collection policy, €24.80 merchandise and €2.50 delivery
+- **WHEN** complete paid provider facts show automatic tax explicitly false, no applied line/shipping tax rates and exactly zero collected line/shipping/total tax
+- **THEN** €27.30 gross and zero collected tax with null applied rates are atomically retained and normal stock/outbox settlement occurs once
+- **AND** missing values, nonzero/negative tax, applied rates or inconsistent identity/currency/quantities/amounts cause durable review
+- **AND** zero collection is not used to calculate a fictional fiscal net amount, legal exemption, tax credit or seller liability.
 
 #### Scenario: Inclusive sale with Small postage is finalized
 
@@ -92,7 +108,7 @@ The system MUST verify and retain an Order Monetary Snapshot containing merchand
 
 ### Requirement: Stripe-connected fiscal services provide traceable documents
 
-The selected fiscal workflow remains delegation to a verified Stripe-connected service, with an accepted Greek issuer, timing, retention, delivery and credit process; its implementation/acceptance is deferred for the owner's requested uncapped scope. Once configured, each applicable Fiscal Document and transmission/reconciliation result MUST be traceable to its order independently of payment receipts. Provider marketing, a generic PDF and ordinary Stripe account verification MUST NOT alone satisfy fiscal acceptance.
+The selected fiscal workflow MUST use a verified Stripe-connected service; implementation/acceptance remains deferred for the uncapped scope. Once configured, each applicable Fiscal Document and transmission/reconciliation result MUST be traceable to its order independently of payment receipts. Provider marketing, a generic PDF or ordinary Stripe account verification MUST NOT alone satisfy fiscal acceptance.
 
 #### Scenario: Fiscal automation is deferred for the requested uncapped scope
 
@@ -106,6 +122,7 @@ The selected fiscal workflow remains delegation to a verified Stripe-connected s
 
 - **WHEN** the approved fiscal workflow processes the sale
 - **THEN** the connected service receives the authoritative sale and required buyer facts using the supported Stripe integration
+- **AND** its Greek issuer, timing, retention, customer delivery and credit process are accepted
 - **AND** the document reconciles with the Order Monetary Snapshot without routine manual sale re-entry or duplicate fiscal issuance
 - **AND** the responsible operator can identify missing, failed or duplicate issuance/transmission within the required deadline
 - **AND** a payment confirmation or generic invoice PDF alone does not mark fiscal obligations satisfied.

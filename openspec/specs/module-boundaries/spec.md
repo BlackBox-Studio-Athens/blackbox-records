@@ -45,6 +45,13 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 - **THEN** CMS owns its maintenance and `orders` retains `scheduled-paid-order-delivery`
 - **AND** failures remain independently reported so CMS failure cannot suppress paid-order processing.
 
+#### Scenario: Online withdrawal declarations are received
+
+- **WHEN** the public withdrawal adapter receives an explicitly confirmed declaration
+- **THEN** `orders` owns recording and delivery processing through its root interface, `commerce-domain` exposes the withdrawal repository SPI, and `commerce-persistence` exports `d1-order-withdrawal-repository.ts`
+- **AND** the existing email application owns receipt content and transactional acknowledgement/support delivery; public browser code consumes only the public API contract through `checkout-web`
+- **AND** protected operator reads and the existing scheduled orders processor handle retained delivery state without giving public code order, refund or stock authority.
+
 ### Requirement: Closed module boundaries
 
 The system SHALL treat application modules as closed by default with explicit provided interfaces and named interfaces.

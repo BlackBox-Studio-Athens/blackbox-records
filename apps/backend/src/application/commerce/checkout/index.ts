@@ -12,7 +12,14 @@ export {
 } from './errors';
 export { readStoreCapabilities } from './feature-gates';
 export { quoteDelivery } from './packing';
-export { createPackingPolicy, deliveryCharges, vatDisclosure, hostedMonetaryPolicyReference } from './packing-policy';
+export {
+  createPackingPolicy,
+  deliveryCharges,
+  priceDisclosure,
+  taxCollectionDisclosure,
+  hostedMonetaryPolicyReference,
+  currentMonetaryPolicyReference,
+} from './packing-policy';
 export type { DeliveryQuote, PackingPolicy } from './packing';
 export { listVariantOffersForStoreItem, readStoreOffer } from './read-store-offer';
 export { readCheckoutState } from './read-checkout-state';

@@ -628,7 +628,7 @@ describe('checkout use cases', () => {
       { storeItemSlug: storeItem.storeItemSlug, variantId: storeItem.variantId, quantity: cartQuantity(quantity) },
     ];
     expect(quoteDelivery(lines, packingPolicy)).toEqual({ tier, amountMinor, currencyCode: 'EUR' });
-    expect(hostedMonetaryPolicyReference).toMatch(/^owner-assumed-vinyl-packing-inclusive-tariff-prd-/);
+    expect(hostedMonetaryPolicyReference).toBe('owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1');
 
     await startCheckout(
       storeItems,
@@ -662,6 +662,7 @@ describe('checkout use cases', () => {
     ['unassigned packing', { ...createPackingPolicy('prd'), items: new Map() }, hostedMonetaryPolicyReference],
     ['missing reference', createPackingPolicy('prd'), null],
     ['blank reference', createPackingPolicy('prd'), ' '],
+    ['unknown reference', createPackingPolicy('prd'), 'invented-no-tax-collected'],
   ] as const)(
     'rejects %s before creating a hold or provider Session',
     async (_reason, packingPolicy, monetaryPolicyReference) => {
@@ -1820,13 +1821,71 @@ describe('checkout use cases', () => {
       checkoutGateway,
       orders,
       command,
+      undefined,
+      { monetaryPolicyReference: 'synthetic-local-no-tax-collected-2026-10-09-v1' },
     );
 
     expect(replay).toEqual(first);
+    expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject({
+      monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+    });
     expect(orders.createPendingHoldCalls).toBe(1);
     expect(catalogReconciler.calls).toHaveLength(reconciliationCount);
     expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
     expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('resumes an ambiguous sessionless attempt with its accepted policy after the current policy changes', async () => {
+    const provider = vi.fn(checkoutGateway.createHostedCheckoutSession);
+    provider.mockRejectedValueOnce(new CheckoutCreationError(false));
+    checkoutGateway.createHostedCheckoutSession = provider;
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
+      idempotencyKey: 'checkout-old-policy-retry',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    };
+    const now = new Date('2026-09-09T10:04:00.000Z');
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        command,
+        undefined,
+        { now, monetaryPolicyReference: 'synthetic-local-inclusive-v1' },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutCreationError);
+    const firstRequest = provider.mock.calls[0]![0];
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        command,
+        undefined,
+        {
+          now: new Date(now.getTime() + 31_000),
+          monetaryPolicyReference: 'synthetic-local-no-tax-collected-2026-10-09-v1',
+        },
+      ),
+    ).resolves.toMatchObject({ checkoutSessionId: 'cs_test_123' });
+    expect(provider).toHaveBeenCalledTimes(2);
+    expect(provider.mock.calls[1]![0]).toEqual(firstRequest);
+    expect(firstRequest.monetaryPolicy?.monetaryPolicyReference).toBe('synthetic-local-inclusive-v1');
+    expect(orders.createPendingHoldCalls).toBe(1);
+    expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject({
+      monetaryPolicyReference: 'synthetic-local-inclusive-v1',
+    });
   });
 
   it('keeps a concurrent keyed provider request behind the claim lease', async () => {

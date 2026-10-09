@@ -1,5 +1,7 @@
 ## Why
 
+**Current authority, 9 October 2026:** the owner explicitly selects truthful `NO_TAX_COLLECTED` payment collection for the existing natural-person seller, accepting irregular-operation risk and deferring accountant/tax work. New agreements preserve gross prices, disable automatic tax explicitly and record actual zero collection with no exemption, included-VAT or compliance claim. This supersedes earlier taxable-only implementation requirements; existing inclusive agreements/history retain their own accepted treatment. No provider statement, seller identity or registration is invented.
+
 The storefront, Stripe Checkout, and persisted paid orders need a verified monetary and delivery-charge contract. This change owns inclusive pricing, shipping tax, monetary reconciliation and Greek fiscal-document handoff for `production-go-live-readiness`. The 2026-10-08 owner instruction requests uncapped selling after technical readiness, defers actual Tax/fiscal evidence and authorizes the existing assumed vinyl parcel within explicit supported assignments. Provider calculation, cart safeguards and ordinary receipts remain technical checks; assumptions establish no measurement or compliance.
 
 ## What Changes

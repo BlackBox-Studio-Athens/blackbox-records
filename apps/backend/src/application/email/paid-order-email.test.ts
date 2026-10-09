@@ -31,6 +31,28 @@ const productionConfig = readEmailRuntimeConfig({
 });
 
 describe('paid-order email notifications', () => {
+  it('describes zero collection without included VAT or a fiscal exemption', async () => {
+    const { provider, sendEmail } = createProvider();
+    await sendPaidOrderEmailNotifications({
+      config: sandboxConfig,
+      provider,
+      logger: createLogger(),
+      order: {
+        ...paidOrder(),
+        taxCollectionMode: 'NO_TAX_COLLECTED',
+        amountTotalMinor: 2730,
+        merchandiseGrossMinor: 2480,
+        deliveryGrossMinor: 250,
+        totalVatMinor: 0,
+        acceptedParcelTier: 'small',
+      },
+    });
+    const ops = sentMessage(sendEmail, 1);
+    expect(ops.text).toContain('VAT collected at checkout: €0.00');
+    expect(ops.text).not.toContain('Including VAT');
+    expect(ops.text).not.toContain('tax-exempt');
+    expect(sentMessage(sendEmail, 0).text).toContain('Total paid: €27.30');
+  });
   it('uses the persisted inclusive breakdown in both confirmations without claiming a Fiscal Document', async () => {
     const { provider, sendEmail } = createProvider();
     await sendPaidOrderEmailNotifications({

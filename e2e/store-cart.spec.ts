@@ -380,7 +380,12 @@ test('the checkout pay control fills in place when the shipping quote arrives', 
   await page.route('**/api/store/capabilities', (route) =>
     route.fulfill({
       json: {
-        pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 450, medium: 650 }, currencyCode: 'EUR' },
+        pricing: {
+          vatDisclosure: 'No VAT is calculated or collected at checkout.',
+          taxCollectionMode: 'NO_TAX_COLLECTED',
+          deliveryCharges: { small: 450, medium: 650 },
+          currencyCode: 'EUR',
+        },
         nativeCheckout: { enabled: true, unavailableReason: null },
       },
     }),
@@ -399,6 +404,7 @@ test('the checkout pay control fills in place when the shipping quote arrives', 
           currencyCode: 'EUR',
           merchandiseGrossMinor: 2800,
           totalAmountMinor: 3250,
+          taxCollectionMode: 'NO_TAX_COLLECTED',
         },
       },
     });
@@ -413,6 +419,10 @@ test('the checkout pay control fills in place when the shipping quote arrives', 
   releaseQuote();
   await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
   await expect(pay).toContainText('€32.50');
+  await expect(page.locator('[data-tax-disclosure]').last()).toHaveText(
+    'No VAT is calculated or collected at checkout.',
+  );
+  await expect(page.locator('[data-checkout-order-summary]')).not.toContainText('VAT included');
   // Webfonts are stubbed here, so this guards the layout around the control, not Bebas metrics.
   expect((await pay.boundingBox())?.y).toBeCloseTo(waitingBox?.y ?? Number.NaN, 0);
 });

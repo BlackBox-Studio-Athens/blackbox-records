@@ -1,10 +1,13 @@
 import type { OrderMonetarySnapshot } from '../../../domain/commerce';
+import { resolveTaxCollectionMode } from '../../../domain/commerce';
 import type { CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
 import type { FinalizedCheckoutSessionLineItem } from '../checkout/spi';
 import type { CheckoutReconciliation } from '../checkout';
 
 const positiveCents = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+const collectedTaxCents = (value: unknown, noTax: boolean): value is number =>
+  noTax ? value === 0 : positiveCents(value);
 
 export function reconcileMonetarySnapshot(
   order: CheckoutOrderRecord,
@@ -13,7 +16,10 @@ export function reconcileMonetarySnapshot(
 ): OrderMonetarySnapshot | null {
   const money = session.monetary;
   const acceptedLines = order.lines ?? [];
+  const mode = resolveTaxCollectionMode(order.monetaryPolicyReference);
+  const noTax = mode === 'NO_TAX_COLLECTED';
   if (
+    !mode ||
     !order.monetaryPolicyReference ||
     !money ||
     session.orderId !== order.id ||
@@ -21,14 +27,16 @@ export function reconcileMonetarySnapshot(
     session.currencyCode !== 'EUR' ||
     session.status !== 'complete' ||
     session.paymentStatus !== 'paid' ||
-    money.automaticTaxStatus !== 'complete' ||
+    (noTax
+      ? money.automaticTaxEnabled !== false || money.automaticTaxStatus !== null || money.deliveryAppliedTaxCount !== 0
+      : money.automaticTaxStatus !== 'complete') ||
     money.policyReference !== order.monetaryPolicyReference ||
     money.parcelTier !== order.acceptedParcelTier ||
     !positiveCents(order.acceptedDeliveryAmountMinor) ||
     money.deliveryGrossMinor !== order.acceptedDeliveryAmountMinor ||
-    !positiveCents(money.deliveryVatMinor) ||
+    !collectedTaxCents(money.deliveryVatMinor, noTax) ||
     money.deliveryVatMinor >= money.deliveryGrossMinor ||
-    !positiveCents(money.totalVatMinor) ||
+    !collectedTaxCents(money.totalVatMinor, noTax) ||
     money.discountMinor !== 0 ||
     !positiveCents(session.amountTotalMinor) ||
     !lines.length ||
@@ -46,15 +54,17 @@ export function reconcileMonetarySnapshot(
       seen.has(line.stripePriceId) ||
       line.quantity !== accepted.quantity ||
       !positiveCents(line.lineAmountMinor) ||
-      !positiveCents(line.lineVatMinor) ||
+      !collectedTaxCents(line.lineVatMinor, noTax) ||
+      (noTax && (line.appliedTaxCount !== 0 || line.taxRatePercent !== null)) ||
       line.lineVatMinor >= line.lineAmountMinor ||
       line.currencyCode !== 'EUR' ||
       line.taxInclusive !== true ||
       line.discountMinor !== 0 ||
-      typeof line.taxRatePercent !== 'number' ||
-      !Number.isFinite(line.taxRatePercent) ||
-      line.taxRatePercent <= 0 ||
-      line.taxRatePercent > 100 ||
+      (!noTax &&
+        (typeof line.taxRatePercent !== 'number' ||
+          !Number.isFinite(line.taxRatePercent) ||
+          line.taxRatePercent <= 0 ||
+          line.taxRatePercent > 100)) ||
       (accepted.unitAmountMinor !== null && line.lineAmountMinor !== accepted.unitAmountMinor * accepted.quantity) ||
       (accepted.unitAmountMinor === null &&
         (lines.length !== 1 || line.quantity !== 1 || line.customAmountValid !== true))
@@ -66,7 +76,7 @@ export function reconcileMonetarySnapshot(
   }
   if (
     !positiveCents(merchandiseGrossMinor) ||
-    !positiveCents(merchandiseVatMinor) ||
+    (noTax ? merchandiseVatMinor !== 0 : !positiveCents(merchandiseVatMinor)) ||
     !Number.isSafeInteger(merchandiseGrossMinor + money.deliveryGrossMinor) ||
     merchandiseGrossMinor + money.deliveryGrossMinor !== session.amountTotalMinor ||
     merchandiseVatMinor + money.deliveryVatMinor !== money.totalVatMinor

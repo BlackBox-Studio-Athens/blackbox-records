@@ -2,6 +2,8 @@
 
 Core production foundations are implemented, but final launch still needs one coherent account-migration and launch sequence, exact-tree evidence, public-origin cutover, and sole-owner approval. Separating completed prerequisites from remaining provider and launch work prevents UAT or preparation evidence from being mistaken for production authorization.
 
+The [2026-10-09 execution disposition](README.md#accepted-execution-disposition--2026-10-09) records the existing owner authorization and accepted sandbox-paid plus genuine LIVE unpaid application Session inspection/expiry exception. It supersedes older requirements for a new approval round or an actual live charge/refund before cutover. Unobserved live receipt delivery, settlement, physical dispatch and stability remain explicitly open. Subscriber notifications require separate explicit authorization.
+
 ## What Changes
 
 - Record completed performance, environment, EmDash, accepted-snapshot publication, staff/search, holding-page and commerce prerequisites by their actual evidence; retain Decap/Sveltia only as migration history.
@@ -12,8 +14,8 @@ Core production foundations are implemented, but final launch still needs one co
 - Close the verified checkout-creation, paid-reconciliation, and operator-stock correction changes before commerce sign-off, with local regressions and separate new-account acceptance.
 - Verify the committed and deployed PRD delivery schedule, rehearse manual fulfillment/refund operations, and publish approved shipping/returns/privacy information with explicit charge and receipt/invoice decisions.
 - Keep live catalog preparation separate from shopper launch approval and runtime checkout enablement.
-- Verify purchase/policy/email links on the PRD technical origin during closed preparation. Prepare final-origin artifacts before final approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover after live smoke.
-- Make the user the sole final go/no-go approver and keep the Holding Page as the immediate rollback target for at least 24 hours after launch.
+- Verify purchase/policy/email links on the PRD technical origin during closed preparation. Prepare final-origin artifacts before final approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during authorized cutover after the recorded provider-proof disposition passes.
+- Preserve the user as sole launch authority and keep the Holding Page as the immediate rollback target for at least 24 hours after launch.
 
 ## Capabilities
 

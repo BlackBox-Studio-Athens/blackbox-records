@@ -294,6 +294,7 @@ describe('internal order routes', () => {
       acceptedDeliveryAmountMinor: null,
       acceptedParcelTier: null,
       monetaryPolicyReference: null,
+      taxCollectionMode: null,
       checkoutExpiresAt: '2026-04-25T11:30:00.000Z',
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',

@@ -14,6 +14,7 @@ The system MUST publish only approved public seller/support details, dispatch ex
 - **THEN** each required section has an approved public value and revision context
 - **AND** summaries agree with the full wording
 - **AND** no private account evidence or credentials appear in the public artifact.
+- **AND** brand-first presentation retains the actual seller and controller identity and required contact/registration disclosures; the brand alone does not replace those details.
 
 #### Scenario: Required wording is missing
 
@@ -98,6 +99,28 @@ The storefront SHALL expose short delivery/support information and relevant full
 - **WHEN** purchase information is navigated
 - **THEN** links have descriptive names, focus remains visible, and text remains readable without horizontal clipping
 - **AND** long policy text is available without requiring a modal.
+
+### Requirement: Online withdrawal declarations receive durable acknowledgement
+
+The system MUST provide an easily accessible online withdrawal function throughout the applicable withdrawal period, in addition to email withdrawal. A declaration includes buyer name, contract identification and electronic acknowledgement contact; a dedicated confirmation submits it. Receipt MUST include the declaration and server submission date/time on a durable medium without implying refund approval.
+
+#### Scenario: Buyer confirms a withdrawal
+
+- **WHEN** a buyer reviews their name, order reference or identifying details and acknowledgement email and activates Confirm withdrawal
+- **THEN** the immutable declaration and timestamp are persisted before receipt is reported
+- **AND** a downloadable receipt and prompt email acknowledgement contain that declaration and timestamp
+- **AND** support receives the notice without automatically refunding, changing the order or restocking goods.
+
+#### Scenario: Reference cannot be matched or no account exists
+
+- **WHEN** the buyer supplies descriptive contract details instead of an exact reference
+- **THEN** the declaration still reaches human support and receives acknowledgement without a login or order-existence disclosure.
+
+#### Scenario: Delivery fails or submission response is lost
+
+- **WHEN** the same submission is retried or email delivery fails
+- **THEN** the original declaration/time remain immutable, retries reuse stable identities and lease-safe delivery state persists
+- **AND** exhausted delivery failures remain available to protected operators, and email withdrawal stays visible.
 
 ### Requirement: Purchase copy does not become monetary authority
 

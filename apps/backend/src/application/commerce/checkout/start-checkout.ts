@@ -13,6 +13,7 @@ import {
   deriveShopperPreorder,
   parseStoreItemSlug,
   parseVariantId,
+  resolveTaxCollectionMode,
   type AcceptedMonetaryPolicy,
   type CartQuantity,
   type StoreItemSlug,
@@ -245,7 +246,8 @@ export async function startCheckout(
 
   const createdAt = options.now ?? new Date();
   const delivery = quoteDelivery(validatedLines, options.packingPolicy ?? createPackingPolicy());
-  if (!delivery || !options.monetaryPolicyReference?.trim()) throw new CheckoutUnavailableError();
+  if (!delivery || !options.monetaryPolicyReference || !resolveTaxCollectionMode(options.monetaryPolicyReference))
+    throw new CheckoutUnavailableError();
   if (
     !Number.isSafeInteger(validatedLines.reduce((sum, line) => sum + (line.lineAmountMinor ?? 0), delivery.amountMinor))
   ) {

@@ -20,6 +20,19 @@ const information = Astro.props.information === undefined ? getPurchaseInformati
   <section class="layout-container space-y-6 py-10" aria-label="Delivery information">
     <div class="max-w-2xl space-y-5 text-sm leading-7">
       <DeliveryRates />
+      <p>
+        <a
+          class="inline-flex min-h-11 items-center underline underline-offset-4"
+          href={createProjectRelativeUrl('/withdrawal/')}
+        >
+          Withdraw from an order
+        </a>{' '}
+        — submit an online declaration and receive a dated acknowledgement. You can also email{' '}
+        <a class="underline" href="mailto:orders@blackboxrecordsathens.com">
+          orders@blackboxrecordsathens.com
+        </a>
+        .
+      </p>
       {information ? (
         <PurchaseDocument kind="terms" information={information} />
       ) : (

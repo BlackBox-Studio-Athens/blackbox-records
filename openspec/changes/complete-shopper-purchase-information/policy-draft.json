@@ -1,0 +1,98 @@
+{
+  "publication": "pending",
+  "content": {
+    "revision": "2026-10-09",
+    "seller": {
+      "name": "BlackBox Records",
+      "address": "Dispatch and returns: BlackBox Studio\nPanourgia 1, Athina 104 43, Greece",
+      "support_email": "orders@blackboxrecordsathens.com"
+    },
+    "terms": {
+      "dispatch": {
+        "summary": "Pre-orders show an estimated shipping date. An order containing a pre-order ships together when all its items are ready.",
+        "paragraphs": [
+          "We dispatch orders from BlackBox Studio, Panourgia 1, Athina 104 43, Greece, and arrange your BOX NOW locker with you before sending the parcel. For questions about your order or a delivery date you need, email orders@blackboxrecordsathens.com with your order reference.",
+          "Unless a different delivery period has been agreed with you, goods must be delivered within 30 days of the contract. If delivery is delayed, contact us to arrange a reasonable additional delivery period. Your right to cancel for non-delivery remains available under the applicable consumer rules, including where delivery by an agreed essential date is missed.",
+          "Pre-orders are paid in full when you order. Their shipping date or month is an estimate shown on the item and at checkout. An order containing a pre-order ships as one parcel when all its items are ready, including any in-stock items in that order. We email changes to a paid order's shipping estimate. Contact us if the revised timing does not work for you."
+        ]
+      },
+      "delivery": {
+        "summary": "Delivery is to a BOX NOW locker in Greece. We arrange your locker before dispatch; a street address at payment does not mean home delivery.",
+        "paragraphs": [
+          "We deliver to supported BOX NOW lockers in Greece, including supported island destinations. We arrange the locker with you before dispatch. The street address collected at payment does not select a locker or mean home delivery.",
+          "The delivery rates below and the cart's delivery quote show the charge for a supported parcel. Your complete cart determines the parcel size. The delivery charge applies once per order, with no island surcharge. If the cart cannot fit a supported parcel, checkout is unavailable.",
+          "Check the final item, delivery and total amounts before paying. We absorb packaging and carrier cost differences for accepted orders and do not ask for a later delivery top-up. Payment confirmation and an order confirmation describe the payment and order; they are separate from any legally required fiscal document."
+        ]
+      },
+      "returns": {
+        "summary": "For an eligible online purchase, tell us within 14 days of receiving it if you want to withdraw. Unsealed audio recordings have a withdrawal exception; faulty-item rights remain.",
+        "paragraphs": [
+          "For an online consumer purchase covered by the right of withdrawal, you can change your mind without giving a reason. Tell us within 14 days after you receive the goods. For goods from one order delivered separately, the period starts when you receive the last item. Email orders@blackboxrecordsathens.com with a clear statement that you want to withdraw and enough information to identify your order. You do not need our permission to exercise this right.",
+          "Optional withdrawal form. To BlackBox Records, BlackBox Studio, Panourgia 1, Athina 104 43, Greece; orders@blackboxrecordsathens.com. I/We hereby give notice that I/We withdraw from my/our contract of sale of [goods], ordered on [date]/received on [date]. Consumer name(s): [name]. Consumer address: [address]. Order reference (if available): [reference]. Date: [date]. Signature(s), only if this form is sent on paper: [signature]. Delete whichever does not apply. You can use this form or any other clear statement of withdrawal.",
+          "Send the goods back within 14 days after telling us you are withdrawing. The return address is BlackBox Studio, Panourgia 1, Athina 104 43, Greece. Pack them securely and keep proof of sending. You pay the direct cost of a change-of-mind return. Contact us for practical return arrangements; this does not shorten either deadline or make withdrawal subject to approval.",
+          "For a valid withdrawal from the whole order, we refund the goods and the standard outbound delivery charge. We refund without undue delay and within 14 days of your withdrawal notice, but may wait until we receive the goods or evidence that you sent them back, whichever is earlier. We use the original payment method unless you expressly agree otherwise, without a refund fee. If you return only part of an order, we explain the applicable delivery reimbursement for that return.",
+          "The change-of-mind withdrawal right does not apply to an audio recording supplied sealed if you unseal it after delivery. A recording supplied without a seal does not fall within this exception. This does not exclude a claim for a faulty, damaged or incorrect item. For other eligible goods, handling beyond what is necessary to establish their nature, characteristics and functioning may reduce the refund by the resulting loss of value; simply opening outer shipping packaging is not a blanket reason to refuse a return."
+        ]
+      },
+      "damaged_items": {
+        "summary": "If an item arrives damaged, faulty or incorrect, email us with your order reference and a description. This is separate from a change-of-mind return.",
+        "paragraphs": [
+          "Email orders@blackboxrecordsathens.com with your order reference and a description if an item arrives damaged, is faulty or differs from what you ordered. Photos of the item and packaging can help us investigate, if you can provide them. Keep the packaging while we arrange a practical solution. A missing photo or a short reporting deadline does not remove your statutory rights.",
+          "Goods have the applicable legal guarantee, including the EU minimum of two years from delivery. A covered fault must be remedied without charge, normally by repair or replacement. Where those remedies are unavailable or cannot be provided within a reasonable time and without significant inconvenience, the applicable price reduction or refund rights remain. We arrange necessary return steps with you and bear the costs of a covered remedy.",
+          "We remain responsible for goods damaged in delivery until you receive them. Opening a sealed recording does not remove your faulty-goods rights. These rights are separate from the 14-day change-of-mind process."
+        ]
+      },
+      "uncollected_parcels": {
+        "summary": "Use the collection deadline in the carrier's message. If you cannot collect or the parcel returns to us, contact us to arrange the next step.",
+        "paragraphs": [
+          "Follow the collection instructions and deadline in BOX NOW's notification. Contact orders@blackboxrecordsathens.com if you cannot collect or need help with the parcel.",
+          "If a parcel is returned uncollected, contact us to discuss redelivery or cancellation. We do not automatically treat non-collection as a withdrawal notice or forfeit your payment. Any new redelivery arrangement and charge must be explained and agreed before redelivery. No automatic penalty or undisclosed deduction applies under this policy, and your consumer rights remain available."
+        ]
+      }
+    },
+    "privacy": {
+      "purposes": {
+        "summary": "We use purchase and contact details to handle your order or inquiry. Newsletter updates and one-off availability emails use separate opt-in choices.",
+        "paragraphs": [
+          "When you start checkout, the website sends the selected items and quantities to our backend. Stripe collects payment, email and shipping/contact information. We use the order, payment reference and contact details to process payment, fulfil the purchase, send order information, handle returns and answer support requests. Processing needed to enter into and perform your purchase uses the contract basis; records required by applicable accounting or tax law use the legal-obligation basis.",
+          "A service inquiry contains your name, email, message and any project or service details you choose to give us. We use it to answer the inquiry and discuss the work you request, including steps you ask us to take before a contract. Please do not include sensitive information that we do not need.",
+          "Newsletter signup is optional and requires an unticked consent choice. We record your email and the consent context to send the release, distro and event updates you request. Buying or sending an inquiry does not subscribe you. A Notify me request uses its own one-off consent, stores your email with the selected item and sends an availability email; it does not create a newsletter subscription.",
+          "The site and hosting services process technical request information to deliver pages, investigate failures and protect the service. Our proposed basis for necessary security processing is the legitimate interest in maintaining a reliable and secure service. Production pages also load Glancelytics for visit statistics.",
+          "The payment and contact/delivery details requested for an order are needed to complete payment and arrange delivery; without the necessary details we cannot complete the purchase. Newsletter and one-off availability signup are optional and are not a condition of buying. You choose whether to send a service inquiry and which optional project details to include."
+        ]
+      },
+      "recipients": {
+        "summary": "Our services include Stripe for payments, Cloudflare for the website and backend, Resend for email, and BOX NOW for manual locker delivery.",
+        "paragraphs": [
+          "Stripe processes payment information and also acts as a controller for its own fraud prevention, legal and payment-network responsibilities. Cloudflare processes hosted website/backend data on our behalf. Resend processes order, inquiry and requested newsletter email on our behalf; a one-off availability email uses Resend's email service without adding the address to a newsletter contact list.",
+          "We provide BOX NOW with the details necessary for the manually arranged locker shipment. Authorised BlackBox operators use the information needed to fulfil orders and handle support. Accounting or tax information may also need to be disclosed where the law requires it.",
+          "Production pages load the Glancelytics statistics script. When an embedded player or video loads, services such as Bandcamp, Tidal or YouTube receive the technical information needed to load that content and apply their own privacy rules. Links to another service take you to that service. The site's fonts are served by BlackBox rather than fetched from Google Fonts.",
+          "Resend's primary processing operations are in the United States. Its Data Processing Addendum incorporates the EU standard contractual clauses for transfers from an EEA controller to Resend as processor. You can read those safeguards at https://resend.com/legal/dpa or contact us for a copy relevant to your data. This is separate from the transfer arrangements for our other service providers."
+        ]
+      },
+      "retention": {
+        "summary": "The cart is stored in your browser. Order and support records follow their purpose and legal retention requirements; one-off availability requests have a separate deletion rule.",
+        "paragraphs": [
+          "Your cart is kept in this browser's local storage so it can survive a page reload. Removing all cart items clears the cart's storage keys. You can also clear this website's data in your browser. Cart storage itself does not reserve stock or contain your payment-card details.",
+          "The backend deletes a one-off availability request after successful sending, after its final failed delivery attempt, or 12 months after the request, whichever happens first. This rule applies to the request in our backend; it is not a promise that an email provider's separate delivery records are deleted at the same time.",
+          "For order, payment, return and support records, the proposed retention criteria are completion of the transaction and support work, applicable accounting and tax record duties, and any unresolved dispute or claim. Inquiry correspondence follows the requested discussion or work and any resulting record obligations. Newsletter sending stops when you withdraw consent; limited consent or suppression evidence may be needed to honour that choice. Technical logs follow the operational need to diagnose failures and protect the service."
+        ]
+      },
+      "rights": {
+        "summary": "You can request access or correction and, where applicable, deletion, restriction or portability. You can withdraw consent and object to applicable processing.",
+        "paragraphs": [
+          "You can ask for access to your personal data or correction of inaccurate information. Where the applicable conditions are met, you can request erasure, restriction or portability and object to processing based on legitimate interests. These rights have legal conditions; a request does not require us to erase records that must still be kept under law.",
+          "You can withdraw newsletter or one-off notification consent by emailing orders@blackboxrecordsathens.com. Withdrawal does not affect the lawfulness of earlier processing or stop necessary order messages. Tell us which email address and request you mean so we can identify it. We may need proportionate information to verify a data request.",
+          "We respond to a data-rights request without undue delay and normally within one month of receiving it. If its complexity or the number of requests requires up to two additional months, we explain the extension and its reasons within the first month. Requests are normally free of charge, subject to the exceptions permitted by data-protection law.",
+          "You can complain to the Hellenic Data Protection Authority at www.dpa.gr or another competent supervisory authority. The Hellenic authority explains its complaint process at https://www.dpa.gr/en/individuals/complaint-to-the-hellenic-dpa."
+        ]
+      },
+      "contact": {
+        "summary": "For a privacy request, email orders@blackboxrecordsathens.com and say which information or request you mean.",
+        "paragraphs": [
+          "Email orders@blackboxrecordsathens.com for a question or request about personal data used by BlackBox Records. Include enough information to identify the relevant order, inquiry or email subscription. Please do not send full payment-card details or identity documents unless we explain why a proportionate verification step is needed."
+        ]
+      }
+    }
+  }
+}

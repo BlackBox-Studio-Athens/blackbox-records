@@ -17,6 +17,7 @@ import {
   parseStripePriceId,
   parsePreorderShipEstimate,
   parseVariantId,
+  resolveTaxCollectionMode,
   stockPreorderFromColumns,
   type ZeroStockState,
   type CheckoutSessionId,
@@ -230,7 +231,10 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
     const groupedLineItems = groupLineItems(command.checkoutSessionId, command.lineItems);
     if (currentOrder.monetaryPolicyReference) {
       const snapshot = command.monetarySnapshot;
+      const mode = resolveTaxCollectionMode(currentOrder.monetaryPolicyReference);
+      const noTax = mode === 'NO_TAX_COLLECTED';
       if (
+        !mode ||
         !snapshot ||
         snapshot.deliveryGrossMinor !== currentOrder.acceptedDeliveryAmountMinor ||
         snapshot.merchandiseGrossMinor + snapshot.deliveryGrossMinor !== command.amountTotalMinor ||
@@ -239,7 +243,12 @@ export class D1PaidCheckoutFinalizationRepository implements PaidCheckoutFinaliz
           snapshot.totalVatMinor ||
         command.lineItems.length !== groupedLineItems.length ||
         command.currencyCode !== 'EUR' ||
-        !Object.values(snapshot).every((amount) => Number.isSafeInteger(amount) && amount > 0)
+        !Object.entries(snapshot).every(
+          ([key, amount]) =>
+            Number.isSafeInteger(amount) &&
+            (key === 'deliveryVatMinor' || key === 'totalVatMinor' ? (noTax ? amount === 0 : amount > 0) : amount > 0),
+        ) ||
+        (noTax && command.lineItems.some((line) => line.lineVatMinor !== 0 || line.taxRatePercent !== null))
       ) {
         throw new Error('Incomplete paid monetary snapshot.');
       }

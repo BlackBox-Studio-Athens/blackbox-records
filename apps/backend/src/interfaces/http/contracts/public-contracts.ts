@@ -148,6 +148,7 @@ const storeCapabilitiesSchema = z
     pricing: z
       .object({
         vatDisclosure: z.string(),
+        taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).optional(),
         deliveryCharges: z.object({ small: z.number().int().positive(), medium: z.number().int().positive() }),
         currencyCode: z.literal('EUR'),
       })
@@ -244,6 +245,7 @@ export const postDeliveryQuoteRoute = createRoute({
                   amountMinor: z.number().int().positive(),
                   currencyCode: z.literal('EUR'),
                   merchandiseGrossMinor: z.number().int().positive().nullable(),
+                  taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).optional(),
                   totalAmountMinor: z.number().int().positive().nullable(),
                 })
                 .nullable(),
@@ -590,6 +592,54 @@ export const postServicesInquiryRoute = createRoute({
   tags: ['Services'],
 });
 
+export const postWithdrawalRoute = createRoute({
+  method: 'post',
+  path: '/api/store/withdrawals',
+  operationId: 'submitWithdrawal',
+  request: {
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              submissionId: z.string().uuid(),
+              name: z.string().trim().min(1).max(200),
+              contract: z.string().trim().min(1).max(2000),
+              email: z.string().trim().max(254).email(),
+              confirmed: z.literal(true),
+            })
+            .strict()
+            .openapi('WithdrawalDeclaration'),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Declaration durably recorded; acknowledgement delivery queued.',
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              status: z.literal('received'),
+              receiptId: z.string(),
+              submittedAt: z.string().datetime(),
+              receiptText: z.string(),
+            })
+            .strict()
+            .openapi('WithdrawalReceipt'),
+        },
+      },
+    },
+    400: { description: 'Invalid declaration.', content: problemContent },
+    409: { description: 'Submission identity already used for another declaration.', content: problemContent },
+    429: { description: 'Too many submissions. Email withdrawal remains available.', content: problemContent },
+    503: { description: 'Recording unavailable. Email withdrawal remains available.', content: problemContent },
+  },
+  tags: ['Store'],
+});
+
 const publicContractModules = [
   getPublicApiDiscoveryRoute,
   getPublicApiDescriptionRoute,
@@ -603,6 +653,7 @@ const publicContractModules = [
   getCheckoutStateRoute,
   postNewsletterRegistrationRoute,
   postServicesInquiryRoute,
+  postWithdrawalRoute,
 ] as const;
 
 export const publicContractPaths = publicContractModules.map((route) => route.path);

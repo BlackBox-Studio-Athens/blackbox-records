@@ -10,6 +10,7 @@ The delivery page explains Greek locker delivery and charges, but shoppers must 
 - Reorganize Store Item purchase information into one title/artist, exact option, current price, and Add to Cart group before the long description. Remove the repeated release title in the price panel and make Back to Store a quieter text link; on mobile, prevent a large image and full description from separating item identity from the buying decision.
 - Reuse the VAT child's existing price/delivery components and approved policies. Do not duplicate charge calculations or claim fiscal/provider setup is complete.
 - Track missing business wording as explicit publication blockers. Implementation can prepare structure, but must not invent promises or publish placeholder legal copy.
+- Provide an always-accessible online withdrawal declaration with explicit confirmation, a timestamped receipt, and durable acknowledgement/support delivery, without changing payment or stock state.
 
 ## Capabilities
 

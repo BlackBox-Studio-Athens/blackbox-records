@@ -33,17 +33,11 @@ export default function PurchaseInformation({
         {import.meta.env.DEV && information && isPurchaseInformationDraft && (
           <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
         )}
-        {typeof deliverySummary !== 'string' && <p>VAT is included, never added again.</p>}
-        <Prose
-          value={
-            typeof deliverySummary === 'string'
-              ? `VAT is included, never added again. ${deliverySummary}`
-              : deliverySummary
-          }
-        />
+        <Prose value={deliverySummary} />
         <div className="checkout-review__support">
           <a href={`${termsHref}#delivery`}>Delivery information</a>
           <a href={`${termsHref}#returns`}>Returns and refunds</a>
+          <a href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/withdrawal/`}>Withdraw from an order</a>
           <a href={`${termsHref}#support`}>Purchase help</a>
         </div>
       </div>
@@ -67,6 +61,9 @@ export default function PurchaseInformation({
         </a>
         <a className={linkClass} href={`${termsHref}#returns`}>
           Returns and refunds
+        </a>
+        <a className={linkClass} href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/withdrawal/`}>
+          Withdraw from an order
         </a>
         <a className={linkClass} href={`${termsHref}#support`}>
           Purchase help
