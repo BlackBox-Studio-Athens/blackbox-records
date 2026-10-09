@@ -80,4 +80,13 @@ describe('touch ergonomics', () => {
       /inset:\s*-14px -4px/,
     );
   });
+
+  it('shows the phone Coverflow front card price inside the stage', () => {
+    const media = '@media (width < 40rem) and (prefers-reduced-motion: no-preference)';
+    const scope = "html[data-store-coverflow-capable] [data-store-coverflow-mode='preview']";
+    expect(ruleBody(`${scope} [data-store-coverflow-stage]`, media)).toMatch(
+      /height:\s*calc\(var\(--store-cover-size\) \+ 4rem\)/,
+    );
+    expect(ruleBody(`${scope} .store-item-card__image-frame`, media)).toMatch(/flex:\s*none/);
+  });
 });

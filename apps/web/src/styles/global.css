@@ -7309,6 +7309,18 @@ html[data-store-coverflow-capable]
   }
 }
 
+/* As on wider screens, the phone front cover keeps its full size and the stage grows to show the price row under it;
+   a squeezed cover left the price clipped by the shell. The reduced-motion grid sizes itself. */
+@media (width < 40rem) and (prefers-reduced-motion: no-preference) {
+  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-stage] {
+    height: calc(var(--store-cover-size) + 4rem);
+  }
+
+  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__image-frame {
+    flex: none;
+  }
+}
+
 .store-image-gallery__stage {
   position: relative;
   aspect-ratio: 1;
