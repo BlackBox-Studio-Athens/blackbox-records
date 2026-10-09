@@ -178,6 +178,11 @@ export function getStoreArtistChoices(items: readonly Pick<DistroSearchItem, 'ar
 
 type StoreArtistChoice = ReturnType<typeof getStoreArtistChoices>[number];
 
+// Results filter live, so Return or Search only closes a phone keyboard that covers them.
+function blurOnEnter(event: KeyboardEvent) {
+  if (event.key === 'Enter' && event.target instanceof HTMLElement) event.target.blur();
+}
+
 type StoreArtistControlsProps = {
   choices: readonly StoreArtistChoice[];
   resultsId: string;
@@ -194,6 +199,10 @@ export function StoreArtistControls({ choices, resultsId }: StoreArtistControlsP
           type="search"
           className="store-artists-find"
           placeholder="Find an artist"
+          enterKeyHint="search"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           aria-label="Find an artist"
           aria-controls="store-artists-options"
           data-store-artist-find
@@ -322,6 +331,7 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
     host.addEventListener('change', onChange);
     host.addEventListener('click', onClick);
     find?.addEventListener('input', onFind);
+    find?.addEventListener('keydown', blurOnEnter);
     trigger?.addEventListener('click', openSheet);
     sheet?.addEventListener('close', onClose);
     desktop.addEventListener('change', onViewport);
@@ -331,6 +341,7 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
       host.removeEventListener('change', onChange);
       host.removeEventListener('click', onClick);
       find?.removeEventListener('input', onFind);
+      find?.removeEventListener('keydown', blurOnEnter);
       trigger?.removeEventListener('click', openSheet);
       sheet?.removeEventListener('close', onClose);
       desktop.removeEventListener('change', onViewport);
@@ -372,6 +383,10 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
             disabled
             placeholder="Search Store"
             aria-label="Search Store"
+            enterKeyHint="search"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             aria-controls={resultsId}
             className="h-11 rounded-none pl-10"
           />
@@ -542,10 +557,12 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       setArtists(new Set());
       setFormat('all');
       setPreorders((current) => ({ ...current, active: false }));
-      input?.focus();
+      // The live count, not the field: refocusing the field would reopen a phone keyboard over the restored results.
+      summary?.focus();
     };
     const onPreorderFilter = () => setPreorders((current) => ({ ...current, active: !current.active }));
     input?.addEventListener('input', onInput);
+    input?.addEventListener('keydown', blurOnEnter);
     clearSearch?.addEventListener('click', onClearSearch);
     clearAll?.addEventListener('click', onClearAll);
     preorderFilter?.addEventListener('click', onPreorderFilter);
@@ -556,6 +573,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     toolbar?.setAttribute('data-store-search-ready', '');
     return () => {
       input?.removeEventListener('input', onInput);
+      input?.removeEventListener('keydown', blurOnEnter);
       clearSearch?.removeEventListener('click', onClearSearch);
       clearAll?.removeEventListener('click', onClearAll);
       preorderFilter?.removeEventListener('click', onPreorderFilter);

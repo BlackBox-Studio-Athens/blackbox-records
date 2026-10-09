@@ -514,7 +514,15 @@ test('desktop Store artist filter combines several ticked artists with find and 
   await pane.locator(`input[value="${first}"]`).check();
   await clearFilters.click();
   await expect(pane.locator('input:checked')).toHaveCount(0);
-  await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeFocused();
+  // Clear filters announces the restored count instead of reopening a phone keyboard in the search field.
+  await expect(page.locator('[data-store-search-summary]')).toBeFocused();
+  const search = page.getByRole('searchbox', { name: 'Search Store' });
+  await expect(search).toHaveAttribute('enterkeyhint', 'search');
+  await expect(search).toHaveAttribute('autocorrect', 'off');
+  await search.fill('zzz');
+  await search.press('Enter');
+  await expect(search).not.toBeFocused();
+  await search.fill('');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 

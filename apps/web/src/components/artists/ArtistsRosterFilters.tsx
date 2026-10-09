@@ -91,6 +91,14 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder="Search artists"
+          enterKeyHint="search"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          onKeyDown={(event) => {
+            // Results filter live, so Return only closes a phone keyboard that covers them.
+            if (event.key === 'Enter') event.currentTarget.blur();
+          }}
           className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-base md:text-[0.95rem]"
           aria-label="Search artists"
         />
