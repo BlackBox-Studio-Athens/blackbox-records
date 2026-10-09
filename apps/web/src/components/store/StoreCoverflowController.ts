@@ -11,6 +11,9 @@ const PREVIEW_IMAGE_SIZES = '(min-width: 40rem) 16rem, 56vw';
 const COVERFLOW_POSITIONS = ['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near'] as const;
 const POINTER_INTENT_DISTANCE = 10;
 const TOUCH_SWIPE_DISTANCE = 40;
+// A swipe can produce at most one compatibility click, right after its pointerup and before any new pointerdown; later
+// taps and keyboard activations must work.
+const SWIPE_CLICK_SUPPRESSION_MS = 400;
 const TOUCH_HORIZONTAL_DOMINANCE = 1.25;
 const WHEEL_THRESHOLD = 48;
 const WHEEL_GESTURE_GAP_MS = 160;
@@ -506,7 +509,7 @@ export function createStoreCoverflowController(
 
   const groupListeners = dom.groups.map((group) => {
     const wheelSurface = group.stage.closest<HTMLElement>('.store-coverflow-shell') ?? group.stage;
-    let suppressClick = false;
+    let suppressClickUntil = -Infinity;
     let wheelState: StoreCoverflowWheelState = {
       accumulatedDelta: 0,
       direction: 0,
@@ -592,7 +595,7 @@ export function createStoreCoverflowController(
       if (!delta || group.state.mode !== 'preview') return;
       pointerIntent = null;
       event.preventDefault();
-      suppressClick = true;
+      suppressClickUntil = event.timeStamp + SWIPE_CLICK_SUPPRESSION_MS;
       setGroupState(group, reduceStoreCoverflowState(group.state, { type: 'move', delta }, group.cards.length));
     };
     const onPointerCancel = (event: PointerEvent) => {
@@ -607,9 +610,12 @@ export function createStoreCoverflowController(
         event.target instanceof Element ? event.target.closest<HTMLElement>('[data-store-coverflow-card]') : null;
       if (target && pointerIntent?.card === target && pointerIntent.pointerType !== 'touch') pointerIntent = null;
     };
+    const onGroupPointerDown = () => {
+      suppressClickUntil = -Infinity;
+    };
     const onClick = (event: MouseEvent) => {
-      if (suppressClick) {
-        suppressClick = false;
+      if (event.timeStamp < suppressClickUntil) {
+        suppressClickUntil = -Infinity;
         event.preventDefault();
         event.stopPropagation();
         return;
@@ -709,6 +715,7 @@ export function createStoreCoverflowController(
     };
 
     group.element.addEventListener('click', onClick);
+    group.element.addEventListener('pointerdown', onGroupPointerDown);
     group.element.addEventListener('focusin', onFocusIn);
     group.element.addEventListener('focusout', onFocusOut);
     group.element.addEventListener('keydown', onKeyDown);
@@ -738,6 +745,7 @@ export function createStoreCoverflowController(
       onClick,
       onFocusIn,
       onFocusOut,
+      onGroupPointerDown,
       onKeyDown,
       onPointerCancel,
       onPointerDown,
@@ -777,6 +785,7 @@ export function createStoreCoverflowController(
           onClick,
           onFocusIn,
           onFocusOut,
+          onGroupPointerDown,
           onKeyDown,
           onPointerCancel,
           onPointerDown,
@@ -786,6 +795,7 @@ export function createStoreCoverflowController(
           onWheel,
         }) => {
           group.element.removeEventListener('click', onClick);
+          group.element.removeEventListener('pointerdown', onGroupPointerDown);
           group.element.removeEventListener('focusin', onFocusIn);
           group.element.removeEventListener('focusout', onFocusOut);
           group.element.removeEventListener('keydown', onKeyDown);

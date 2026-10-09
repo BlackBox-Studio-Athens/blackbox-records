@@ -412,7 +412,50 @@ for (const route of ['store/', 'store/distro/']) {
   });
 }
 
-test('phone Store shows Distro formats without opening a disclosure and selects one', async ({ page }) => {
+test.describe('phone touch Coverflow @phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('a swipe moves one cover and the next tap still works', async ({ page }) => {
+    await page.goto('store/distro/');
+    await waitForShell(page);
+    const group = page.locator('[data-store-coverflow-group]');
+    const stage = group.locator('[data-store-coverflow-stage]');
+    const active = stage.locator('[data-store-coverflow-position="active"]');
+    await page.getByRole('button', { name: 'Coverflow', exact: true }).tap();
+    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
+    await stage.scrollIntoViewIfNeeded();
+    const labels = await stage
+      .locator('[data-store-coverflow-card]')
+      .evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label')!));
+    const url = page.url();
+
+    // A real touch swipe: no click follows it, so nothing may stay armed to swallow the next tap. Frame-paced moves and a
+    // still finger before release avoid a synthetic fling, whose cancelling tap Chromium itself drops.
+    const box = (await stage.boundingBox())!;
+    const y = box.y + box.height / 2;
+    const startX = box.x + box.width / 2 + 80;
+    const touch = await page.context().newCDPSession(page);
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y }] });
+    for (let step = 1; step <= 8; step += 1) {
+      await touch.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: startX - step * 15, y: y + 2 }],
+      });
+      await page.waitForTimeout(16);
+    }
+    await page.waitForTimeout(300);
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await touch.detach();
+    await expect(active).toHaveAttribute('aria-label', labels[1]!);
+    expect(page.url()).toBe(url);
+
+    await group.locator('[data-store-coverflow-next]').tap();
+    await expect(active).toHaveAttribute('aria-label', labels[2]!);
+    expect(page.url()).toBe(url);
+  });
+});
+
+test('phone Store shows Distro formats without opening a disclosure and selects one @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/distro/');
   await waitForShell(page);

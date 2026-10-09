@@ -528,20 +528,45 @@ describe('Store Coverflow controller', () => {
   });
 
   it('handles touch and consumes intentional wheel input', () => {
-    const { cards, controller, element, previewButton, stage } = createHarness();
+    const { cards, controller, element, nextButton, previewButton, stage } = createHarness();
 
     element.dispatch('click', previewButton);
     stage.dispatch('pointerdown', cards[0]!, { clientX: 80, clientY: 20, pointerType: 'touch' });
     stage.dispatch('pointermove', cards[0]!, { clientX: 20, clientY: 25, pointerType: 'touch' });
-    const pointerUp = stage.dispatch('pointerup', cards[0]!, { clientX: 20, clientY: 25, pointerType: 'touch' });
+    const pointerUp = stage.dispatch('pointerup', cards[0]!, {
+      clientX: 20,
+      clientY: 25,
+      pointerType: 'touch',
+      timeStamp: 100,
+    });
     expect(pointerUp.preventDefault).toHaveBeenCalledOnce();
     expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
-    const syntheticClick = element.dispatch('click', cards[0]!);
-    expect(syntheticClick.preventDefault).toHaveBeenCalledOnce();
+    const swipeClick = element.dispatch('click', cards[0]!, { timeStamp: 120 });
+    expect(swipeClick.preventDefault).toHaveBeenCalledOnce();
+    expect(swipeClick.stopPropagation).toHaveBeenCalledOnce();
 
+    // A later swipe that produces no click must not swallow the next real tap.
+    stage.dispatch('pointerdown', cards[1]!, { clientX: 80, clientY: 20, pointerType: 'touch' });
+    stage.dispatch('pointermove', cards[1]!, { clientX: 20, clientY: 25, pointerType: 'touch' });
+    stage.dispatch('pointerup', cards[1]!, { clientX: 20, clientY: 25, pointerType: 'touch', timeStamp: 1000 });
+    expect(cards[2]!.dataset.storeCoverflowPosition).toBe('active');
+    const tapAfterSwipe = element.dispatch('click', nextButton, { timeStamp: 2000 });
+    expect(tapAfterSwipe.stopPropagation).not.toHaveBeenCalled();
+    expect(cards[3]!.dataset.storeCoverflowPosition).toBe('active');
+    element.dispatch('click', previewButton);
+    stage.dispatch('pointerdown', cards[0]!, { clientX: 0, clientY: 20, pointerType: 'touch' });
+    stage.dispatch('pointermove', cards[0]!, { clientX: 60, clientY: 20, pointerType: 'touch' });
+    stage.dispatch('pointerup', cards[0]!, { clientX: 60, clientY: 20, pointerType: 'touch', timeStamp: 3000 });
+    stage.dispatch('pointerdown', cards[0]!, { clientX: 0, clientY: 20, pointerType: 'touch' });
+    stage.dispatch('pointermove', cards[0]!, { clientX: 60, clientY: 20, pointerType: 'touch' });
+    stage.dispatch('pointerup', cards[0]!, { clientX: 60, clientY: 20, pointerType: 'touch', timeStamp: 4000 });
+    expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
+
+    // A quick tap right after that swipe starts a new gesture, so its click is not the swipe's own.
     stage.dispatch('pointerdown', cards[2]!, { clientX: 20, clientY: 20, pointerType: 'touch' });
+    element.dispatch('pointerdown', cards[2]!, { pointerType: 'touch' });
     stage.dispatch('pointerup', cards[2]!, { clientX: 20, clientY: 20, pointerType: 'touch' });
-    const sideTap = element.dispatch('click', cards[2]!);
+    const sideTap = element.dispatch('click', cards[2]!, { timeStamp: 4100 });
     expect(sideTap.preventDefault).toHaveBeenCalledOnce();
     expect(cards[2]!.dataset.storeCoverflowPosition).toBe('active');
 
