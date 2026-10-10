@@ -1,6 +1,6 @@
 import type { Page } from 'playwright/test';
 
-import { expect, test, waitForIsland, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, test, waitForIsland, waitForShell } from './fixtures';
 
 const checkoutLines = [
   {
@@ -84,7 +84,9 @@ async function openCheckout(page: Page) {
 }
 
 for (const width of [1280, 390]) {
-  test(`checkout international card preserves delivery and payment at ${width}px`, async ({ page }) => {
+  test(`checkout international card preserves delivery and payment at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: width === 1280 ? 860 : 844 });
     await prepareCheckout(page);
     let traceRequests = 0;
@@ -142,7 +144,7 @@ for (const width of [1280, 390]) {
     await page.keyboard.press('Tab');
     await expect(pay).toBeFocused();
     expect(await review.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     expect(traceRequests).toBe(1);
 
     await page.evaluate(() => {
@@ -243,7 +245,7 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
   await expect(pay).toBeFocused();
   await pay.scrollIntoViewIfNeeded();
   await expect(pay).toBeInViewport({ ratio: 1 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('empty checkout does not mount the international card or allow payment', async ({ page }) => {
@@ -257,7 +259,7 @@ test('empty checkout does not mount the international card or allow payment', as
 
 // Phones swipe Back from Stripe; the back/forward cache then restores the page mid-redirect. Playwright's Chromium
 // disables that cache, so the restore is the pageshow event it fires; the second press reuses the attempt key.
-test('Pay works again after Back restores checkout from the back/forward cache', async ({ page }) => {
+test('Pay works again after Back restores checkout from the back/forward cache @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await prepareCheckout(page);
   const idempotencyKeys: string[] = [];

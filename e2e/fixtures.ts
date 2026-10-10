@@ -1,4 +1,4 @@
-import { expect, test as base, type Page } from 'playwright/test';
+import { expect, test as base, type Locator, type Page } from 'playwright/test';
 
 import { attachSmokePageDiagnostics } from '../scripts/smoke-browser';
 import type { RepresentativePaths } from '../scripts/smoke-core';
@@ -79,6 +79,23 @@ export async function waitForIsland(page: Page, component: string): Promise<void
  */
 export async function waitForShell(page: Page): Promise<void> {
   await page.waitForSelector('html[data-app-shell-ready]', { state: 'attached' });
+}
+
+/**
+ * Fails when the page scrolls sideways. Compares against the document's clientWidth, not innerWidth: with isMobile,
+ * Chromium widens the layout viewport (and innerWidth) to fit overflowing content, so `scrollWidth <= innerWidth`
+ * always holds there.
+ */
+export async function expectNoHorizontalOverflow(page: Page, message = 'horizontal page overflow (CSS px)') {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow, message).toBeLessThanOrEqual(0);
+}
+
+/** Taps in touch contexts so touch pointer paths run; clicks with the mouse elsewhere. */
+export async function press(locator: Locator, touch: boolean): Promise<void> {
+  await (touch ? locator.tap() : locator.click());
 }
 
 /** Marks the current document so a later check can prove no full reload happened. */

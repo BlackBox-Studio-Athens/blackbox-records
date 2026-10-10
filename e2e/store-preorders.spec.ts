@@ -1,6 +1,6 @@
 import type { Locator, Page } from 'playwright/test';
 import type { PublicApiComponents } from '../packages/api-client/src/public-client';
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 type ListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 
@@ -105,7 +105,7 @@ for (const [date, badge, released] of [
   });
 }
 
-test('phone hash entry waits for listing data and combines pre-orders with format, artist and search', async ({
+test('phone hash entry waits for listing data and combines pre-orders with format, artist and search @phone', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -139,7 +139,7 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   const cards = page.locator('[data-distro-search-root] [data-distro-search-item]');
   await expect(cards.locator('visible=true')).toHaveCount(2);
   await expect(page.locator('.store-preorder-notes')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: '.codex-artifacts/preorders/followup/store-cards/filter-390.png' });
 
   const selected = cards.filter({ has: page.locator(`[data-store-item-slug="${selectedSlug}"]`) });
@@ -314,7 +314,7 @@ for (const state of [
         expect(chip.y + chip.height).toBeGreaterThan(price.y - 1);
       }
       expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await expectNoHorizontalOverflow(page);
       await card.screenshot({ path: `.codex-artifacts/preorders/followup/store-cards/${state.name}-${width}.png` });
     }
     await captureAlbumCoverReference(page, card, `${state.name}-1440`);

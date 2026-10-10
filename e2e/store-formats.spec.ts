@@ -1,4 +1,4 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 test('Store card Buy takes the Listen chrome and Releases Buy vinyl keeps restrained feedback, both stationary', async ({
   page,
@@ -182,7 +182,7 @@ test('Store categories center and reflow with complete touch-sized labels', asyn
             rows: [...rows.values()],
             links,
             viewport: window.innerWidth,
-            overflow: document.documentElement.scrollWidth > window.innerWidth,
+            overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
           };
         });
         for (const row of layout.rows)
@@ -295,7 +295,7 @@ test('Store listing cards use Veneer titles and quiet credits with unchanged siz
       await expect(card).toHaveAttribute('data-store-artist', artist);
       await expect(card.locator('.prose-card-link')).toHaveAccessibleName(`${await title.textContent()} by ${artist}`);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     await linked
       .locator('.store-item-card__content')
       .evaluate((element) => element.scrollIntoView({ block: 'center' }));
@@ -325,7 +325,7 @@ test('Store listing cards use Veneer titles and quiet credits with unchanged siz
     mobile: false,
   });
   expect(await page.evaluate(() => [window.innerWidth, window.devicePixelRatio])).toEqual([720, 2]);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   for (const [index, label] of longNames.entries()) {
     const card = page.getByRole('group', { name: label, exact: true }).first();
     for (const selector of ['h2', '.store-item-card__artist']) {
@@ -498,7 +498,7 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   await expect(cards.first()).toHaveAttribute('data-store-artist', artist!);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await expect(formats.getByRole('link', { name: /^All formats/ })).toHaveAttribute('aria-current', 'true');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile.png' });
   await cards.first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile-cards.png' });
@@ -566,7 +566,7 @@ test('desktop Store artist filter combines several ticked artists with find and 
   await search.press('Enter');
   await expect(search).not.toBeFocused();
   await search.fill('');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('Distro catalog keeps its alphabetical order through format, search and Coverflow changes', async ({ page }) => {
@@ -603,7 +603,7 @@ test('Distro catalog keeps its alphabetical order through format, search and Cov
   );
   await expect(root.locator('.store-item-card__artist-link')).toHaveCount(0);
   await expect(root.locator('.store-item-card__artist-name').first()).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/desktop.png' });
   const firstCard = cards.locator('visible=true').first();
   const formatKey = await firstCard.getAttribute('data-distro-format-key');

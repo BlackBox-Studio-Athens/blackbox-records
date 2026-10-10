@@ -1,5 +1,13 @@
 import type { PublicApiComponents } from '@blackbox/api-client/public';
-import { expect, test, plantSentinel, sentinelIntact, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 const paidState = {
@@ -53,7 +61,7 @@ test('paid mixed return shows saved facts and shopping preserves the shell', asy
   expect(await sentinelIntact(page)).toBe(true);
 });
 
-test('pre-order-only unknown return stays truthful and keyboard usable at 390px', async ({ page }) => {
+test('pre-order-only unknown return stays truthful and keyboard usable at 390px @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const state: CheckoutState = {
     ...paidState,
@@ -71,7 +79,7 @@ test('pre-order-only unknown return stays truthful and keyboard usable at 390px'
   await expect(screen).not.toContainText('November');
   await expect(screen).not.toContainText('In stock, sent with the pre-order');
   await expect(screen).not.toContainText('Out now, while you wait');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   const shopping = screen.getByRole('link', { name: 'Continue Shopping', exact: true });
   await shopping.press('Shift+Tab');
   await page.keyboard.press('Tab');

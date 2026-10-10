@@ -1,8 +1,18 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-test('mobile Store shares its country lookup through categories and refreshes it on reload', async ({ page }) => {
+test('mobile Store shares its country lookup through categories and refreshes it on reload @phone', async ({
+  page,
+}) => {
   let requests = 0;
   await page.route('**/cdn-cgi/trace', (route) => {
     requests++;
@@ -43,7 +53,9 @@ test('mobile Store shares its country lookup through categories and refreshes it
   expect(requests).toBe(3);
 });
 
-test('mobile delivery correction survives shell navigation and reload, and can be changed back', async ({ page }) => {
+test('mobile delivery correction survives shell navigation and reload, and can be changed back @phone', async ({
+  page,
+}) => {
   let requests = 0;
   await page.route('**/cdn-cgi/trace', (route) => {
     requests++;
@@ -81,7 +93,7 @@ test('mobile delivery correction survives shell navigation and reload, and can b
   expect(await page.evaluate(() => sessionStorage.getItem('blackbox:delivery-destination'))).toBe('international');
 });
 
-test('mobile Store discards a stale foreign session hint and detects a changed Greek network on reload', async ({
+test('mobile Store discards a stale foreign session hint and detects a changed Greek network on reload @phone', async ({
   page,
 }) => {
   await page.addInitScript(() => sessionStorage.setItem('blackbox:shopper-country', 'US'));
@@ -103,7 +115,7 @@ test('mobile Store discards a stale foreign session hint and detects a changed G
 });
 
 for (const country of ['GR', 'XX', 'failed']) {
-  test(`mobile Store hides the shipping strip for ${country}`, async ({ page }) => {
+  test(`mobile Store hides the shipping strip for ${country} @phone`, async ({ page }) => {
     await page.addInitScript((value) => {
       const fetch = window.fetch.bind(window);
       window.fetch = (input, init) => {
@@ -134,7 +146,7 @@ test('mobile shipping notice reflows at the CSS width of 200 percent zoom', asyn
   await page.setViewportSize({ width: 195, height: 422 });
   await expect(notice).toHaveCSS('flex-direction', 'column');
   expect(await notice.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   const email = notice.getByRole('link', { name: 'Email us to order', exact: true });
   expect((await email.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await page.getByRole('link', { name: 'Delivery rates and terms', exact: true }).focus();

@@ -1,4 +1,4 @@
-import { test, expect, waitForIsland } from './fixtures';
+import { expect, expectNoHorizontalOverflow, test, waitForIsland } from './fixtures';
 
 test('withdrawal review, edit, explicit confirmation and durable receipt work without a buyer account', async ({
   page,
@@ -42,7 +42,7 @@ test('withdrawal review, edit, explicit confirmation and durable receipt work wi
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^blackbox-withdrawal-.*\.txt$/);
   expect(await download.failure()).toBeNull();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('withdrawal retry reuses submission identity and keeps email fallback visible', async ({ page }) => {

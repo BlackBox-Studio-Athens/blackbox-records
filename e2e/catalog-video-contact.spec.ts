@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { StorePreorderShowcaseCandidate } from '../apps/web/src/components/store/StorePreorderShowcase';
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 test('a demo click during the inquiry form commit retains its selection', async ({ page }) => {
   await page.addInitScript(() => {
@@ -16,7 +16,9 @@ test('a demo click during the inquiry form commit retains its selection', async 
   await expect(page.getByLabel('Service', { exact: true })).toHaveValue('Share your demo');
 });
 
-test('Share your demo selects the existing inquiry flow and submits without leaving the shell', async ({ page }) => {
+test('Share your demo selects the existing inquiry flow and submits without leaving the shell @phone', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/api/services/inquiries', (route) => route.fulfill({ json: { status: 'submitted' } }));
   await page.goto('./services/');
@@ -53,11 +55,11 @@ test('Share your demo selects the existing inquiry flow and submits without leav
   await page.goBack();
   await expect(page.getByLabel('Service', { exact: true })).toHaveValue('General');
   expect(await sentinelIntact(page)).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 });
 
 for (const width of [320, 390, 430, 768, 1440]) {
-  test(`footer links and description flow naturally at ${width}px`, async ({ page }) => {
+  test(`footer links and description flow naturally at ${width}px${width < 768 ? ' @phone' : ''}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('./services/');
     await waitForShell(page);
@@ -91,7 +93,7 @@ for (const width of [320, 390, 430, 768, 1440]) {
         true,
       );
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     await plantSentinel(page);
     await footer.getByRole('link', { name: 'Releases', exact: true }).click();
     await expect(page).toHaveURL(/\/releases\/$/);

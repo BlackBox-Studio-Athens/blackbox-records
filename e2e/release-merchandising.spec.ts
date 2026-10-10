@@ -1,4 +1,4 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
@@ -89,7 +89,7 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
       expect(image.fit).toBe('contain');
       expect(image.transform).toBe('none');
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     if (width === 2120 || width < 768)
       await page
         .locator('#releases-merchandising')
@@ -209,7 +209,9 @@ for (const [label, releaseDate, digitalStatus] of [
 }
 
 for (const width of [320, 360, 390, 430, 768]) {
-  test(`Releases aligns complete artwork and touch actions within mobile gutters at ${width}px`, async ({ page }) => {
+  test(`Releases aligns complete artwork and touch actions within mobile gutters at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.route('**/api/store/listing-prices*', (route) =>
       route.fulfill({
@@ -263,7 +265,7 @@ for (const width of [320, 360, 390, 430, 768]) {
         }
       }
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
   });
 }
 
@@ -290,7 +292,9 @@ for (const width of [1024, 1440]) {
 }
 
 for (const width of [390, 1280]) {
-  test(`Releases keeps badge typography and date spacing after entering from Home at ${width}px`, async ({ page }) => {
+  test(`Releases keeps badge typography and date spacing after entering from Home at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
     await page.route('**/api/store/listing-prices*', (route) =>
@@ -313,12 +317,12 @@ for (const width of [390, 1280]) {
     const date = await lead.locator('.release-card-year-text').boundingBox();
     expect(date!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
     expect(await sentinelIntact(page)).toBe(true);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
   });
 }
 
 for (const width of [320, 390, 1280]) {
-  test(`Releases keeps the preorder visual family and current composition at ${width}px`, async ({
+  test(`Releases keeps the preorder visual family and current composition at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width, height: 900 });
@@ -396,7 +400,7 @@ for (const width of [320, 390, 1280]) {
     }));
     expect(visual.shadow).toMatch(/-3(?:\.0+)?px/);
     expect(visual.accent).not.toBe('');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     await button.focus();
     await expect(button).toBeFocused();
     await plantSentinel(page);
@@ -420,11 +424,11 @@ for (const width of [320, 390, 1280]) {
             right: element.getBoundingClientRect().right,
           })),
       );
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-        JSON.stringify(overflow),
-      ).toBe(true);
-      await page.screenshot({ path: '.codex-artifacts/e2e/release-merchandising-390-200percent.png', fullPage: true });
+      await expectNoHorizontalOverflow(page, JSON.stringify(overflow));
+      await page.screenshot({
+        path: '.codex-artifacts/e2e/release-merchandising-390-200percent.png',
+        fullPage: true,
+      });
     }
   });
 }

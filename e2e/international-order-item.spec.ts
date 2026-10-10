@@ -1,4 +1,11 @@
-import { expect, localRepresentativePaths, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  localRepresentativePaths,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 const storeItemSlug = localRepresentativePaths.storeItem.split('/').filter(Boolean).pop()!;
 const readyOffer = {
@@ -11,7 +18,9 @@ const readyOffer = {
 };
 
 for (const width of [1440, 390]) {
-  test(`International item notice follows the fused low-stock action at ${width}px`, async ({ page }) => {
+  test(`International item notice follows the fused low-stock action at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 960 });
     await page.route(`**/api/store/items/${storeItemSlug}`, (route) =>
       route.fulfill({ json: { ...readyOffer, lowStockQuantity: 2 } }),
@@ -77,7 +86,7 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Tab');
     await expect(email).toBeFocused();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     const correction = purchase.getByRole('button', { name: 'Deliver to Greece', exact: true });
     expect((await correction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await correction.click();
@@ -91,7 +100,7 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('International item notice follows the complete pre-order presentation', async ({ page }) => {
+test('International item notice follows the complete pre-order presentation @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
   await page.route(`**/api/store/items/${storeItemSlug}`, (route) =>

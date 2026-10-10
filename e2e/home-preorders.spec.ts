@@ -2,7 +2,15 @@ import { readFile } from 'node:fs/promises';
 import type { Locator, Page } from 'playwright/test';
 import type { PublicApiComponents } from '../packages/api-client/src/public-client';
 import type { StorePreorderShowcaseCandidate } from '../apps/web/src/components/store/StorePreorderShowcase';
-import { expect, plantSentinel, sentinelIntact, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 type ListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 const listing: ListingPrice = {
@@ -136,7 +144,7 @@ test('Film titles fit loaded Veneer without shrinking short names or orphaning l
       expect(title.fontSize).toBeGreaterThanOrEqual(32);
       expect(title.lines.every((line) => line.length > 1)).toBe(true);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     if (width === 2120 || width < 768) {
       await showScene(chapter(page));
       await expect
@@ -273,9 +281,7 @@ test('Home keeps active preorders abroad and preserves a Greece delivery correct
   expect(mailto.pathname).toBe('orders@blackboxrecordsathens.com');
   expect(mailto.searchParams.get('subject')).toBe('Order from outside Greece');
   expect(mailto.searchParams.get('body')).toBe('Items: Disintegration\nCountry:\nCity:');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
-    true,
-  );
+  await expectNoHorizontalOverflow(page);
 
   await release.getByRole('button', { name: 'Deliver to Greece', exact: true }).click();
   await expect(email).toHaveCount(0);
@@ -673,10 +679,7 @@ test('Home video and photo chapters keep controls reachable without overflow fro
     await close.click();
     await expect(panel).toHaveCount(0);
     await expect(watch).toBeFocused();
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-      `${width}px overflow`,
-    ).toBe(true);
+    await expectNoHorizontalOverflow(page, `${width}px overflow`);
   }
   await expect(
     chapter(page).getByRole('group', { name: 'Official video', exact: true }).getByRole('button'),

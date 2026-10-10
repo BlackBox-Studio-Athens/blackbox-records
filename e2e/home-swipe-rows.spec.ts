@@ -1,4 +1,13 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForIsland, waitForShell, type Page } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  type Page,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 const artistsRow = (page: Page) => page.locator('#home-artists-row');
 const artistsDots = (page: Page) => page.getByRole('group', { name: 'Artists position' }).getByRole('button');
@@ -12,7 +21,7 @@ const offsetFromGutter = (page: Page, index: number) =>
     index,
   );
 
-test('phone rows swipe card by card, and their dots follow after shell navigation to Home', async ({ page }) => {
+test('phone rows swipe card by card, and their dots follow after shell navigation to Home @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./about/');
   await waitForShell(page);
@@ -34,7 +43,7 @@ test('phone rows swipe card by card, and their dots follow after shell navigatio
   // The next card is partly visible and the page itself never scrolls sideways.
   const secondCardLeft = await artistsRow(page).evaluate((row) => row.children[1].getBoundingClientRect().left);
   expect(secondCardLeft).toBeLessThan(390);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 
   await dots.nth(1).click();
   await expect(dots.nth(1)).toHaveAttribute('aria-current', 'true');
@@ -46,7 +55,7 @@ test('phone rows swipe card by card, and their dots follow after shell navigatio
   expect(await sentinelIntact(page)).toBe(true);
 });
 
-test('neighbouring cards fade on phones unless the visitor asks for reduced motion', async ({ page }) => {
+test('neighbouring cards fade on phones unless the visitor asks for reduced motion @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await waitForShell(page);

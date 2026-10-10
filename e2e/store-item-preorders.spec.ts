@@ -1,4 +1,11 @@
-import { expect, localRepresentativePaths, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  localRepresentativePaths,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 const isPreparedFixture =
   process.env.CMS_CONTENT_SOURCE === 'snapshot' &&
@@ -11,7 +18,9 @@ for (const width of [1440, 390]) {
     ['released', '2026-10-03T12:00:00Z', true],
     ['release-day', '2026-06-09T00:15:00Z', true],
   ] as const) {
-    test(`Store Item ${albumState} album preorder facts and cart at ${width}px`, async ({ page }) => {
+    test(`Store Item ${albumState} album preorder facts and cart at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+      page,
+    }) => {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
       await page.clock.setFixedTime(new Date(referenceDate));
       const storeItemSlug = localRepresentativePaths.storeItem.split('/').filter(Boolean).pop()!;
@@ -113,7 +122,7 @@ for (const width of [1440, 390]) {
       else {
         const compositionBounds = await page.locator('.store-item-composition').boundingBox();
         expect(bounds?.width).toBe(compositionBounds?.width);
-        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+        await expectNoHorizontalOverflow(page);
       }
       if (albumState !== 'release-day') {
         // Canonical Disintegration page, unchanged editorial date; only the browser clock and Worker offer are fixtures.

@@ -1,7 +1,9 @@
 import {
   expect,
+  expectNoHorizontalOverflow,
   openSurfaceWithinClickTask,
   plantSentinel,
+  press,
   sentinelIntact,
   test,
   waitForShell,
@@ -21,17 +23,17 @@ test('News sits before Who we are and preserves the player through navigation an
   await waitForShell(page);
   await plantSentinel(page);
 
-  await page.locator('[data-music-streaming-service-embedded-player-trigger]').first().click();
+  await press(page.locator('[data-music-streaming-service-embedded-player-trigger]').first(), isMobile);
   const player = page.getByRole('dialog', { name: 'Music player' });
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
-  await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
-  await page.getByRole('button', { name: 'Minimize player' }).click();
+  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await press(page.getByRole('button', { name: 'Minimize player' }), isMobile);
   await expect(player).toBeHidden();
   const originalIframe = await iframe.elementHandle();
 
   const menu = page.locator('[data-app-shell-mobile-navigation-trigger]');
-  if (isMobile) await menu.click();
+  if (isMobile) await menu.tap();
   const navigation = page.getByRole('navigation', { name: isMobile ? 'Mobile' : 'Primary' });
   const news = navigation.getByRole('link', { name: 'News', exact: true });
   await expect(navigation.getByRole('link').last()).toHaveText('Who we are');
@@ -48,17 +50,17 @@ test('News sits before Who we are and preserves the player through navigation an
   }
   await expect(page.locator('footer').getByRole('link', { name: 'News', exact: true })).toHaveCount(0);
 
-  await page.locator(`${main} a.prose-card-link[href*="/news/"]`).first().click();
+  await press(page.locator(`${main} a.prose-card-link[href*="/news/"]`).first(), isMobile);
   const article = page.getByRole('dialog');
   await expect(article.locator('[data-app-shell-overlay-kind="news"]')).toBeVisible();
-  await page.getByRole('button', { name: 'Close detail view' }).click();
+  await press(page.getByRole('button', { name: 'Close detail view' }), isMobile);
   await expect(article).toBeHidden();
   await expect(page).toHaveURL(/\/blackbox-records\/news\/$/);
   await expect(page.locator('header [data-nav-link="/news/"]')).toHaveAttribute('aria-current', 'page');
   expect(await sentinelIntact(page)).toBe(true);
   expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
 
-  await page.getByRole('button', { name: 'Open player' }).click();
+  await press(page.getByRole('button', { name: 'Open player' }), isMobile);
   await expect(player).toBeVisible();
   expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
 });
@@ -94,7 +96,7 @@ test('News precedes Who we are and the main navigation fits phone and desktop wi
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
       if (width < 1024) expect(box!.height).toBeGreaterThanOrEqual(44);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
   }
 });
 
@@ -130,19 +132,20 @@ test('header section link swaps main in place and shows the delayed Store status
 
 test('detail link opens an overlay that closes back to the list; a direct load renders the full page', async ({
   page,
+  isMobile,
 }) => {
   await page.goto('releases/');
   await waitForShell(page);
   await plantSentinel(page);
 
-  await page.locator('a.release-card-title-link[href*="/releases/"]').first().click();
+  await press(page.locator('a.release-card-title-link[href*="/releases/"]').first(), isMobile);
   const overlay = page.getByRole('dialog');
   await expect(overlay).toBeVisible();
   await expect(overlay.locator('[data-app-shell-overlay-kind="releases"]')).toBeVisible();
   await expect(page).toHaveURL(/\/releases\/[^/]+\/$/);
   const detailUrl = page.url();
 
-  await page.getByRole('button', { name: 'Close detail view' }).click();
+  await press(page.getByRole('button', { name: 'Close detail view' }), isMobile);
   await expect(overlay).toBeHidden();
   await expect(page).toHaveURL(/\/releases\/$/);
   expect(await sentinelIntact(page)).toBe(true);
@@ -154,6 +157,7 @@ test('detail link opens an overlay that closes back to the list; a direct load r
 
 test('closing a detail overlay by Close or Back keeps the list in place and returns focus to its card', async ({
   page,
+  isMobile,
 }) => {
   await page.goto('releases/');
   await waitForShell(page);
@@ -164,10 +168,10 @@ test('closing a detail overlay by Close or Back keeps the list in place and retu
   const overlay = page.getByRole('dialog');
 
   for (const dismissal of ['Close', 'Back']) {
-    await card.click();
+    await press(card, isMobile);
     await expect(overlay).toBeVisible();
     if (dismissal === 'Back') await page.goBack();
-    else await page.getByRole('button', { name: 'Close detail view' }).click();
+    else await press(page.getByRole('button', { name: 'Close detail view' }), isMobile);
     await expect(overlay).toBeHidden();
     await expect(page).toHaveURL(/\/releases\/$/);
     await expect(card).toBeFocused();
@@ -209,7 +213,7 @@ test('mobile navigation sheet drives shell navigation without horizontal overflo
     'aria-expanded',
     'false',
   );
-  await menuButton.click();
+  await menuButton.tap();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
   const mobileNav = page.getByRole('navigation', { name: 'Mobile' });
   await expect(mobileNav).toBeVisible();
@@ -225,16 +229,16 @@ test('mobile navigation sheet drives shell navigation without horizontal overflo
     expect((await target.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   }
 
-  await store.click();
+  await store.tap();
   await expect(page).toHaveURL(/\/blackbox-records\/store\/$/);
   await expect(mobileNav).toBeHidden();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
   await expect(page.locator(main)).toBeFocused();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
 
-  await menuButton.click();
-  await mobileNav.getByRole('link', { name: 'Home' }).click();
+  await menuButton.tap();
+  await mobileNav.getByRole('link', { name: 'Home' }).tap();
   await expect(page).toHaveURL(/\/blackbox-records\/$/);
   await expect(mobileNav).toBeHidden();
   await expect(page.locator(main)).toBeFocused();
@@ -343,7 +347,7 @@ test('the Menu closes when the desktop layout starts', async ({ page, isMobile }
   await page.goto('./');
   await waitForShell(page);
   const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
-  await menuButton.click();
+  await menuButton.tap();
   await expect(page.getByRole('dialog')).toBeVisible();
 
   await page.setViewportSize({ width: 1280, height: 844 });
@@ -366,7 +370,7 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
         (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
       );
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
   }
 });
 
@@ -449,12 +453,12 @@ test('Back closes the phone Menu and the cart drawer without navigating the page
   await waitForShell(page);
   const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
   const mobileNav = page.getByRole('navigation', { name: 'Mobile' });
-  await menuButton.click();
-  await mobileNav.getByRole('link', { name: 'Store' }).click();
+  await menuButton.tap();
+  await mobileNav.getByRole('link', { name: 'Store' }).tap();
   await expect(page).toHaveURL(/\/store\/$/);
   await expect(page.locator(main)).toBeFocused();
 
-  await menuButton.click();
+  await menuButton.tap();
   await expect(mobileNav).toBeVisible();
   await page.goBack();
   await expect(mobileNav).toBeHidden();
@@ -462,13 +466,13 @@ test('Back closes the phone Menu and the cart drawer without navigating the page
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
 
   // Dismissing it in place (Escape, Close or the backdrop) consumes the Menu's entry, so no Back press does nothing.
-  await menuButton.click();
+  await menuButton.tap();
   await expect(mobileNav).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(mobileNav).toBeHidden();
 
   const drawer = page.getByRole('dialog', { name: 'Cart' });
-  await page.locator('[data-store-cart-trigger]').first().click();
+  await page.locator('[data-store-cart-trigger]').first().tap();
   await expect(drawer).toBeVisible();
   await page.goBack();
   await expect(drawer).toBeHidden();
@@ -489,8 +493,8 @@ test('Back returns a shell section to the offset it was left at; new navigation 
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   const leftAt = await page.evaluate(() => window.scrollY);
 
-  await page.locator('[data-app-shell-mobile-navigation-trigger]').click();
-  await page.getByRole('navigation', { name: 'Mobile' }).getByRole('link', { name: 'Store' }).click();
+  await page.locator('[data-app-shell-mobile-navigation-trigger]').tap();
+  await page.getByRole('navigation', { name: 'Mobile' }).getByRole('link', { name: 'Store' }).tap();
   await expect(page).toHaveURL(/\/store\/$/);
   await expect(page.locator(main)).toBeFocused();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);

@@ -1,5 +1,12 @@
 import type { Page } from 'playwright/test';
-import { expect, localRepresentativePaths, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  localRepresentativePaths,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 const storeItemSlug = localRepresentativePaths.storeItem.split('/').filter(Boolean).pop()!;
 const alertPath = `/api/store/items/${storeItemSlug}/availability-alerts`;
@@ -33,7 +40,9 @@ async function openItem(page: Page, offer: ReturnType<typeof zeroStockOffer>) {
 }
 
 for (const width of [1440, 390]) {
-  test(`Repressing item page explains the wait and takes a Notify me request at ${width}px`, async ({ page }) => {
+  test(`Repressing item page explains the wait and takes a Notify me request at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 960 });
     const requests: unknown[] = [];
     // A provider error would log a console error the harness rejects; StoreItemPurchaseActions.test covers it.
@@ -92,7 +101,7 @@ for (const width of [1440, 390]) {
     await expect(done).toHaveAttribute('role', 'status');
     await expect(done).toBeFocused();
     expect(requests).toEqual([{ email: 'listener@example.com', consent: true }]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expectNoHorizontalOverflow(page);
     await purchase
       .locator('[data-store-item-availability]')
       .screenshot({ path: `.codex-artifacts/availability/repressing-notified-${width}.png` });

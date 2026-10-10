@@ -1,4 +1,4 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForShell, type Page } from './fixtures';
+import { expect, type Page, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 const shownWord = (page: Page) =>
   page

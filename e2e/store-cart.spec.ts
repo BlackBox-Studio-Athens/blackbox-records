@@ -1,7 +1,9 @@
 import {
   expect,
+  expectNoHorizontalOverflow,
   localRepresentativePaths,
   openSurfaceWithinClickTask,
+  press,
   test,
   waitForIsland,
   waitForShell,
@@ -243,7 +245,7 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await expect(buy).toBeVisible();
   await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(3);
 
-  await page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first().click();
+  await press(page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first(), hasTouch);
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
@@ -255,7 +257,7 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await page.getByRole('button', { name: 'Minimize player' }).click();
   const originalIframe = await iframe.elementHandle();
 
-  await buy.click();
+  await press(buy, hasTouch);
   // Added shows at once and lasts four seconds; the drawer's chunks may still be loading in dev.
   await expect(buy).toHaveText('Added');
   const drawer = page.getByRole('dialog', { name: 'Cart' });
@@ -789,7 +791,7 @@ test('paid pre-order return fixture keeps its rail and keyboard action usable at
     rail.getByText('BOX NOW details will follow once the shipment is arranged.', { exact: true }),
   ).toBeVisible();
   expect(await page.evaluate(() => window.innerWidth)).toBe(390);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expectNoHorizontalOverflow(page);
   for (const item of await rail.getByRole('listitem').all()) {
     const bounds = await item.boundingBox();
     expect(bounds).not.toBeNull();

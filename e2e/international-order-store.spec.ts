@@ -82,7 +82,7 @@ test('Store remains usable when its country request fails', async ({ page }) => 
   await expect(page.locator('#all-store-catalog')).toBeVisible();
 });
 
-test('Store shipping strip fits 390px without squeezing its email target', async ({ page }) => {
+test('Store shipping strip fits 390px without squeezing its email target @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
   await page.goto('store/');
