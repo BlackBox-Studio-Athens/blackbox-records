@@ -11,8 +11,9 @@ export type ShellPrefetchOptions = {
 
 type ShellPrefetchIntentOptions = {
   eventTarget: EventTarget | null;
-  // Present for mouse hover: anchor prefetch waits for the dwell. Focus and touch/pen presses prefetch at once.
+  // Present for mouse hover: anchor prefetch waits for the dwell. Keyboard focus warms immediately but speculatively.
   hoverDwell?: ShellHoverPrefetchDwell | undefined;
+  speculative?: boolean;
   isNavigableOverlayAnchor: (anchorElement: HTMLAnchorElement) => boolean;
   isNavigableShellSectionAnchor: (anchorElement: HTMLAnchorElement) => boolean;
   prefersReducedData?: () => boolean;
@@ -83,6 +84,7 @@ export function createShellHoverPrefetchDwell({
 export function primeShellPrefetchIntent({
   eventTarget,
   hoverDwell,
+  speculative = false,
   isNavigableOverlayAnchor,
   isNavigableShellSectionAnchor,
   prefersReducedData = prefersReducedPrefetchData,
@@ -91,6 +93,10 @@ export function primeShellPrefetchIntent({
   readPlayerProvidersFromElement,
   warmProviderOrigins,
 }: ShellPrefetchIntentOptions) {
+  if ((speculative || hoverDwell) && prefersReducedData()) {
+    hoverDwell?.cancel();
+    return;
+  }
   if (!canResolveClosestElement(eventTarget)) {
     hoverDwell?.cancel();
     return;
@@ -125,12 +131,7 @@ export function primeShellPrefetchIntent({
   };
 
   if (!hoverDwell) {
-    prefetch(false);
-    return;
-  }
-
-  if (prefersReducedData()) {
-    hoverDwell.cancel();
+    prefetch(speculative);
     return;
   }
 

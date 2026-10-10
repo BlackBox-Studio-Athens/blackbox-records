@@ -272,7 +272,7 @@ describe('shell document event routing', () => {
     );
   });
 
-  it('delegates pointer and focus prefetch checks', () => {
+  it('delegates mouse dwell and keyboard focus prefetch checks', () => {
     const primeShellPrefetchIntent = vi.fn();
     const options = createOptions({
       dependencies: {
@@ -283,14 +283,17 @@ describe('shell document event routing', () => {
     const pointerTarget = {} as EventTarget;
     const focusTarget = {} as EventTarget;
 
-    options.documentHandlers.pointerover?.({ target: pointerTarget } as unknown as PointerEvent);
+    options.documentHandlers.pointerover?.({ pointerType: 'mouse', target: pointerTarget } as unknown as PointerEvent);
+    options.documentHandlers.keydown?.({ key: 'Tab', preventDefault: vi.fn() } as unknown as KeyboardEvent);
     options.documentHandlers.focusin?.({ target: focusTarget } as unknown as FocusEvent);
 
     expect(primeShellPrefetchIntent).toHaveBeenCalledWith(expect.objectContaining({ eventTarget: pointerTarget }));
-    expect(primeShellPrefetchIntent).toHaveBeenCalledWith(expect.objectContaining({ eventTarget: focusTarget }));
+    expect(primeShellPrefetchIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventTarget: focusTarget, speculative: true }),
+    );
   });
 
-  it('applies the hover dwell to mouse pointers only, so focus and touch prefetch at once', () => {
+  it('does not prefetch from touch or pen hover and press-generated focus', () => {
     const primeShellPrefetchIntent = vi.fn();
     const options = createOptions({
       dependencies: {
@@ -301,13 +304,24 @@ describe('shell document event routing', () => {
     const target = {} as EventTarget;
 
     options.documentHandlers.pointerover?.({ pointerType: 'mouse', target } as unknown as PointerEvent);
+    expect(primeShellPrefetchIntent).toHaveBeenCalledTimes(1);
+    expect(primeShellPrefetchIntent.mock.calls[0]![0].hoverDwell).toEqual(
+      expect.objectContaining({ cancel: expect.any(Function) }),
+    );
     options.documentHandlers.pointerover?.({ pointerType: 'touch', target } as unknown as PointerEvent);
+    options.documentHandlers.pointerdown?.({ pointerType: 'touch', target } as unknown as PointerEvent);
     options.documentHandlers.focusin?.({ target } as unknown as FocusEvent);
+    options.documentHandlers.pointerover?.({ pointerType: 'pen', target } as unknown as PointerEvent);
+    options.documentHandlers.pointerup?.({ pointerType: 'pen', target } as unknown as PointerEvent);
+    options.documentHandlers.focusin?.({ target } as unknown as FocusEvent);
+    expect(primeShellPrefetchIntent).toHaveBeenCalledTimes(1);
 
-    const [mouseCall, touchCall, focusCall] = primeShellPrefetchIntent.mock.calls.map(([call]) => call);
-    expect(mouseCall.hoverDwell).toEqual(expect.objectContaining({ cancel: expect.any(Function) }));
-    expect(touchCall.hoverDwell).toBeUndefined();
-    expect(focusCall.hoverDwell).toBeUndefined();
+    options.documentHandlers.keydown?.({ key: 'Tab', preventDefault: vi.fn() } as unknown as KeyboardEvent);
+    options.documentHandlers.focusin?.({ target } as unknown as FocusEvent);
+    expect(primeShellPrefetchIntent).toHaveBeenCalledTimes(2);
+    expect(primeShellPrefetchIntent.mock.calls[1]![0]).toEqual(
+      expect.objectContaining({ eventTarget: target, speculative: true }),
+    );
   });
 
   it('delegates Escape key dismissal with live modal and overlay state', () => {

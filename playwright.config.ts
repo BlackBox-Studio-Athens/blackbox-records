@@ -68,7 +68,8 @@ export default defineConfig({
       // The iOS Safari engine on the shell, cart and player paths; CI installs it in its own leg.
       name: 'webkit-mobile',
       use: { ...devices['iPhone 13'] },
-      testMatch: /(routes|shell-navigation|store-cart|withdrawal|player-continuity|home-swipe-rows)\.spec\.ts$/,
+      testMatch:
+        /(routes|shell-navigation|store-cart|withdrawal|player-continuity|home-swipe-rows|home-motto|home-touch-prefetch)\.spec\.ts$/,
       grep: [phoneSpecs, phone],
     },
   ],

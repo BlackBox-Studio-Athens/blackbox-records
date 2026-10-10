@@ -1,4 +1,12 @@
-import { expect, type Page, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  type Page,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForShell,
+} from './fixtures';
 
 const shownWord = (page: Page) =>
   page
@@ -50,4 +58,34 @@ test('reduced motion keeps the written word', async ({ page }) => {
   await page.waitForTimeout(5_500);
   expect(await shownWord(page)).toEqual(['records.']);
   expect(await page.locator('.motto-word-cycle__playhead:not([data-hidden])').count()).toBe(0);
+});
+
+test('@phone the moving motto reuses its tear and waveform nodes after resize', async ({ page }) => {
+  await page.goto('./');
+  await waitForShell(page);
+  await page.evaluate(() => {
+    const stage = document.querySelector('.motto-word-cycle__stage')!;
+    (window as unknown as { __mottoLayers: Element[] }).__mottoLayers = [
+      ...stage.querySelectorAll('.motto-word-cycle__tear, .motto-word-cycle__shard'),
+    ];
+  });
+  await expect(page.locator('.motto-word-cycle__tear')).toHaveCount(7);
+  await expect(page.locator('.motto-word-cycle__shard')).toHaveCount(5);
+  await expect.poll(() => shownWord(page), { timeout: 8_000 }).toEqual(['art.']);
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => shownWord(page), { timeout: 9_000 }).toEqual(['noise.']);
+  const sameNodes = await page.evaluate(() => {
+    const saved = (window as unknown as { __mottoLayers: Element[] }).__mottoLayers;
+    const current = [...document.querySelectorAll('.motto-word-cycle__tear, .motto-word-cycle__shard')];
+    return saved.length === 12 && saved.every((node, index) => node === current[index]);
+  });
+  expect(sameNodes).toBe(true);
+  expect(
+    await page
+      .locator('.motto-word-cycle__shard')
+      .first()
+      .evaluate((canvas: HTMLCanvasElement) => canvas.width),
+  ).toBeGreaterThan(0);
+  await expectNoHorizontalOverflow(page);
 });

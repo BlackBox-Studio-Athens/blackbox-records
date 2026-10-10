@@ -8,6 +8,7 @@ import { chromium, type BrowserContext, type CDPSession, type Page, type Request
 import {
   assertTraversalSetup,
   countStoreActivationRequests,
+  describeRendererLongTasks,
   extractStoreActivationMilestones,
   storeActivationRejectionReasons,
   summarize,
@@ -23,6 +24,8 @@ type Profile =
   | 'touch-idle'
   | 'wheel-scroll'
   | 'touch-scroll'
+  | 'touch-home-input'
+  | 'touch-home-menu'
   | 'desktop-store-activation'
   | 'legacy-scroll'
   | 'mobile-distro-disclosure'
@@ -48,8 +51,26 @@ const veneerPreload = args.get('veneer-preload') ?? 'build';
 const contentVisibility = args.get('content-visibility') ?? 'build';
 if (![veneerPreload, contentVisibility].every((value) => ['build', 'enabled', 'disabled'].includes(value)))
   throw new Error('A/B options must be build, enabled or disabled.');
-if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll'].includes(profile) && runs < 3)
+if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll', 'touch-home-input'].includes(profile) && runs < 3)
   throw new Error('Input and idle profiles require at least three runs.');
+if (profile === 'touch-home-menu' && runs < 5) throw new Error('Home Menu diagnostics require at least five runs.');
+const cpuOverride = args.has('cpu') ? Number(args.get('cpu')) : null;
+const dprOverride = args.has('dpr') ? Number(args.get('dpr')) : null;
+if (cpuOverride !== null && (!Number.isFinite(cpuOverride) || cpuOverride < 1)) throw new Error('Invalid CPU rate.');
+if (dprOverride !== null && (!Number.isFinite(dprOverride) || dprOverride < 1)) throw new Error('Invalid DPR.');
+const homeShowcase = args.get('home-showcase') ?? 'empty';
+if (!['empty', 'populated'].includes(homeShowcase)) throw new Error('Unknown Home showcase state.');
+const menuSwipe = args.get('menu-swipe') ?? 'swipe';
+if (!['swipe', 'none'].includes(menuSwipe)) throw new Error('Unknown Home Menu gesture.');
+const menuDelayMs = Number(args.get('menu-delay') ?? 250);
+if (!Number.isInteger(menuDelayMs) || menuDelayMs < 0 || menuDelayMs > 5000)
+  throw new Error('Home Menu delay must be an integer between 0 and 5000 ms.');
+const menuTapMode = args.get('menu-tap') ?? 'locator';
+if (!['locator', 'held'].includes(menuTapMode)) throw new Error('Unknown Home Menu tap mode.');
+const heroFallback = args.get('hero-fallback') ?? 'build';
+if (!['build', 'forced'].includes(heroFallback)) throw new Error('Unknown Home hero fallback mode.');
+if (heroFallback === 'forced' && !['touch-home-input', 'touch-home-menu'].includes(profile))
+  throw new Error('Forced hero fallback is only supported by Home touch profiles.');
 const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Date.now()}-${profile}.json`;
 const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';
 const expectedStoreCardCount = Number(args.get('store-card-count') ?? 104);
@@ -127,6 +148,22 @@ const profiles = {
     hasTouch: true,
     isMobile: true,
   },
+  'touch-home-input': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    hasTouch: true,
+    isMobile: true,
+    network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
+  },
+  'touch-home-menu': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    hasTouch: true,
+    isMobile: true,
+    network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
+  },
   'desktop-distro-disclosure': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-load': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-store-activation': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
@@ -134,12 +171,16 @@ const profiles = {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     cpu: 4,
+    hasTouch: true,
+    isMobile: true,
     network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
   },
   'mobile-distro-disclosure': {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     cpu: 4,
+    hasTouch: true,
+    isMobile: true,
     network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
   },
   'wide-scroll': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4, step: 24, frames: 360 },
@@ -148,6 +189,8 @@ const profiles = {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
     cpu: 4,
+    hasTouch: true,
+    isMobile: true,
     network: { latency: 150, downloadThroughput: 200_000, uploadThroughput: 93_750 },
   },
   'legacy-scroll': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, cpu: 4, step: 48, frames: 240 },
@@ -172,7 +215,12 @@ async function readTrace(cdp: CDPSession) {
 
 async function configure(context: BrowserContext, page: Page) {
   // Both A/B arms use the same document interception; only the declared feature changes.
-  if (veneerPreload !== 'build' || contentVisibility !== 'build')
+  if (heroFallback === 'forced')
+    await context.addInitScript({
+      content:
+        "(() => { const nativeSupports = CSS.supports.bind(CSS); CSS.supports = (...args) => args.length === 1 && args[0] === 'animation-timeline: scroll()' ? false : nativeSupports(...args); })();",
+    });
+  if (veneerPreload !== 'build' || contentVisibility !== 'build' || heroFallback === 'forced')
     await context.route('**/*', async (route) => {
       if (route.request().resourceType() !== 'document') return route.fallback();
       const response = await route.fetch();
@@ -190,11 +238,17 @@ async function configure(context: BrowserContext, page: Page) {
           '</head>',
           '<style>.store-item-card--listing{content-visibility:auto!important;contain-intrinsic-block-size:auto 520px}</style></head>',
         );
+      if (heroFallback === 'forced')
+        body = body.replace(
+          '</head>',
+          '<style data-performance-hero-fallback>.homepage-hero-section__media-layer,.homepage-hero-section__media-layer::after{animation-timeline:auto!important;animation-duration:1s!important;animation-play-state:paused!important}</style></head>',
+        );
       await route.fulfill({ response, body });
     });
   const cdp = await context.newCDPSession(page);
   const settings = profiles[profile];
-  if (settings.cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: settings.cpu });
+  const cpu = cpuOverride ?? settings.cpu;
+  if (cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
   if (blockThirdPartyAnalytics) {
     await cdp.send('Network.enable');
     await cdp.send('Network.setBlockedURLs', { urls: ['https://www.glancelytics.com/*'] });
@@ -880,6 +934,299 @@ async function inputProfileRun(page: Page, cdp: CDPSession, tracePath: string, l
   };
 }
 
+async function homeShowcaseFixture(page: Page) {
+  const candidates = JSON.parse(await readFile(join(buildDirectory, 'preorder-showcase.json'), 'utf8')) as Array<{
+    slug: string;
+    [key: string]: unknown;
+  }>;
+  const candidate = candidates[0];
+  if (homeShowcase === 'populated' && !candidate) throw new Error('Built Home has no preorder candidate.');
+  const showcase = homeShowcase === 'populated' && candidate ? [candidate] : [];
+  await page.route('**/api/store/listing-prices*', (route) => {
+    if (new URL(route.request().url()).searchParams.get('scope') !== 'preorders') return route.fallback();
+    return route.fulfill({
+      json: showcase.map((item) => ({
+        storeItemSlug: item.slug,
+        presentationState: 'ready',
+        availabilityState: 'stocked',
+        displayPrice: '€28.00',
+        preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+      })),
+    });
+  });
+  if (homeShowcase === 'populated')
+    await page.route('**/preorder-showcase.json', (route) => route.fulfill({ json: [candidates[0]] }));
+  return { state: homeShowcase, candidateSlug: candidate?.slug ?? null, chapterCount: showcase.length };
+}
+
+type HomeProbeEvent = {
+  at: number;
+  eventTime: number;
+  isTrusted: boolean;
+  menuTarget: boolean;
+  pointerType: string | null;
+  type: string;
+};
+
+type HomeProbeState = {
+  events: HomeProbeEvent[];
+  frames: Array<{ at: number }>;
+  frameHandle: number;
+  running: boolean;
+};
+
+async function installHomeInputProbe(page: Page) {
+  // tsx names nested callbacks; serialized browser code needs the helper in the page realm.
+  await page.evaluate(
+    'globalThis.__name = (value, name) => Object.defineProperty(value, "name", { value: name, configurable: true })',
+  );
+  await page.evaluate(() => {
+    const state: HomeProbeState = { events: [], frames: [], frameHandle: 0, running: true };
+    const record = (event: Event) => {
+      if (state.events.length >= 512) return;
+      state.events.push({
+        type: event.type,
+        at: performance.now(),
+        eventTime: event.timeStamp,
+        isTrusted: event.isTrusted,
+        pointerType: event instanceof PointerEvent ? event.pointerType : null,
+        menuTarget:
+          event.target instanceof Element &&
+          Boolean(event.target.closest('[data-app-shell-mobile-navigation-trigger]')),
+      });
+    };
+    for (const type of [
+      'touchstart',
+      'touchmove',
+      'touchend',
+      'touchcancel',
+      'pointerdown',
+      'pointerup',
+      'pointercancel',
+      'click',
+    ])
+      document.addEventListener(type, record, { capture: true, passive: true });
+    window.addEventListener('scroll', record, { passive: true });
+    const frame = (at: number) => {
+      if (!state.running) return;
+      if (state.frames.length < 600) state.frames.push({ at });
+      state.frameHandle = requestAnimationFrame(frame);
+    };
+    state.frameHandle = requestAnimationFrame(frame);
+    Object.assign(window, { __homeInputProbe: state });
+    performance.mark('home:probe-start');
+  });
+}
+
+async function readHomeInputProbe(page: Page) {
+  return page.evaluate(() => {
+    const state = (window as unknown as { __homeInputProbe: HomeProbeState }).__homeInputProbe;
+    state.running = false;
+    cancelAnimationFrame(state.frameHandle);
+    return { events: state.events, frames: state.frames };
+  });
+}
+
+async function dispatchHomeSwipe(page: Page, cdp: CDPSession) {
+  const startedAt = await page.evaluate(() => {
+    performance.mark('home:swipe-request');
+    return performance.now();
+  });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 680 }] });
+  for (let step = 1; step <= 6; step += 1) {
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: 195, y: 680 - step * 55 }],
+    });
+    await page.waitForTimeout(16);
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const endedAt = await page.evaluate(() => {
+    performance.mark('home:swipe-end');
+    return performance.now();
+  });
+  return { startedAt, endedAt };
+}
+
+async function tapHomeMenu(page: Page, heldTap?: { cdp: CDPSession; x: number; y: number }) {
+  const requestedAt = await page.evaluate(() => {
+    performance.mark('home:menu-tap-request');
+    return performance.now();
+  });
+  const hostStartedAt = performance.now();
+  let tapError: string | null = null;
+  try {
+    if (heldTap) {
+      await heldTap.cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x: heldTap.x, y: heldTap.y }],
+      });
+      await page.waitForTimeout(80);
+      await heldTap.cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } else {
+      await page.locator('[data-app-shell-mobile-navigation-trigger]').tap();
+    }
+  } catch (error) {
+    tapError = error instanceof Error ? error.message : String(error);
+  }
+  const menuOpened = await page
+    .locator('[data-app-shell-mobile-navigation]')
+    .waitFor({ state: 'visible', timeout: 2_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  const menuOpenMs = menuOpened ? performance.now() - hostStartedAt : null;
+  const expanded = await page.locator('[data-app-shell-mobile-navigation-trigger]').getAttribute('aria-expanded');
+  const completedAt = await page.evaluate(() => {
+    performance.mark('home:menu-tap-result');
+    return performance.now();
+  });
+  return { requestedAt, completedAt, menuOpened, menuOpenMs, expanded, tapError };
+}
+
+async function homeMenuProbeRun(page: Page, cdp: CDPSession) {
+  const fixture = await homeShowcaseFixture(page);
+  await page.goto(routeUrl('home'), { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('html[data-app-shell-ready]');
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1000);
+  const menuBox =
+    menuTapMode === 'held' ? await page.locator('[data-app-shell-mobile-navigation-trigger]').boundingBox() : null;
+  if (menuTapMode === 'held' && !menuBox) throw new Error('Home Menu trigger is not measurable.');
+  await installHomeInputProbe(page);
+  const swipe = menuSwipe === 'swipe' ? await dispatchHomeSwipe(page, cdp) : null;
+  if (swipe && menuDelayMs) await page.waitForTimeout(menuDelayMs);
+  const tap = await tapHomeMenu(
+    page,
+    menuBox ? { cdp, x: menuBox.x + menuBox.width / 2, y: menuBox.y + menuBox.height / 2 } : undefined,
+  );
+  const timeline = await readHomeInputProbe(page);
+  const swipeTouchEnd = timeline.events.findLast((event) => event.type === 'touchend' && !event.menuTarget);
+  const menuPointerDown = timeline.events.find((event) => event.type === 'pointerdown' && event.menuTarget);
+  const menuClick = timeline.events.find((event) => event.type === 'click' && event.menuTarget);
+  const scrollEventsBeforeTap = timeline.events.filter(
+    (event) =>
+      menuPointerDown &&
+      event.type === 'scroll' &&
+      event.at >= menuPointerDown.at - 200 &&
+      event.at <= menuPointerDown.at,
+  );
+  return {
+    fixture,
+    menuSwipe,
+    menuTapMode,
+    requestedDelayMs: swipe ? menuDelayMs : null,
+    swipe,
+    tap,
+    actualTouchEndToPointerDownMs: swipeTouchEnd && menuPointerDown ? menuPointerDown.at - swipeTouchEnd.at : null,
+    scrollEventsInLast200Ms: scrollEventsBeforeTap.length,
+    browserDispatchedMenuClick: Boolean(menuClick),
+    scrollY: await page.evaluate(() => scrollY),
+    timeline,
+  };
+}
+
+async function homeInputRun(page: Page, cdp: CDPSession, tracePrefix: string) {
+  const requests: string[] = [];
+  const errors: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  page.on('requestfailed', (request) => errors.push(`${request.url()}: ${request.failure()?.errorText}`));
+  page.on('pageerror', (error) => errors.push(error.message));
+  const fixture = await homeShowcaseFixture(page);
+  await startTrace(cdp);
+  await page.goto(routeUrl('home'), { waitUntil: 'domcontentloaded' });
+  await installHomeInputProbe(page);
+  const swipe = await dispatchHomeSwipe(page, cdp);
+  await page.waitForSelector('html[data-app-shell-ready]', { state: 'attached' });
+  await page.waitForTimeout(250);
+  const tap = await tapHomeMenu(page);
+  const timeline = await readHomeInputProbe(page);
+  if (tap.menuOpened) {
+    await page.keyboard.press('Escape');
+    await page.locator('[data-app-shell-mobile-navigation]').waitFor({ state: 'hidden' });
+  }
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(5000);
+  const early = await page.evaluate(() => {
+    const measurements = (
+      window as unknown as {
+        __runtimePerformance: { longTaskEntries: Array<{ startTime: number; duration: number }> };
+      }
+    ).__runtimePerformance;
+    return {
+      scrollY,
+      pointer: { coarse: matchMedia('(pointer: coarse)').matches, hover: matchMedia('(hover: hover)').matches },
+      longTasks: measurements.longTaskEntries,
+      showcaseRendered: Boolean(document.querySelector('#preorders')),
+    };
+  });
+  const firstScrollEvent = timeline.events.find((event) => event.type === 'scroll' && event.at >= swipe.startedAt);
+  const nextFrameCallback = timeline.frames.find((frame) => firstScrollEvent && frame.at >= firstScrollEvent.at);
+  const earlyEvents = await readTrace(cdp);
+  const earlyTracePath = `${tracePrefix}-early.trace.json`;
+  await mkdir(dirname(earlyTracePath), { recursive: true });
+  await writeFile(earlyTracePath, JSON.stringify({ traceEvents: earlyEvents }));
+  if (!early.pointer.coarse || early.pointer.hover || !firstScrollEvent)
+    throw new Error('Home early input did not run as a touch scroll.');
+  if (early.showcaseRendered !== (homeShowcase === 'populated'))
+    throw new Error('Home showcase fixture did not render its declared state.');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.waitForTimeout(1000);
+  const first = await inputProfileRun(page, cdp, `${tracePrefix}-first.trace.json`, 'first');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.waitForTimeout(1000);
+  const repeat = await inputProfileRun(page, cdp, `${tracePrefix}-repeat.trace.json`, 'repeat');
+  const heroFade = [];
+  for (const top of [0, 150, 300, 500]) {
+    await page.evaluate((position) => window.scrollTo({ top: position, behavior: 'instant' }), top);
+    await page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
+    heroFade.push(
+      await page.evaluate(() => {
+        const media = document.querySelector<HTMLElement>('.homepage-hero-section__media-layer');
+        return {
+          scrollY,
+          mediaOpacity: media ? getComputedStyle(media).opacity : null,
+          veilOpacity: media ? getComputedStyle(media, '::after').opacity : null,
+          supportsScrollTimeline: CSS.supports('animation-timeline: scroll()'),
+          forcedOverridePresent: Boolean(document.querySelector('[data-performance-hero-fallback]')),
+        };
+      }),
+    );
+  }
+  return {
+    fixture,
+    early: {
+      ...early,
+      firstScrollEventMs: firstScrollEvent.at - swipe.startedAt,
+      nextFrameCallbackAfterScrollEventMs: nextFrameCallback ? nextFrameCallback.at - swipe.startedAt : null,
+      swipe,
+      tap,
+      menuOpened: tap.menuOpened,
+      menuOpenMs: tap.menuOpenMs,
+      menuExpanded: tap.expanded,
+      timeline,
+      errors,
+      trace: summarizeTrace(earlyEvents),
+      rendererLongTasks: describeRendererLongTasks(earlyEvents),
+      traceMarks: earlyEvents
+        .filter((event) => event.name.startsWith('home:'))
+        .map((event) => ({ name: event.name, startUs: event.ts ?? null })),
+      tracePath: earlyTracePath,
+    },
+    first,
+    repeat,
+    heroFade,
+    requests: {
+      total: requests.length,
+      destinations: requests.filter((url) => /\/app-shell-overlay\/|\/store\/$/.test(new URL(url).pathname)),
+      listing: requests.filter((url) => new URL(url).pathname.endsWith('/api/store/listing-prices')),
+    },
+  };
+}
+
 function routeUrl(route: string) {
   const path = route === 'home' ? '' : `${route}/`;
   return new URL(path, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).href;
@@ -890,13 +1237,35 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
-    if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll'].includes(profile)) {
+    if (profile === 'touch-home-input' || profile === 'touch-home-menu') {
+      const settings = profiles[profile];
+      for (let run = 1; run <= runs; run += 1) {
+        const context = await browser.newContext({
+          viewport: settings.viewport,
+          deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
+          hasTouch: settings.hasTouch,
+          isMobile: settings.isMobile,
+        });
+        const page = await context.newPage();
+        const cdp = await configure(context, page);
+        results.push({
+          route: 'home',
+          run,
+          profile,
+          result:
+            profile === 'touch-home-input'
+              ? await homeInputRun(page, cdp, `${output}.home-${run}`)
+              : await homeMenuProbeRun(page, cdp),
+        });
+        await context.close();
+      }
+    } else if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll'].includes(profile)) {
       for (const route of routes) {
         for (let run = 1; run <= runs; run += 1) {
           const settings = profiles[profile];
           const context = await browser.newContext({
             viewport: settings.viewport,
-            deviceScaleFactor: settings.deviceScaleFactor,
+            deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
             hasTouch: 'hasTouch' in settings && settings.hasTouch,
             isMobile: 'isMobile' in settings && settings.isMobile,
           });
@@ -940,7 +1309,9 @@ async function main() {
           const settings = profiles[profile];
           const context = await browser.newContext({
             viewport: settings.viewport,
-            deviceScaleFactor: settings.deviceScaleFactor,
+            deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
+            hasTouch: 'hasTouch' in settings && settings.hasTouch,
+            isMobile: 'isMobile' in settings && settings.isMobile,
           });
           const page = await context.newPage();
           await configure(context, page);
@@ -953,7 +1324,9 @@ async function main() {
         const settings = profiles[profile];
         const context = await browser.newContext({
           viewport: settings.viewport,
-          deviceScaleFactor: settings.deviceScaleFactor,
+          deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
+          hasTouch: 'hasTouch' in settings && settings.hasTouch,
+          isMobile: 'isMobile' in settings && settings.isMobile,
         });
         const page = await context.newPage();
         const cdp = await configure(context, page);
@@ -966,7 +1339,9 @@ async function main() {
           const settings = profiles[profile];
           const context = await browser.newContext({
             viewport: settings.viewport,
-            deviceScaleFactor: settings.deviceScaleFactor,
+            deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
+            hasTouch: 'hasTouch' in settings && settings.hasTouch,
+            isMobile: 'isMobile' in settings && settings.isMobile,
           });
           const page = await context.newPage();
           const cdp = await configure(context, page);
@@ -1004,11 +1379,57 @@ async function main() {
 
   const finalTree = await measurementTree();
   const treeUnchanged = JSON.stringify(tree) === JSON.stringify(finalTree);
+  const homeProfile = profile === 'touch-home-input' || profile === 'touch-home-menu';
+  const report = {
+    commit: tree.revision,
+    tree,
+    finalTree,
+    treeUnchanged,
+    browserVersion: browser.version(),
+    buildDirectory,
+    buildMode,
+    cacheState: 'fresh browser context per run',
+    traversalMode,
+    catalogGroup,
+    baseUrl,
+    productEnvironment,
+    profile,
+    scrollRuntime,
+    veneerPreload,
+    contentVisibility,
+    heroFallback: homeProfile ? heroFallback : undefined,
+    settings: {
+      ...profiles[profile],
+      cpu: cpuOverride ?? profiles[profile].cpu,
+      deviceScaleFactor: dprOverride ?? profiles[profile].deviceScaleFactor,
+    },
+    homeShowcase: homeProfile ? homeShowcase : undefined,
+    menuSwipe: profile === 'touch-home-menu' ? menuSwipe : undefined,
+    menuTapMode: profile === 'touch-home-menu' ? menuTapMode : undefined,
+    menuDelayMs: profile === 'touch-home-menu' && menuSwipe === 'swipe' ? menuDelayMs : undefined,
+    runs,
+    routes: homeProfile ? ['home'] : routes,
+    expectedStoreCardCount,
+    blockThirdPartyAnalytics,
+    capturedAt: new Date().toISOString(),
+    method:
+      profile === 'touch-home-input'
+        ? 'fresh-context early touch swipe and Menu tap, then settled first/repeat touch traversal; scroll event and frame callback are not visual presentation timestamps'
+        : profile === 'touch-home-menu'
+          ? 'settled Home, controlled swipe-to-Menu tap with bounded browser event/frame timeline'
+          : profile.endsWith('distro-disclosure')
+            ? 'fresh-context delayed and ready Store Distro disclosure'
+            : profile.endsWith('store-activation')
+              ? 'fresh-context same-document Store activation'
+              : 'existing runtime profile',
+    runOrder: results.map((result) => ('run' in result ? result.run : null)),
+    summary: profile.endsWith('store-activation')
+      ? summarizeStoreActivationRuns(results.map((entry) => entry.result))
+      : undefined,
+    results,
+  };
   await mkdir(dirname(output), { recursive: true });
-  await writeFile(
-    output,
-    `${JSON.stringify({ commit: tree.revision, tree, finalTree, treeUnchanged, browserVersion: browser.version(), buildDirectory, buildMode, cacheState: 'fresh browser context per run', traversalMode, catalogGroup, baseUrl, productEnvironment, profile, scrollRuntime, veneerPreload, contentVisibility, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
-  );
+  await writeFile(output, `${JSON.stringify(report, null, 2)}\n`);
   console.log(output);
   if (!treeUnchanged) throw new Error('Measurement inputs changed during the run; evidence is invalid.');
 }

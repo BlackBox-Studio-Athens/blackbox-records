@@ -58,8 +58,14 @@ export function trackPeaks(count: number, beat: number, seed: number) {
 }
 
 /** Draws a waveform shard as one filled, mirrored outline at device-pixel resolution, with a centre line. */
-function drawWaveShard(canvas: HTMLCanvasElement, width: number, height: number, fontSize: number) {
-  const ratio = window.devicePixelRatio || 1;
+function drawWaveShard(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  fontSize: number,
+  color: string,
+  ratio: number,
+) {
   canvas.width = Math.round(width * ratio);
   canvas.height = Math.round(height * ratio);
   canvas.style.width = `${width}px`;
@@ -70,7 +76,7 @@ function drawWaveShard(canvas: HTMLCanvasElement, width: number, height: number,
   const middle = canvas.height / 2;
   const reach = canvas.height * 0.42;
   const peaks = trackPeaks(columns, Math.round(fontSize * 0.32 * ratio), Math.floor(Math.random() * 2 ** 32));
-  context.fillStyle = getComputedStyle(canvas).color;
+  context.fillStyle = color;
   context.beginPath();
   context.moveTo(0, middle);
   peaks.forEach((peak, column) => context.lineTo(column, middle - peak * reach));
@@ -108,38 +114,47 @@ export function tearKeyframes(random: () => number, offset: () => string): Keyfr
  * Slices of either word and torn waveform shards jump sideways while the playhead runs, cropped to a span
  * that moves from the previous word's length to the length of the word being revealed.
  */
-function tear(stage: HTMLElement, words: HTMLElement[], from: number, to: number, fontSize: number) {
-  const layer = document.createElement('span');
-  layer.className = 'motto-word-cycle__tears';
-  stage.append(layer);
-  const span = (length: number) => `inset(-50% ${stage.offsetWidth - length}px -50% 0)`;
+type MottoMetrics = {
+  widths: number[];
+  stageWidth: number;
+  fontSize: number;
+  color: string;
+  ratio: number;
+};
+
+function tear(
+  layer: HTMLElement,
+  slices: HTMLElement[],
+  shards: HTMLCanvasElement[],
+  words: HTMLElement[],
+  from: number,
+  to: number,
+  { stageWidth, fontSize, color, ratio }: MottoMetrics,
+) {
+  layer.removeAttribute('data-hidden');
+  const span = (length: number) => `inset(-50% ${stageWidth - length}px -50% 0)`;
   layer.animate(
     { clipPath: [span(from), span(to)] },
     { duration: MOTTO_SCRUB_MS, easing: `cubic-bezier(${SCRUB_EASE.join()})` },
   );
   const shift = (reach: number) => () =>
     `translateX(${((Math.random() * 1.15 - 0.15) * reach * fontSize).toFixed(1)}px)`;
-  for (let index = 0; index < 7; index += 1) {
-    const slice = document.createElement('span');
-    slice.className = 'motto-word-cycle__tear';
+  for (let index = 0; index < slices.length; index += 1) {
+    const slice = slices[index]!;
     slice.textContent = words[index % words.length]!.textContent;
     const top = Math.random() * 88;
     const bottom = Math.max(0, 100 - top - (3 + Math.random() * 13));
     slice.style.clipPath = `inset(${top}% -3em ${bottom}% 0)`;
-    layer.append(slice);
     slice.animate(tearKeyframes(Math.random, shift(0.32)), MOTTO_SCRUB_MS);
   }
   // Fragments of a session-clip waveform flash with the slices; the flattest read as the mockup's streaks.
-  for (let index = 0; index < 5; index += 1) {
-    const shard = document.createElement('canvas');
-    shard.className = 'motto-word-cycle__shard';
+  for (const shard of shards) {
     const shardWidth = (0.35 + Math.random() * 1.1) * fontSize;
     const shardHeight = (0.06 + Math.random() * 0.3) * fontSize;
     shard.style.top = `${15 + Math.random() * 70}%`;
     shard.style.marginTop = `${-shardHeight / 2}px`;
     shard.style.left = `${Math.random() * Math.max(0, Math.max(from, to) - shardWidth / 2)}px`;
-    layer.append(shard);
-    drawWaveShard(shard, shardWidth, shardHeight, fontSize);
+    drawWaveShard(shard, shardWidth, shardHeight, fontSize, color, ratio);
     shard.animate(tearKeyframes(Math.random, shift(0.4)), MOTTO_SCRUB_MS);
   }
 }
@@ -168,6 +183,10 @@ const ElementBase = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement;
 class MottoWordCycle extends ElementBase {
   #words: HTMLElement[] = [];
   #playhead: HTMLElement | null = null;
+  #tearLayer: HTMLElement | null = null;
+  #slices: HTMLElement[] = [];
+  #shards: HTMLCanvasElement[] = [];
+  #metrics: MottoMetrics | null = null;
   #index = 0;
   #holdLeft = MOTTO_FIRST_HOLD_MS;
   #dueAt = 0;
@@ -177,6 +196,9 @@ class MottoWordCycle extends ElementBase {
   #observer: IntersectionObserver | null = null;
   #reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   #update = () => this.#schedule();
+  #invalidateMetrics = () => {
+    this.#metrics = null;
+  };
 
   connectedCallback() {
     if (!this.#words.length && !this.#enhance()) return;
@@ -188,6 +210,9 @@ class MottoWordCycle extends ElementBase {
     this.#observer.observe(this.closest('section') ?? this.parentElement ?? this);
     document.addEventListener('visibilitychange', this.#update);
     this.#reducedMotion.addEventListener('change', this.#update);
+    document.fonts.addEventListener('loadingdone', this.#invalidateMetrics);
+    window.addEventListener('resize', this.#invalidateMetrics);
+    void document.fonts.ready.then(this.#invalidateMetrics);
   }
 
   disconnectedCallback() {
@@ -196,6 +221,8 @@ class MottoWordCycle extends ElementBase {
     this.#inView = false;
     document.removeEventListener('visibilitychange', this.#update);
     this.#reducedMotion.removeEventListener('change', this.#update);
+    document.fonts.removeEventListener('loadingdone', this.#invalidateMetrics);
+    window.removeEventListener('resize', this.#invalidateMetrics);
     this.#pause();
     for (const animation of this.#scrub) animation.complete();
   }
@@ -213,6 +240,7 @@ class MottoWordCycle extends ElementBase {
           this.#words.findIndex((word) => !word.hasAttribute('data-hidden')),
         ),
       );
+      this.#prepareTears(stage);
       return this.#words.length > 1;
     }
 
@@ -243,7 +271,41 @@ class MottoWordCycle extends ElementBase {
     this.#playhead.toggleAttribute('data-hidden', true);
     visual.append(...this.#words, this.#playhead);
     last.replaceWith(found.before, spoken, visual, found.after);
+    this.#prepareTears(visual);
     return this.#words.length > 1;
+  }
+
+  #prepareTears(stage: HTMLElement) {
+    // A shell snapshot may contain a previous layer; rebuild it once on connection, never per transition.
+    stage.querySelector('.motto-word-cycle__tears')?.remove();
+    const layer = document.createElement('span');
+    layer.className = 'motto-word-cycle__tears';
+    layer.setAttribute('data-hidden', '');
+    this.#slices = Array.from({ length: 7 }, () => {
+      const slice = document.createElement('span');
+      slice.className = 'motto-word-cycle__tear';
+      return slice;
+    });
+    this.#shards = Array.from({ length: 5 }, () => {
+      const shard = document.createElement('canvas');
+      shard.className = 'motto-word-cycle__shard';
+      return shard;
+    });
+    layer.append(...this.#slices, ...this.#shards);
+    stage.append(layer);
+    this.#tearLayer = layer;
+    this.#metrics = null;
+  }
+
+  #measure(): MottoMetrics {
+    if (this.#metrics) return this.#metrics;
+    // Visibility-hidden words keep their grid dimensions. Complete all reads before showing or drawing any layer.
+    const widths = this.#words.map((word) => word.offsetWidth);
+    const stageWidth = this.#playhead!.parentElement!.offsetWidth;
+    const fontSize = parseFloat(getComputedStyle(this.#playhead!).fontSize);
+    const color = getComputedStyle(this.#shards[0]!).color;
+    const ratio = window.devicePixelRatio || 1;
+    return (this.#metrics = { widths, stageWidth, fontSize, color, ratio });
   }
 
   #schedule() {
@@ -274,12 +336,13 @@ class MottoWordCycle extends ElementBase {
     await loadMotion();
 
     if (animate && this.isConnected) {
+      const metrics = this.#measure();
+      const fromLength = metrics.widths[this.#index]!;
+      const toLength = metrics.widths[next]!;
+      const { fontSize } = metrics;
       to.removeAttribute('data-hidden');
-      const fontSize = parseFloat(getComputedStyle(playhead).fontSize);
-      const fromLength = from.offsetWidth;
-      const toLength = to.offsetWidth;
       playhead.removeAttribute('data-hidden');
-      tear(playhead.parentElement!, [from, to], fromLength, toLength, fontSize);
+      tear(this.#tearLayer!, this.#slices, this.#shards, [from, to], fromLength, toLength, metrics);
 
       // Every layer is linear in the playhead position, so one duration and ease keep them aligned.
       const options = { duration: MOTTO_SCRUB_MS / 1000, ease: SCRUB_EASE };
@@ -309,6 +372,6 @@ class MottoWordCycle extends ElementBase {
       word.toggleAttribute('data-hidden', wordIndex !== index);
     });
     this.#playhead?.setAttribute('data-hidden', '');
-    this.querySelector('.motto-word-cycle__tears')?.remove();
+    this.#tearLayer?.setAttribute('data-hidden', '');
   }
 }

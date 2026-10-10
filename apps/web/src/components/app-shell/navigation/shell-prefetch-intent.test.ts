@@ -84,6 +84,35 @@ describe('primeShellPrefetchIntent', () => {
     expect(prefetchOverlayHref).toHaveBeenCalledWith(anchor.href);
   });
 
+  it('treats keyboard focus as speculative and honors reduced data before warming anything', () => {
+    const anchor = { href: 'https://example.com/releases/' } as HTMLAnchorElement;
+    const target = {
+      closest: vi.fn((selector: string) => (selector === 'a[href]' ? anchor : null)),
+    } as unknown as EventTarget;
+    const prefetchShellSectionHref = vi.fn();
+    const prefetchOverlayHref = vi.fn();
+    const warmProviderOrigins = vi.fn();
+    const options = {
+      eventTarget: target,
+      speculative: true,
+      isNavigableOverlayAnchor: () => true,
+      isNavigableShellSectionAnchor: () => true,
+      prefetchOverlayHref,
+      prefetchShellSectionHref,
+      readPlayerProvidersFromElement: () => playerProviders,
+      warmProviderOrigins,
+    };
+
+    primeShellPrefetchIntent({ ...options, prefersReducedData: () => true });
+    expect(prefetchShellSectionHref).not.toHaveBeenCalled();
+    expect(prefetchOverlayHref).not.toHaveBeenCalled();
+    expect(warmProviderOrigins).not.toHaveBeenCalled();
+
+    primeShellPrefetchIntent({ ...options, prefersReducedData: () => false });
+    expect(prefetchShellSectionHref).toHaveBeenCalledWith(anchor.href, { speculative: true });
+    expect(prefetchOverlayHref).toHaveBeenCalledWith(anchor.href);
+  });
+
   describe('hover dwell', () => {
     afterEach(() => {
       vi.useRealTimers();

@@ -1,5 +1,6 @@
 export type TraceEvent = {
   name: string;
+  cat?: string;
   dur?: number;
   ts?: number;
   pid?: number;
@@ -7,8 +8,8 @@ export type TraceEvent = {
   args?: {
     name?: string;
     elementCount?: number;
-    data?: { elementCount?: number };
-    beginData?: { elementCount?: number };
+    data?: { elementCount?: number; functionName?: string; url?: string };
+    beginData?: { dirtyObjects?: number; elementCount?: number; totalObjects?: number };
   };
 };
 
@@ -146,6 +147,32 @@ function rendererMainThread(events: TraceEvent[]) {
 
 function intervalDurations(events: TraceEvent[], names: Set<string>) {
   return mergeIntervals(events, names).map((interval) => (interval.end - interval.start) / 1000);
+}
+
+export function describeRendererLongTasks(events: TraceEvent[]) {
+  const target = rendererMainThread(events);
+  const mainEvents = events.filter((event) => event.pid === target.pid && event.tid === target.tid);
+  const slices = mainEvents.filter(
+    (event) => event.name !== 'RunTask' && event.ts !== undefined && (event.dur ?? 0) >= 1000,
+  );
+  return mainEvents
+    .filter((event) => event.name === 'RunTask' && event.ts !== undefined && (event.dur ?? 0) >= 50_000)
+    .map((task) => ({
+      startUs: task.ts!,
+      durationMs: task.dur! / 1000,
+      // These slices can contain one another; they are diagnostic labels, not additive time.
+      nestedSlices: slices
+        .filter((event) => event.ts! >= task.ts! && event.ts! + event.dur! <= task.ts! + task.dur!)
+        .toSorted((left, right) => right.dur! - left.dur!)
+        .slice(0, 5)
+        .map((event) => ({
+          name: event.name,
+          durationMs: event.dur! / 1000,
+          scriptUrl: event.args?.data?.url ?? null,
+          dirtyObjects: event.args?.beginData?.dirtyObjects ?? null,
+          totalObjects: event.args?.beginData?.totalObjects ?? null,
+        })),
+    }));
 }
 
 export function summarizeTrace(events: TraceEvent[]) {

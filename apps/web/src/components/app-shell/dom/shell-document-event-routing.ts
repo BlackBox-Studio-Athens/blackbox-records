@@ -233,11 +233,17 @@ export function connectShellDocumentEventRouting({
   }
 
   const hoverPrefetchDwell = createShellHoverPrefetchDwell();
+  let lastPointerAt = -Infinity;
 
-  function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null, hoverDwell?: typeof hoverPrefetchDwell) {
+  function primeMusicAndOverlayPrefetch(
+    eventTarget: EventTarget | null,
+    hoverDwell?: typeof hoverPrefetchDwell,
+    speculative = false,
+  ) {
     primePrefetchIntent({
       eventTarget,
       hoverDwell,
+      speculative,
       isNavigableOverlayAnchor,
       isNavigableShellSectionAnchor,
       prefetchOverlayHref,
@@ -247,16 +253,28 @@ export function connectShellDocumentEventRouting({
     });
   }
 
-  // A mouse hover waits for the dwell; touch and pen fire pointerover as the press begins, so they prefetch at once.
+  // Touch and pen pointerover can be the start of a swipe; only a deliberate mouse dwell warms a destination.
   function handleDocumentPointerOver(event: PointerEvent) {
-    primeMusicAndOverlayPrefetch(event.target, event.pointerType === 'mouse' ? hoverPrefetchDwell : undefined);
+    lastPointerAt = performance.now();
+    if (event.pointerType !== 'mouse') {
+      hoverPrefetchDwell.cancel();
+      return;
+    }
+    primeMusicAndOverlayPrefetch(event.target, hoverPrefetchDwell);
+  }
+
+  function handleDocumentPointerActivity() {
+    lastPointerAt = performance.now();
   }
 
   function handleDocumentFocusIn(event: FocusEvent) {
-    primeMusicAndOverlayPrefetch(event.target);
+    // A press can generate focus before click, or after touchend in embedded browsers.
+    if (performance.now() - lastPointerAt < 1000) return;
+    primeMusicAndOverlayPrefetch(event.target, undefined, true);
   }
 
   function handleKeyDown(event: KeyboardEvent): ShellEscapeDismissalResult {
+    lastPointerAt = -Infinity;
     return handleEscapeDismissal({
       closeOverlayWithHistoryBack,
       closePlayerModal: closePlayerModalWithHistoryBack,
@@ -304,6 +322,7 @@ export function connectShellDocumentEventRouting({
     onFocusIn: handleDocumentFocusIn,
     onKeyDown: handleKeyDown,
     onPointerOver: handleDocumentPointerOver,
+    onPointerActivity: handleDocumentPointerActivity,
     onPopState: handlePopState,
     windowTarget,
   });

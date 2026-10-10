@@ -3249,6 +3249,10 @@ body {
     pointer-events: none;
   }
 
+  .motto-word-cycle__tears[data-hidden] {
+    visibility: hidden;
+  }
+
   .motto-word-cycle__tear {
     position: absolute;
     top: 0;

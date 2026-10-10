@@ -19,6 +19,7 @@ describe('connectShellDocumentListeners', () => {
       onFocusIn: vi.fn(),
       onKeyDown: vi.fn(),
       onPointerOver: vi.fn(),
+      onPointerActivity: vi.fn(),
       onPopState: vi.fn(),
     };
 
@@ -30,6 +31,8 @@ describe('connectShellDocumentListeners', () => {
 
     expect(documentTarget.addEventListener).toHaveBeenCalledWith('click', handlers.onClick, true);
     expect(documentTarget.addEventListener).toHaveBeenCalledWith('pointerover', handlers.onPointerOver);
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel'])
+      expect(documentTarget.addEventListener).toHaveBeenCalledWith(type, handlers.onPointerActivity);
     expect(documentTarget.addEventListener).toHaveBeenCalledWith('focusin', handlers.onFocusIn);
     expect(documentTarget.addEventListener).toHaveBeenCalledWith('keydown', handlers.onKeyDown);
     expect(windowTarget.addEventListener).toHaveBeenCalledWith('popstate', handlers.onPopState);
@@ -45,6 +48,7 @@ describe('connectShellDocumentListeners', () => {
       onFocusIn: vi.fn(),
       onKeyDown: vi.fn(),
       onPointerOver: vi.fn(),
+      onPointerActivity: vi.fn(),
       onPopState: vi.fn(),
     };
 
@@ -58,6 +62,8 @@ describe('connectShellDocumentListeners', () => {
 
     expect(documentTarget.removeEventListener).toHaveBeenCalledWith('click', handlers.onClick, true);
     expect(documentTarget.removeEventListener).toHaveBeenCalledWith('pointerover', handlers.onPointerOver);
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel'])
+      expect(documentTarget.removeEventListener).toHaveBeenCalledWith(type, handlers.onPointerActivity);
     expect(documentTarget.removeEventListener).toHaveBeenCalledWith('focusin', handlers.onFocusIn);
     expect(documentTarget.removeEventListener).toHaveBeenCalledWith('keydown', handlers.onKeyDown);
     expect(windowTarget.removeEventListener).toHaveBeenCalledWith('popstate', handlers.onPopState);

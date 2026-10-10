@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertTraversalSetup,
   countStoreActivationRequests,
+  describeRendererLongTasks,
   dynamicImportSpecifiers,
   extractStoreActivationMilestones,
   storeActivationRejectionReasons,
@@ -41,6 +42,32 @@ describe('runtime performance helpers', () => {
     expect(result.layout.maximum).toBe(265);
     expect(result.tasks.maximum).toBe(270);
     expect(result.longTaskCount).toBe(1);
+  });
+  it('keeps long-task layout attribution on the target renderer without adding nested durations', () => {
+    const result = describeRendererLongTasks([
+      { name: 'thread_name', pid: 1, tid: 1, args: { name: 'CrRendererMain' } },
+      { name: 'RunTask', pid: 1, tid: 1, ts: 1_000, dur: 277_000 },
+      { name: 'TimerFire', pid: 1, tid: 1, ts: 2_000, dur: 275_000 },
+      {
+        name: 'Layout',
+        pid: 1,
+        tid: 1,
+        ts: 3_000,
+        dur: 271_000,
+        args: { beginData: { dirtyObjects: 318, totalObjects: 319 } },
+      },
+      { name: 'Layout', pid: 1, tid: 2, ts: 3_000, dur: 500_000 },
+    ]);
+    expect(result).toEqual([
+      {
+        startUs: 1_000,
+        durationMs: 277,
+        nestedSlices: [
+          { name: 'TimerFire', durationMs: 275, scriptUrl: null, dirtyObjects: null, totalObjects: null },
+          { name: 'Layout', durationMs: 271, scriptUrl: null, dirtyObjects: 318, totalObjects: 319 },
+        ],
+      },
+    ]);
   });
   it('reads Vite template-literal dynamic imports', () => {
     expect(dynamicImportSpecifiers('import(`./store-cart.A1b2.js`); import("./drawer.C3d4.js")')).toEqual([

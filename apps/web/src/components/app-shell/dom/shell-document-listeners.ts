@@ -3,10 +3,15 @@ type ShellDocumentEventTarget = {
   addEventListener(type: 'focusin', listener: (event: FocusEvent) => void): void;
   addEventListener(type: 'keydown', listener: (event: KeyboardEvent) => void): void;
   addEventListener(type: 'pointerover', listener: (event: PointerEvent) => void): void;
+  addEventListener(type: 'pointerdown' | 'pointerup' | 'pointercancel', listener: (event: PointerEvent) => void): void;
   removeEventListener(type: 'click', listener: (event: MouseEvent) => void, options: true): void;
   removeEventListener(type: 'focusin', listener: (event: FocusEvent) => void): void;
   removeEventListener(type: 'keydown', listener: (event: KeyboardEvent) => void): void;
   removeEventListener(type: 'pointerover', listener: (event: PointerEvent) => void): void;
+  removeEventListener(
+    type: 'pointerdown' | 'pointerup' | 'pointercancel',
+    listener: (event: PointerEvent) => void,
+  ): void;
 };
 
 type ShellWindowEventTarget = {
@@ -23,6 +28,7 @@ export function connectShellDocumentListeners({
   onFocusIn,
   onKeyDown,
   onPointerOver,
+  onPointerActivity,
   onPopState,
   windowTarget,
 }: {
@@ -32,11 +38,15 @@ export function connectShellDocumentListeners({
   onFocusIn: (event: FocusEvent) => void;
   onKeyDown: (event: KeyboardEvent) => void;
   onPointerOver: (event: PointerEvent) => void;
+  onPointerActivity: (event: PointerEvent) => void;
   onPopState: () => void;
   windowTarget: ShellWindowEventTarget;
 }) {
   documentTarget.addEventListener('click', onClick, true);
   documentTarget.addEventListener('pointerover', onPointerOver);
+  documentTarget.addEventListener('pointerdown', onPointerActivity);
+  documentTarget.addEventListener('pointerup', onPointerActivity);
+  documentTarget.addEventListener('pointercancel', onPointerActivity);
   documentTarget.addEventListener('focusin', onFocusIn);
   documentTarget.addEventListener('keydown', onKeyDown);
   windowTarget.addEventListener('popstate', onPopState);
@@ -45,6 +55,9 @@ export function connectShellDocumentListeners({
   return () => {
     documentTarget.removeEventListener('click', onClick, true);
     documentTarget.removeEventListener('pointerover', onPointerOver);
+    documentTarget.removeEventListener('pointerdown', onPointerActivity);
+    documentTarget.removeEventListener('pointerup', onPointerActivity);
+    documentTarget.removeEventListener('pointercancel', onPointerActivity);
     documentTarget.removeEventListener('focusin', onFocusIn);
     documentTarget.removeEventListener('keydown', onKeyDown);
     windowTarget.removeEventListener('popstate', onPopState);
