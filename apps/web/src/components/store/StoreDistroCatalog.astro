@@ -10,7 +10,7 @@ import {
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import StoreBrowsePane from './StoreBrowsePane.astro';
-import StoreCoverflowControls from './StoreCoverflowControls.astro';
+import StoreCrate from './StoreCrate.astro';
 import { StoreSearchToolbar } from './StoreDistroSearch';
 interface Props {
   entries: StoreCollectionEntry[];
@@ -19,7 +19,6 @@ const { entries: sourceEntries } = Astro.props;
 const entries = sortStoreCollectionEntriesByArtist(sourceEntries);
 const content = await getDistroPageContent();
 const groups = groupStoreDistroCollectionEntries(entries);
-const enrolled = entries.length > 6;
 const catalogId = 'distro-catalog';
 const formats = [
   { key: 'all', target: 'distro-search-results', label: 'All formats', count: entries.length },
@@ -68,27 +67,22 @@ const formats = [
           aria-hidden="true"
         />
       ))}
-      <div
-        data-store-coverflow-group={enrolled ? '' : undefined}
-        data-store-coverflow-mode={enrolled ? 'catalog' : undefined}
-        data-store-coverflow-total={enrolled ? entries.length : undefined}
+      <StoreCrate
+        catalogId={catalogId}
+        formatGroups={entries.map(getStoreDistroFormatGroup)}
+        binRow={false}
+        label="Distro"
       >
-        {enrolled && <StoreCoverflowControls catalogId={catalogId} total={entries.length} />}
-        <div class="store-coverflow-shell">
-          {enrolled && <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />}
-          <div id={catalogId} class="distro-group-grid" data-store-coverflow-stage={enrolled ? '' : undefined}>
-            {entries.map((entry, index) => (
-              <StoreItemCard
-                entry={entry}
-                searchable
-                formatKey={createStoreDistroGroupHeadingId(getStoreDistroFormatGroup(entry))}
-                coverflowEnrolled={enrolled}
-                imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
-              />
-            ))}
-          </div>
+        <div id={catalogId} class="distro-group-grid">
+          {entries.map((entry, index) => (
+            <StoreItemCard
+              entry={entry}
+              searchable
+              imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
+            />
+          ))}
         </div>
-      </div>
+      </StoreCrate>
       {entries.length === 0 && <p>No Store items currently available.</p>}
     </div>
   </section>

@@ -47,54 +47,39 @@ function restoreIslandServerMarkup(liveRoot: ParentNode, cloneRoot: ParentNode) 
   });
 }
 
-export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
-  root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
-    groupElement.dataset.storeCoverflowMode = 'catalog';
-    groupElement.removeAttribute('data-store-coverflow-ready');
-    groupElement.removeAttribute('data-store-coverflow-reveal');
-    groupElement.removeAttribute('data-store-coverflow-transitioning');
-    groupElement.removeAttribute('data-store-coverflow-visited');
-    groupElement.removeAttribute('aria-roledescription');
-
-    const controlsElement = groupElement.querySelector<HTMLElement>('[data-store-coverflow-controls]');
-    if (controlsElement) {
-      controlsElement.hidden = false;
-      controlsElement.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
-        button.disabled = true;
+/**
+ * The Store Crate keeps its state on its root, inside its stage and on the hand card, so the cached copy drops those
+ * and returns to the complete Grid. Format selection returns to All formats.
+ */
+export function sanitizeStoreCrateSnapshot(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('.store-crate[data-store-crate]').forEach((crate) => {
+    crate.dataset.storeCrate = 'grid';
+    crate.removeAttribute('data-store-crate-ready');
+    crate.removeAttribute('data-store-crate-switch');
+    crate.removeAttribute('data-store-crate-settled');
+    crate.querySelectorAll<HTMLButtonElement>('[data-store-crate-grid], [data-store-crate-open]').forEach((button) => {
+      button.disabled = true;
+      button.setAttribute('aria-pressed', String(button.hasAttribute('data-store-crate-grid')));
+    });
+    crate
+      .querySelectorAll('[data-store-crate-bin-choice]')
+      .forEach((choice) => choice.setAttribute('aria-pressed', 'false'));
+    crate
+      .querySelectorAll<HTMLElement>('[data-store-crate-desk], [data-store-crate-nav], [data-store-crate-end]')
+      .forEach((part) => {
+        part.hidden = true;
       });
-    }
-    groupElement
-      .querySelectorAll<HTMLElement>(
-        '[data-store-coverflow-previous], [data-store-coverflow-next], [data-store-coverflow-toggle], [data-store-coverflow-preview]',
-      )
-      .forEach((buttonElement) => buttonElement.removeAttribute('aria-disabled'));
-    groupElement.querySelector('[data-store-coverflow-toggle]')?.setAttribute('aria-pressed', 'true');
-    groupElement.querySelector('[data-store-coverflow-preview]')?.setAttribute('aria-pressed', 'false');
-    const status = groupElement.querySelector<HTMLElement>('[data-store-coverflow-status]');
-    if (status) {
-      status.textContent = '';
-      status.hidden = true;
-    }
-    const listen = groupElement.querySelector<HTMLButtonElement>('[data-store-coverflow-listen]');
-    if (listen) {
-      for (const { name } of [...listen.attributes]) {
-        if (name.startsWith('data-music-') && name !== 'data-music-streaming-service-embedded-player-trigger') {
-          listen.removeAttribute(name);
-        }
-      }
-      listen.hidden = true;
-      listen.disabled = false;
-    }
-  });
-  root.querySelectorAll<HTMLElement>('[data-store-coverflow-card]').forEach((cardElement) => {
-    cardElement.removeAttribute('data-store-coverflow-position');
-    cardElement.removeAttribute('data-store-coverflow-selected');
-  });
-  root.querySelectorAll<HTMLElement>('[data-store-coverflow-initial-value]').forEach((valueElement) => {
-    valueElement.textContent = valueElement.dataset.storeCoverflowInitialValue || '';
-  });
-  root.querySelectorAll<HTMLElement>('[data-store-coverflow-summary]').forEach((summaryElement) => {
-    summaryElement.textContent = summaryElement.dataset.storeCoverflowInitialLabel || '';
+    crate.querySelectorAll<HTMLElement>('[data-store-crate-stage]').forEach((stage) => {
+      stage.replaceChildren();
+      stage.removeAttribute('style');
+      stage.removeAttribute('data-mechanic');
+      stage.removeAttribute('aria-label');
+    });
+    crate.querySelectorAll<HTMLElement>('[data-store-crate-rail]').forEach((rail) => rail.replaceChildren());
+    crate.querySelectorAll<HTMLElement>('[data-store-crate-status], [data-store-crate-counter]').forEach((text) => {
+      text.textContent = '';
+    });
+    crate.querySelectorAll('[data-store-crate-hand]').forEach((card) => card.removeAttribute('data-store-crate-hand'));
   });
   root.querySelectorAll<HTMLElement>('[data-distro-selected-format]').forEach((element) => {
     element.removeAttribute('data-distro-selected-format');
@@ -181,13 +166,10 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-gallery-fallback]').forEach((element) => {
     element.hidden = false;
   });
-  root.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
-    image.sizes = image.dataset.storeGridSizes!;
-  });
   root.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });
-  sanitizeStoreCoverflowSnapshot(root);
+  sanitizeStoreCrateSnapshot(root);
   sanitizeStoreListingPricePlaceholders(root);
   sanitizeReleaseCatalogPresentation(root);
   root.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {

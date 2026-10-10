@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  assertTraversalSetup,
   countStoreActivationRequests,
   describeRendererLongTasks,
   dynamicImportSpecifiers,
@@ -24,13 +23,6 @@ describe('runtime performance helpers', () => {
     expect(result.animationFrameCallbacks).toBe(1);
     expect(result.styleRecalcElements.total).toBe(12);
   });
-  it('rejects missing readiness and incomplete expanded traversal setup', () => {
-    expect(() => assertTraversalSetup([], false)).toThrow();
-    expect(() => assertTraversalSetup([{ ready: false, mode: 'preview', cardCount: 6 }], false)).toThrow();
-    expect(() => assertTraversalSetup([{ ready: true, mode: 'preview', cardCount: 6 }], true)).toThrow();
-    expect(() => assertTraversalSetup([{ ready: true, mode: 'catalog', cardCount: 6 }], true)).not.toThrow();
-  });
-
   it('preserves a long individual slice even when windowed p95 passes', () => {
     const result = summarizeTrace([
       { name: 'thread_name', pid: 1, tid: 1, args: { name: 'CrRendererMain' } },

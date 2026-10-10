@@ -11,7 +11,7 @@ import {
   readDocumentShellPageSnapshot,
   readParsedShellPageSnapshot,
   rememberDocumentIslandServerMarkup,
-  sanitizeStoreCoverflowSnapshot,
+  sanitizeStoreCrateSnapshot,
   scheduleIdleShellTask,
   SHELL_IDLE_SNAPSHOT_TIMEOUT_MS,
   updateDocumentMetadata,
@@ -340,78 +340,55 @@ describe('shell page snapshots', () => {
     expect(cacheSnapshot).not.toHaveBeenCalled();
   });
 
-  it('restores the server-authored Coverflow state before caching a document snapshot', () => {
+  it('returns a cached Store Crate to its complete Grid and All formats', () => {
     const removed = new Set<string>();
-    const group = {
-      dataset: {
-        storeCoverflowMode: 'preview',
-        storeCoverflowPreviewCount: '6',
-        storeCoverflowRemainingCount: '52',
-        storeCoverflowTotal: '53',
-      },
+    const element = <Extra extends object>(extra: Extra = {} as Extra) => ({
+      hidden: false,
+      textContent: 'kept',
       removeAttribute: (name: string) => removed.add(name),
-      querySelector(selector: string) {
-        if (selector === '[data-store-coverflow-controls]') return controls;
-        if (selector === '[data-store-coverflow-toggle]') return toggle;
-        if (selector === '[data-store-coverflow-status]') return status;
-        if (selector === '[data-store-coverflow-listen]') return listen;
-        return null;
-      },
+      ...extra,
+    });
+    const pressed = new Map<string, string>();
+    const button = (name: string) =>
+      element({
+        disabled: false,
+        hasAttribute: (attribute: string) => attribute === name,
+        setAttribute: (attribute: string, value: string) => {
+          if (attribute === 'aria-pressed') pressed.set(name, value);
+        },
+      });
+    const gridButton = button('data-store-crate-grid');
+    const openButton = button('data-store-crate-open');
+    const choice = button('data-store-crate-bin-choice');
+    const desk = element();
+    const nav = element();
+    const end = element();
+    const replaced: string[] = [];
+    const stage = element({ replaceChildren: () => replaced.push('stage') });
+    const rail = element({ replaceChildren: () => replaced.push('rail') });
+    const status = element();
+    const counter = element();
+    const hand = element();
+    const crate = element({
+      dataset: { storeCrate: 'open' } as Record<string, string>,
       querySelectorAll(selector: string) {
-        if (selector.includes('[data-store-coverflow-next]')) return [previousButton, nextButton, toggle];
+        if (selector === '[data-store-crate-grid], [data-store-crate-open]') return [gridButton, openButton];
+        if (selector === '[data-store-crate-bin-choice]') return [choice];
+        if (selector === '[data-store-crate-desk], [data-store-crate-nav], [data-store-crate-end]')
+          return [desk, nav, end];
+        if (selector === '[data-store-crate-stage]') return [stage];
+        if (selector === '[data-store-crate-rail]') return [rail];
+        if (selector === '[data-store-crate-status], [data-store-crate-counter]') return [status, counter];
+        if (selector === '[data-store-crate-hand]') return [hand];
         return [];
       },
-    };
-    const listenAttributes = new Map([
-      ['data-music-streaming-service-embedded-player-trigger', ''],
-      ['data-music-listen-source-id', 'release-34'],
-      ['data-music-streaming-service-embedded-player-bandcamp-embed-url', 'https://bandcamp.com/EmbeddedPlayer/'],
-      ['class', 'store-coverflow-listen'],
-    ]);
-    const listen = {
-      get attributes() {
-        return [...listenAttributes.keys()].map((name) => ({ name }));
-      },
-      disabled: true,
-      hidden: false,
-      removeAttribute: (name: string) => listenAttributes.delete(name),
-    };
-    const card = {
-      dataset: { storeCoverflowInitialPosition: 'active', storeCoverflowPosition: 'right-near' },
-      removeAttribute: (name: string) => removed.add(name),
-    };
-    const nativeButton = { disabled: false };
-    const controls = { hidden: false, querySelectorAll: () => [nativeButton] };
-    const previousButton = { removeAttribute: (name: string) => removed.add(name) };
-    const nextButton = { removeAttribute: (name: string) => removed.add(name) };
-    let toggleAriaPressed = 'true';
-    const toggle = {
-      dataset: { storeCoverflowViewAllLabel: 'View all 53' },
-      removeAttribute: (name: string) => removed.add(name),
-      setAttribute: (name: string, value: string) => {
-        if (name === 'aria-pressed') toggleAriaPressed = value;
-      },
-      textContent: 'Show Coverflow',
-    };
-    const status = {
-      dataset: { storeCoverflowInitialLabel: 'Barren Point — Bonebrokk' },
-      hidden: true,
-      textContent: '',
-    };
-    const currentValue = {
-      dataset: { storeCoverflowInitialValue: '1' },
-      textContent: '34',
-    };
-    const remainingValue = {
-      dataset: { storeCoverflowInitialValue: '52' },
-      textContent: '19',
-    };
-    const summary = {
-      dataset: { storeCoverflowInitialLabel: "You're viewing 1 of 53." },
-      textContent: "You're viewing 34 of 53.",
-    };
+    });
     const selectedRoot = { removeAttribute: (name: string) => removed.add(name) };
     const currentSection = { removeAttribute: (name: string) => removed.add(name) };
+    let allFormatLinkAriaCurrent: string | null = null;
+    let allFormatLinkCurrent = false;
+    let selectedFormatLinkAriaCurrent: string | null = 'true';
+    let selectedFormatLinkCurrent = true;
     const allFormatLink = {
       dataset: { distroFormatKey: 'all' },
       removeAttribute: (name: string) => removed.add(name),
@@ -423,7 +400,7 @@ describe('shell page snapshots', () => {
       },
     };
     const selectedFormatLink = {
-      dataset: { distroFormatKey: 'distro-group-vinyl-7-inch' },
+      dataset: { distroFormatKey: 'distro-group-cds' },
       removeAttribute: (name: string) => {
         removed.add(name);
         if (name === 'aria-current') selectedFormatLinkAriaCurrent = null;
@@ -433,16 +410,9 @@ describe('shell page snapshots', () => {
         selectedFormatLinkCurrent = force;
       },
     };
-    let allFormatLinkAriaCurrent: string | null = null;
-    let allFormatLinkCurrent = false;
-    let selectedFormatLinkAriaCurrent: string | null = 'true';
-    let selectedFormatLinkCurrent = true;
     const root = {
       querySelectorAll(selector: string) {
-        if (selector === '[data-store-coverflow-group]') return [group];
-        if (selector === '[data-store-coverflow-card]') return [card];
-        if (selector === '[data-store-coverflow-initial-value]') return [currentValue, remainingValue];
-        if (selector === '[data-store-coverflow-summary]') return [summary];
+        if (selector === '.store-crate[data-store-crate]') return [crate];
         if (selector === '[data-distro-selected-format]') return [selectedRoot];
         if (selector === '[data-distro-format-current]') return [currentSection, selectedFormatLink];
         if (selector === '[data-distro-format-link]') return [allFormatLink, selectedFormatLink];
@@ -450,41 +420,28 @@ describe('shell page snapshots', () => {
       },
     } as unknown as ParentNode;
 
-    sanitizeStoreCoverflowSnapshot(root);
+    sanitizeStoreCrateSnapshot(root);
 
-    expect(removed).toEqual(
-      new Set([
-        'data-store-coverflow-ready',
-        'data-store-coverflow-position',
-        'data-store-coverflow-reveal',
-        'data-store-coverflow-transitioning',
-        'data-store-coverflow-visited',
-        'data-store-coverflow-selected',
-        'data-distro-format-current',
-        'data-distro-selected-format',
-        'aria-disabled',
-        'aria-current',
-        'aria-roledescription',
-      ]),
-    );
-    expect(group.dataset.storeCoverflowMode).toBe('catalog');
-    expect(group.dataset).toMatchObject({
-      storeCoverflowPreviewCount: '6',
-      storeCoverflowRemainingCount: '52',
-      storeCoverflowTotal: '53',
-    });
-    expect([...listenAttributes.keys()]).toEqual(['data-music-streaming-service-embedded-player-trigger', 'class']);
-    expect(listen).toMatchObject({ disabled: false, hidden: true });
-    expect(removed.has('data-store-coverflow-position')).toBe(true);
-    expect(controls.hidden).toBe(false);
-    expect(nativeButton.disabled).toBe(true);
-    expect(toggle.textContent).toBe('Show Coverflow');
-    expect(toggleAriaPressed).toBe('true');
-    expect(status.textContent).toBe('');
-    expect(status.hidden).toBe(true);
-    expect(currentValue.textContent).toBe('1');
-    expect(remainingValue.textContent).toBe('52');
-    expect(summary.textContent).toBe("You're viewing 1 of 53.");
+    expect(crate.dataset.storeCrate).toBe('grid');
+    for (const name of [
+      'data-store-crate-ready',
+      'data-store-crate-switch',
+      'data-store-crate-settled',
+      'data-store-crate-hand',
+      'style',
+      'data-mechanic',
+      'aria-label',
+      'data-distro-selected-format',
+      'data-distro-format-current',
+    ]) {
+      expect(removed.has(name)).toBe(true);
+    }
+    expect([gridButton.disabled, openButton.disabled]).toEqual([true, true]);
+    expect(pressed.get('data-store-crate-grid')).toBe('true');
+    expect(pressed.get('data-store-crate-open')).toBe('false');
+    expect([desk.hidden, nav.hidden, end.hidden]).toEqual([true, true, true]);
+    expect(replaced).toEqual(['stage', 'rail']);
+    expect([status.textContent, counter.textContent]).toEqual(['', '']);
     expect(allFormatLinkCurrent).toBe(true);
     expect(allFormatLinkAriaCurrent).toBe('true');
     expect(selectedFormatLinkCurrent).toBe(false);

@@ -1,0 +1,473 @@
+/*
+ * The Store Crate. Only transform and opacity animate; dimming uses shade layers so artwork never repaints; hover
+ * styles need a real pointer. The Crate keeps its state in three places only (the root's data-store-crate, the stage
+ * host's children and the hand card's data-store-crate-hand), so a cached page is cleaned by removing those.
+ */
+
+.store-crate {
+  --crate-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The bar keeps its row from the first paint, so the switch appearing after hydration moves nothing. */
+.store-crate-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  min-height: 2.875rem;
+  margin-bottom: 1rem;
+}
+
+/* Grid and Crate read as one switch; the pressed side takes the ink face. */
+.store-crate-view-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  border: 1px solid #333333;
+  padding: 3px;
+  background: var(--secondary);
+  transition:
+    opacity 200ms var(--crate-ease),
+    visibility 200ms;
+}
+
+.store-crate:not([data-store-crate-ready]) .store-crate-view-switch,
+.store-crate[data-store-crate-switch='off'] .store-crate-view-switch {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.store-crate-view {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-height: 2.375rem;
+  border: 0;
+  padding: 1px 0.875rem 0;
+  color: var(--muted-foreground);
+  background: transparent;
+  font-family: var(--font-display-ui);
+  font-size: 1.0625rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 200ms var(--crate-ease),
+    color 200ms var(--crate-ease);
+}
+
+.store-crate-view[aria-pressed='true'] {
+  color: var(--background);
+  background: var(--foreground);
+}
+
+.store-crate-view:disabled {
+  cursor: default;
+}
+
+.store-crate-view:focus-visible,
+.store-crate-bin-choice:focus-visible,
+.store-crate-letter:focus-visible,
+.store-crate-restart:focus-visible,
+.store-crate-stage:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+/* The bin row is the format choice on collections without format links; it shows only in the Crate. */
+.store-crate-bins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.store-crate:not([data-store-crate='open']) .store-crate-bins {
+  display: none;
+}
+
+.store-crate-bin-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid #3a3a3a;
+  padding: 0 0.75rem;
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  font-family: var(--font-display-ui);
+  font-size: 1.0625rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    border-color 200ms var(--crate-ease),
+    color 200ms var(--crate-ease);
+}
+
+.store-crate-bin-choice[aria-pressed='true'] {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+
+.store-crate-bin-choice span {
+  color: var(--muted-foreground);
+}
+
+/* Open: the bin and its rail on one side, the item in hand's own card on the other. */
+.store-crate[data-store-crate='open'] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'bar' 'desk' 'nav' 'panel';
+  column-gap: 2rem;
+}
+
+.store-crate-bar {
+  grid-area: bar;
+}
+
+.store-crate-desk {
+  grid-area: desk;
+  min-width: 0;
+}
+
+.store-crate-nav {
+  grid-area: nav;
+}
+
+.store-crate-end,
+.store-crate[data-store-crate='open'] > :is(.distro-group-grid, .store-catalog-chunks) {
+  grid-area: panel;
+}
+
+@media (min-width: 64rem) {
+  .store-crate[data-store-crate='open'] {
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: 'bar bar' 'desk nav' 'desk panel';
+  }
+
+  .store-crate-end,
+  .store-crate[data-store-crate='open'] > :is(.distro-group-grid, .store-catalog-chunks) {
+    align-self: end;
+  }
+}
+
+.store-crate[data-store-crate='open'] > :is(.distro-group-grid, .store-catalog-chunks) {
+  display: block;
+}
+
+.store-crate[data-store-crate='open'] .store-item-card--listing:not([data-store-crate-hand]) {
+  display: none;
+}
+
+.store-crate [data-store-crate-hand] {
+  content-visibility: visible;
+}
+
+/* The sleeve in the bin is the artwork; the card beside it carries the record's own actions. */
+.store-crate [data-store-crate-hand] .store-item-card__image-frame {
+  display: none;
+}
+
+.store-crate [data-store-crate-hand] .store-item-card__content {
+  min-height: 0;
+}
+
+.store-crate [data-store-crate-hand] .brand-card-title {
+  font-size: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+  line-height: 0.96;
+}
+
+.store-crate-stage {
+  position: relative;
+  overflow: hidden;
+  outline-offset: -2px;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+}
+
+.store-crate-stage:active {
+  cursor: grabbing;
+}
+
+/* Flip bins keep vertical swipes for flipping; the rack takes only sideways slides, so the page still scrolls. */
+.store-crate-stage[data-mechanic='flip'] {
+  touch-action: pinch-zoom;
+}
+
+.store-crate-stage[data-mechanic='rack'] {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Every bin is drawn at its design size and scaled to the stage as one 2D transform. */
+.store-crate-space {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.store-crate-bin {
+  position: absolute;
+  inset: 0;
+  transition:
+    transform 440ms var(--crate-ease),
+    opacity 220ms var(--crate-ease),
+    visibility 220ms;
+}
+
+.store-crate-sleeve {
+  position: absolute;
+  isolation: isolate;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: inherit;
+  transform-origin: 50% 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.store-crate-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.store-crate-shade {
+  position: absolute;
+  inset: 0;
+  background: var(--background);
+  pointer-events: none;
+}
+
+.store-crate-tab {
+  position: absolute;
+  overflow: hidden;
+  background: #e4e4e4;
+  color: var(--background);
+  font-family: var(--font-display-ui);
+  letter-spacing: 0.04em;
+  text-align: center;
+  pointer-events: none;
+}
+
+.store-crate-board {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2b2b2b;
+  background: var(--secondary);
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.store-crate-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0.22;
+  color: #e8e8e8;
+  font-family: var(--font-display-brand);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.store-crate-floor {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 110;
+  border-top: 1px solid #3a3a3a;
+  background: var(--background);
+  pointer-events: none;
+}
+
+.store-crate-rack {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #2b2b2b;
+  border-bottom: 0;
+  background: #111111;
+}
+
+/* A tape is a box: its cover faces you when pulled out, its spine faces you in the rack. Opacity sits on the faces,
+   because opacity below 1 on the box would flatten it. */
+.store-crate-tape {
+  position: absolute;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: inherit;
+  transform-style: preserve-3d;
+  transform-origin: 50% 100%;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.store-crate-face {
+  position: absolute;
+  top: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.store-crate-front {
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.store-crate-spine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #2b2b2b;
+  background: #161616;
+  color: #e8e8e8;
+  font-family: var(--font-display-ui);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+.store-crate-spine span {
+  color: var(--muted-foreground);
+}
+
+.store-crate-rail {
+  position: relative;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.store-crate-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.store-crate-letter {
+  flex: 1 0 2.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  padding: 0;
+  color: var(--muted-foreground);
+  background: none;
+  font-family: var(--font-display-ui);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 200ms var(--crate-ease);
+}
+
+.store-crate-letter[aria-current='true'] {
+  color: var(--foreground);
+  box-shadow: inset 0 -2px 0 var(--store-accent);
+}
+
+.store-crate-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block: 0.75rem;
+}
+
+.store-crate-counter {
+  flex-grow: 1;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-family: var(--font-display-ui);
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.store-crate-restart {
+  min-height: 2.75rem;
+  border: 0;
+  padding: 0 0.375rem;
+  color: var(--muted-foreground);
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(179, 179, 179, 0.4);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 200ms var(--crate-ease);
+}
+
+.store-crate-restart[hidden] {
+  display: none;
+}
+
+.store-crate-end {
+  display: grid;
+  gap: 1rem;
+}
+
+.store-crate-end h3 {
+  margin: 0;
+  font-family: var(--font-display-brand);
+  font-size: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+  font-weight: 400;
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.store-crate-end p {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.store-crate-end > div {
+  display: flex;
+  gap: 0.75rem;
+}
+
+@media (hover: hover) {
+  .store-crate-view[aria-pressed='false']:hover,
+  .store-crate-bin-choice:hover {
+    color: var(--foreground);
+    background: var(--control-face-selected);
+  }
+
+  .store-crate-letter:hover,
+  .store-crate-restart:hover {
+    color: var(--foreground);
+  }
+
+  .store-crate-sleeve[data-behind]:hover {
+    translate: 0 -12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-crate-view-switch,
+  .store-crate-view,
+  .store-crate-bin,
+  .store-crate-bin-choice,
+  .store-crate-letter,
+  .store-crate-restart {
+    transition: none;
+  }
+
+  .store-crate-sleeve[data-behind]:hover {
+    translate: none;
+  }
+}

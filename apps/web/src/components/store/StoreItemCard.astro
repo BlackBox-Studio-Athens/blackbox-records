@@ -6,27 +6,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
+import { binOfFormatGroup } from '@/components/store/crate/crate-bins';
 import {
+  createStoreDistroGroupHeadingId,
   getStoreDistroFormatGroup,
   type StoreCardImageLoadingMode,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
-  coverflowEnrolled?: boolean;
   entry: StoreCollectionEntry;
   imageLoadingMode?: StoreCardImageLoadingMode;
   searchable?: boolean;
-  formatKey?: string;
 }
-const { coverflowEnrolled = false, entry, imageLoadingMode = 'lazy', searchable = false, formatKey } = Astro.props;
+const { entry, imageLoadingMode = 'lazy', searchable = false } = Astro.props;
 const { storeItem, primaryAvailability, previewImage } = entry;
 const priority = imageLoadingMode === 'priority';
 const option = primaryAvailability?.optionLabel || entry.distro?.format || entry.distro?.group;
 const cartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const formatGroup = getStoreDistroFormatGroup(entry);
 const sizes =
   '(min-width: 1440px) 16.9375rem, (min-width: 1280px) calc((100vw - 356px) / 4), (min-width: 1024px) calc((100vw - 336px) / 3), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
-// Two widths keep Images transformations per source low and let phones, coverflow and HiDPI desktops share one cached 720w.
+// Two widths keep Images transformations per source low and let phones, Crate sleeves and HiDPI desktops share one cached 720w.
 const widths = [360, 720];
 ---
 
@@ -36,13 +37,14 @@ const widths = [360, 720];
   aria-label={storeItem.title + ' by ' + storeItem.subtitle}
   data-distro-search-item={searchable ? '' : undefined}
   data-store-artist={searchable ? storeItem.subtitle : undefined}
-  data-distro-format-key={formatKey}
+  data-distro-format-key={createStoreDistroGroupHeadingId(formatGroup)}
   data-distro-search-text={
     searchable
       ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')
       : undefined
   }
-  data-store-coverflow-card={coverflowEnrolled ? '' : undefined}
+  data-store-crate-bin={binOfFormatGroup(formatGroup) ?? undefined}
+  data-store-crate-slug={storeItem.slug}
 >
   <Card className="store-item-card__surface flex flex-1 flex-col rounded-none border-border bg-card shadow-none">
     <div class="store-item-card__image-frame">
@@ -53,7 +55,6 @@ const widths = [360, 720];
         widths={widths}
         width={largestImageWidth(storeItem.image, widths)}
         sizes={sizes}
-        data-store-grid-sizes={sizes}
         loading={priority ? 'eager' : imageLoadingMode}
         fetchpriority={priority ? 'high' : 'auto'}
       />
@@ -67,7 +68,6 @@ const widths = [360, 720];
           widths={widths}
           width={largestImageWidth(previewImage.image, widths)}
           sizes={sizes}
-          data-store-grid-sizes={sizes}
           loading="lazy"
           fetchpriority="low"
         />
@@ -132,7 +132,7 @@ const widths = [360, 720];
             data-store-item-slug={storeItem.slug}
             hidden
           >
-            <StoreBuyIcon formatGroup={getStoreDistroFormatGroup(entry)} />
+            <StoreBuyIcon formatGroup={formatGroup} />
             <span data-store-card-buy-label>Buy</span>
           </button>
         )}

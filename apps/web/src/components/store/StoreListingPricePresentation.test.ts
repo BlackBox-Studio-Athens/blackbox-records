@@ -158,15 +158,12 @@ describe('Store listing-price presentation', () => {
     const trigger = { disabled: false, hidden: true, querySelector: () => triggerLabel, toggleAttribute: vi.fn() };
     const total = { hidden: false };
     const preorderNotes = { hidden: false };
-    const view = { disabled: false };
-    const controls = { hidden: true, querySelectorAll: () => [view] };
     const elements: Record<string, unknown[]> = {
       '[data-store-search-toolbar]': [toolbar],
       '[data-store-artists]': [artistHost],
       '[data-store-artists-trigger]': [trigger],
       '[data-store-empty-results], [data-store-result-total]': [total],
       '[data-store-preorder-notes]': [preorderNotes],
-      '[data-store-coverflow-controls]': [controls],
     };
     const root = { querySelectorAll: (selector: string) => elements[selector] ?? [] } as unknown as ParentNode;
     sanitizeStoreSearchChrome(root);
@@ -183,8 +180,6 @@ describe('Store listing-price presentation', () => {
     expect(trigger.toggleAttribute).toHaveBeenCalledWith('data-store-artists-active', false);
     expect(total.hidden).toBe(true);
     expect(preorderNotes.hidden).toBe(true);
-    expect(controls.hidden).toBe(false);
-    expect(view.disabled).toBe(true);
   });
 
   it('uses the single listing projection endpoint and forwards cancellation', async () => {

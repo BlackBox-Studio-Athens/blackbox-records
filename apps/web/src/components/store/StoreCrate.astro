@@ -1,0 +1,138 @@
+---
+import { Image } from 'astro:assets';
+import { buttonVariants } from '@/components/ui/button';
+import logo from '@/content/brand-assets/logo-ui.png';
+import { BIN_WORDS, openBinsOf } from './crate/crate-bins';
+import './crate/crate.css';
+
+interface Props {
+  catalogId: string;
+  /** Each Store Item's format group, in page order: the Crate opens a bin for every group with seven or more. */
+  formatGroups: readonly string[];
+  /** Collections without format links choose a bin here; Distro chooses through its format links. */
+  binRow: boolean;
+  /** The name on each bin's back board, under the logo. */
+  label: string;
+}
+const { catalogId, formatGroups, binRow, label } = Astro.props;
+const bins = openBinsOf(formatGroups);
+const stepButton = buttonVariants({ variant: 'outline', size: 'icon-lg' });
+const endButton = buttonVariants({ variant: 'outline', size: 'lg' });
+---
+
+{/* Collections without a bin render only their Grid. */}
+{bins.length === 0 ? (
+  <slot />
+) : (
+  <div class="store-crate" data-store-crate="grid" data-store-crate-bins={bins.map(({ bin }) => bin).join(' ')}>
+    {/* The bar keeps its row from the first paint; the switch shows once the Store search island is ready. */}
+    <div class="store-crate-bar" data-store-crate-bar>
+      <div class="store-crate-view-switch" role="group" aria-label="Catalogue view">
+        <button
+          type="button"
+          class="store-crate-view"
+          aria-controls={catalogId}
+          aria-pressed="true"
+          data-store-crate-grid
+          disabled
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect width="7" height="7"></rect>
+            <rect x="9" width="7" height="7"></rect>
+            <rect y="9" width="7" height="7"></rect>
+            <rect x="9" y="9" width="7" height="7"></rect>
+          </svg>
+          Grid
+        </button>
+        <button
+          type="button"
+          class="store-crate-view"
+          aria-controls={catalogId}
+          aria-pressed="false"
+          data-store-crate-open
+          disabled
+        >
+          <svg width="18" height="16" viewBox="0 0 18 16" fill="currentColor" aria-hidden="true">
+            <rect x="5" y="0" width="8" height="2"></rect>
+            <rect x="3" y="3" width="12" height="2"></rect>
+            <rect x="1" y="6" width="16" height="10"></rect>
+          </svg>
+          Crate
+        </button>
+      </div>
+      {binRow && (
+        <div class="store-crate-bins" role="group" aria-label="Bins">
+          {bins.map(({ bin, count }) => (
+            <button type="button" class="store-crate-bin-choice" aria-pressed="false" data-store-crate-bin-choice={bin}>
+              {BIN_WORDS[bin].group}
+              <span>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+    <div class="store-crate-desk" data-store-crate-desk hidden>
+      <div
+        class="store-crate-stage"
+        role="group"
+        aria-roledescription="record bin"
+        tabindex="0"
+        data-store-crate-stage
+      ></div>
+      <nav class="store-crate-rail" aria-label="Jump to artists by letter" data-store-crate-rail></nav>
+    </div>
+    <div class="store-crate-nav" data-store-crate-nav hidden>
+      <p class="store-crate-counter" data-store-crate-counter></p>
+      <button type="button" class="store-crate-restart" data-store-crate-restart hidden>
+        Back to the start
+      </button>
+      <button type="button" class={stepButton} aria-label="Previous" data-store-crate-previous>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="M10 3 5 8l5 5"></path>
+        </svg>
+      </button>
+      <button type="button" class={stepButton} aria-label="Next" data-store-crate-next>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="m6 3 5 5-5 5"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="store-crate-end" data-store-crate-end hidden>
+      <h3 data-store-crate-end-title></h3>
+      <p data-store-crate-end-text></p>
+      <div>
+        <button type="button" class={endButton} data-store-crate-restart>
+          Back to the start
+        </button>
+        <button type="button" class={endButton} data-store-crate-previous>
+          Lift the last one
+        </button>
+      </div>
+    </div>
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-store-crate-status></p>
+    {/* A back board carries the logo; the stage clones this when it first builds a flip bin, so nothing loads before. */}
+    <template data-store-crate-stamp>
+      <span class="store-crate-stamp">
+        <Image src={logo} alt="" width={132} height={132} loading="lazy" decoding="async" draggable="false" />
+        <span>{label}</span>
+      </span>
+    </template>
+    <slot />
+  </div>
+)}

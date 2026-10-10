@@ -80,15 +80,6 @@ describe('touch ergonomics', () => {
       /inset:\s*-14px -4px/,
     );
   });
-
-  it('shows the phone Coverflow front card price inside the stage', () => {
-    const media = '@media (width < 40rem) and (prefers-reduced-motion: no-preference)';
-    const scope = "html[data-store-coverflow-capable] [data-store-coverflow-mode='preview']";
-    expect(ruleBody(`${scope} [data-store-coverflow-stage]`, media)).toMatch(
-      /height:\s*calc\(var\(--store-cover-size\) \+ 4rem\)/,
-    );
-    expect(ruleBody(`${scope} .store-item-card__image-frame`, media)).toMatch(/flex:\s*none/);
-  });
 });
 
 describe('Store layout on phones', () => {
@@ -101,9 +92,12 @@ describe('Store layout on phones', () => {
     expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
   });
 
-  it('lets every positioned Coverflow card paint its price and Buy row at every width', () => {
-    const scope = "html[data-store-coverflow-capable] [data-store-coverflow-mode='preview']";
-    expect(ruleBody(`${scope} [data-store-coverflow-position]`, null)).toMatch(/content-visibility:\s*visible/);
+  it('lets the item in hand in the Crate paint its price and Buy row at every width', () => {
+    const crateCss = readFileSync(
+      fileURLToPath(new URL('../components/store/crate/crate.css', import.meta.url)),
+      'utf8',
+    );
+    expect(crateCss).toMatch(/\.store-crate \[data-store-crate-hand\] \{\s*content-visibility: visible;/);
   });
 
   it('keeps the cart lines a window on short viewports', () => {

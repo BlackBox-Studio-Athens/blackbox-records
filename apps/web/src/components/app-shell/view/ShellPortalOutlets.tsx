@@ -11,17 +11,13 @@ const StoreCartButton = React.lazy(() => import('@/components/store/cart/StoreCa
 const NewsletterSignupForm = React.lazy(() => import('@/components/NewsletterSignupForm'));
 
 class PortalErrorBoundary extends React.Component<
-  React.PropsWithChildren<{ fallback: React.ReactNode; onError?: () => void }>,
+  React.PropsWithChildren<{ fallback: React.ReactNode }>,
   { failed: boolean }
 > {
   override state = { failed: false };
 
   static getDerivedStateFromError() {
     return { failed: true };
-  }
-
-  override componentDidCatch() {
-    this.props.onError?.();
   }
 
   override render() {
@@ -105,7 +101,6 @@ export default function ShellPortalOutlets({
             <PortalErrorBoundary
               key={activeShellPathname}
               fallback={<p role="alert">Store search is unavailable. Browse the catalog below.</p>}
-              onError={() => document.documentElement.removeAttribute('data-store-coverflow-capable')}
             >
               <React.Suspense fallback={loadingStatus('Store search')}>
                 <StoreDistroSearch

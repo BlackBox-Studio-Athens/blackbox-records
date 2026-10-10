@@ -4,14 +4,22 @@ import { resolve } from 'node:path';
 type CategoryOutputExpectation = {
   cardClass: string | null;
   count: number;
+  /** Whether the collection holds a format with a bin, so the Store Crate wraps its Grid. */
+  crate: boolean;
   path: string;
   title: string;
 };
 
 const expectations: CategoryOutputExpectation[] = [
-  { cardClass: 'store-item-card--listing', count: 104, path: '/store/', title: 'Store' },
-  { cardClass: 'store-item-card--listing', count: 3, path: '/store/blackbox-releases/', title: 'BlackBox Releases' },
-  { cardClass: 'store-item-card--listing', count: 101, path: '/store/distro/', title: 'Distro' },
+  { cardClass: 'store-item-card--listing', count: 104, crate: true, path: '/store/', title: 'Store' },
+  {
+    cardClass: 'store-item-card--listing',
+    count: 3,
+    crate: false,
+    path: '/store/blackbox-releases/',
+    title: 'BlackBox Releases',
+  },
+  { cardClass: 'store-item-card--listing', count: 101, crate: true, path: '/store/distro/', title: 'Distro' },
 ];
 
 const outputRoot = resolve(process.cwd(), 'apps/web/dist');
@@ -55,8 +63,17 @@ async function run() {
     if (countOccurrences(source, 'data-store-result-total') !== 1 || !source.includes(renderedCount + ' items')) {
       throw new Error('Expected one source-derived collection total on ' + expectation.path);
     }
-    if (!source.includes('data-store-artists') || source.includes('data-store-coverflow-initial-mode="preview"')) {
-      throw new Error('Expected progressive Grid with one shared Browse panel on ' + expectation.path);
+    if (!source.includes('data-store-artists')) {
+      throw new Error('Expected one shared Browse panel on ' + expectation.path);
+    }
+    // The Store Crate only ever opens in the browser: the server renders the Grid with no Crate state.
+    if (source.includes('class="store-crate"') !== expectation.crate) {
+      throw new Error(
+        `Expected ${expectation.path} ${expectation.crate ? 'to offer' : 'not to offer'} the Store Crate.`,
+      );
+    }
+    if (source.includes('data-store-crate="open"') || source.includes('data-store-crate-hand')) {
+      throw new Error('Expected the Store Crate to start in the Grid on ' + expectation.path);
     }
   }
 

@@ -8,13 +8,14 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
 import type { StoreCatalogCategory } from '@/lib/store-categories';
 import {
   createStoreDistroGroupHeadingId,
+  getStoreDistroFormatGroup,
   groupStoreDistroCollectionEntries,
   selectStoreCollectionEntries,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import StoreCategoryNavigation from '@/components/store/StoreCategoryNavigation.astro';
 import StoreBrowsePane from '@/components/store/StoreBrowsePane.astro';
-import StoreCoverflowControls from '@/components/store/StoreCoverflowControls.astro';
+import StoreCrate from '@/components/store/StoreCrate.astro';
 import { StoreSearchToolbar } from '@/components/store/StoreDistroSearch';
 import StoreListingPricePrefetch from './StoreListingPricePrefetch.astro';
 interface Props {
@@ -26,7 +27,6 @@ const { category, entries, discoverableCategories } = Astro.props;
 const distroGroups = groupStoreDistroCollectionEntries(
   category.id === 'all' ? selectStoreCollectionEntries(entries, 'distro') : [],
 );
-const coverflowEligible = entries.length > 6;
 const catalogId = 'all-store-catalog';
 ---
 
@@ -74,32 +74,22 @@ const catalogId = 'all-store-catalog';
           <p data-store-result-total hidden>
             {entries.length} {entries.length === 1 ? 'item' : 'items'}
           </p>
-          <div
-            data-store-coverflow-group={coverflowEligible ? '' : undefined}
-            data-store-coverflow-mode={coverflowEligible ? 'catalog' : undefined}
-            data-store-coverflow-total={coverflowEligible ? entries.length : undefined}
+          <StoreCrate
+            catalogId={catalogId}
+            formatGroups={entries.map(getStoreDistroFormatGroup)}
+            binRow
+            label={category.label}
           >
-            {coverflowEligible && <StoreCoverflowControls catalogId={catalogId} total={entries.length} />}
-            <div class="store-coverflow-shell">
-              {coverflowEligible && (
-                <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
-              )}
-              <div
-                id={catalogId}
-                class="store-catalog-chunks"
-                data-store-coverflow-stage={coverflowEligible ? '' : undefined}
-              >
-                {entries.map((entry, index) => (
-                  <StoreItemCard
-                    entry={entry}
-                    searchable
-                    coverflowEnrolled={coverflowEligible}
-                    imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
-                  />
-                ))}
-              </div>
+            <div id={catalogId} class="store-catalog-chunks">
+              {entries.map((entry, index) => (
+                <StoreItemCard
+                  entry={entry}
+                  searchable
+                  imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
+                />
+              ))}
             </div>
-          </div>
+          </StoreCrate>
           {entries.length === 0 && <p>No Store items currently available.</p>}
         </section>
       </div>

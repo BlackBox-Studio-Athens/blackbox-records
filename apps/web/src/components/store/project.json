@@ -26,7 +26,7 @@
       "exports": [
         "./StoreBrowsePane.astro",
         "./StoreCategoryNavigation.astro",
-        "./StoreCoverflowControls.astro",
+        "./StoreCrate.astro",
         "./StoreDistroCatalog.astro",
         "./StoreDistroSearch.tsx",
         "./StoreImageGallery.tsx",

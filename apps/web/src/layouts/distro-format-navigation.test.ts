@@ -25,7 +25,11 @@ describe('Distro format navigation', () => {
     expect(source).toContain('data-distro-format-key={format.key}');
     expect(source).toContain('{format.count}');
     expect(source).toContain('id={createStoreDistroGroupHeadingId(group.groupName)}');
-    expect(source).toContain('formatKey={createStoreDistroGroupHeadingId(getStoreDistroFormatGroup(entry))}');
+    // Every card files itself under its format, so any Store collection can filter or open a bin from it.
+    expect(source).not.toContain('formatKey=');
+    expect(
+      readFileSync(fileURLToPath(new URL('../components/store/StoreItemCard.astro', import.meta.url)), 'utf8'),
+    ).toContain('data-distro-format-key={createStoreDistroGroupHeadingId(formatGroup)}');
     expect(source).not.toContain('group.entries.map');
     expect(source).not.toContain('content.group_intros');
     expect(browse).not.toContain('<details');

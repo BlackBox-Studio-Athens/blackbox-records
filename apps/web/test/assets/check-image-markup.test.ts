@@ -176,7 +176,7 @@ describe('check-image-markup', () => {
     ]);
   });
 
-  it('requires Coverflow priority only on the first image', () => {
+  it('requires Store collection priority only on the first image', () => {
     const html = [
       '<img class="store-item-card__image" src="/one.webp" loading="eager" fetchpriority="auto">',
       '<img class="store-item-card__image" src="/two.webp" loading="eager" fetchpriority="high">',

@@ -20,10 +20,6 @@ describe('catalog containment', () => {
   it('retains invisible preview layout and eagerly renders complete Store catalogs', () => {
     const css = source('../styles/global.css');
     expect(css).not.toMatch(/\.distro-group-grid[^{}]*\{[^}]*(?:content-visibility|contain-intrinsic)/s);
-    expect(css).toMatch(
-      /prefers-reduced-motion:\s*no-preference[^]*?\[data-store-coverflow-stage\]\s*\{\s*display:\s*grid;\s*visibility:\s*hidden;/,
-    );
-    expect(css).toMatch(/\[data-store-coverflow-card\]\[data-store-coverflow-position\]\s*\{\s*visibility:\s*visible;/);
     expect(css).toMatch(/\.store-item-card--listing \.brand-card-title\s*\{\s*font-family:\s*var\(--font-display-ui\)/);
     expect(css).toMatch(/\.store-item-card--listing\s*\{\s*contain: layout inline-size;/);
     expect(source('./SiteLayout.astro')).not.toContain('display=swap');

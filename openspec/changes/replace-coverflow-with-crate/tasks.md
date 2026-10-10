@@ -32,13 +32,13 @@
 
 ## 4. Markup and styles
 
-- [ ] 4.1 `StoreItemCard` derives its format key and drops `coverflowEnrolled` and `data-store-grid-sizes`; verify the card markup assertions in `StoreCollectionPage.test.ts`.
-- [ ] 4.2 Replace the controls and swap the export:
+- [x] 4.1 `StoreItemCard` derives its format key and drops `coverflowEnrolled` and `data-store-grid-sizes`; verify the card markup assertions in `StoreCollectionPage.test.ts`.
+- [x] 4.2 Replace the controls and swap the export:
   - Add `StoreCrateControls.astro`: Grid | Crate switch, bin row, stage host, letters rail, Previous/Next, Back to the start, status.
   - Render it from `StoreCollectionPage.astro` and `StoreDistroCatalog.astro` only when the server counts a bin.
   - Swap the export in `components/store/project.json`.
   - Verify the layout tests (Merch renders no controls, Distro lists the crate and the CD bin) and `pnpm check:boundaries`.
-- [ ] 4.3 Add `crate.css`, ported from the canvas:
+- [x] 4.3 Add `crate.css`, ported from the canvas:
   - `touch-action` per mechanic
   - the hand-card panel
   - shade layers
@@ -69,16 +69,11 @@
 
 - [ ] 5.3 Grid ↔ Crate animation in viewport coordinates, with a `data-store-crate-settled` marker and an instant path under reduced motion; verify the e2e checks that covers land within 750ms and that reduced motion leaves no running animations.
 - [ ] 5.4 Back restore through `history.state`; verify the e2e check that item page then Back reopens the Crate at the same sleeve.
-- [ ] 5.5 Shell cleanup:
-  - inline Crate cleanup in `shell-page-snapshot.ts` replacing `sanitizeStoreCoverflowSnapshot`
-  - remove `onError` from `ShellPortalOutlets.tsx`
-  - delete `sanitizeStoreSearchChrome`
-
-  Verify `shell-page-snapshot.test.ts` asserts that a cached copy holds no Crate state.
+- [x] 5.5 Replace `sanitizeStoreCoverflowSnapshot` in `shell-page-snapshot.ts` with an inline Crate cleanup that never imports the Crate view, drop the Coverflow `onError` from `ShellPortalOutlets.tsx` and the Coverflow block from `sanitizeStoreSearchChrome` (its other resets stay); verify `shell-page-snapshot.test.ts` asserts a cached copy holds no Crate state.
 
 ## 6. Remove the Coverflow
 
-- [ ] 6.1 Delete `StoreCoverflowController.ts`, `StoreCoverflowControls.astro`, the coverflow CSS in `global.css` and the `@supports` block in `store-chrome.css`, with their tests.
+- [x] 6.1 Delete `StoreCoverflowController.ts`, `StoreCoverflowControls.astro`, the coverflow CSS in `global.css` and the `@supports` block in `store-chrome.css`, with their tests.
   - Rewrite the remaining assertions in:
     - `StoreCollectionPage.test.ts`
     - `catalog-containment.test.ts`

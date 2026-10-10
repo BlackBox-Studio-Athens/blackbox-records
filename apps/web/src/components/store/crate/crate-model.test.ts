@@ -75,7 +75,10 @@ describe('crate bins', () => {
       ...Array<string>(52).fill('Vinyl 12-inch'),
       ...Array<string>(9).fill('Vinyl 7-inch'),
     ];
-    expect(openBinsOf(groups)).toEqual(['vinyl', 'cd']);
+    expect(openBinsOf(groups)).toEqual([
+      { bin: 'vinyl', count: 52 },
+      { bin: 'cd', count: CRATE_BIN_FROM },
+    ]);
   });
 });
 

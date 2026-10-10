@@ -15,12 +15,7 @@ import {
   setStoreArtistsTrigger,
 } from './store-artist-options';
 
-import {
-  createStoreCoverflowController,
-  ensureStoreCoverflowCapability,
-  readStoreCoverflowDom,
-  type StoreCoverflowController,
-} from './StoreCoverflowController';
+import { connectStoreCrate, type StoreCrateSwitch } from './crate/crate-switch';
 
 const SEARCH_HIDDEN_ATTRIBUTE = 'data-distro-search-hidden';
 
@@ -462,7 +457,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   const inputRef = useRef<HTMLInputElement>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
   const domRef = useRef<DistroSearchDom | null>(null);
-  const controllerRef = useRef<StoreCoverflowController | null>(null);
+  const crateRef = useRef<StoreCrateSwitch | null>(null);
   const searcherRef = useRef<ReturnType<typeof createExactFirstSearcher<DistroSearchItem>> | null>(null);
   const pendingFocus = useRef(false);
   const [ready, setReady] = useState(false);
@@ -501,9 +496,20 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     );
     if (!dom) return;
     domRef.current = dom;
-    ensureStoreCoverflowCapability();
-    const coverflow = readStoreCoverflowDom(dom.root);
-    controllerRef.current = coverflow ? createStoreCoverflowController(coverflow) : null;
+    // The Crate applies a format synchronously, before it measures the cards it flies between Grid and bin.
+    crateRef.current = connectStoreCrate(dom.root, {
+      filterable: dom.formatLinks.length > 0,
+      format: () => dom.root.dataset.distroSelectedFormat || ALL_DISTRO_FORMATS_KEY,
+      setFormat: (key) => {
+        const formatKey = resolveDistroFormatKey(dom, key);
+        applyDistroFormatSelection(dom, formatKey);
+        applyDistroSearchVisibility(
+          dom,
+          getDistroSearchVisibleElements(dom, null, formatKey === ALL_DISTRO_FORMATS_KEY ? undefined : formatKey),
+        );
+        setFormat(formatKey);
+      },
+    });
     searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText, {
       onFuzzyReady: () => {
         if (domRef.current === dom) setFuzzyRevision((revision) => revision + 1);
@@ -527,6 +533,8 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (!link?.dataset.distroFormatKey) return;
       event.preventDefault();
       event.stopPropagation();
+      // In the Crate a format choice walks to its bin, or leaves for the Grid when it has none.
+      if (crateRef.current?.choose(link.dataset.distroFormatKey)) return;
       pendingFocus.current = true;
       // A repeated choice still focuses the current results.
       if (link.dataset.distroFormatKey === (dom.root.dataset.distroSelectedFormat || 'all')) {
@@ -595,10 +603,10 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       document.removeEventListener('blackbox:store-listing-applied', onListingApplied);
       dom.navigation?.removeEventListener('click', onFormat);
       applyDistroFormatSelection(dom, 'all');
-      controllerRef.current?.cleanup();
+      crateRef.current?.dispose();
       applyDistroSearch(dom, null);
       domRef.current = null;
-      controllerRef.current = null;
+      crateRef.current = null;
       searcherRef.current = null;
     };
   }, [pageKey, scope]);
@@ -606,9 +614,9 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   useEffect(() => {
     const dom = domRef.current;
     if (!ready || !dom || !visibleElements) return;
-    controllerRef.current?.setSearchActive(hasFilters);
     const selection = applyDistroFormatSelection(dom, format);
     applyDistroSearchVisibility(dom, visibleElements);
+    crateRef.current?.sync(filtered, visibleElements);
     const visibleCount = visibleElements.size;
     if (!pendingFocus.current) return;
     pendingFocus.current = false;
@@ -618,7 +626,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (target) scrollElementWithLenis(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, visibleElements, format, hasFilters, scope]);
+  }, [ready, visibleElements, format, filtered, scope]);
 
   useEffect(() => {
     if (!ready) return;

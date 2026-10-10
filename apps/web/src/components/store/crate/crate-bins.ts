@@ -25,12 +25,15 @@ export function binOfFormatGroup(group: string): Bin | null {
   return BIN_OF_GROUP.get(group) ?? null;
 }
 
-/** The bins a collection opens, in counter order, from the format group of each of its Store Items. */
-export function openBinsOf(groups: Iterable<string>): Bin[] {
+/** The bins a collection opens, in counter order, with how many of its Store Items stand in each. */
+export function openBinsOf(groups: Iterable<string>): { bin: Bin; count: number }[] {
   const counts = new Map<Bin, number>();
   for (const group of groups) {
     const bin = binOfFormatGroup(group);
     if (bin) counts.set(bin, (counts.get(bin) ?? 0) + 1);
   }
-  return BINS.filter((bin) => (counts.get(bin) ?? 0) >= CRATE_BIN_FROM);
+  return BINS.flatMap((bin) => {
+    const count = counts.get(bin) ?? 0;
+    return count >= CRATE_BIN_FROM ? [{ bin, count }] : [];
+  });
 }

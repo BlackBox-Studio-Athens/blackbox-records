@@ -44,7 +44,7 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).toContain('data-store-search');
     expect(collectionPageSource).toContain('<StoreBrowsePane entries={entries} resultsId={catalogId}>');
     expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
-    expect(collectionPageSource).toContain('coverflowEnrolled={coverflowEligible}');
+    expect(collectionPageSource).toContain('<StoreCrate');
     expect(collectionPageSource).not.toContain('getDistroPageContent');
   });
 
@@ -91,7 +91,7 @@ describe('Store collection category surfaces', () => {
     const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
     expect(buyButton).toContain('data-store-card-buy-label="Buy"');
     expect(buyButton).toMatch(
-      /\shidden\s*>\s*<StoreBuyIcon formatGroup=\{getStoreDistroFormatGroup\(entry\)\} \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
+      /\shidden\s*>\s*<StoreBuyIcon formatGroup=\{formatGroup\} \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
     );
     expect(storeBuyIconSource).toMatch(/<span className="store-buy-icon" aria-hidden="true">/);
     // Every layer is one shared file URL, never a data: URI repeated on each card.
@@ -107,7 +107,7 @@ describe('Store collection category surfaces', () => {
     );
   });
 
-  it('makes the card a single native link while keeping Listen separate and availability visible in Coverflow', () => {
+  it('makes the card a single native link while keeping Listen separate and availability visible in the Crate', () => {
     expect(storeItemCardSource.match(/class="prose-card-link"/g)).toHaveLength(1);
     expect(storeItemCardSource).toMatch(
       /<div class="store-item-card__image-frame">[\s\S]*?<\/div>\s*<a\s+class="prose-card-link"[\s\S]*?href=\{storeItem\.storePath\}/,
@@ -123,20 +123,19 @@ describe('Store collection category surfaces', () => {
     expect(cssSource).toContain(
       '.store-item-card__listen .music-listen-trigger {\n  position: relative;\n  z-index: 3;',
     );
-    expect(cssSource).toContain('height: calc(var(--store-cover-size) + 9.25rem)');
-    expect(cssSource).toContain('> :is(.brand-card-title, .store-item-card__artist, .store-item-card__option)');
-    expect(cssSource).toContain(
-      "[data-store-coverflow-position='active']\n  .store-item-card__content {\n  display: flex;",
+    // In the Crate the sleeve is the artwork, so the item in hand's own card shows without its image frame.
+    expect(source('../components/store/crate/crate.css')).toMatch(
+      /\[data-store-crate-hand\] \.store-item-card__image-frame \{\s*display: none;/,
     );
     expect(cssSource).toContain("data-store-listing-availability-state='sold_out'");
   });
 
-  it('uses compact Grid image slots and switches sizes only for explicit Coverflow', () => {
+  it('uses compact Grid image slots that Crate sleeves reuse', () => {
     expect(storeItemCardSource).toContain('(min-width: 1280px) calc((100vw - 356px) / 4)');
-    expect(storeItemCardSource.match(/data-store-grid-sizes={sizes}/g)).toHaveLength(2);
+    expect(storeItemCardSource).not.toContain('data-store-grid-sizes');
     // Two shared widths bound Images Free transformations per source (docs/cloudflare-free-tier.md).
     expect(storeItemCardSource).toContain('const widths = [360, 720];');
-    expect(source('../components/store/StoreCoverflowController.ts')).toContain('(min-width: 40rem) 16rem, 56vw');
+    expect(source('../components/store/crate/crate-view.ts')).toContain('img.srcset = source.srcset;');
     expect(storeCollectionSource).toContain('createStoreDistroGroupHeadingId');
   });
 

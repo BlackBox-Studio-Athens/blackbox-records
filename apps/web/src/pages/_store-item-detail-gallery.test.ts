@@ -22,7 +22,7 @@ describe('Store Item detail gallery contract', () => {
     expect(storeCard).toContain('src={previewImage.image}');
     expect(storeCard).toContain('data-store-preview-image');
     expect(storeCard).toContain('aria-hidden="true"');
-    expect(storeCard).toContain('data-store-grid-sizes={sizes}');
+    expect(storeCard).not.toContain('data-store-grid-sizes');
     expect(storeCard).not.toContain('bg-gradient');
   });
 
