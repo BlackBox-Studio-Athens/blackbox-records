@@ -343,9 +343,9 @@ The home page SHALL show a Pre-orders section above News only while fresh listin
 
 #### Scenario: The current official-video title is shown
 
-- **WHEN** the Official videos row presents its selected clip
-- **THEN** that title is noninteractive current-video text without an underline or pointer affordance, including when only one clip exists
-- **AND** other clips remain keyboard-accessible buttons that select their poster and tear down any playing iframe until Play is activated again.
+- **WHEN** the Official videos row presents the release's clips
+- **THEN** every title is noninteractive text without an underline or pointer affordance, including when only one clip exists
+- **AND** the first clip supplies the background and explicit Play action.
 
 #### Scenario: The selected release has no clip
 

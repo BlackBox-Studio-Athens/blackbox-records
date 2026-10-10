@@ -457,7 +457,7 @@ test('Home hero links to the Store and to open pre-orders, fits phone widths and
     .toBe(112);
 });
 
-test('Home chapters use fresh prices and explicit Watch, close and clip switching before shell navigation', async ({
+test('Home chapters use fresh prices, plain video titles and explicit Watch and close before shell navigation', async ({
   page,
 }) => {
   const fixture = await stubShowcase(page, 'clip');
@@ -488,11 +488,11 @@ test('Home chapters use fresh prices and explicit Watch, close and clip switchin
   await expect(current).toHaveJSProperty('tagName', 'SPAN');
   await expect(current).toHaveCSS('text-decoration-line', 'none');
   await expect(current).not.toHaveCSS('cursor', 'pointer');
-  const second = videos.getByRole('button', { name: 'Second official video', exact: true });
-  expect((await second.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-  await second.focus();
-  await second.press('Enter');
-  await expect(current).toHaveText('Second official video');
+  const second = videos.getByText('Second official video', { exact: true });
+  await expect(second).toHaveJSProperty('tagName', 'SPAN');
+  await expect(second).toHaveCSS('text-decoration-line', 'none');
+  await expect(second).not.toHaveCSS('cursor', 'pointer');
+  await expect(videos.getByRole('button')).toHaveCount(0);
   expect(fixture.providerRequests).toEqual([]);
   const watch = release.getByRole('button', { name: 'Watch full video', exact: true });
   await watch.focus();
@@ -500,7 +500,7 @@ test('Home chapters use fresh prices and explicit Watch, close and clip switchin
   const fullVideo = release.locator('iframe');
   await expect(fullVideo).toHaveAttribute(
     'src',
-    'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1',
+    'https://www.youtube-nocookie.com/embed/MOA5YZDOR6A?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1',
   );
   await expect(fullVideo).toHaveAttribute('allowfullscreen', '');
   await expect.poll(() => fixture.providerRequests.length).toBe(1);
@@ -509,7 +509,7 @@ test('Home chapters use fresh prices and explicit Watch, close and clip switchin
   await expect(watch).toBeFocused();
   await watch.click();
   await expect(fullVideo).toHaveCount(1);
-  await videos.getByRole('button', { name: 'First official video', exact: true }).click();
+  await release.getByRole('button', { name: 'Close video', exact: true }).click();
   await expect(fullVideo).toHaveCount(0);
   await expect(current).toHaveText('First official video');
   const requestsBeforeNavigation = fixture.providerRequests.length;

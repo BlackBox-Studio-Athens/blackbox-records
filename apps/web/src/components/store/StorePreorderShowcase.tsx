@@ -207,7 +207,6 @@ function PreorderChapter({
   documentVisible: boolean;
   playerSession: boolean;
 }) {
-  const [selectedClip, setSelectedClip] = useState(0);
   const [manualPause, setManualPause] = useState(false);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [failedClips, setFailedClips] = useState<string[]>([]);
@@ -229,7 +228,7 @@ function PreorderChapter({
           },
         ]
       : [];
-  const clip = clips[selectedClip] ?? clips[0];
+  const clip = clips[0];
   const videoLabel = clips.length === 1 ? 'Official video' : 'Official videos';
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
@@ -461,27 +460,11 @@ function PreorderChapter({
             </div>
             <div className="home-preorders__clips" role="group" aria-label={videoLabel}>
               <span className="home-preorders__clips-label">{videoLabel}</span>
-              {clips.map((choice, index) =>
-                index === selectedClip ? (
-                  <span key={choice.id} className="home-preorders__clip" aria-current="true">
-                    {choice.title}
-                  </span>
-                ) : (
-                  <button
-                    key={choice.id}
-                    type="button"
-                    className="home-preorders__clip"
-                    onClick={() => {
-                      setSelectedClip(index);
-                      onWatch(null);
-                      setAmbientPlaying(false);
-                      setAutoplayBlocked(false);
-                    }}
-                  >
-                    {choice.title}
-                  </button>
-                ),
-              )}
+              {clips.map((choice, index) => (
+                <span key={choice.id} className="home-preorders__clip" aria-current={index === 0 ? 'true' : undefined}>
+                  {choice.title}
+                </span>
+              ))}
             </div>
             {playerSession && (
               <p id={sessionNoteId} className="home-preorders__media-note" role="status">

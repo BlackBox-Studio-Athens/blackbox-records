@@ -115,7 +115,7 @@ export default function AvailabilityAlertForm({
         onClick={() => setStep('open')}
       >
         <Mail aria-hidden="true" strokeWidth={1.75} />
-        {AVAILABILITY_ALERT_COPY.open}
+        <span className="availability-alert__open-label">{AVAILABILITY_ALERT_COPY.open}</span>
       </Button>
     );
   }
