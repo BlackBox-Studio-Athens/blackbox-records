@@ -8,8 +8,8 @@ import type { StoreCrate, StoreCrateHost } from './crate-view';
 export interface StoreCrateSwitch {
   /** Routes a format choice to the open Crate. False when the Crate is closed and the Grid should filter. */
   choose(formatKey: string): boolean;
-  /** Called after every filter change with the Grid's visible cards. */
-  sync(filtered: boolean, visibleCards: ReadonlySet<HTMLElement>): void;
+  /** Called after every filter change with the Grid's visible cards and its format. */
+  sync(filtered: boolean, visibleCards: ReadonlySet<HTMLElement>, format: string): void;
   dispose(): void;
 }
 
@@ -55,8 +55,10 @@ export function connectStoreCrate(searchRoot: HTMLElement, host: StoreCrateHost)
       crate.choose(formatKey);
       return true;
     },
-    sync(filtered, visibleCards) {
+    sync(filtered, visibleCards, format) {
       if (filtered && crate?.isOpen) crate.close();
+      // A format chosen outside the Crate, such as Clear filters, walks to its bin or leaves for the Grid.
+      else if (host.filterable && crate?.isOpen && format !== crate.formatKey) crate.choose(format);
       let on = Boolean(crate?.isOpen);
       if (!on && !filtered) {
         for (const card of visibleCards) {

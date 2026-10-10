@@ -616,7 +616,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     if (!ready || !dom || !visibleElements) return;
     const selection = applyDistroFormatSelection(dom, format);
     applyDistroSearchVisibility(dom, visibleElements);
-    crateRef.current?.sync(filtered, visibleElements);
+    crateRef.current?.sync(filtered, visibleElements, resolveDistroFormatKey(dom, format));
     const visibleCount = visibleElements.size;
     if (!pendingFocus.current) return;
     pendingFocus.current = false;

@@ -4,7 +4,7 @@
  * and keeps its place in the history entry so Back reopens it. All state lives in this instance and every listener
  * sits on its own elements, so leaving the route and calling destroy() leaves nothing behind.
  */
-import { readRootScrollPaddingTop, scrollElementWithLenis } from '@/platform/lib/lenis-scroll';
+import { readRootScrollPaddingTop } from '@/platform/lib/lenis-scroll';
 import { BIN_WORDS, BINS, type Bin } from './crate-bins';
 import {
   advanceWheelGesture,
@@ -15,6 +15,7 @@ import {
   restingWheelGesture,
 } from './crate-input';
 import {
+  ARRIVE_MS,
   catalogOf,
   followUp,
   formatAfterCrate,
@@ -63,6 +64,8 @@ export interface StoreCrateHost {
 
 export interface StoreCrate {
   readonly isOpen: boolean;
+  /** The Grid filter that matches the bin in hand while the Crate is open, otherwise null. */
+  readonly formatKey: string | null;
   /** Opens on the card the Grid is on. Ignored while covers are still moving. */
   open(): void;
   /** A format choice: walks to its bin, or leaves for the Grid with that filter when it has no bin. */
@@ -384,6 +387,8 @@ export function mountStoreCrate(
     if (space) {
       space.style.width = px(layout.width);
       space.style.height = px(layout.height);
+      // A desk wider than the bin keeps the bin in its middle.
+      space.style.left = px(Math.max(0, Math.round((width - layout.width * scale) / 2)));
       space.style.transform = `scale(${scale})`;
     }
   }
@@ -873,7 +878,12 @@ export function mountStoreCrate(
   }
 
   // ---- State --------------------------------------------------------------------------------------------------
-  function remember() {
+  // Browsers limit how often a page may rewrite history, so the place is recorded once digging pauses, and at once
+  // when the shopper presses anything inside the Crate, such as the item link that leaves the page.
+  let recordTimer = 0;
+  function writeRecord() {
+    clearTimeout(recordTimer);
+    recordTimer = 0;
     const record = recordOf(state, cat);
     const serialised = JSON.stringify(record);
     if (serialised === recorded) return;
@@ -881,6 +891,13 @@ export function mountStoreCrate(
     const current = (history.state ?? {}) as Record<string, unknown>;
     history.replaceState({ ...current, storeCrate: record }, '');
   }
+  function remember() {
+    clearTimeout(recordTimer);
+    recordTimer = window.setTimeout(writeRecord, 400);
+  }
+  const flushRecord = () => {
+    if (recordTimer) writeRecord();
+  };
 
   function schedule() {
     clearTimeout(timer);
@@ -948,6 +965,7 @@ export function mountStoreCrate(
     return shown;
   }
 
+  // Every flight lands within ARRIVE_MS, so a timeline paused in a background tab never leaves the switch ignored.
   function settle(animations: Animation[]) {
     flying = animations;
     root.removeAttribute('data-store-crate-settled');
@@ -956,8 +974,9 @@ export function mountStoreCrate(
       flying = [];
       root.setAttribute('data-store-crate-settled', '');
     };
-    if (animations.length === 0) done();
-    else void Promise.allSettled(animations.map((animation) => animation.finished)).then(done);
+    if (animations.length === 0) return done();
+    void Promise.allSettled(animations.map((animation) => animation.finished)).then(done);
+    window.setTimeout(done, ARRIVE_MS + 200);
   }
 
   function enterLayout() {
@@ -1113,9 +1132,12 @@ export function mountStoreCrate(
     state = next;
     enterLayout();
     render(prev);
+    // The flight starts from where the cards were, so the stage must be in place before it is measured: an
+    // instant scroll, never the page's smooth one.
     const deskTop = desk!.getBoundingClientRect().top;
-    if (deskTop < readRootScrollPaddingTop() || deskTop > window.innerHeight * 0.4) {
-      scrollElementWithLenis(desk!, { block: 'start', immediate: true });
+    const headerBottom = readRootScrollPaddingTop();
+    if (deskTop < headerBottom || deskTop > window.innerHeight * 0.4) {
+      window.scrollTo({ top: window.scrollY + deskTop - headerBottom, behavior: 'instant' as ScrollBehavior });
     }
     flyIn(rects);
     schedule();
@@ -1167,6 +1189,8 @@ export function mountStoreCrate(
     if (result.move) dispatch({ type: 'flip', by: result.move });
   }
 
+  listen(root, 'pointerdown', flushRecord, { capture: true });
+  listen(root, 'keydown', flushRecord, { capture: true });
   listen(stage, 'pointerdown', (event) => finger.down(event));
   listen(stage, 'pointermove', (event) => finger.move(event));
   listen(stage, 'pointerup', () => finger.up());
@@ -1225,10 +1249,15 @@ export function mountStoreCrate(
     get isOpen() {
       return state.mode.view === 'crate';
     },
+    get formatKey() {
+      return state.mode.view === 'crate' ? (cat.items[cat.shelves[state.mode.focus.at][0]!]?.formatKey ?? null) : null;
+    },
     open,
     choose,
     close: () => close(null),
     destroy() {
+      // Never write history here: the shell has already moved to the next page's entry.
+      clearTimeout(recordTimer);
       clearTimeout(timer);
       flying.forEach((animation) => animation.cancel());
       flying = [];
