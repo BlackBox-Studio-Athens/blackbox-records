@@ -93,7 +93,7 @@
   - Add `e2e/store-crate.spec.ts`, including the `@phone` cases, and add it to the `webkit-mobile` list.
   - Move the Coverflow wheel, swipe and front-card Buy cases out of `e2e/store-formats.spec.ts`.
   - Verify `pnpm test:e2e e2e/store-crate.spec.ts` and `pnpm test:e2e e2e/store-formats.spec.ts`.
-- [ ] 7.4 Update the `DESIGN.md` Store section and `docs/runtime-performance.md` (profiles); verify neither mentions the Coverflow.
+- [x] 7.4 Update the `DESIGN.md` Store section and `docs/runtime-performance.md` (profiles); verify neither mentions the Coverflow.
 
 ## 8. Integration
 
