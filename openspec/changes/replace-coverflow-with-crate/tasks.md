@@ -10,7 +10,7 @@
 
 ## 3. Crate model, pose and input
 
-- [ ] 3.1 Port the canvas model to `apps/web/src/components/store/crate/crate-model.ts`.
+- [x] 3.1 Port the canvas model to `apps/web/src/components/store/crate/crate-model.ts`.
   - Contents: format-to-bin mapping from `getStoreDistroFormatGroup`, bins from 7 items, hands only for open bins, `initial`, `reduce` returning the same object when nothing changes, `followUp`, `crateTarget`.
   - Verify `crate-model.test.ts` covers:
     - the round trip
@@ -19,12 +19,12 @@
     - the back board
     - rack clamps
     - one sleeve per drop
-- [ ] 3.2 Port poses and timings to `crate-pose.ts`; verify `crate-pose.test.ts` covers:
+- [x] 3.2 Port poses and timings to `crate-pose.ts`; verify `crate-pose.test.ts` covers:
   - one transform-function list for the Grid, flip, pile and rack poses
   - the `tipForDrag` inverse
   - no timings under reduced motion
   - drop timings inside the drop window
-- [ ] 3.3 Port the tip gesture and keys to `crate-input.ts`, and move the wheel helpers there as horizontal-only. Verify `crate-input.test.ts`:
+- [x] 3.3 Port the tip gesture and keys to `crate-input.ts`, and move the wheel helpers there as horizontal-only. Verify `crate-input.test.ts`:
   - one drag turns one sleeve
   - a flick turns at most one
   - vertical wheel is ignored
