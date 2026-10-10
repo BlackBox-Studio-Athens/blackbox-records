@@ -85,7 +85,7 @@
 ## 7. Scripts, end-to-end checks and docs
 
 - [ ] 7.1 Update `scripts/check-store-category-output.ts`: the switch is disabled on the server, there is no Crate state, and Merch has no controls. Verify `pnpm store:categories:check`.
-- [ ] 7.2 Update the performance script:
+- [x] 7.2 Update the performance script:
   - In `scripts/measure-runtime-performance.ts`, make `prepareTraversal` a Grid no-op, delete the disclosure run and its traversal flags, and add `crate-wheel` and `crate-touch` profiles on Distro.
   - In `scripts/runtime-performance-helpers.ts`, delete `assertTraversalSetup` and its test.
   - Verify the Store scroll profiles and the new profiles run.
@@ -97,8 +97,8 @@
 
 ## 8. Integration
 
-- [ ] 8.1 Verify `pnpm build:web` keeps every eager bundle graph within budget, and record the Crate chunk size.
-- [ ] 8.2 Run the regression specs: `store-preorders`, `store-cart`, `player-continuity`, `shell-navigation`, `routes` and `performance-acceptance`.
+- [x] 8.1 Verify `pnpm build:web` keeps every eager bundle graph within budget, and record the Crate chunk size.
+- [x] 8.2 Run the regression specs: `store-preorders`, `store-cart`, `player-continuity`, `shell-navigation`, `routes` and `performance-acceptance`.
 - [ ] 8.3 Compare Store and Distro before and after with the `desktop-load`, `mobile-load`, `wide-scroll` and `mobile-scroll` profiles, and run the Crate profiles at 4× CPU slowdown with no long task of 50ms or more. Record the results in `validation.md`.
 - [ ] 8.4 Run `pnpm validate` on the final tree and record the summary path, source SHA, acceptance rows and remaining gaps (the dormant tape rack) in `validation.md`.
 

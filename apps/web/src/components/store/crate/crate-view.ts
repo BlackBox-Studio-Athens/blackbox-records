@@ -294,6 +294,18 @@ type BinView = {
 
 const px = (n: number) => `${n}px`;
 
+/**
+ * Rewrites an element's text in place. Replacing its text node is a child-list change, which makes Chromium re-check
+ * every `:has()` rule against the whole page (the header cart has one), so each flip would restyle every card.
+ */
+function setText(element: Element | null, text: string) {
+  if (!element) return;
+  const node = element.firstChild;
+  if (node instanceof Text && node === element.lastChild) {
+    if (node.data !== text) node.data = text;
+  } else if (element.textContent !== text) element.textContent = text;
+}
+
 function readItems(cards: readonly HTMLElement[]): CrateItem[] {
   return cards.map((card) => {
     const bin = card.dataset.storeCrateBin;
@@ -723,7 +735,11 @@ export function mountStoreCrate(
         transitionOf(timing, ['opacity']),
       );
       const willChange = drawn ? 'transform, opacity' : 'auto';
-      if (piece.el.style.willChange !== willChange) piece.el.style.willChange = willChange;
+      if (piece.el.style.willChange !== willChange) {
+        piece.el.style.willChange = willChange;
+        // Shades fade with every flip; their own layer keeps that off the artwork's paint.
+        for (const layer of piece.shades) layer.style.willChange = drawn ? 'opacity' : 'auto';
+      }
     });
     const boardPlace = places[count];
     if (view.board && boardPlace && g.mechanic === 'flip') {
@@ -801,7 +817,7 @@ export function mountStoreCrate(
     const letter = item ? dividerOf(item.artist) : '';
     renderRail(bin, letter);
     const slot = slotOf(hand, n);
-    counter!.textContent = item ? `${String(slot + 1).padStart(2, '0')} / ${n}  ·  ${letter}` : `${n} / ${n}  ·  End`;
+    setText(counter, item ? `${String(slot + 1).padStart(2, '0')} / ${n}  ·  ${letter}` : `${n} / ${n}  ·  End`);
     root.querySelectorAll<HTMLElement>('[data-store-crate-restart]').forEach((button) => {
       if (button.closest('[data-store-crate-nav]')) button.hidden = slot === 0;
     });
@@ -830,15 +846,17 @@ export function mountStoreCrate(
             : 'Next',
       );
     }
-    const endTitle = root.querySelector('[data-store-crate-end-title]');
-    const endText = root.querySelector('[data-store-crate-end-text]');
-    if (endTitle) endTitle.textContent = `End of the ${words.bin}`;
-    if (endText) {
-      endText.textContent = `All ${n} ${words.things} are flipped forward. Stand them back up to dig again, or lift the last one back.`;
-    }
-    status!.textContent = item
-      ? `${item.artist}, ${item.title}. ${words.group}, ${slot + 1} of ${n} in the ${words.bin}.`
-      : `End of the ${words.bin}. All ${n} ${words.things} flipped.`;
+    setText(root.querySelector('[data-store-crate-end-title]'), `End of the ${words.bin}`);
+    setText(
+      root.querySelector('[data-store-crate-end-text]'),
+      `All ${n} ${words.things} are flipped forward. Stand them back up to dig again, or lift the last one back.`,
+    );
+    setText(
+      status,
+      item
+        ? `${item.artist}, ${item.title}. ${words.group}, ${slot + 1} of ${n} in the ${words.bin}.`
+        : `End of the ${words.bin}. All ${n} ${words.things} flipped.`,
+    );
     stage!.dataset.mechanic = MECHANIC[bin];
     stage!.setAttribute(
       'aria-label',

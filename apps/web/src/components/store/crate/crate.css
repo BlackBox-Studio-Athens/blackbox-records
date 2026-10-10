@@ -165,6 +165,8 @@
 
 .store-crate[data-store-crate='open'] > :is(.distro-group-grid, .store-catalog-chunks) {
   display: block;
+  /* Swapping the item in hand lays out only the panel; no paint containment, so focus rings never clip. */
+  contain: layout style;
 }
 
 .store-crate[data-store-crate='open'] .store-item-card--listing:not([data-store-crate-hand]) {
@@ -189,9 +191,11 @@
   line-height: 0.96;
 }
 
+/* The stage's size is fixed, so nothing a sleeve does can reach the page's layout or paint. */
 .store-crate-stage {
   position: relative;
   overflow: hidden;
+  contain: strict;
   outline-offset: -2px;
   user-select: none;
   -webkit-user-select: none;

@@ -21,6 +21,8 @@ type Profile =
   | 'desktop-idle'
   | 'touch-idle'
   | 'wheel-scroll'
+  | 'crate-wheel'
+  | 'crate-touch'
   | 'touch-scroll'
   | 'touch-home-input'
   | 'touch-home-menu'
@@ -48,7 +50,18 @@ const veneerPreload = args.get('veneer-preload') ?? 'build';
 const contentVisibility = args.get('content-visibility') ?? 'build';
 if (![veneerPreload, contentVisibility].every((value) => ['build', 'enabled', 'disabled'].includes(value)))
   throw new Error('A/B options must be build, enabled or disabled.');
-if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll', 'touch-home-input'].includes(profile) && runs < 3)
+if (
+  [
+    'desktop-idle',
+    'touch-idle',
+    'wheel-scroll',
+    'touch-scroll',
+    'touch-home-input',
+    'crate-wheel',
+    'crate-touch',
+  ].includes(profile) &&
+  runs < 3
+)
   throw new Error('Input and idle profiles require at least three runs.');
 if (profile === 'touch-home-menu' && runs < 5) throw new Error('Home Menu diagnostics require at least five runs.');
 const cpuOverride = args.has('cpu') ? Number(args.get('cpu')) : null;
@@ -134,6 +147,14 @@ const profiles = {
   'desktop-idle': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4 },
   'touch-idle': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, cpu: 4, hasTouch: true, isMobile: true },
   'wheel-scroll': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4 },
+  'crate-wheel': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4 },
+  'crate-touch': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    hasTouch: true,
+    isMobile: true,
+  },
   'touch-scroll': {
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -683,6 +704,112 @@ async function inputProfileRun(page: Page, cdp: CDPSession, tracePath: string, l
   };
 }
 
+/**
+ * The Store Crate under real input on Distro: the first open, then one sideways wheel notch or one downward touch drag
+ * per sleeve. The page must not scroll, and every gesture turns exactly one sleeve.
+ */
+async function crateRun(page: Page, cdp: CDPSession, tracePath: string) {
+  const touch = profile === 'crate-touch';
+  // tsx preserves nested callback names with __name; serialized browser callbacks need that helper locally.
+  await page.evaluate(
+    'globalThis.__name = (value, name) => Object.defineProperty(value, "name", { value: name, configurable: true })',
+  );
+  const landedMs = await page.evaluate(async () => {
+    const start = performance.now();
+    document.querySelector<HTMLButtonElement>('[data-store-crate-open]')!.click();
+    await new Promise<void>((resolve) => {
+      const check = () =>
+        document.querySelector('.store-crate[data-store-crate="open"][data-store-crate-settled]')
+          ? resolve()
+          : requestAnimationFrame(check);
+      check();
+    });
+    return performance.now() - start;
+  });
+  const slot = () =>
+    page.evaluate(() =>
+      Number(
+        document
+          .querySelector('[data-store-crate-counter]')!
+          .textContent!.trim()
+          .split(/\s*\/\s*/)[0],
+      ),
+    );
+  const stage = (await page.locator('[data-store-crate-stage]').boundingBox())!;
+  const x = stage.x + stage.width / 2;
+  const y = stage.y + stage.height * 0.4;
+  const gestures = touch ? 12 : 24;
+  const before = { slot: await slot(), scrollY: await page.evaluate(() => window.scrollY) };
+  await page.evaluate(() => {
+    const state = { intervals: [] as number[], previous: 0, running: true, handle: 0 };
+    Object.assign(window, { __inputFrames: state });
+    const frame = (time: number) => {
+      if (!state.running) return;
+      if (state.previous) state.intervals.push(time - state.previous);
+      state.previous = time;
+      state.handle = requestAnimationFrame(frame);
+    };
+    state.handle = requestAnimationFrame(frame);
+  });
+  await startTrace(cdp);
+  const startedAt = await page.evaluate(() => performance.now());
+  if (touch) {
+    for (let gesture = 0; gesture < gestures; gesture += 1) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      for (let step = 1; step <= 8; step += 1) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + step * 20 }] });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(350);
+    }
+  } else {
+    await page.mouse.move(x, y);
+    for (let gesture = 0; gesture < gestures; gesture += 1) {
+      await page.mouse.wheel(120, 0);
+      await page.waitForTimeout(160);
+    }
+  }
+  await page.waitForTimeout(1000);
+  const browser = await page.evaluate((startedAt) => {
+    const endedAt = performance.now();
+    const root = window as unknown as {
+      __inputFrames: { intervals: number[]; running: boolean; handle: number };
+      __runtimePerformance: { longTaskEntries: Array<{ startTime: number; duration: number }> };
+    };
+    root.__inputFrames.running = false;
+    cancelAnimationFrame(root.__inputFrames.handle);
+    return {
+      durationMs: endedAt - startedAt,
+      scrollY: window.scrollY,
+      intervals: root.__inputFrames.intervals,
+      longTasks: root.__runtimePerformance.longTaskEntries.filter(
+        (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > startedAt,
+      ),
+      drawnSleeveImages: [...document.querySelectorAll<HTMLImageElement>('.store-crate-art')].filter((image) =>
+        image.getAttribute('src'),
+      ).length,
+    };
+  }, startedAt);
+  const events = await readTrace(cdp);
+  await mkdir(dirname(tracePath), { recursive: true });
+  await writeFile(tracePath, JSON.stringify({ traceEvents: events }));
+  const turned = (await slot()) - before.slot;
+  if (turned !== gestures) throw new Error(`Expected ${gestures} sleeves to turn, ${turned} turned.`);
+  if (Math.abs(browser.scrollY - before.scrollY) > 1) throw new Error('Crate input scrolled the page.');
+  return {
+    inputType: touch ? 'touch' : 'wheel',
+    landedMs,
+    gestures,
+    turned,
+    ...browser,
+    frameIntervals: summarize(browser.intervals),
+    maxLongTaskMs: Math.max(0, ...browser.longTasks.map((entry) => entry.duration)),
+    trace: summarizeTrace(events),
+    tracePath,
+  };
+}
+
 async function homeShowcaseFixture(page: Page) {
   const candidates = JSON.parse(await readFile(join(buildDirectory, 'preorder-showcase.json'), 'utf8')) as Array<{
     slug: string;
@@ -1051,6 +1178,28 @@ async function main() {
           }
           await context.close();
         }
+      }
+    } else if (profile.startsWith('crate-')) {
+      for (let run = 1; run <= runs; run += 1) {
+        const settings = profiles[profile];
+        const context = await browser.newContext({
+          viewport: settings.viewport,
+          deviceScaleFactor: dprOverride ?? settings.deviceScaleFactor,
+          hasTouch: 'hasTouch' in settings && settings.hasTouch,
+          isMobile: 'isMobile' in settings && settings.isMobile,
+        });
+        const page = await context.newPage();
+        const cdp = await configure(context, page);
+        await page.goto(routeUrl('store/distro'), { waitUntil: 'networkidle' });
+        await page.waitForSelector('.store-crate[data-store-crate-ready]');
+        await page.waitForTimeout(2000);
+        results.push({
+          route: 'store/distro',
+          run,
+          profile,
+          result: await crateRun(page, cdp, `${output}.crate-${run}.trace.json`),
+        });
+        await context.close();
       }
     } else if (profile.endsWith('store-activation')) {
       for (let run = 1; run <= runs; run += 1) {
