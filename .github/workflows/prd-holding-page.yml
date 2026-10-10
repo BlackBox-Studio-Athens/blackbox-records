@@ -90,4 +90,4 @@ jobs:
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy apps/web/dist-holding --project-name=blackbox-records-web --branch=holding
           packageManager: npm
-          wranglerVersion: 4.127.1
+          wranglerVersion: 4.148.0
