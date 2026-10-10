@@ -156,7 +156,7 @@ export function initialState(cat: Catalog): State {
 
 const hasBin = (cat: Catalog, id: ItemId) => {
   const bin = cat.items[id]?.bin;
-  return bin != null && cat.bins.includes(bin);
+  return bin !== undefined && bin !== null && cat.bins.includes(bin);
 };
 
 /**

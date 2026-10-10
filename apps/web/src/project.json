@@ -49,6 +49,7 @@
         "./assets/fonts/ui/geist-mono-latin.woff2",
         "./assets/fonts/ui/bebas-neue-latin.woff2",
         "./components/Footer.astro",
+        "./content/brand-assets/logo-ui.png",
         "./components/Header.astro",
         "./components/icons/SocialIcon.astro",
         "./lib/exact-first-search.ts",

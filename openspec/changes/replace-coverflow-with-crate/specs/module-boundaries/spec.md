@@ -133,7 +133,8 @@ Each application module MUST declare its source root, targets and task inputs in
 - **GIVEN** Store Crate behavior is owned by `web-store`
 - **WHEN** the app shell mounts the Store search island after activating a Store collection
 - **THEN** the island loads the `apps/web/src/components/store/crate/` modules owned by `web-store` on the first Crate intent
-- **AND** every Store collection shares those modules instead of duplicating browsing logic or using an ownership exception.
+- **AND** every Store collection shares those modules instead of duplicating browsing logic or using an ownership exception
+- **AND** each bin's back board takes the brand logo through the `storefront-catalog` entrypoint `content/brand-assets/logo-ui.png`.
 
 #### Scenario: StoreCart event contract is shared
 

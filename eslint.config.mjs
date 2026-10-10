@@ -29,6 +29,7 @@ export default tseslint.config(
       '**/.vite/**',
       '**/coverage/**',
       '**/*.woff2',
+      '**/*.png',
       'apps/backend/openapi/*.json',
       'apps/backend/src/generated/**',
       'packages/api-client/src/generated/**',
