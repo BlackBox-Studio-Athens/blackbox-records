@@ -118,12 +118,13 @@ The hosted public site SHALL keep Worker invocations per page view within a budg
 - **WHEN** a cold first visit loads a representative hosted route with its images, stylesheets, scripts, fonts and favicons
 - **THEN** the HTML document costs at most one Pages Function invocation and one renderer invocation
 - **AND** CMS image candidates are fetched from direct Images transform URLs without invoking the Pages Function or the renderer
-- **AND** repo-owned static assets, including ESM images and every `/favicon*` file, are served by Pages assets without a Function invocation and with their bytes unchanged.
+- **AND** repo-owned static assets, including ESM images and every `/favicon*`, `/apple-touch-icon*` and `/manifest.webmanifest` file, are served by Pages assets without a Function invocation and with their bytes unchanged.
 
 #### Scenario: A request targets a path the site does not have
 
 - **WHEN** a request path is outside the allowlist generated from the release's routes
-- **THEN** the gateway answers with a static `no-store` 404 without calling the renderer.
+- **THEN** the gateway answers with a `no-store` 404 without calling the renderer
+- **AND** a GET or HEAD document request that accepts `text/html` receives the prerendered `404.html` through one Pages asset read, while other requests receive plain text.
 
 #### Scenario: The budget is recorded and checked
 

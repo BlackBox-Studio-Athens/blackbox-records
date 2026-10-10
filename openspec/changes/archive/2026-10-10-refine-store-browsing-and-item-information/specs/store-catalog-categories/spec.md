@@ -45,6 +45,13 @@ The Store SHALL present compact category orientation and browse controls with on
 - **THEN** the category identity, complete collection total, category links, format links, and full catalogue remain available
 - **AND** inert search, artist-selection, and Coverflow controls are not presented.
 
+#### Scenario: All opens at the reviewed desktop or mobile size
+
+- **WHEN** a populated All route has settled at scrollY=0, default text size, and a 390x844 or 1280x800 CSS-pixel viewport
+- **THEN** identifiable artwork from at least the first Store Item is visible in the initial viewport
+- **AND** the layout retains category navigation, search, policy links, and any configured UAT review marker
+- **AND** it does not achieve this through text clipping, reduced readable type, undersized controls, or eager loading of every offstage image.
+
 ### Requirement: All Store provides one complete bounded Coverflow
 
 Every flat Store collection route rendered through `StoreCollectionPage` SHALL optionally enhance its complete canonical collection into one bounded Store Coverflow only after explicit visitor selection when it contains more than six canonical Store Items, without changing collection authority, order, identity, availability authority, or full-catalog access. This includes All, BlackBox Releases, populated Merch, and future non-Distro flat categories; Distro remains grouped under its own grouped-category contract.
@@ -121,6 +128,14 @@ Every flat Store collection route rendered through `StoreCollectionPage` SHALL o
 - **THEN** its complete canonical Grid is visible before and after enhancement
 - **AND** functional view controls appear in Grid then Coverflow order only when eligible and ready
 - **AND** applying a text or artist filter uses Grid; clearing it does not automatically restore Coverflow.
+
+#### Scenario: All search reveals matching cards
+
+- **WHEN** a nonempty query activates All Store search
+- **THEN** matching canonical cards appear in their original order through the shared search-results behavior
+- **AND** preview controls do not hide results or move focus out of the search input
+- **AND WHEN** the shopper clears that query
+- **THEN** the complete catalog is restored with the existing availability presentation and explicit Show Coverflow behavior where supported.
 
 ### Requirement: Distro browse-group introductions use restrained editorial typography
 

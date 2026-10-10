@@ -75,77 +75,66 @@ The Store SHALL expose `All`, `BlackBox Releases`, and `Distro` as its always-di
 
 ### Requirement: Store category membership is faceted and presentation-only
 
-The system MUST derive deterministic `Store Category` memberships for each canonical Store Item without changing commerce source identity or authority, while deduplicating every selected view.
+The system MUST derive deterministic Store Category memberships for each canonical Store Item without changing commerce source identity or authority, while deduplicating every selected view.
 
 #### Scenario: Release-sourced Store Item is classified
 
-- **GIVEN** a canonical Store Item has source kind `release`
-- **WHEN** Store category membership is derived
-- **THEN** it belongs to `BlackBox Releases`.
+- **WHEN** a canonical release-sourced Store Item is classified
+- **THEN** it belongs to both BlackBox Releases and Distro, using the same source, slug and commerce identity.
 
 #### Scenario: Clothes Store Item is classified
 
-- **GIVEN** a distro-sourced Store Item has exact accepted Distro group `Clothes`
-- **WHEN** Store category membership is derived
-- **THEN** it belongs to `Distro` and `Merch`
-- **AND** its Distro source identity and exact physical type remain unchanged.
+- **WHEN** a distro-sourced Store Item has exact accepted group Clothes
+- **THEN** it belongs to Distro and Merch without changing its exact physical type or source identity.
 
 #### Scenario: Remaining Distro Store Item is classified
 
-- **GIVEN** a distro-sourced Store Item is not grouped as `Clothes`
-- **WHEN** Store category membership is derived
-- **THEN** it belongs to `Distro`.
+- **WHEN** a distro-sourced Store Item is not Clothes
+- **THEN** it belongs to Distro.
 
 #### Scenario: All collection is derived
 
-- **WHEN** the `All` Store collection is prepared
-- **THEN** every canonical Store Item appears exactly once
-- **AND** every canonical Store Item has at least one named category membership
-- **AND** a Store Item may appear in more than one named category but never more than once within one category projection.
+- **WHEN** All is prepared
+- **THEN** each canonical Store Item appears exactly once and has at least one named category membership
+- **AND** overlapping named memberships do not duplicate an item within any collection.
 
 #### Scenario: Category authority is inspected
 
-- **WHEN** Store categories are implemented or serialized
-- **THEN** category membership remains frontend presentation data
-- **AND** it is not added to `StoreItemSourceKind`, D1, Worker APIs, Store Offers, Stripe metadata, checkout payloads, StoreCart, stock, or provider field ownership.
+- **WHEN** category membership is derived or serialized
+- **THEN** it remains frontend presentation data and does not become a commerce source kind, D1 field, Worker API, offer, Stripe field, checkout payload, cart identity or stock authority.
 
 ### Requirement: Store category pages render honest collection states
 
-Each discoverable Store category route SHALL render only its classified canonical Store Items and SHALL preserve ordinary Store Item navigation.
+Each discoverable Store category route SHALL render its canonical Store Items once and preserve ordinary Store Item navigation, existing editorial exclusions and authoritative availability.
 
 #### Scenario: All or BlackBox Releases renders items
 
-- **WHEN** `/store/` or `/store/blackbox-releases/` renders a populated collection
-- **THEN** each canonical item appears once as a Store listing card
-- **AND** its ordinary link opens the canonical Store Item detail route.
+- **WHEN** All or BlackBox Releases renders
+- **THEN** each selected item appears once and links to its canonical Store Item detail route.
 
 #### Scenario: One Store Item has multiple category memberships
 
-- **GIVEN** a canonical Store Item belongs to both `Distro` and `Merch`
-- **WHEN** those category routes render
-- **THEN** the same canonical Store Item appears once in each relevant category
-- **AND** it still appears only once in All
-- **AND** no duplicate Store Item, Store Offer, stock, or checkout identity is created.
+- **WHEN** a Store Item belongs to multiple named categories
+- **THEN** it appears once in each selected collection and once in All
+- **AND** no additional offer, stock record, checkout identity or Store Item is created.
 
 #### Scenario: Distro category renders items
 
-- **WHEN** `/store/distro/` renders
-- **THEN** every canonical distro-sourced Store Item appears once in its deterministic format groups
-- **AND** exact `Clothes` Merch membership does not remove it from Distro
-- **AND** existing Distro search, format navigation, Coverflow disclosure, and no-JavaScript catalog access remain available under the Store category.
+- **WHEN** Distro renders
+- **THEN** canonical distro-sourced and release-sourced Store Items share one mixed-format ordered catalog
+- **AND** older BlackBox releases remain alphabetically discoverable
+- **AND** Clothes membership does not remove an item from Distro
+- **AND** search, optional format filtering, explicit-choice Coverflow and complete no-JavaScript access remain available.
 
 #### Scenario: Merch category is empty
 
-- **GIVEN** no canonical Store Item is currently classified as `Merch`
-- **WHEN** a visitor directly opens `/store/merch/`
-- **THEN** the static response replaces the location with the base-aware `/store/` URL and provides a meta-refresh fallback and ordinary Store link
-- **AND** it does not render an empty Merch shelf or create a placeholder commerce record.
+- **WHEN** no canonical Merch items exist and a visitor opens Merch
+- **THEN** the route replaces its location with base-aware Store All and supplies the existing meta-refresh fallback and ordinary Store link without an empty shelf or commerce placeholder.
 
 #### Scenario: Merch becomes populated
 
-- **WHEN** accepted source content later causes one or more canonical Store Items to classify as `Merch`
-- **THEN** the route, Store category navigation, and sitemap derive and render those items without an authored navigation or count change
-- **AND** the empty-route redirect is absent.
+- **WHEN** accepted content creates canonical Merch membership
+- **THEN** the route, category navigation and sitemap derive it without authored counts and without the empty-route redirect.
 
 ### Requirement: Legacy Distro URL resolves to the Store category
 
@@ -244,67 +233,70 @@ The Store SHALL present its discoverable category links as one square-edged Sign
 
 ### Requirement: Store orientation panels serve each collection without repeated information
 
-The Store SHALL present source-derived, purpose-specific orientation panels for All, BlackBox Releases, and Distro while retaining one safe generic presentation for other non-Distro categories.
+The Store SHALL present compact category orientation and browse controls with one source-derived result total in Grid and filtered views, preserving category metadata and existing format destinations without a second shelf headline or repeated count.
 
 #### Scenario: All presents one concise shelf ledger
 
-- **WHEN** `/store/` renders a populated All collection
-- **THEN** the panel presents `Store shelf`, the shelf-purpose headline, and the source-derived complete Store Item total exactly once
-- **AND** the active Signal rail identifies `All` without a second All heading inside the panel
-- **AND** the panel exposes `Browse Distro formats` with one ordinary canonical fragment link and source-derived count for each current Distro format
-- **AND** it does not repeat the collection total, Distro intro paragraph, or separate Distro subtotal.
+- **WHEN** a populated All collection renders
+- **THEN** its existing Store / All identity and category navigation orient the shopper
+- **AND** Search Store, Artists, one result total, and eligible view controls precede the cards
+- **AND** Browse Distro formats retains its source-derived canonical links within the responsive browse area
+- **AND** the page omits the duplicate shelf-purpose headline, Distro introduction, and separate Distro subtotal.
 
 #### Scenario: BlackBox Releases presents direct label context compactly
 
-- **WHEN** `/store/blackbox-releases/` renders a populated collection
-- **THEN** the panel presents `Store shelf`, the `BlackBox Releases` category label, its existing category description, and one source-derived collection total
-- **AND** it uses a compact purpose-specific composition without changing category metadata, membership, or Store Item order.
+- **WHEN** BlackBox Releases renders
+- **THEN** its existing category identity, useful category description, browse controls, and one result total identify the shelf
+- **AND** the compact composition preserves category metadata, membership, and item order.
 
 #### Scenario: Distro presents its browse tools as one compact orientation panel
 
-- **WHEN** `/store/distro/` renders a populated collection
-- **THEN** the panel presents `Store shelf`, the existing Distro title and description, and one source-derived collection total
-- **AND** the existing search slot belongs to the same square-edged composition without changing search matching, result membership, or query ownership
-- **AND** an idle search does not repeat the complete total or visible-item count
-- **AND WHEN** a search query is active
-- **THEN** the visible-result count and Clear search action remain available
-- **AND** the separate Browse formats navigation retains its source-derived links, counts, sticky behavior, and Top action.
+- **WHEN** Distro renders
+- **THEN** its existing category identity, useful description, search, artist choices, and one result total identify the shelf
+- **AND** Distro's format tools use the same responsive browse area
+- **AND** active filters update the one accessible result count and clearing action without repeating the complete catalogue total.
 
 #### Scenario: Another non-Distro category renders
 
-- **WHEN** a populated non-Distro category other than All or BlackBox Releases renders
-- **THEN** it receives a complete generic orientation panel using its own label, description, and source-derived total
-- **AND** it does not inherit BlackBox-specific copy or layout assumptions.
+- **WHEN** populated Merch or another non-Distro category renders
+- **THEN** it uses its own category identity, useful description, browse controls, and one result total
+- **AND** it does not inherit BlackBox-specific description or identity.
 
 #### Scenario: Orientation panels reflow
 
-- **WHEN** any purpose-specific panel renders at 320 CSS pixels, 200% text size, or the 400% zoom equivalent
-- **THEN** its content follows document order with content-driven height and no clipped or truncated text
-- **AND** every format destination remains an ordinary link with a target at least 44 CSS pixels high
-- **AND** the page does not require two-dimensional scrolling.
+- **WHEN** a Store collection renders below the desktop browse-pane width, at 200% text size, or at the 320px CSS viewport equivalent
+- **THEN** controls reflow in document order, with native disclosure for the browse pane and no clipped text or two-dimensional scrolling
+- **AND** interactive targets remain at least 44 CSS pixels high.
 
 #### Scenario: Orientation remains server-rendered
 
 - **WHEN** JavaScript is unavailable
-- **THEN** the same panel labels, source-derived totals, format links, and category descriptions remain available in the complete static document where applicable
-- **AND** the panels add no client state, runtime request, content field, or commerce authority.
+- **THEN** the category identity, complete collection total, category links, format links, and full catalogue remain available
+- **AND** inert search, artist-selection, and Coverflow controls are not presented.
+
+#### Scenario: All opens at the reviewed desktop or mobile size
+
+- **WHEN** a populated All route has settled at scrollY=0, default text size, and a 390x844 or 1280x800 CSS-pixel viewport
+- **THEN** identifiable artwork from at least the first Store Item is visible in the initial viewport
+- **AND** the layout retains category navigation, search, policy links, and any configured UAT review marker
+- **AND** it does not achieve this through text clipping, reduced readable type, undersized controls, or eager loading of every offstage image.
 
 ### Requirement: All Store provides one complete bounded Coverflow
 
-Every flat Store collection route rendered through `StoreCollectionPage` SHALL optionally enhance its complete canonical collection into one bounded Store Coverflow when it contains more than six canonical Store Items, without changing collection authority, order, identity, availability authority, or full-catalog access. This includes All, BlackBox Releases, populated Merch, and future non-Distro flat categories; Distro remains grouped under its own grouped-category contract.
+Every flat Store collection route rendered through `StoreCollectionPage` SHALL optionally enhance its complete canonical collection into one bounded Store Coverflow only after explicit visitor selection when it contains more than six canonical Store Items, without changing collection authority, order, identity, availability authority, or full-catalog access. This includes All, BlackBox Releases, populated Merch, and future non-Distro flat categories; Distro remains grouped under its own grouped-category contract.
 
 #### Scenario: All collection is eligible
 
-- **WHEN** `/store/` contains more than six canonical Store Items and Store Coverflow platform support is available
+- **WHEN** `/store/` contains more than six canonical Store Items, platform support is available, no text or artist filter is active, and the visitor chooses Coverflow
 - **THEN** one Coverflow enters `preview` mode with every All Store Item reachable in the existing deterministic All order
-- **AND** the first canonical Store Item starts active
+- **AND** the previously selected Store Item starts active, or the first canonical item when no prior selection exists
 - **AND** at most six existing `StoreItemCard` nodes receive stage positions while every other card leaves presentation, focus order, and the accessibility tree
-- **AND** the preview exposes the source-derived total, current position, remaining count, active Store Item identity, continuation ratio, Previous, Next, and `View all {total}`
+- **AND** the preview exposes the source-derived total, current position, remaining count, active Store Item identity, continuation ratio, Previous, Next, and `Grid`
 - **AND** the Store Item availability badge is absent from every positioned preview cover so artwork and active identity remain the preview focus.
 
 #### Scenario: Flat collection categories share one eligibility rule
 
-- **WHEN** All, BlackBox Releases, populated Merch, or a future non-Distro flat category rendered through `StoreCollectionPage` contains more than six canonical Store Items and Store Coverflow platform support is available
+- **WHEN** All, BlackBox Releases, populated Merch, or a future non-Distro flat category rendered through `StoreCollectionPage` contains more than six canonical Store Items, platform support is available, no text or artist filter is active, and the visitor chooses Coverflow
 - **THEN** the same shared Store Coverflow controller and lifecycle enters `preview` mode in that category's existing deterministic order
 - **AND** no per-category controller branch, duplicate card graph, alternate collection query, or second Store Item projection is introduced
 - **AND WHEN** the flat collection contains six or fewer canonical Store Items
@@ -325,12 +317,12 @@ Every flat Store collection route rendered through `StoreCollectionPage` SHALL o
 
 #### Scenario: Visitor opens the complete All catalog
 
-- **WHEN** the visitor activates `View all {total}`
+- **WHEN** the visitor activates `Grid`
 - **THEN** the same server-rendered All `StoreItemCard` nodes appear exactly once in their existing catalog order
 - **AND** each card's existing availability presentation is restored unchanged from its canonical Store collection data
 - **AND** the selected Store Item receives focus and remains identifiable
-- **AND** the control becomes `Show Coverflow`
-- **AND WHEN** the visitor activates `Show Coverflow`
+- **AND** the view controls remain ordered `Grid`, `Coverflow`, with Grid selected
+- **AND WHEN** the visitor activates `Coverflow`
 - **THEN** the selected Store Item returns as the active cover and preview availability badges are hidden again.
 
 #### Scenario: All enhancement is unavailable
@@ -343,14 +335,14 @@ Every flat Store collection route rendered through `StoreCollectionPage` SHALL o
 
 - **WHEN** the persistent app shell loads or restores `/store/`
 - **THEN** the All controller mounts against the swapped canonical card nodes for that shell pathname
-- **AND** cached runtime state has been sanitized to the deterministic initial preview
-- **AND** preview-only badge suppression follows the restored `preview` mode rather than stale card state
-- **AND** All gains no Distro search field, search-results mode, format grouping, or Distro hidden-state ownership.
+- **AND** cached runtime state has been sanitized to the deterministic complete initial Grid
+- **AND** ordinary card availability is visible until the visitor explicitly chooses Coverflow
+- **AND** All retains its existing Store-wide search and gains artist selection without Distro-local format grouping or a second visibility owner.
 
 #### Scenario: Flat category app-shell activation is generic
 
 - **WHEN** the app shell loads or restores an eligible flat Store category
-- **THEN** the shared controller mounts against the swapped canonical card nodes without awaiting Store HTML application, transition-veil closure, or listing-price presentation
+- **THEN** the shared controller mounts once after Store HTML application has supplied the canonical card nodes, without waiting for transition-veil closure or listing prices
 - **AND** the active category receives one controller mount and no category-specific state engine.
 
 #### Scenario: All Store performance remains catalog-owned
@@ -359,27 +351,20 @@ Every flat Store collection route rendered through `StoreCollectionPage` SHALL o
 - **THEN** it reuses the existing Store listing-price projection, card images, canonical links, availability data, and lazy-loading behavior
 - **AND** it adds no backend request, per-item price request, commerce projection, content entry, duplicate card node, or eager load for every offstage image.
 
-### Requirement: Distro browse-group introductions use restrained editorial typography
+#### Scenario: A Store collection first renders
 
-The Store Distro category SHALL render each populated browse-group introduction with the existing mono font family while preserving its current sentence casing, font size, line height, color, width, spacing, and wrapping. Store orientation descriptions and Distro item-card summaries MUST remain on the body font.
+- **WHEN** a flat Store collection loads directly, becomes active through the shell, or is restored
+- **THEN** its complete canonical Grid is visible before and after enhancement
+- **AND** functional view controls appear in Grid then Coverflow order only when eligible and ready
+- **AND** applying a text or artist filter uses Grid; clearing it does not automatically restore Coverflow.
 
-#### Scenario: Distro group introduction renders
+#### Scenario: All search reveals matching cards
 
-- **WHEN** `/store/distro/` renders an authored introduction beneath a populated browse-group heading
-- **THEN** the introduction uses the existing mono font family
-- **AND** it gains no uppercase transformation or label-style letter spacing.
-
-#### Scenario: Distro orientation and item summaries render
-
-- **WHEN** the Distro orientation description or a Distro item-card summary renders
-- **THEN** that copy retains the body font
-- **AND** the mono accent does not spread into repeated catalog or Store orientation copy.
-
-#### Scenario: Distro introduction reflows
-
-- **WHEN** a visitor views a Distro browse-group introduction at 320 or 390 CSS pixels
-- **THEN** the introduction wraps within the viewport without clipping or horizontal page scrolling
-- **AND** the surrounding group title and controls retain their existing hierarchy.
+- **WHEN** a nonempty query activates All Store search
+- **THEN** matching canonical cards appear in their original order through the shared search-results behavior
+- **AND** preview controls do not hide results or move focus out of the search input
+- **AND WHEN** the shopper clears that query
+- **THEN** the complete catalog is restored with the existing availability presentation and explicit Show Coverflow behavior where supported.
 
 ### Requirement: Store listing cards use Veneer titles and quiet credits
 
@@ -426,3 +411,114 @@ All Store categories SHALL use one native link covering each card except its ind
 - **WHEN** fresh listing data reports sold_out or out_of_stock
 - **THEN** Sold Out or Out of Stock appears beside the retained price with readable text and the corresponding subtle Store Blood or neutral outline
 - **AND** artwork, listening, image previews and card navigation remain usable on mobile, desktop, zoomed layouts and active Coverflow cards.
+
+### Requirement: Store grids use compact responsive product presentation
+
+Store collections SHALL use available desktop width for browse tools and a four-column catalogue while preserving outer gutters, complete product identity, and the existing BlackBox visual language.
+
+#### Scenario: Desktop shopper opens the Store
+
+- **WHEN** the viewport is at least 1280 CSS pixels wide at default text size
+- **THEN** a compact left browse pane and four product columns fit inside the Store content area
+- **AND** the unfiltered All view at 1366 by 768 pixels begins its first artwork row within the initial viewport when no overlay is open
+- **AND** row height remains content-driven; long titles and larger text are not truncated to keep every price above the fold
+- **AND** populated Distro grids flow continuously rather than restarting after every six cards.
+
+#### Scenario: A card renders
+
+- **WHEN** a Store card is shown in Grid or filtered results
+- **THEN** it presents complete square-framed artwork, title, artist or label, the actual selected physical option or known format, price, and availability
+- **AND** it omits description paragraphs and redundant Price or category labels
+- **AND** a release's other editorial formats are not advertised as selectable selling options
+- **AND** its ordinary canonical item link and existing accessible identity remain intact.
+
+#### Scenario: Narrow or enlarged presentation
+
+- **WHEN** the viewport narrows or text is enlarged
+- **THEN** the pane becomes a labelled native disclosure and the grid reduces to three, two, or one column as space requires
+- **AND** at 320 CSS pixels all content fits without horizontal page scrolling, clipped identity, or reduced functional touch targets
+- **AND** long names wrap without forced equal-height truncation.
+
+### Requirement: Store typography uses clear title and reading roles
+
+Store collection and item-detail content SHALL use the existing brand title face for public titles and the existing body sans face for controls, prices, artist credits, metadata, prose, and tracklists.
+
+#### Scenario: Shopper scans the Store
+
+- **WHEN** a collection or item-detail page renders
+- **THEN** titles retain the BlackBox brand face and repeated information shares the body face
+- **AND** metadata and prices introduce no additional display or monospace family
+- **AND** the shared primary-section H1 typography and non-Store surfaces retain their existing contracts.
+
+### Requirement: Store artist selection uses existing catalogue credits
+
+Each populated Store category SHALL offer a single artist selection derived from that category's existing Release artist names and Distro artist-or-label credits, with All artists as the default.
+
+#### Scenario: Artist choices render
+
+- **WHEN** enhanced Store browse controls become ready
+- **THEN** choices are alphabetical, have source-derived category item counts, and merge equivalent case, whitespace, and Unicode spellings
+- **AND** complete collaboration or label credits remain intact without inferred roster membership, aliases, or split identities
+- **AND** catalogue credit meaning is explained beside the Artists control when needed.
+
+#### Scenario: Shopper combines filters
+
+- **WHEN** an artist, search query, or Distro format is selected
+- **THEN** visible items satisfy all active selections while retaining canonical order
+- **AND** controls remain available with one accessible result count and a clear zero-result state
+- **AND** Clear search clears only the query, All artists clears only the artist, All formats clears only the format, and Clear filters clears all three.
+
+#### Scenario: Shopper changes category or revisits
+
+- **WHEN** a category is newly loaded or reactivated through the shell
+- **THEN** it starts in Grid with empty text and All artists
+- **AND** Distro retains its existing valid initial-format-fragment behavior
+- **AND** no persisted artist preference or additional catalogue/filter request is required.
+
+#### Scenario: Artist controls are unavailable
+
+- **WHEN** JavaScript or browse enhancement is unavailable
+- **THEN** every canonical card remains visible and reachable
+- **AND** there is no nonfunctional artist control.
+
+### Requirement: All Store orders its complete catalog by artist
+
+The All Store collection at `/store/` SHALL order every canonical item by its displayed artist, band or label credit A–Z using case-insensitive, numeric-aware English comparison. Equal credits SHALL sort by item title, then canonical slug. Release origin, release date and pre-order state MUST NOT take priority over alphabetical order.
+
+#### Scenario: Mixed sources render alphabetically
+
+- **WHEN** `/store/` renders Release-sourced and Distro-sourced Store Items
+- **THEN** all items appear exactly once in one artist/band A–Z sequence
+- **AND** BlackBox releases and pre-orders receive no separate priority.
+
+#### Scenario: Credits and ties compare consistently
+
+- **GIVEN** credits differ in case, equivalent Unicode spelling or incidental whitespace
+- **WHEN** All determines its item sequence
+- **THEN** those credits compare after Unicode normalization, trimming and whitespace collapsing
+- **AND** numeric names sort naturally and equal credits use title followed by slug to resolve ties.
+
+#### Scenario: Browsing preserves the alphabetical sequence
+
+- **WHEN** a shopper switches Grid and Coverflow, applies artist or text filters, or clears filters in All
+- **THEN** the retained canonical cards preserve the alphabetical sequence
+- **AND** clearing filters restores the complete sequence without changing item identity or counts.
+
+#### Scenario: Direct loads and shell restoration agree
+
+- **WHEN** `/store/` loads directly, enters through shell navigation, restores from a shell cache, or renders without JavaScript
+- **THEN** the complete server-rendered All sequence uses the same alphabetical rule at desktop and mobile widths.
+
+#### Scenario: Other collections retain their ordering
+
+- **WHEN** a visitor opens BlackBox Releases, Distro, Merch or the Home pre-order showcase
+- **THEN** that surface retains its existing ordering rule.
+
+### Requirement: Store collections show the first row on a phone first viewport
+
+Below 64rem a Store collection page SHALL omit its Top link and the empty artist host and use tightened spacing, while keeping the format chips, category navigation, search and result count; wider viewports are unchanged.
+
+#### Scenario: Shopper opens the Store on a phone
+
+- **WHEN** `/store/` loads at 390 × 844
+- **THEN** the first Store card's artwork starts inside the first viewport.

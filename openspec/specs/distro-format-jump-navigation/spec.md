@@ -8,147 +8,107 @@ TBD - created by archiving change add-distro-format-jump-navigation. Update Purp
 
 ### Requirement: Distro format navigation mirrors populated browse groups
 
-The Store Distro category SHALL render one server-derived format-navigation landmark whose format controls, order, counts, and targets come from the same populated Distro-category browse groups as the catalog sections, plus `All formats` and one utility link back to the Store Distro intro. `Vinyl 10-inch` and `Vinyl 7-inch` SHALL be separate derived groups. With client JavaScript, the navigation SHALL expose one transient format selection and present only the selected group; a valid canonical group fragment at controller connection SHALL select that group once before the route controller performs the final scroll/focus. Without client JavaScript, the same format entries SHALL remain ordinary fragment links into the complete catalog. Desktop and mobile presentations SHALL use the same server-derived group authority.
+Distro SHALL derive one Browse Distro formats navigation from the selected items' physical options, retaining existing format names, ordering, counts and fragment identities. Enhanced selection SHALL filter individual cards in the mixed catalog. Desktop and mobile SHALL use the same derived authority and expose All formats initially unless a valid format fragment selects otherwise.
 
 #### Scenario: Populated groups are available
 
-- **WHEN** `/store/distro/` renders its catalog
-- **THEN** one navigation landmark named `Browse formats` appears after the Store category navigation, intro, and search control and before the catalog groups
-- **AND** its active responsive presentation contains `All formats` followed by exactly one format entry for each populated derived browse group in the same order
-- **AND** every format entry displays and exposes its group name and current Distro-category item count
-- **AND** `All formats` is the default current selection when no valid initial group fragment is present
-- **AND** one separately identified `Top` link targets the Store Distro intro and remains outside the mobile disclosure
-- **AND** empty groups produce neither a format entry nor a section
-- **AND** desktop and mobile presentations derive from the same server-created group list while CSS exposes only one presentation to layout, assistive technology, and keyboard focus at a time.
+- **WHEN** Distro renders
+- **THEN** All formats precedes one ordinary link and canonical count per populated format
+- **AND** empty formats are omitted, and Top remains separately accessible.
 
 #### Scenario: Vinyl size groups are populated
 
-- **WHEN** current Distro entries populate both 7-inch and 10-inch vinyl classifications
-- **THEN** navigation and catalog rendering expose separate `Vinyl 10-inch` and `Vinyl 7-inch` groups with their own counts, headings, fragments, and matching intro copy
-- **AND** neither group contains items classified in the other size
-- **AND** the complete catalog retains the same total membership and canonical item order.
+- **WHEN** accepted source groups include 7-inch and 10-inch vinyl
+- **THEN** the choices, counts and legacy fragments remain distinct without separate catalog sections or changed physical types.
 
 #### Scenario: Visitor opens Browse formats on a narrow viewport
 
-- **WHEN** the viewport is narrower than `48rem` and the visitor activates the closed `Browse formats` summary
-- **THEN** the native disclosure opens and shows `All formats` plus every populated format entry and count in an auto-fitting one- or two-column panel
-- **AND** the summary identifies the current selection
-- **AND** the panel reflows to one column when text size, zoom, or available width requires it
-- **AND** no format requires horizontal scrolling, a hidden scrollbar, a clipped-edge inference, a swipe hint, or a custom carousel control
-- **AND** the summary and `Top` targets remain at least 44 CSS pixels high with visible focus.
+- **WHEN** Distro renders on a phone
+- **THEN** existing wrapping format links remain visible outside the Artist disclosure, with complete labels, counts, keyboard focus and no horizontal scrolling.
 
 #### Scenario: Navigation link targets a group
 
-- **WHEN** a visitor activates a populated format entry while the Distro enhancement is active
-- **THEN** its fragment and app-shell target identify the same unique heading used by that group's labelled section
-- **AND** only that format's labelled catalog section remains presented and reachable by keyboard or assistive technology
-- **AND** its source order and current item count remain unchanged
-- **AND** the selected format is exposed as current in both responsive navigation presentations
-- **AND** one selection marker plus CSS removes non-selected groups from presentation without writing card, wrapper, or group `hidden` attributes
-- **AND** the enhanced path applies selection and closes the mobile disclosure before the route controller performs the final scroll/focus
-- **AND** the target heading remains visible below the fixed site header and closed sticky format-navigation row
-- **AND** no card or group is recreated, reordered, or moved to a second catalog.
+- **WHEN** an enhanced format link is activated
+- **THEN** only matching cards remain visible in their canonical order
+- **AND** the link exposes current selection, the catalog remains a valid focus/scroll target, and no card is recreated or moved.
 
 #### Scenario: Route starts with a canonical group fragment
 
-- **WHEN** a direct load, restored shell route, or Store All format link connects `/store/distro/` with a fragment matching a rendered group heading
-- **THEN** the matching format becomes the initial current selection
-- **AND** only its labelled catalog section is presented
-- **AND** the route controller performs the final target scroll/focus after applying that selection
-- **AND** the fragment is read once without a hash listener, query parameter, persisted selection, or later URL rewriting.
+- **WHEN** a route connects with a rendered legacy format fragment
+- **THEN** that format is selected before final focus/scroll, while invalid or malformed fragments fall back to All formats.
 
 #### Scenario: Visitor restores all formats
 
-- **WHEN** a visitor activates `All formats`
-- **THEN** every populated group returns in its original server-derived order
-- **AND** `All formats` becomes the exposed current selection
-- **AND** each group follows the existing greater-than-six Coverflow threshold, so small groups return to compact grids.
+- **WHEN** All formats is selected
+- **THEN** the format restriction clears while artist and text filters retain their selections and canonical order.
 
 #### Scenario: Visitor browses a deep group
 
-- **WHEN** `All formats` is current and the visitor reaches a group far below the Store Distro intro
-- **THEN** the desktop row or closed mobile disclosure remains sticky directly below the fixed site header
-- **AND** the current selection and `Top` link remain available without a document scroll listener, active-section observer, pagination control, or duplicate navigation landmark.
+- **WHEN** the visitor browses deep into the mixed catalog
+- **THEN** the existing responsive browse pane retains its format choices and current selection without duplicate navigation or a new scroll observer.
 
 #### Scenario: Visitor returns to the page top
 
-- **WHEN** the visitor activates `Top`
-- **THEN** its fragment and app-shell target identify the Store Distro intro
-- **AND** ordinary anchor behavior remains the no-JavaScript fallback.
+- **WHEN** the visitor activates the existing Top link
+- **THEN** ordinary anchor and shell navigation reach the Distro intro with the no-JavaScript fallback preserved.
 
 #### Scenario: Catalog membership changes
 
-- **WHEN** classified Distro entries enter, leave, or move between populated browse groups
-- **THEN** navigation counts, responsive format entries, and selectable groups follow the resulting server-derived group list without authored navigation data.
+- **WHEN** canonical entries enter, leave or change physical format
+- **THEN** format choices and counts derive from the current complete collection without authored counts.
 
 ### Requirement: Distro format navigation remains progressive and search-safe
 
-The Store Distro format navigation MUST remain usable without client JavaScript and MUST NOT expose stale selection or disclosure state while client-side Distro search is active or after shell snapshot restoration. Distro search SHALL remain the sole writer of card, wrapper, and group `hidden` state.
+Format navigation SHALL remain ordinary fragment links without JavaScript and compose with artist and text filtering when enhanced. Transient selection SHALL reset on route cleanup and shell snapshot restoration without hiding the navigation or recreating cards.
 
 #### Scenario: Client JavaScript is unavailable
 
-- **WHEN** `/store/distro/` loads without the app shell or search control
-- **THEN** the narrow-width native `Browse formats` disclosure opens and closes through browser behavior
-- **AND** every visible format entry remains an ordinary fragment link to its rendered group heading
-- **AND** `All formats` links to the complete catalog start
-- **AND** the complete server-rendered Distro-category catalog remains available.
+- **WHEN** JavaScript is disabled
+- **THEN** links reach their preserved fragment anchors at the mixed catalog start and every canonical item remains available.
 
 #### Scenario: Distro search query is active
 
-- **WHEN** the normalized Store Distro search query becomes non-empty
-- **THEN** any selected format is reset to `All formats` before matching begins
-- **AND** the selection-owned route marker is removed before search writes result visibility
-- **AND** any open mobile format disclosure is closed
-- **AND** the whole format-navigation landmark is hidden from presentation and keyboard focus
-- **AND** search continues matching the complete Distro catalog without maintaining per-format result counts.
+- **WHEN** text or artist filtering is active
+- **THEN** the selected format remains active, matching is intersected, and format navigation stays accessible.
 
 #### Scenario: Distro search clears or disconnects
 
-- **WHEN** the query is cleared or the Store Distro search control cleans up on route exit
-- **THEN** every group and the server-rendered format navigation are restored without recreating or reordering them
-- **AND** `All formats` is current
-- **AND** the mobile disclosure returns to the closed server state.
+- **WHEN** text is cleared
+- **THEN** other active filters remain effective
+- **AND WHEN** the route disconnects
+- **THEN** transient format and visibility markers return to their server state.
 
 #### Scenario: Shell snapshot is cached and restored
 
-- **WHEN** the app shell caches or restores `/store/distro/`
-- **THEN** snapshot sanitation removes stale selected-format/current markers and mobile disclosure state while existing search sanitation owns `hidden` restoration
-- **AND** route reconnection selects the valid current group fragment or falls back to `All formats`
-- **AND** a valid selected group receives its final target scroll/focus only after it is presented
-- **AND** the restored route exposes the closed mobile disclosure or desktop inline row appropriate to the current viewport.
+- **WHEN** the shell caches or restores Distro
+- **THEN** existing sanitation removes transient selection and visibility state
+- **AND** reconnection applies a valid current fragment or All formats, with usable focus even for zero matches.
 
 #### Scenario: Visitor uses the keyboard
 
-- **WHEN** a visitor tabs through the visible format navigation
-- **THEN** Enter or Space toggles the native mobile summary, Tab reaches each visible format entry and `Top`, and Enter activates the focused entry
-- **AND** the current selection remains programmatically exposed
-- **AND** no custom arrow-key model, carousel, scroll button, menu widget, or roving tabindex is required.
+- **WHEN** a visitor tabs through format links and activates one with Enter
+- **THEN** native link semantics, visible focus and current selection remain available without a custom menu or roving tabindex.
 
 ### Requirement: All Store exposes Distro format discovery
 
-The All Store route SHALL expose a compact Distro format ledger when the classified Distro collection has populated groups, using the same server-derived Distro group names, counts, and fragment targets as the Store Distro route without repeating its introduction or a standalone Distro subtotal.
+All Store SHALL retain its compact Distro format ledger, using the same names, counts and fragment targets as Distro, including canonical BlackBox Store items without a duplicate catalog or subtotal.
 
 #### Scenario: All Store renders Distro discovery
 
-- **GIVEN** `/store/` contains a populated classified Distro collection
-- **WHEN** the All Store document renders
-- **THEN** it shows one `Browse Distro formats` navigation landmark before the All card collection without Distro introduction copy or a standalone Distro item total
-- **AND** each populated Distro group appears once in the same order and with the same current count as `/store/distro/`.
+- **WHEN** All renders a populated Distro collection
+- **THEN** one Browse Distro formats landmark precedes the All cards with matching Distro counts and no repeated Distro introduction or subtotal.
 
 #### Scenario: All Store format link opens canonical Distro group
 
-- **WHEN** a visitor activates an All Store Distro format link
-- **THEN** it is a base-aware ordinary link to the matching `/store/distro/#distro-group-*` target
-- **AND** it does not create an All-local duplicate group, filter state, tab state, or second Distro card projection.
+- **WHEN** an All Store format link is activated
+- **THEN** its base-aware ordinary destination is the existing Distro format fragment, whose enhanced view filters the mixed catalog.
 
 #### Scenario: Distro group membership changes
 
-- **WHEN** accepted Distro records enter, leave, or move between populated browse groups
-- **THEN** All Store Distro counts and links follow the same server-derived group list at the next static build
-- **AND** no authored navigation count or duplicated catalog membership is required.
+- **WHEN** accepted Store items enter, leave or change physical formats
+- **THEN** both pages derive matching counts and links on their next render without authored counts.
 
 #### Scenario: JavaScript is unavailable on All Store
 
-- **WHEN** a visitor follows an All Store Distro format link without client JavaScript
-- **THEN** the ordinary link reaches the rendered canonical Store Distro group heading
-- **AND** complete Distro browsing remains available.
+- **WHEN** an All Store format link is followed without JavaScript
+- **THEN** its fragment reaches the complete mixed Distro catalog.

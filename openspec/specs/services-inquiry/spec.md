@@ -67,7 +67,7 @@ The system SHALL require only the core contact and inquiry fields while offering
 
 ### Requirement: Inquiry submission confirms in context
 
-The system SHALL keep the visitor on the Services page and communicate idle, submitting, error, and success states accessibly.
+The system SHALL keep the visitor on the Services page and communicate idle, submitting, error, and success states accessibly. Only the fields that fail validation SHALL be marked invalid.
 
 #### Scenario: Inquiry is submitting
 
@@ -91,6 +91,12 @@ The system SHALL keep the visitor on the Services page and communicate idle, sub
 - **AND** field errors are programmatically associated with invalid controls
 - **AND** blocking errors use an accessible alert region
 - **AND** retry and fallback actions remain available.
+
+#### Scenario: One field is invalid
+
+- **WHEN** the visitor submits with a valid name and message but an invalid email
+- **THEN** only the email control is marked invalid
+- **AND** the valid fields are not announced as invalid.
 
 ### Requirement: Services inquiry recipient routing is Worker-owned
 

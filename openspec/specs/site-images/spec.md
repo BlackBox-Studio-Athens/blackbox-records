@@ -330,7 +330,7 @@ The system SHALL use matched existing artwork, verified artwork-fetcher output, 
 
 ### Requirement: Store Coverflow image slots match bounded cover geometry
 
-The system SHALL declare Store Coverflow preview image slots from the rendered Coverflow cover geometry instead of ordinary catalog-grid card widths.
+The system SHALL declare Store Coverflow preview image slots from the rendered Coverflow cover geometry instead of ordinary catalog-grid card widths. Initial Store HTML SHALL describe the default Grid slots even for Coverflow-eligible collections.
 
 #### Scenario: Eligible Coverflow preview renders
 
@@ -343,31 +343,38 @@ The system SHALL declare Store Coverflow preview image slots from the rendered C
 
 - **WHEN** a Store collection is in catalog mode, Coverflow is ineligible or unsupported, or JavaScript is unavailable
 - **THEN** ordinary Store and Distro card responsive sizes remain appropriate for the complete grid
-- **AND** every canonical card and Content Image remains present and operable without a duplicate card graph.
+- **AND** every canonical card and Content Image remains present and operable without a duplicate card graph
+- **AND** changing views updates slot hints for that presentation without replacing cards or fetching a second catalogue.
 
 ### Requirement: Store Coverflow gives initial priority only to the first visible cover
 
-The system SHALL reserve initial high image-fetch priority for the first visible active Store Coverflow cover while preserving ordinary catalog discovery behavior.
+Store image priority SHALL follow the default Grid with a fixed leading set of at most four eager images and at most one expected LCP image receiving high fetch priority. Coverflow eligibility alone MUST NOT select preview-only loading behavior.
 
 #### Scenario: Eligible Store Coverflow initially renders
 
-- **WHEN** an eligible Store category renders its initial Coverflow preview
-- **THEN** only the first active cover loads eagerly with high fetch priority
-- **AND** neighboring, hidden, and below-positioned covers use native lazy loading
-- **AND** Next or Previous interaction does not create a second runtime priority controller.
+- **WHEN** a Coverflow-eligible Store category renders directly
+- **THEN** at most the first four cards use eager image loading, with at most one expected LCP image at high priority
+- **AND** the initial presentation is Grid and remaining cards stay lazy even when eligible for Coverflow.
 
 #### Scenario: Store Distro groups initially render
 
-- **WHEN** the first rendered Store Distro group is Coverflow-eligible
-- **THEN** only that group's first active cover receives initial high fetch priority
-- **AND** every other cover in that group and every later group remains lazy
-- **AND** a later below-fold Coverflow group does not receive initial high fetch priority.
+- **WHEN** the Store Distro category initially renders
+- **THEN** its groups start in Grid and at most the first four cards of the first group use eager loading
+- **AND** at most one expected LCP image receives high priority
+- **AND** remaining cards and later groups stay lazy regardless of Coverflow eligibility.
 
 #### Scenario: Ordinary catalog initially renders
 
-- **WHEN** the first Store collection or Store Distro group is not Coverflow-eligible
-- **THEN** its existing leading eager-image behavior remains unchanged
-- **AND** remaining catalog images stay lazy without receiving high fetch priority.
+- **WHEN** a collection is not Coverflow-eligible or enhancement is unavailable
+- **THEN** its initial Grid uses the same bounded leading-card eager-loading rule
+- **AND** remaining images stay lazy without competing high fetch priority
+- **AND** a narrow viewport does not require JavaScript to calculate an exact eager row; the fixed set may span multiple rows.
+
+#### Scenario: Shopper chooses Coverflow
+
+- **WHEN** Coverflow is explicitly activated after the initial Grid
+- **THEN** it reuses existing responsive images and native loading behavior
+- **AND** activation or subsequent movement does not create a runtime priority controller, preload every cover, or promote competing high-priority images.
 
 ### Requirement: Home featured artist prints match News hover feedback
 
@@ -509,3 +516,115 @@ Hosted pages SHALL reference CMS image transformations on the images host direct
 - **WHEN** the site is served from a new public hostname such as the apex domain
 - **THEN** transformations keep working, because their source is the configured `PUBLIC_IMAGE_SOURCE_ORIGIN`
 - **AND** the `image_transform` smoke scenario confirms that a 480 px request returns a small AVIF or WebP with immutable caching on that hostname.
+
+### Requirement: Distro cards preview one ordered secondary photo
+
+Distro-derived Store Items, including cassettes, SHALL use the first gallery image whose source differs from the primary as their alternate browse photo. This selection SHALL apply wherever the shared Store card appears, including All, Distro, populated Merch, Coverflow, expanded catalogs, and search results. Primary-image ownership for cart, checkout, metadata, and provider presentation SHALL remain unchanged.
+
+#### Scenario: Shopper hovers an eligible image
+
+- **WHEN** a hover-capable fine pointer enters the card's image area and the alternate is ready
+- **THEN** the alternate appears in the existing frame
+- **AND** leaving restores the primary unless the link still has visible keyboard focus
+- **AND** re-entering shows the same alternate without automatic cycling.
+
+#### Scenario: No alternate is available
+
+- **WHEN** the gallery is absent, empty, or contains only the primary source
+- **THEN** the card keeps its primary-only presentation
+- **AND** Release-derived items retain their existing behavior.
+
+### Requirement: Photo previews preserve accessible navigation and physical-product framing
+
+The preview SHALL preserve existing navigation, labels, and card geometry while displaying the complete alternate photo within an opaque frame. The full saved gallery SHALL remain available through the existing item page.
+
+#### Scenario: Shopper uses a keyboard
+
+- **WHEN** the item link receives visible keyboard focus and its alternate is ready
+- **THEN** the same alternate appears with a stable link name and visible focus
+- **AND** no extra tab stop or duplicate image announcement is introduced
+- **AND** existing Coverflow focus activation and Enter behavior remain intact.
+
+#### Scenario: Shopper activates a card or uses touch
+
+- **WHEN** a shopper activates an ordinary card or the active Coverflow cover
+- **THEN** its item link opens without an image-toggle tap
+- **AND** an inactive side-cover tap still selects that cover through the existing behavior
+- **AND** the photo effect adds no sticky touch-hover state or gesture interception
+- **AND** all gallery photos remain accessible by scrolling the item page.
+
+#### Scenario: Alternate proportions or motion preferences differ
+
+- **WHEN** the alternate is displayed
+- **THEN** it is contained without stretching or clipping, and the primary does not show through letterboxing
+- **AND** labels, primary/CD framing, and outer Coverflow geometry remain intact
+- **AND** reduced-motion preference disables the photo transition.
+
+### Requirement: Alternate delivery uses existing media and keeps the primary fallback
+
+Listings SHALL add at most one lazy, non-high-priority secondary image per eligible card, through existing owned-media delivery. Other gallery photos SHALL remain on the item page rather than being preloaded for the listing.
+
+#### Scenario: Alternate loading is pending or fails
+
+- **WHEN** the alternate has not loaded successfully
+- **THEN** the primary remains visible and navigable without a broken-image overlay
+- **AND** a later successful load reveals the alternate only while hover or visible keyboard focus applies.
+
+#### Scenario: Store is entered or revisited
+
+- **WHEN** Store is loaded directly, entered through section navigation, or restored from history/cache
+- **THEN** ready alternates work and unavailable alternates retain the primary fallback
+- **AND** navigation, existing listing-price behavior, and same-document player continuity remain intact.
+
+#### Scenario: Enhancement is unavailable
+
+- **WHEN** JavaScript is disabled or alternate-image enhancement is unavailable
+- **THEN** primary cards and normal navigation remain usable
+- **AND** the server-rendered detail gallery exposes all saved photos with their authored descriptions and natural proportions.
+
+### Requirement: Compact Store artwork preserves complete product images
+
+Store Grid and filtered-result cards SHALL use stable square artwork frames that show the full cover or physical product without changing source assets.
+
+#### Scenario: Store artwork renders
+
+- **WHEN** a Release, vinyl, CD, cassette, or merchandise image renders in the compact Grid
+- **THEN** the whole image fits within the square frame without stretching or destructive cropping
+- **AND** responsive image sizes reflect the real card slot, including the desktop browse pane
+- **AND** images have appropriate text alternatives.
+
+#### Scenario: An alternate product photo is available
+
+- **WHEN** the separately specified alternate-photo behavior shows another image
+- **THEN** it uses the same compact frame without shifting the card's dimensions
+- **AND** missing alternates leave the existing primary image usable.
+
+### Requirement: Store listing cards use a two-width ladder
+
+Store listing card images SHALL offer 360 and 720 pixel candidates only, so phones, Coverflow and high-density desktops share the 720 pixel transform and fewer unique transformations are requested.
+
+#### Scenario: A Store listing renders
+
+- **WHEN** a Store collection page renders its cards
+- **THEN** each card image's `srcset` lists exactly the 360 and 720 pixel transforms.
+
+### Requirement: Image fallback tries the src transform before the original
+
+When a responsive image candidate fails, the browser fallback SHALL clear the responsive candidates and load the image's `src` transform first; only a failed `src` transform SHALL load the canonical public original, once.
+
+#### Scenario: A srcset transform fails
+
+- **GIVEN** a direct Images `srcset` candidate fails to load
+- **WHEN** the fallback handles the error
+- **THEN** the image loads its `src` transform
+- **AND** the original is requested only if that transform also fails.
+
+### Requirement: Home pre-order showcase images are responsive
+
+The Home pre-order showcase SHALL deliver covers with 360 and 720 pixel candidates and slot-matched `sizes`, and band photos with 800, 1200 and 1800 pixel candidates at full viewport width; the showcase JSON SHALL carry these candidate sets and the browser SHALL validate them before use.
+
+#### Scenario: Phone loads the Home showcase
+
+- **WHEN** the showcase renders at 390 px wide on a high-density phone
+- **THEN** each cover loads a candidate no wider than 720 pixels
+- **AND** the band photo loads from the photo's responsive candidates instead of a single large source.

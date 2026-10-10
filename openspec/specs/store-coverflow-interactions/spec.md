@@ -12,11 +12,12 @@ Every eligible flat Store collection route rendered through `StoreCollectionPage
 
 #### Scenario: Shared enhancement mounts
 
-- **WHEN** a flat Store collection contains more than six canonical Store Items, or a Distro group contains more than six classified Store Items, and JavaScript, required 3D CSS support, and the functioning controller caller are available
-- **THEN** the shared Store Coverflow controller reads route-owned cards in their existing canonical order and enters `preview` mode
-- **AND** at most six existing cards receive relative stage positions
+- **WHEN** a flat collection or Distro group is eligible under its existing item-count rule, including an explicitly selected Distro format with at least two items, and JavaScript, required 3D CSS support, and a functioning controller caller are available
+- **THEN** the shared Store Coverflow controller reads route-owned cards in their existing canonical order and retains `catalog` mode until the visitor chooses Coverflow
+- **AND** only explicit Coverflow activation assigns relative stage positions to at most six existing cards
 - **AND** no card, Store Item projection, Store data request, authored collection, or commerce identity is duplicated
-- **AND** Distro search remains the sole owner of Distro matching and controller lifecycle, so the app shell does not double-mount Distro groups.
+- **AND** the route's shared browse control owns matching and one controller lifecycle per active route, so the app shell does not also mount it
+- **AND** Distro retains group-local view choices, without a page-wide mode synchronizer.
 
 #### Scenario: Flat collection eligibility is universal
 
@@ -33,7 +34,7 @@ Every eligible flat Store collection route rendered through `StoreCollectionPage
 #### Scenario: Store route exits and re-enters
 
 - **WHEN** the app shell caches, leaves, restores, or reloads a Store route containing Coverflow
-- **THEN** generic Store Coverflow snapshot sanitation restores the first canonical item, initial positions, labels, controls, and rail ratio
+- **THEN** generic Store Coverflow snapshot sanitation restores the complete Grid, canonical order, initial selection, labels, and controls
 - **AND** selected, ready, reveal, visited, and temporary transition state is removed before caching
 - **AND** the route-specific controller remounts once for the active shell pathname and removes its listeners and in-flight animation state during cleanup
 - **AND** a prior mount failure does not prevent a later Store activation from rechecking capability and mounting successfully.
@@ -44,9 +45,15 @@ Every eligible flat Store collection route rendered through `StoreCollectionPage
 - **THEN** it remains outside Store Coverflow eligibility and lifecycle
 - **AND** its existing editorial or detail availability and navigation behavior remains unchanged.
 
+#### Scenario: Optional Coverflow becomes available
+
+- **WHEN** an eligible group has a functioning controller and no active text or artist filter
+- **THEN** its labelled view choices appear in Grid then Coverflow order, with the current choice exposed programmatically
+- **AND** unavailable or pending enhancement leaves Grid usable without queuing user intent.
+
 ### Requirement: Store Coverflow supports discrete touch swipe navigation
 
-An enhanced Store Coverflow in `preview` mode MUST recognize deliberate horizontal touch swipes while retaining native vertical page panning, pinch zoom, taps, and ordinary Store Item link semantics.
+An enhanced Store Coverflow in `preview` mode MUST recognize deliberate horizontal touch swipes while retaining native vertical page panning, pinch zoom, taps, and ordinary Store Item link semantics. A completed swipe MUST block only the click that the swipe itself produces: the next pointerdown in the Coverflow, or 400 ms after the swipe's pointerup, MUST clear the block.
 
 #### Scenario: Visitor swipes horizontally
 
@@ -68,6 +75,12 @@ An enhanced Store Coverflow in `preview` mode MUST recognize deliberate horizont
 - **THEN** its canonical Store Item detail link opens with ordinary link semantics
 - **AND WHEN** the visitor taps an inactive positioned side cover without completing a swipe
 - **THEN** that Store Item becomes active without opening its route on the first tap.
+
+#### Scenario: Visitor taps right after a swipe
+
+- **GIVEN** the visitor completed a swipe
+- **WHEN** they tap Previous, Next, Grid, Listen or the front cover
+- **THEN** the first tap acts normally.
 
 ### Requirement: Store Coverflow supports intentional wheel navigation
 
@@ -164,7 +177,7 @@ Store Coverflow MUST keep initial parsing linear in the canonical card count and
 
 - **WHEN** Previous, Next, side-cover selection, focus, touch, wheel, or an arrow key changes the active Store Item
 - **THEN** the controller clears no more than the previously positioned six cards and assigns no more than the next six positions
-- **AND** only fixed status, count, summary, and rail fields update alongside those cards
+- **AND** only fixed status, count, summary, and plaque Listen fields update alongside those cards, the plaque Listen copying the front card's existing trigger attributes
 - **AND** no clone, virtualized window, request, full-card rebuild, layout animation, or image preload is introduced.
 
 #### Scenario: Interaction listeners run
@@ -212,23 +225,6 @@ Every enhanced All and Distro Coverflow SHALL use the same restrained hover and 
 - **THEN** artwork scaling and its transition are disabled
 - **AND** a static surface change and visible focus treatment still identify the actionable Store Item link.
 
-### Requirement: Store Coverflow retains one pre-ready disclosure activation
-
-An eligible Store Coverflow MUST retain one full-catalog activation received after progressive preview is visible but before its shared controller is ready.
-
-#### Scenario: Visitor activates disclosure before readiness
-
-- **WHEN** a pointer or keyboard-generated activation reaches the visible full-catalog control before its group is ready
-- **THEN** one group-local disclosure intent is retained
-- **AND** repeated pre-ready activations are coalesced
-- **AND** the shared controller consumes the intent exactly once after all group listeners are attached.
-
-#### Scenario: Pending disclosure becomes invalid
-
-- **WHEN** the route exits, its snapshot is captured, progressive enhancement falls back, or controller cleanup runs before the intent is consumed
-- **THEN** pending disclosure state is removed
-- **AND** no activation leaks into a later route visit or another Coverflow group.
-
 ### Requirement: Store Coverflow isolates consumed wheel input from page scrolling
 
 An enhanced Store Coverflow in `preview` mode SHALL keep consumed wheel input within its hovered stage so that neither native scrolling nor ancestor smooth-scroll handling moves the page. This ownership SHALL apply even when the event does not immediately advance an item.
@@ -250,3 +246,29 @@ An enhanced Store Coverflow in `preview` mode SHALL keep consumed wheel input wi
 - **WHEN** wheel input occurs outside the stage, in Grid or search-results mode, with Ctrl for browser zoom, or with zero delta on both axes
 - **THEN** Coverflow does not intercept that input or advance an item
 - **AND** ordinary page scrolling and browser zoom remain available.
+
+### Requirement: Store Coverflow switches views with one glyph switch
+
+Every enhanced Store Coverflow SHALL offer Grid and Coverflow as two native pressed-state buttons inside one framed switch, each with a decorative drawn glyph and a visible label, with the pressed segment on the ink face. Each segment SHALL keep visible focus and its existing disabled and `aria-disabled` behavior.
+
+#### Scenario: Visitor sees the view switch
+
+- **WHEN** an enhanced Store Coverflow group renders its controls
+- **THEN** Grid shows a two-by-two glyph and Coverflow shows a front panel between two angled side panels, both hidden from assistive technology
+- **AND** the pressed segment has the ink face and the other a quiet face that lifts on hover-capable devices
+- **AND** the switch with its frame is at least 44 CSS pixels high, as are Previous and Next.
+
+#### Scenario: Controls fit a phone
+
+- **WHEN** the viewport is narrower than 40rem
+- **THEN** the switch fills its own row and Previous and Next share the next row
+- **AND** the page does not scroll horizontally.
+
+### Requirement: The Coverflow front card shows its price row
+
+The enhanced Coverflow SHALL show the front card's price and status row inside the stage. Below 40rem with motion allowed, the front cover SHALL keep its full size and the stage SHALL leave room for the row beneath it; on desktop the front card's price and Buy control SHALL be visible and clickable.
+
+#### Scenario: Phone shows the front card
+
+- **WHEN** the Coverflow renders at 390 × 844 or 320 × 568
+- **THEN** the front card's price row ends inside the stage.

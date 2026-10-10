@@ -164,6 +164,13 @@ Each application module MUST declare its source root, targets and task inputs in
 - **AND** its workspace dependencies are limited to documented internal API and pure content-model entrypoints
 - **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
 
+#### Scenario: International order notices cross public presentation boundaries
+
+- **WHEN** Store collections, Store Item, the cart drawer and checkout offer the same email ordering route
+- **THEN** `store-cart` owns and provides `InternationalOrderNotice.tsx` through its native `project.json` contract
+- **AND** its browser-only country gate and email template introduce no dependency on checkout clients, Worker state or payment authority
+- **AND** public pages, layouts and `checkout-web` consume the provided entrypoint without a reverse dependency on `web-store`.
+
 ### Requirement: Storefront catalog provides route-lazy Store Distro search
 
 The system MUST keep Store Distro search presentation inside the closed `web-store` module while exposing its app-shell integration through a provided entrypoint.

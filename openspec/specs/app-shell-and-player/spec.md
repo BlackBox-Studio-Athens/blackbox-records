@@ -37,14 +37,22 @@ The system SHALL intercept exact top-level section and Store collection-category
 
 ### Requirement: Detail overlays
 
-The system SHALL open artist, release, and news detail routes as overlays for shell-managed navigation while preserving full Astro pages for direct loads.
+The system SHALL open artist, release, and news detail routes as overlays for shell-managed navigation while preserving full Astro pages for direct loads. An open overlay SHALL be a dialog named by its detail title, and the document title SHALL read `<detail title> | <site name>` while it is open. Closing an overlay without routing SHALL keep the list's scroll position and return focus to the card that opened it. A link inside an overlay to a document the shell does not handle SHALL navigate natively without adding a duplicate history entry.
 
 #### Scenario: Detail link opens in shell
 
 - **GIVEN** a shell-managed page contains a release, artist, or news detail link
 - **WHEN** the user follows that link
 - **THEN** the shell fetches the partial overlay route
+- **AND** the overlay dialog's accessible name and the document title carry the detail title
 - **AND** direct loads to the same detail URL still render full pages.
+
+#### Scenario: Shopper closes an overlay far down a list
+
+- **GIVEN** a shopper opened a detail overlay from a card far down a list
+- **WHEN** they close it with Close, Escape, the backdrop or Back
+- **THEN** the list keeps its scroll position and focus returns to the card without scrolling
+- **AND** the previous document title is restored.
 
 ### Requirement: Persistent player session
 
@@ -455,9 +463,29 @@ The shell SHALL mark shared controls for the active editorial source as disabled
 #### Scenario: Store cards offer listening
 
 - **WHEN** a Store collection renders a record with a verified source
-- **THEN** its 112 × 44px listening action appears below artwork and before the title
+- **THEN** its 112 × 44px listening action appears below artwork and before the title in Grid
 - **AND** source-less records retain row alignment without displaying an invented action.
-- **AND** Grid actions align with card text, while the Coverflow action centers beneath the active record.
+- **AND** Grid actions align with card text.
+
+#### Scenario: Coverflow listens from the plaque
+
+- **WHEN** Store Coverflow shows a front record with a verified source
+- **THEN** the title plaque's Listen end is that record's listening action, taking its source, provider data and current session state, and the card's own Listen leaves presentation
+- **AND** activating it opens the player for the front record, and closing the player returns focus to it
+- **AND** it displays In player while that source is the active session
+- **AND WHEN** the front record has no verified source, or the group leaves Coverflow
+- **THEN** the plaque shows the record identity without a Listen end.
+
+#### Scenario: Stop is pressed once
+
+- **WHEN** the shopper activates Stop in the floating player
+- **THEN** the control reads Stop? and keeps its accessible name and position
+- **AND** the session continues
+- **AND** the control returns to Stop after three seconds without a second activation.
+#### Scenario: Stop is pressed twice
+
+- **WHEN** the shopper activates Stop? within the window
+- **THEN** the session ends with the existing Stop semantics, including focus restoration and iframe removal.
 
 ### Requirement: Equalizer motion communicates a listening action without asserting playback
 
@@ -482,7 +510,7 @@ Shared Listen controls and the persistent player's modal header and mini player 
 
 ### Requirement: Header cart control has a supplementary visible label
 
-The public header SHALL show a compact English Cart label beneath its cart icon on pointer hover and keyboard focus without moving the header or changing the button's accessible item count, badge or cart-opening behavior.
+The public header SHALL render its cart control only while the cart contains at least one item or the current route is a store route (the Store collections, Store Item pages and checkout pages). While rendered, it SHALL show a compact English Cart label beneath its cart icon on pointer hover and keyboard focus without moving the header or changing the button's accessible item count, badge or cart-opening behavior. The header SHALL reserve the control's space so its appearance or disappearance does not shift other header controls.
 
 #### Scenario: Shopper hovers the cart
 
@@ -511,10 +539,28 @@ The public header SHALL show a compact English Cart label beneath its cart icon 
 
 #### Scenario: Cart count or shell route changes
 
-- **WHEN** the cart is empty, contains one item or contains multiple items, or the shopper changes shell sections
-- **THEN** the supplementary label remains Cart and is hidden from assistive technology
+- **WHEN** the cart contains one item or multiple items, or the shopper changes shell sections with items in the cart
+- **THEN** the control stays rendered, the supplementary label remains Cart and is hidden from assistive technology
 - **AND** the button retains its correct accessible name and count badge
 - **AND** shell-owned cart state and player continuity are preserved.
+
+#### Scenario: Cart is empty away from the store
+
+- **WHEN** the cart is empty and the current route is not a store route
+- **THEN** the header renders no cart control and no cart fallback
+- **AND** the header layout does not shift.
+
+#### Scenario: Cart is empty on a store route
+
+- **WHEN** the cart is empty and the route is a Store collection, Store Item or checkout page
+- **THEN** the cart control is rendered with the accessible name Cart and no count badge.
+
+#### Scenario: Cart drawer closes
+
+- **WHEN** the shopper closes the cart drawer
+- **THEN** focus returns to the control that opened it (Add to cart or the header cart control) while that control is still in the page
+- **AND** otherwise to the header cart control when it is rendered
+- **AND** otherwise to the main content landmark.
 
 ### Requirement: Shell scrolling follows the input device and idles when still
 
@@ -633,3 +679,191 @@ Shell sheets, the detail overlay, the player surface, and the Store Item gallery
 - **WHEN** a Store Item with several images is shown after direct load or shell navigation
 - **THEN** the gallery crossfades through CSS and supports thumbnails, previous and next controls, keyboard navigation, and touch swipes
 - **AND** artwork remains uncropped, reduced motion is honored, and single-image items stay static.
+
+### Requirement: Public shell scrolling uses one lifecycle-owned Lenis runtime
+
+The public frontend SHALL route smooth document and first-party panel scrolling through one app-shell-owned Lenis runtime. It SHALL preserve immediate scroll resets, focus restoration, browser history, shell anchors, and the persistent player lifecycle.
+
+#### Scenario: Visitor smoothly follows an in-page target
+
+- **GIVEN** the public app shell is active and a target exists in the document or an owned overlay
+- **WHEN** the visitor activates an in-page or explicit smooth-scroll action
+- **THEN** the matching Lenis scroll root moves to the existing offset and alignment
+- **AND** route and hash handling remain owned by the app shell.
+
+#### Scenario: Shell navigation swaps the active section
+
+- **WHEN** shell navigation replaces rendered section content or restores a history entry
+- **THEN** the new position is applied immediately and focus remains on the shell main region
+- **AND** no previous Lenis inertia carries into the new section.
+
+#### Scenario: Reduced motion or a native-owned surface is active
+
+- **WHEN** the visitor prefers reduced motion or interacts with a form control, iframe, embedded player, or horizontal Coverflow
+- **THEN** the system honors immediate or native scrolling for that interaction
+- **AND** each runtime instance is removed or refreshed when its owned surface disconnects.
+
+### Requirement: Public coordinated transitions use Motion without changing shell ownership
+
+First-party coordinated public transitions SHALL use cancellable Motion animations. They MUST preserve existing route loading semantics, overlay focus, dialog behavior, and the identity of an active player iframe. Reduced motion SHALL complete transitions without spatial motion or decorative repetition.
+
+#### Scenario: Navigation or an overlay transition is interrupted
+
+- **WHEN** a transition is superseded, its surface closes, or the owning component unmounts
+- **THEN** its animation is stopped and cleaned up
+- **AND** no stale callback changes the current route, locks scrolling, or disables controls.
+
+### Requirement: Store browsing preserves orientation and truthful availability
+
+Store view controls SHALL stay mounted during Coverflow movement and filtering. Repeating a format selection SHALL preserve the active Coverflow item. Static cards MUST NOT claim current availability from build-time data; live Store Offer details remain authoritative.
+
+#### Scenario: Visitor browses a product with several images
+
+- **WHEN** the visitor opens a Store Item with additional source images
+- **THEN** the artwork area presents every image through thumbnails, previous/next controls, keyboard navigation, and touch swipes
+- **AND** Motion respects reduced-motion preferences, artwork remains uncropped, and single-image items remain static.
+
+#### Scenario: Visitor follows an artist provider link
+
+- **WHEN** Bandcamp or TIDAL appears among an artist's links
+- **THEN** the link uses its provider's recognizable brand mark with its existing accessible name.
+
+### Requirement: Back closes the cart drawer and phone Menu
+
+While the cart drawer or the phone Menu is open, the shell SHALL keep one history entry for it at the page's own URL, so Back closes the sheet without routing the page beneath it. Closing the sheet in place SHALL consume that entry, and following a Menu section link SHALL replace it.
+
+#### Scenario: Shopper presses Back with the cart open
+
+- **GIVEN** the cart drawer or the phone Menu is open over a page
+- **WHEN** the shopper presses Back
+- **THEN** the sheet closes and the page keeps its URL, content and scroll position
+- **AND** Forward reopens the sheet.
+
+#### Scenario: Shopper closes the sheet with its controls
+
+- **WHEN** the shopper closes the sheet with Close, Escape or the backdrop
+- **THEN** the sheet's history entry is consumed
+- **AND** the next Back navigates, with no press that does nothing.
+
+### Requirement: History traversal restores the scroll position
+
+The shell SHALL record the scroll offset in the current history entry before a section navigation, before a sheet opens and when the document is hidden, and SHALL restore it when Back or Forward returns to that entry, including a returned or reloaded document. Clicked links and Menu links SHALL keep resetting the scroll to the top.
+
+#### Scenario: Visitor returns to a scrolled section
+
+- **GIVEN** a visitor scrolled a section page, then followed a link to another section
+- **WHEN** they press Back
+- **THEN** the earlier section is shown at the offset it had when they left.
+
+### Requirement: The floating player reserves page space and stacks below sheets
+
+While a player session exists, the page end and the root bottom scroll padding SHALL reserve the floating player's height plus the bottom safe area, so the last content and focused controls stay visible above it. The phone Menu sheet SHALL stack above the floating player and below the player modal.
+
+#### Scenario: Phone visitor scrolls to the footer with the player minimized
+
+- **GIVEN** a minimized player session on a 390 × 844 phone
+- **WHEN** the visitor scrolls to the end of the page
+- **THEN** the footer is fully visible above the floating player
+- **AND** the open Menu's Close control receives a tap at its own position.
+
+### Requirement: The player modal fits short viewports and phone album embeds
+
+On viewports up to 30rem tall, the player modal SHALL show its header and controls beside the embed with no scrolling inside the modal, and the Bandcamp embed SHALL narrow to fit the available height. Below 40rem wide, a Bandcamp album embed SHALL be sized to its cover-and-transport height without an empty area beneath it.
+
+#### Scenario: Landscape phone opens the player
+
+- **WHEN** the player modal opens at 844 × 390
+- **THEN** the embed, its transport controls and Close are inside the viewport
+- **AND** the modal does not scroll.
+
+### Requirement: The background is inert behind the player modal and detail overlays
+
+While the player modal or a detail overlay is open, the skip link, header, main content and footer SHALL be inert. Inertness SHALL lift before focus returns on close, and focus return SHALL NOT scroll the page.
+
+#### Scenario: Keyboard user opens a detail overlay
+
+- **GIVEN** a detail overlay or the player modal is open
+- **WHEN** the user moves through the page with Tab or a screen reader's reading order
+- **THEN** only the open dialog's content is reachable
+- **AND** after closing it, the page is interactive again and focus is on the control that opened it.
+
+### Requirement: The fixed header never covers focused or anchored content
+
+The root top scroll padding SHALL equal the header height plus 0.5rem, section scroll margins SHALL be relative to it, and script-driven target scrolling SHALL apply the same offset. The skip link and the route loading indicator SHALL paint above the header and below sheets and dialogs.
+
+#### Scenario: Keyboard user starts on a phone
+
+- **WHEN** a keyboard user presses Tab on a fresh page at 390 px wide
+- **THEN** the skip link is the first stop and is painted above the header
+- **AND** following an in-page anchor lands the target below the header.
+
+### Requirement: Cart quantity changes are announced
+
+The cart drawer's quantity controls SHALL form a labelled group, and each quantity step SHALL be announced politely with the item title, the new quantity and the line total; a removal announcement SHALL take priority.
+
+#### Scenario: Shopper increases a quantity
+
+- **WHEN** the shopper presses the increase control for a cart line
+- **THEN** a polite live region announces the title, the new quantity and the line total.
+
+### Requirement: Closing the cart returns focus to its opener on tap-only browsers
+
+Closing the cart drawer SHALL return focus to the control that opened it, the Buy or Add To Cart control or the header Cart, even when the browser did not focus that control on tap; otherwise to the element focused before opening, then the header Cart, then main. The shell SHALL set `html[data-app-shell-ready]` once its document listeners are attached, so tests and tooling wait for that marker instead of a delay.
+
+#### Scenario: iOS Safari shopper closes the cart after Buy
+
+- **GIVEN** a shopper tapped Buy on a Store card and the cart drawer opened
+- **WHEN** they close the drawer
+- **THEN** focus is on that Buy control.
+
+### Requirement: Public documents declare a dark browser theme
+
+Every public shell document, the redirect layout and the 404 page SHALL declare `theme-color` `#0d0d0d` and a dark `color-scheme`, so phone browser chrome and form controls match the site.
+
+#### Scenario: Phone visitor loads any public page
+
+- **WHEN** a public page, a redirect page or the 404 page loads
+- **THEN** its head contains `theme-color` `#0d0d0d` and `color-scheme` `dark`.
+
+### Requirement: Shell documents link a touch icon and a web manifest
+
+Shell documents SHALL link a 180 px `/apple-touch-icon.png` and `/manifest.webmanifest`. The manifest's start URL and scope SHALL be relative, its icons SHALL include 192 px, 512 px and maskable 512 px images, and its display SHALL be `minimal-ui`, so an installed site shares the browser's cart storage and checkout return.
+
+#### Scenario: Visitor adds the site to a home screen
+
+- **WHEN** a phone browser reads the page's icon and manifest links
+- **THEN** it receives the 180 px touch icon and a manifest with relative start URL and scope and `minimal-ui` display.
+
+### Requirement: Shared links use the configured site and the product image
+
+The canonical link and `og:url` SHALL be built from the configured site and the request pathname, and a Store Item page SHALL use its product image and alt text as the sharing image.
+
+#### Scenario: Visitor shares a Store Item from a phone
+
+- **WHEN** a Store Item page is loaded
+- **THEN** its canonical link and `og:url` are the configured site plus the item's pathname
+- **AND** its `og:image` is a 1200 px JPEG of the product image.
+
+### Requirement: Public text fields are 16 px on phones
+
+Below 48rem every public text input, select and textarea SHALL render at a computed size of at least 16 px without disabling pinch zoom; wider viewports keep their sizes.
+
+#### Scenario: iPhone visitor focuses a field
+
+- **WHEN** a visitor at 390 px wide focuses any public text field
+- **THEN** its computed font size is at least 16 px, so iOS Safari does not zoom the page.
+
+### Requirement: Search fields and form errors suit phone keyboards
+
+The Store and Artists search fields SHALL offer a search Enter key with autocorrect, autocapitalisation and spellcheck off, and Return SHALL dismiss the keyboard without changing results. Clear filters SHALL move focus to the live result count. A Notify me submission failing only on consent SHALL move focus to the consent checkbox.
+
+#### Scenario: Shopper searches the Store on a phone
+
+- **WHEN** the shopper types a query in Store search and presses Return
+- **THEN** the keyboard closes
+- **AND** the filtered results stay as typed.
+
+#### Scenario: Shopper clears the filters
+
+- **WHEN** the shopper activates Clear filters
+- **THEN** focus moves to the live result count.

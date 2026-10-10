@@ -23,7 +23,7 @@ The system SHALL render native store pages from repo-owned content and stable St
 
 ### Requirement: StoreCart convenience state
 
-The system SHALL treat `StoreCart` as browser convenience state only.
+The system SHALL treat `StoreCart` as browser convenience state only. Cart feedback SHALL happen in place: adding an item confirms on the purchase control, removing a line leaves an Undo window, and the drawer's Checkout action shows the quoted total once the delivery quote is known.
 
 #### Scenario: Cart persists locally
 
@@ -31,6 +31,32 @@ The system SHALL treat `StoreCart` as browser convenience state only.
 - **WHEN** the shopper returns to the store
 - **THEN** local storage may restore display/routing data
 - **AND** the Worker still validates all price, stock, payment, order, and eligibility authority before checkout.
+
+#### Scenario: Item is added
+
+- **WHEN** an Add to cart action succeeds
+- **THEN** the cart drawer opens as before
+- **AND** the same control reads Added for four seconds, keeps its width, announces the addition politely to assistive technology and then returns to Add to cart.
+
+#### Scenario: Item is added before the cart is ready
+
+- **WHEN** the shopper activates Add to cart before the shell's cart has finished loading
+- **THEN** the request is kept and applied as soon as the cart is ready, opening the drawer
+- **AND** the control reads Added only once the cart confirms the item arrived.
+
+#### Scenario: Line is removed
+
+- **WHEN** the shopper removes a cart line, or lowers its quantity below one
+- **THEN** the line leaves the cart at once and the removal is announced politely
+- **AND** an Undo action naming the removed item stays in its place for six seconds, paused while it has focus, and receives focus
+- **AND** Undo restores the line at its position with its previous quantity.
+
+#### Scenario: Checkout shows the quoted total
+
+- **WHEN** the cart drawer has at least one line and its delivery quote is known
+- **THEN** its Checkout action displays the quoted total (VAT and shipping included) beside the label, hidden from assistive technology so the action's name stays Checkout
+- **AND** while the quote is loading or unavailable the action shows its label alone
+- **AND** the Worker remains the authority for every amount at checkout.
 
 ### Requirement: Worker-owned checkout creation
 
@@ -368,15 +394,15 @@ The system MUST keep checkout return origins, browser CORS origins, and Worker A
 
 ### Requirement: Store purchase readiness is visibly pending
 
-The storefront SHALL show explicit loading feedback while Store Item purchase actions wait for Worker-confirmed Store Offer readiness.
+The storefront SHALL show explicit loading feedback while Store Item purchase actions wait for Worker-confirmed Store Offer readiness. Pending, ready and unavailable states SHALL share one geometry of 44px height and 14rem width beside artwork, full width on narrow screens; the unavailable state SHALL be a status element, not a disabled button.
 
 #### Scenario: Store item purchase action is checking availability
 
 - **GIVEN** a Store Item page has browser-safe static item data and must read the Worker Store Offer before enabling the purchase action
 - **WHEN** the Store Offer read is in progress
-- **THEN** the purchase action renders as a disabled busy action with visible spinner or equivalent loading affordance
+- **THEN** the purchase action renders as a disabled busy action with a visible loading affordance
 - **AND** the label describes availability confirmation rather than checkout implementation internals
-- **AND** the pending, ready, unavailable, and error states preserve stable button geometry.
+- **AND** the pending, ready, unavailable, and error states preserve stable geometry.
 
 #### Scenario: Store item purchase action becomes ready
 
@@ -384,9 +410,29 @@ The storefront SHALL show explicit loading feedback while Store Item purchase ac
 - **WHEN** the purchase action changes to `Add To Cart`
 - **THEN** the transition is visually calm and does not expose Stripe Price IDs, D1 IDs, stock authority, provider secrets, or authoritative payment state.
 
+#### Scenario: Store item is not buyable
+
+- **GIVEN** the Store Offer resolves to Sold Out, Out of Stock or another non-buyable label
+- **WHEN** the purchase slot renders
+- **THEN** it shows the label as status text with the Store Blood outline for Sold Out and a neutral outline otherwise
+- **AND** the element is not focusable, is exposed as status and keeps the purchase geometry.
+
 ### Requirement: Checkout start handoff is visibly pending
 
-The checkout page SHALL make hosted checkout creation and redirect handoff visibly pending in the CTA area after the shopper activates the checkout CTA.
+The checkout page SHALL make hosted checkout creation and redirect handoff visibly pending in the CTA area after the shopper activates the checkout CTA. Before the shipping quote is available the CTA SHALL be a charcoal, outlined control that states what it is waiting for; when the quote arrives the same control SHALL fill to the primary style and show the amount to pay.
+
+#### Scenario: Shipping quote is pending
+
+- **GIVEN** checkout is otherwise ready
+- **WHEN** the delivery quote is loading or absent
+- **THEN** the CTA is disabled, marked busy, outlined in charcoal and reads Waiting for shipping quote
+- **AND** no filled primary control is shown in the CTA area.
+
+#### Scenario: Shipping quote arrives
+
+- **WHEN** the delivery quote becomes available
+- **THEN** the same control fills to the primary style, becomes enabled and shows the Stripe checkout label with the amount
+- **AND** the change happens without moving the control.
 
 #### Scenario: Shopper starts hosted checkout
 
@@ -406,7 +452,7 @@ The checkout page SHALL make hosted checkout creation and redirect handoff visib
 
 ### Requirement: Checkout return pending state is visible
 
-The checkout return page SHALL show a visible pending state while it confirms checkout session state with the Worker.
+The checkout return page SHALL show a visible pending state while it confirms checkout session state with the Worker. Until the Worker first answers, read failures SHALL keep the pending state and retry after 2, 5 and 10 seconds, and again when the browser comes online or the page becomes visible. If the retries are exhausted, the page SHALL show a failure view with Refresh status and a way to contact the label, never Retry Checkout. Worker answers SHALL keep their own views.
 
 #### Scenario: Checkout return status is loading
 
@@ -415,6 +461,13 @@ The checkout return page SHALL show a visible pending state while it confirms ch
 - **THEN** the page renders a visible payment-status confirmation state
 - **AND** the pending region exposes `aria-busy` or `role="status"` with polite live announcement
 - **AND** the page does not look empty while payment state is unknown.
+
+#### Scenario: The return page loses its connection
+
+- **GIVEN** the return page's status reads fail before the Worker has answered
+- **WHEN** the retries are exhausted
+- **THEN** the page shows `Could Not Check Payment` with Refresh status and Contact the label
+- **AND** it offers no Retry Checkout action.
 
 ### Requirement: Checkout loading feedback remains browser-safe
 
@@ -823,7 +876,7 @@ The system SHALL resolve checkout availability from Worker-owned D1 state.
 
 ### Requirement: Cart dismissal remains reachable while content scrolls
 
-The storefront SHALL keep the Cart heading and a visible Close control with a minimum 44px target above independently scrolling cart content, with Checkout and Continue Shopping pinned below it.
+The storefront SHALL keep the Cart heading and a visible Close control with a minimum 44px target above independently scrolling cart content, with Checkout and Continue Shopping pinned below it. On viewports up to 30rem tall, the drawer header SHALL compact, its note SHALL become an accessible description only, and Checkout and Continue Shopping SHALL share one row, so cart lines keep a usable scrolling window.
 
 #### Scenario: Compact overflowing cart
 
@@ -838,6 +891,12 @@ The storefront SHALL keep the Cart heading and a visible Close control with a mi
 - **THEN** Close and Continue Shopping remain reachable
 - **AND** Checkout is absent.
 
+#### Scenario: Landscape phone opens a multi-item cart
+
+- **WHEN** a shopper opens a multi-item cart at 844×390
+- **THEN** Close, Checkout and Continue Shopping are visible
+- **AND** the cart lines scroll within a window of at least 150 CSS pixels.
+
 ### Requirement: Cart dismissal permits continued shopping
 
 The storefront SHALL restore Store interaction, scrolling and opener focus after Close, Continue Shopping, Escape or backdrop dismissal, without discarding cart state or the active player session.
@@ -851,7 +910,7 @@ The storefront SHALL restore Store interaction, scrolling and opener focus after
 
 ### Requirement: A Store Item view makes one bounded Store Offer read
 
-The storefront SHALL share one authoritative Store Offer read among the components of a Store Item view, and the Worker SHALL bound the provider latency of public Store Offer reads without mutating catalog state.
+The storefront SHALL share one authoritative Store Offer read among the components of a Store Item view, and the Worker SHALL bound the provider latency of public Store Offer reads without mutating catalog state. The browser SHALL bound its Store Item offer read at 10 seconds where the browser supports a timeout signal, and an unreadable offer SHALL show a visible unavailable state with Try Again instead of silently removing the purchase action.
 
 #### Scenario: A Store Item page loads
 
@@ -865,6 +924,13 @@ The storefront SHALL share one authoritative Store Offer read among the componen
 - **WHEN** the Worker resolves a public Store Offer
 - **THEN** catalog reconciliation runs in read-only mode and writes no Stripe, D1, mapping, or snapshot state
 - **AND** the provider request uses a short bounded timeout, and a timeout follows the existing unavailable-offer semantics instead of holding the request for the SDK default.
+
+#### Scenario: The Store Item offer read fails
+
+- **WHEN** the offer read fails, times out or the shopper is offline
+- **THEN** the purchase area shows `Could not check availability.` with Try Again
+- **AND** Try Again or the browser coming back online reads the offer again
+- **AND** listing cards keep their existing unavailable-offer presentation.
 
 ### Requirement: Delivery quotes follow settled cart changes
 
@@ -964,3 +1030,34 @@ The storefront SHALL display the resolved non-buyable label in the approved comp
 - **THEN** Sold Out uses the subtle Store Blood outline and Out of Stock uses a neutral gray outline
 - **AND** Checkout Paused and generic unavailable states use the neutral gray outline
 - **AND** styling does not determine purchase eligibility.
+
+### Requirement: Checkout recovers after a back-forward cache restore
+
+When the checkout page is restored from the back-forward cache, it SHALL re-enable Pay, and a second press SHALL reuse the stored checkout attempt instead of creating another hosted Checkout Session.
+
+#### Scenario: Shopper returns from Stripe with Back
+
+- **GIVEN** a shopper pressed Pay and the browser left for hosted Checkout
+- **WHEN** they press Back and the browser restores the checkout page from the back-forward cache
+- **THEN** Pay is enabled
+- **AND** pressing it resumes the same checkout attempt.
+
+### Requirement: Connection failures use one plain message
+
+Network, abort and timeout failures of the public offer, checkout start, delivery quote and return status reads SHALL show `Connection problem. Check your network and try again.` instead of the browser's error text.
+
+#### Scenario: Checkout start loses the network
+
+- **WHEN** the checkout start request fails at the network level
+- **THEN** the page shows the connection-problem message
+- **AND** no raw browser error text is shown.
+
+### Requirement: The checkout quantity editor has a visible name
+
+The checkout order summary's quantity editor control SHALL read `Edit quantities` as visible text that is also its accessible name, with a 44 px target on coarse pointers.
+
+#### Scenario: Shopper reviews a multi-item order on a phone
+
+- **WHEN** the checkout order summary is shown
+- **THEN** a visible `Edit quantities` control opens the quantity editor
+- **AND** its accessible name matches its visible text.

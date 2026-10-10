@@ -411,7 +411,7 @@ The system SHALL overlap the one listing-price projection read with Store HTML w
 
 ### Requirement: Store Distro disclosure is first-click reliable and bounded
 
-Store Distro full-catalog disclosure MUST retain its first activation across route-lazy controller readiness and MUST complete within the existing fixed interaction profiles without weakening load budgets.
+Store Distro full-catalog disclosure MUST retain its first activation across route-lazy controller readiness and MUST complete within the existing fixed interaction profiles without weakening load budgets. The shared Store search module SHALL be restricted to navigation intent or activation for All Store and Distro.
 
 #### Scenario: Controller readiness is delayed
 
@@ -430,7 +430,8 @@ Store Distro full-catalog disclosure MUST retain its first activation across rou
 
 - **WHEN** the Store Distro route runs the fixed load and interaction profiles
 - **THEN** LCP remains no more than 2.5 seconds and CLS remains no more than 0.1
-- **AND** unrelated routes do not request or execute the Distro search module.
+- **AND** routes other than All Store and Distro do not request or execute the shared search module through their own activation
+- **AND** All Store can reuse that module without mounting Distro-scoped state.
 
 ### Requirement: Settled public pages run no recurring frame work
 
@@ -541,3 +542,32 @@ The system SHALL serve every public font face from the site's own fingerprinted 
 - **WHEN** the 404 page loads
 - **THEN** it uses the site's font strategy without render-blocking third-party stylesheets
 - **AND** its decorative infinite animations stop under reduced motion and while offscreen.
+
+### Requirement: The listing-price read starts during parsing
+
+The Store listing-price prefetch SHALL run as a classic inline script, so its one timed listing-price read per document starts while the document is parsed instead of after module evaluation; the consumer contract and request count stay unchanged.
+
+#### Scenario: A Store collection document loads
+
+- **WHEN** a Store collection document is parsed
+- **THEN** the listing-price read starts from an inline classic script
+- **AND** the document makes exactly one listing-price read.
+
+### Requirement: Home showcase validation loads only for a buyable pre-order
+
+The Home pre-order showcase SHALL load its validators and candidate data in parallel only after a buyable pre-order is known, and SHALL validate with a lazily imported `zod/mini` schema rather than the full Zod bundle; cart and money code keep full Zod.
+
+#### Scenario: Home has no buyable pre-order
+
+- **WHEN** Home loads while no pre-order is buyable
+- **THEN** no showcase validator or Zod chunk is requested.
+
+### Requirement: Positioned Coverflow cards opt out of paint skipping
+
+Store listing cards SHALL keep native paint skipping, but cards positioned by an enhanced Coverflow SHALL use `content-visibility: visible` at every width, so the front card's price and purchase row is never clipped.
+
+#### Scenario: Desktop Coverflow shows its front card
+
+- **WHEN** an enhanced Coverflow renders at 1280 or 1440 px wide
+- **THEN** the front card's price and Buy control are painted and clickable
+- **AND** non-positioned listing cards still use `content-visibility: auto`.

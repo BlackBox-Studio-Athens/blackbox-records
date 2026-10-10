@@ -57,7 +57,7 @@ The Store Distro category SHALL render one server-derived format-navigation land
 - **WHEN** a visitor activates `All formats`
 - **THEN** every populated group returns in its original server-derived order
 - **AND** `All formats` becomes the exposed current selection
-- **AND** each group follows the existing greater-than-six Coverflow threshold, so small groups return to compact grids.
+- **AND** each group follows the Store browsing-view threshold, so groups of six or fewer items show only the compact grid.
 
 #### Scenario: Visitor browses a deep group
 

@@ -97,23 +97,29 @@ The system SHALL treat application modules as closed by default with explicit pr
 
 ### Requirement: Boundary manifest authority
 
-The system MUST keep module ownership, entrypoints, allowed dependencies, statuses, and exceptions in the OpenSpec module-boundary manifest.
+Each module's Nx `project.json` `metadata.boundaries` MUST own that module's status, public exports, named interfaces, allowed module dependencies and allowed workspace interfaces. The OpenSpec module-boundary manifest MUST keep workspace-package policy, entrypoint policy and other package-level rules. The loader derives the module map from the Nx projects that carry `metadata.boundaries`. Exports list only files another module imports. An export MAY be a pattern such as `./*.tsx`, like a `package.json` subpath pattern, for component kits whose files are all public; patterns never expose test files.
 
 #### Scenario: Module ownership changes
 
-- **GIVEN** a change updates module roots, entrypoints, allowed dependencies, or exception policy
+- **GIVEN** a change updates module roots, exports, allowed dependencies, or exception policy
 - **WHEN** the change is made
-- **THEN** `openspec/specs/module-boundaries/module-boundaries.manifest.json` and this spec are updated together when behavior changes.
+- **THEN** the module's `project.json` `metadata.boundaries` (or `openspec/specs/module-boundaries/module-boundaries.manifest.json` for workspace-package policy) and this spec are updated together when behavior changes.
+
+#### Scenario: Component kit adds a file
+
+- **GIVEN** a kit module exports `./*.tsx`
+- **WHEN** a new component file is added to the kit
+- **THEN** consumers may import it without a boundary edit, and the kit's test files stay private.
 
 ### Requirement: Nx projects define module roots and actual dependencies
 
-Each application module MUST declare its source root, targets and task inputs in an Nx `project.json`. The boundary manifest MUST reference those projects for ownership roots while continuing to declare allowed dependencies and public entrypoints. Nx dependency edges describe actual imports and runtime relationships; they do not grant architectural permission.
+Each application module MUST declare its source root, targets and task inputs in an Nx `project.json`. The same `project.json` MUST declare the module's allowed dependencies and public exports under `metadata.boundaries`, and ownership roots MUST derive from the project. The central boundary manifest MUST NOT list modules. Nx dependency edges describe actual imports and runtime relationships; they do not grant architectural permission.
 
 #### Scenario: Module ownership is declared
 
 - **WHEN** a module root changes
 - **THEN** the module's `project.json` defines its root and task inputs
-- **AND** the boundary manifest references that project instead of duplicating root globs
+- **AND** the boundary loader derives ownership roots from that project instead of duplicating root globs
 - **AND** framework pages, layouts and test support remain separate roots such as `web-pages`, `web-layouts` and `web-test-support`.
 
 #### Scenario: Runtime imports affect the Nx graph
@@ -195,18 +201,11 @@ Each application module MUST declare its source root, targets and task inputs in
 - **AND** application-owned `web-pages` owns the static `/terms/` and `/privacy/` routes; `checkout-web` retains runtime monetary presentation
 - **AND** shared editorial information does not import checkout clients or become price, tax or order authority.
 
-#### Scenario: International order notices cross public presentation boundaries
-
-- **WHEN** Store collections, Store Item, the cart drawer and checkout offer the same email ordering route
-- **THEN** `store-cart` owns and provides `InternationalOrderNotice.tsx` through its native `project.json` contract
-- **AND** its browser-only country gate and email template introduce no dependency on checkout clients, Worker state or payment authority
-- **AND** public pages, layouts and `checkout-web` consume the provided entrypoint without a reverse dependency on `web-store`.
-
 #### Scenario: Store category routes are added
 
 - **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`
 - **WHEN** boundary validation runs
-- **THEN** `web-pages` owns route files, `web-layouts` owns the shared category page, and `storefront-catalog` owns the category classifier, Distro grouping and listing cards
+- **THEN** `web-pages` owns route files, `web-layouts` owns the shared category page, `storefront-catalog` owns the category classifier and Distro grouping, and `web-store` owns the listing cards
 - **AND** the `/distro/` redirect route remains in the documented static storefront route root.
 
 #### Scenario: Shared Distro groups cross the CMS boundary
@@ -227,9 +226,9 @@ Each application module MUST declare its source root, targets and task inputs in
 
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
-- **GIVEN** Store Distro search presentation is owned by `storefront-catalog`
+- **GIVEN** Store Distro search presentation is owned by `web-store`
 - **WHEN** the app shell lazily mounts that control on `/store/distro/`
-- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
+- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `web-store` entrypoint
 - **AND** the app shell imports that entrypoint instead of a private storefront implementation.
 
 #### Scenario: Services inquiry presentation crosses the app-shell boundary
@@ -242,10 +241,10 @@ Each application module MUST declare its source root, targets and task inputs in
 
 #### Scenario: Shared Store Coverflow controller crosses the app-shell boundary
 
-- **GIVEN** Store Coverflow interaction behavior is owned by `storefront-catalog`
+- **GIVEN** Store Coverflow interaction behavior is owned by `web-store`
 - **WHEN** the app shell mounts that behavior after activating `/store/`
-- **THEN** `apps/web/src/components/store/StoreCoverflowController.ts` is a provided `storefront-catalog` entrypoint
-- **AND** Distro and app-shell callers import the same controller instead of duplicating interaction logic or using an ownership exception.
+- **THEN** `apps/web/src/components/store/StoreCoverflowController.ts` is owned by `web-store`
+- **AND** Distro callers inside `web-store` share the same controller instead of duplicating interaction logic or using an ownership exception.
 
 #### Scenario: StoreCart event contract is shared
 
@@ -275,6 +274,13 @@ Each application module MUST declare its source root, targets and task inputs in
 - **THEN** the closed `staff-frontend` module owns `apps/staff/src/**`
 - **AND** its workspace dependencies are limited to documented internal API and pure content-model entrypoints
 - **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
+
+#### Scenario: International order notices cross public presentation boundaries
+
+- **WHEN** Store collections, Store Item, the cart drawer and checkout offer the same email ordering route
+- **THEN** `store-cart` owns and provides `InternationalOrderNotice.tsx` through its native `project.json` contract
+- **AND** its browser-only country gate and email template introduce no dependency on checkout clients, Worker state or payment authority
+- **AND** public pages, layouts and `checkout-web` consume the provided entrypoint without a reverse dependency on `web-store`.
 
 ### Requirement: Staff frontend is an independent workspace boundary
 
@@ -310,29 +316,29 @@ The system SHALL avoid temporary compatibility facades during boundary work unle
 
 ### Requirement: Storefront catalog provides route-lazy Store Distro search
 
-The system MUST keep Store Distro search presentation inside the closed `storefront-catalog` module while exposing its app-shell integration through a provided entrypoint.
+The system MUST keep Store Distro search presentation inside the closed `web-store` module while exposing its app-shell integration through a provided entrypoint.
 
 #### Scenario: App shell mounts Store Distro search
 
 - **WHEN** the app shell imports the route-lazy control for `/store/distro/`
-- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is owned by `storefront-catalog` and listed as a provided entrypoint
+- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is owned by `web-store` and listed as a provided entrypoint
 - **AND** legacy `apps/web/src/components/distro/DistroSearch.tsx` is not retained as a compatibility facade
 - **AND** boundary validation passes without an ownership exception.
 
 ### Requirement: Storefront catalog provides shell-mounted listing-price presentation
 
-The system MUST keep Store listing-price presentation inside the closed `storefront-catalog` module while exposing its persistent app-shell integration through one provided entrypoint.
+The system MUST keep Store listing-price presentation inside the closed `web-store` module while exposing its persistent app-shell integration through one provided entrypoint.
 
 #### Scenario: App shell activates a Store collection
 
 - **WHEN** the persistent app shell renders or replaces a Store collection document
-- **THEN** it imports the documented Store listing-price presentation entrypoint from `storefront-catalog`
+- **THEN** it imports the documented Store listing-price presentation entrypoint from `web-store`
 - **AND** it does not duplicate catalog DOM, Store Offer snapshot, or price-presentation logic inside the app-shell module.
 
 #### Scenario: Boundary manifest is audited
 
 - **WHEN** the listing-price presentation entrypoint and its Store collection placeholder contract are added
-- **THEN** `module-boundaries.manifest.json` records the owning root, provided entrypoint, and allowed app-shell dependency
+- **THEN** `web-store`'s `project.json` `metadata.boundaries` records the provided entrypoint, and `app-shell` lists `web-store` in `dependsOn`
 - **AND** boundary validation passes without an ownership exception or compatibility facade.
 
 ### Requirement: Public commerce HTTP uses the commerce reader entrypoint
@@ -485,3 +491,76 @@ The web-editorial module SHALL expose ReleaseCatalogPresentation.tsx to web-page
 - **WHEN** the public entrypoint changes
 - **THEN** its project.json contract, executable boundary manifest and this delta remain consistent
 - **AND** the focused boundary check verifies that no new checkout or persistence dependency was introduced
+
+### Requirement: Public Lenis scrolling respects web module boundaries
+
+The public web app SHALL expose one Lenis runtime through its existing module layers so the app shell, Store features, and private-preview behavior share one registry without lower-level dependencies on app-shell internals.
+
+#### Scenario: Web modules use the public Lenis runtime
+
+- **WHEN** app-shell, Store, or private-preview code scrolls an owned surface
+- **THEN** it uses `apps/web/src/platform/lib/lenis-scroll.ts` owned by `platform-shared`
+- **AND** app-shell components may use the provided `apps/web/src/components/app-shell/lenis-scroll.ts` entrypoint
+- **AND** lower-level modules do not import app-shell internals.
+
+### Requirement: Staff frontend is composed of closed feature modules
+
+The `staff-frontend` composition root SHALL consume closed `staff-*` modules for the shared UI primitives, platform helpers, order, publication, shell, stock and content features. Each module MUST declare its root, task inputs and test target in its own Nx `project.json`, and module dependencies MUST stay acyclic.
+
+#### Scenario: Staff modules are layered
+
+- **WHEN** boundary validation runs
+- **THEN** layering runs `staff-ui` ← `staff-platform` ← {`staff-orders`, `staff-publication`} ← {`staff-shell`, `staff-stock`} ← `staff-content` ← `staff-frontend`
+- **AND** `staff-ui` has no staff dependencies, `staff-platform` may use `staff-ui`, and `staff-orders` and `staff-publication` may use `staff-ui` and `staff-platform`
+- **AND** `staff-shell` and `staff-stock` may use `staff-ui`, `staff-platform` and `staff-publication`
+- **AND** `staff-content` may use `staff-ui`, `staff-platform`, `staff-publication` and `staff-stock`
+- **AND** `staff-frontend` may use every staff module, and declares them as implicit Nx dependencies because Astro imports are invisible to static analysis.
+
+#### Scenario: Shell and stock stay independent of the content editor
+
+- **WHEN** a staff shell or stock file is added or changed
+- **THEN** it does not import `staff-content`
+- **AND** publication behavior shared with the editor lives in `staff-publication`.
+
+#### Scenario: Internal API client access is narrow
+
+- **WHEN** a staff module needs `@blackbox/api-client`
+- **THEN** only `staff-platform` and `staff-orders` consume the `./internal` export
+- **AND** no staff module consumes another `@blackbox/api-client` export.
+
+#### Scenario: Staff module tests run independently
+
+- **WHEN** a maintainer runs `pnpm test <staff-module>` or `pnpm test:watch <staff-module>` for a module with tests
+- **THEN** that module's own Nx test target runs only its test files
+- **AND** `staff-ui` and `staff-frontend` have no test target
+- **AND** every staff test file has exactly one owning module.
+
+### Requirement: Web storefront features are closed modules above the storefront core
+
+Web feature modules carved out of `storefront-catalog` SHALL be closed Nx modules that depend on `storefront-catalog` and the existing leaf modules, and `storefront-catalog` MUST NOT depend on any of them. Each module MUST declare its root, task inputs and test target in its own `project.json`.
+
+#### Scenario: Editorial presentation is a module
+
+- **WHEN** boundary validation runs
+- **THEN** `web-editorial` owns `apps/web/src/components/editorial/**` with `HomeHero`, `NewsCard`, `NewsDetailContent`, `ReleaseCard`, `ReleaseDetailContent` and `release-commerce.ts` as provided entrypoints
+- **AND** it depends only on `storefront-catalog`, `web-store`, `player`, `ui-foundation` and `web-platform`
+- **AND** `web-pages` depends on it and declares it as an implicit Nx dependency because Astro imports are invisible to static analysis.
+
+#### Scenario: Shared release helpers stay in the core
+
+- **WHEN** a helper is imported by both `storefront-catalog` and a web feature module
+- **THEN** it is owned by `storefront-catalog`
+- **AND** `release-feature.ts` remains a `storefront-catalog` entrypoint.
+
+#### Scenario: Web module tests run independently
+
+- **WHEN** a maintainer runs `pnpm test web-editorial`
+- **THEN** only that module's test files run
+- **AND** a test that reads other modules' source files as text lives in the lowest module that depends on every file it reads, usually `web-pages` or `web-layouts`, so Nx affected reruns it when any of those files change.
+
+#### Scenario: Artist and Store presentation are modules
+
+- **WHEN** boundary validation runs
+- **THEN** `web-artists` owns `apps/web/src/components/artists/**` and `web-store` owns `apps/web/src/components/store/**` except the nested `store-cart` and `checkout-web` projects
+- **AND** `app-shell` lists both in `dependsOn` for its route-lazy controls
+- **AND** Store taxonomy helpers imported by `lib/catalog-data.ts` stay in `storefront-catalog`.

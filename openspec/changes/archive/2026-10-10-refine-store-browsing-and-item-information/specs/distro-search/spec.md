@@ -52,3 +52,15 @@ The shared Store browse control MUST exist only while a Store collection owns it
 - **WHEN** the shell leaves the Store collection or captures its page snapshot
 - **THEN** the control disconnects and the cached placeholder is empty
 - **AND** no query, artist selection, hidden state, count, empty state, or pending disclosure leaks into the next visit.
+
+#### Scenario: All Store reuses the shared module
+
+- **WHEN** the shell prefetches or activates `/store/`
+- **THEN** it can load the same module and mounts an All-scoped control only at the active All placeholder
+- **AND** that control does not apply Distro-only format navigation or grouped disclosure to the flat shelf.
+
+#### Scenario: Distro is revisited after All search
+
+- **WHEN** the shopper returns from a searched All shelf to Distro
+- **THEN** Distro retains its existing exact-first matching, group/card order, clear behavior, format navigation, and fragment handling
+- **AND** All query/filter state is absent.

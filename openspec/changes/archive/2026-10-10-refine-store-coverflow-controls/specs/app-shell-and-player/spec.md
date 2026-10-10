@@ -31,3 +31,14 @@ The shell SHALL mark shared controls for the active editorial source as disabled
 - **AND** it displays In player while that source is the active session
 - **AND WHEN** the front record has no verified source, or the group leaves Coverflow
 - **THEN** the plaque shows the record identity without a Listen end.
+
+#### Scenario: Stop is pressed once
+
+- **WHEN** the shopper activates Stop in the floating player
+- **THEN** the control reads Stop? and keeps its accessible name and position
+- **AND** the session continues
+- **AND** the control returns to Stop after three seconds without a second activation.
+#### Scenario: Stop is pressed twice
+
+- **WHEN** the shopper activates Stop? within the window
+- **THEN** the session ends with the existing Stop semantics, including focus restoration and iframe removal.
