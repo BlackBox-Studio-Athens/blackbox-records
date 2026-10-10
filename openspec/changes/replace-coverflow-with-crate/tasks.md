@@ -50,7 +50,7 @@
 
 ## 5. Behaviour
 
-- [ ] 5.1 Island glue in `StoreDistroSearch.tsx`:
+- [x] 5.1 Island glue in `StoreDistroSearch.tsx`:
   - switch visibility
   - a cached lazy import with a `disposed` guard
   - filters close the Crate
@@ -58,7 +58,7 @@
 
   Verify island tests for switch visibility and cleanup.
 
-- [ ] 5.2 `crate-view.ts`:
+- [x] 5.2 `crate-view.ts`:
   - stages built per bin on first visit
   - the sleeve window and its image sources
   - pose-diff writes
@@ -67,8 +67,8 @@
 
   Verify `pnpm test web-store` and the desktop `store-crate` e2e cases for opening, flipping, keys and the back board.
 
-- [ ] 5.3 Grid ↔ Crate animation in viewport coordinates, with a `data-store-crate-settled` marker and an instant path under reduced motion; verify the e2e checks that covers land within 750ms and that reduced motion leaves no running animations.
-- [ ] 5.4 Back restore through `history.state`; verify the e2e check that item page then Back reopens the Crate at the same sleeve.
+- [x] 5.3 Grid ↔ Crate animation in viewport coordinates, with a `data-store-crate-settled` marker and an instant path under reduced motion; verify the e2e checks that covers land within 750ms and that reduced motion leaves no running animations.
+- [x] 5.4 Back restore through `history.state`; verify the e2e check that item page then Back reopens the Crate at the same sleeve.
 - [x] 5.5 Replace `sanitizeStoreCoverflowSnapshot` in `shell-page-snapshot.ts` with an inline Crate cleanup that never imports the Crate view, drop the Coverflow `onError` from `ShellPortalOutlets.tsx` and the Coverflow block from `sanitizeStoreSearchChrome` (its other resets stay); verify `shell-page-snapshot.test.ts` asserts a cached copy holds no Crate state.
 
 ## 6. Remove the Coverflow
@@ -89,7 +89,7 @@
   - In `scripts/measure-runtime-performance.ts`, make `prepareTraversal` a Grid no-op, delete the disclosure run and its traversal flags, and add `crate-wheel` and `crate-touch` profiles on Distro.
   - In `scripts/runtime-performance-helpers.ts`, delete `assertTraversalSetup` and its test.
   - Verify the Store scroll profiles and the new profiles run.
-- [ ] 7.3 End-to-end specs:
+- [x] 7.3 End-to-end specs:
   - Add `e2e/store-crate.spec.ts`, including the `@phone` cases, and add it to the `webkit-mobile` list.
   - Move the Coverflow wheel, swipe and front-card Buy cases out of `e2e/store-formats.spec.ts`.
   - Verify `pnpm test:e2e e2e/store-crate.spec.ts` and `pnpm test:e2e e2e/store-formats.spec.ts`.

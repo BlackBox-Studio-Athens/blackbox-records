@@ -347,114 +347,6 @@ test('Store listing cards use Veneer titles and quiet credits with unchanged siz
   await expect(page.locator('h1.brand-display-title')).toHaveCSS('font-family', /Veneer/);
 });
 
-for (const route of ['store/', 'store/distro/']) {
-  test(`${route} Coverflow wheel navigation keeps the page still`, async ({ page }) => {
-    await page.goto(route);
-    await waitForShell(page);
-    await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
-    const group = page.locator('[data-store-coverflow-group]');
-    const stage = group.locator('[data-store-coverflow-stage]');
-    const wheelSurface = group.locator('.store-coverflow-shell');
-    const active = stage.locator('[data-store-coverflow-position="active"]');
-    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
-    await wheelSurface.scrollIntoViewIfNeeded();
-    const labels = await stage
-      .locator('[data-store-coverflow-card]')
-      .evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label')!));
-
-    const wheelWithoutPageScroll = async (deltaY: number, expectedLabel: string) => {
-      const initialScroll = await page.evaluate(() => window.scrollY);
-      await page.mouse.wheel(0, deltaY);
-      const positions = await page.evaluate(async () => {
-        const positions = [window.scrollY];
-        const started = performance.now();
-        while (performance.now() - started < 750) {
-          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-          positions.push(window.scrollY);
-        }
-        return positions;
-      });
-      expect(Math.max(...positions.map((position) => Math.abs(position - initialScroll)))).toBeLessThanOrEqual(1);
-      await expect(active).toHaveAttribute('aria-label', expectedLabel);
-    };
-
-    const coverBox = (await active.boundingBox())!;
-    await page.mouse.move(coverBox.x + coverBox.width / 2, coverBox.y + coverBox.height / 2);
-    await wheelWithoutPageScroll(8, labels[0]!);
-    await wheelWithoutPageScroll(120, labels[1]!);
-
-    const stageBox = (await wheelSurface.boundingBox())!;
-    const gap = { x: stageBox.x + 8, y: stageBox.y + stageBox.height / 2 };
-    expect(
-      await wheelSurface.evaluate((element, point) => {
-        const target = document.elementFromPoint(point.x, point.y);
-        return Boolean(target && element.contains(target) && !target.closest('[data-store-coverflow-card]'));
-      }, gap),
-    ).toBe(true);
-    await page.mouse.move(gap.x, gap.y);
-    await wheelWithoutPageScroll(-120, labels[0]!);
-
-    const outsideScroll = await page.evaluate(() => window.scrollY);
-    await page.mouse.move(8, page.viewportSize()!.height / 2);
-    await page.mouse.wheel(0, 120);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(outsideScroll + 1);
-
-    await page.getByRole('button', { name: 'Grid', exact: true }).click();
-    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'catalog');
-    await expect(page.locator('[data-store-coverflow-transitioning]')).toHaveCount(0);
-    const gridCard = stage.locator('[data-store-coverflow-card]').first();
-    await gridCard.scrollIntoViewIfNeeded();
-    const gridBox = (await gridCard.boundingBox())!;
-    const gridScroll = await page.evaluate(() => window.scrollY);
-    await page.mouse.move(gridBox.x + gridBox.width / 2, gridBox.y + gridBox.height / 2);
-    await page.mouse.wheel(0, 120);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(gridScroll + 1);
-  });
-}
-
-test.describe('phone touch Coverflow @phone', () => {
-  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-
-  test('a swipe moves one cover and the next tap still works', async ({ page }) => {
-    await page.goto('store/distro/');
-    await waitForShell(page);
-    const group = page.locator('[data-store-coverflow-group]');
-    const stage = group.locator('[data-store-coverflow-stage]');
-    const active = stage.locator('[data-store-coverflow-position="active"]');
-    await page.getByRole('button', { name: 'Coverflow', exact: true }).tap();
-    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
-    await stage.scrollIntoViewIfNeeded();
-    const labels = await stage
-      .locator('[data-store-coverflow-card]')
-      .evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label')!));
-    const url = page.url();
-
-    // A real touch swipe: no click follows it, so nothing may stay armed to swallow the next tap. Frame-paced moves and a
-    // still finger before release avoid a synthetic fling, whose cancelling tap Chromium itself drops.
-    const box = (await stage.boundingBox())!;
-    const y = box.y + box.height / 2;
-    const startX = box.x + box.width / 2 + 80;
-    const touch = await page.context().newCDPSession(page);
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y }] });
-    for (let step = 1; step <= 8; step += 1) {
-      await touch.send('Input.dispatchTouchEvent', {
-        type: 'touchMove',
-        touchPoints: [{ x: startX - step * 15, y: y + 2 }],
-      });
-      await page.waitForTimeout(16);
-    }
-    await page.waitForTimeout(300);
-    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await touch.detach();
-    await expect(active).toHaveAttribute('aria-label', labels[1]!);
-    expect(page.url()).toBe(url);
-
-    await group.locator('[data-store-coverflow-next]').tap();
-    await expect(active).toHaveAttribute('aria-label', labels[2]!);
-    expect(page.url()).toBe(url);
-  });
-});
-
 test('phone Store shows Distro formats without opening a disclosure and selects one @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/distro/');
@@ -569,7 +461,7 @@ test('desktop Store artist filter combines several ticked artists with find and 
   await expectNoHorizontalOverflow(page);
 });
 
-test('Distro catalog keeps its alphabetical order through format, search and Coverflow changes', async ({ page }) => {
+test('Distro catalog keeps its alphabetical order through format, search and Crate changes', async ({ page }) => {
   await page.goto('store/distro/#distro-group-cds');
   await waitForShell(page);
   const search = page.getByRole('searchbox', { name: 'Search Store' });
@@ -613,25 +505,22 @@ test('Distro catalog keeps its alphabetical order through format, search and Cov
   await expect(firstCard).toBeVisible();
   expect(await cards.locator('visible=true').count()).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-  const coverflow = page.getByRole('button', { name: 'Coverflow', exact: true });
-  await coverflow.click();
-  await expect(root.locator('[data-store-coverflow-group]')).toHaveAttribute('data-store-coverflow-mode', 'preview');
+  const crate = page.locator('.store-crate');
+  await page.getByRole('button', { name: 'Crate', exact: true }).click();
+  await expect(crate).toHaveAttribute('data-store-crate', 'open');
   await search.fill('no-match-for-this-distro-catalog');
   await expect(cards.locator('visible=true')).toHaveCount(0);
-  await expect(coverflow).toBeDisabled();
+  await expect(crate).toHaveAttribute('data-store-crate', 'grid');
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-  await expect(root.locator('[data-store-coverflow-group]')).toHaveAttribute('data-store-coverflow-mode', 'catalog');
   expect(await slugs()).toEqual(original);
   expect(await cards.locator('visible=true').count()).toBe(original.length);
-  await coverflow.click();
-  await expect(coverflow).toHaveAttribute('aria-pressed', 'true');
   const categories = page.getByRole('navigation', { name: 'Store categories' });
   await categories.getByRole('link', { name: 'All', exact: true }).click();
   await expect(page).toHaveURL(/\/store\/$/);
   await expect(page.locator('#all-store-catalog')).toBeVisible();
   await categories.getByRole('link', { name: 'Distro', exact: true }).click();
   await expect(page).toHaveURL(/\/store\/distro\/$/);
-  await expect(root.locator('[data-store-coverflow-group]')).toHaveAttribute('data-store-coverflow-mode', 'catalog');
+  await expect(crate).toHaveAttribute('data-store-crate', 'grid');
   expect(await slugs()).toEqual(original);
   expect(await cards.locator('visible=true').count()).toBe(original.length);
 });
@@ -659,8 +548,7 @@ test.describe('Native Store navigation', () => {
     const releaseCard = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true });
     await expect(releaseCard).toHaveCount(0);
     expect(await cards.locator('visible=true').count()).toBe(await cards.count());
-    await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Crate', exact: true })).toBeHidden();
     await expect(page.locator('.store-item-card__artist-link')).toHaveCount(0);
     await expect(page.locator('.store-item-card__artist-name').first()).toBeVisible();
     await expect(page.locator('#distro-group-cds')).toHaveCount(1);
@@ -718,56 +606,13 @@ test('Distro shell navigation and filters preserve the playing iframe', async ({
   expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
 });
 
-test('Coverflow steps settle on CSS positions and a first typo query waits for the lazy fuzzy matcher', async ({
-  page,
-}) => {
+test('a first typo query waits for the lazy fuzzy matcher', async ({ page }) => {
   await page.goto('store/distro/');
   await waitForShell(page);
   const search = page.getByRole('searchbox', { name: 'Search Store' });
   await expect(search).toBeVisible();
   const root = page.locator('[data-distro-search-root]');
-  const group = root.locator('[data-store-coverflow-group]').first();
-  const cards = group.locator('[data-store-coverflow-card]');
-  const total = await cards.count();
-
-  await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
-  await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
-  await group.locator('[data-store-coverflow-next]').click();
-  await expect(cards.nth(1)).toHaveAttribute('data-store-coverflow-position', 'active');
-  // Native position animations run without fill, so settled cards carry no inline styles and no position ratio.
-  await expect
-    .poll(() =>
-      group.evaluate((element) => ({
-        animatedCards: document
-          .getAnimations()
-          .filter((animation) =>
-            (animation.effect as KeyframeEffect | null)?.target?.hasAttribute('data-store-coverflow-card'),
-          ).length,
-        inlineCards: [...element.querySelectorAll<HTMLElement>('[data-store-coverflow-card]')].filter(
-          (card) => card.style.transform || card.style.opacity,
-        ).length,
-        groupRatio: element.style.getPropertyValue('--store-coverflow-position-ratio'),
-      })),
-    )
-    .toEqual({ animatedCards: 0, inlineCards: 0, groupRatio: '' });
-  expect(total).toBeGreaterThan(6);
-  // The plaque's Listen end plays the front cover; the card's own Listen steps aside.
-  const plaqueListen = group.locator('[data-store-coverflow-listen]');
-  const cardListen = cards.nth(1).locator('[data-music-listen-source-id]');
-  if (await cardListen.count()) {
-    await expect(plaqueListen).toBeVisible();
-    await expect(plaqueListen).toHaveAttribute(
-      'data-music-listen-source-id',
-      (await cardListen.getAttribute('data-music-listen-source-id'))!,
-    );
-    await expect(cardListen).toBeHidden();
-  } else {
-    await expect(plaqueListen).toBeHidden();
-  }
-  await expect(cards.nth(1).locator('.store-item-card__price')).toBeVisible();
-  await expect(cards.nth(1).locator('.brand-card-title')).toBeHidden();
-  await page.getByRole('button', { name: 'Grid', exact: true }).click();
-  await expect(group).toHaveAttribute('data-store-coverflow-mode', 'catalog');
+  const cards = root.locator('[data-distro-search-item]');
 
   // A pasted typo is the first query, so the fuzzy fallback must wait for fuse.js and then search again.
   const title = (await cards.nth(1).locator('h2').innerText()).trim();
@@ -792,42 +637,3 @@ test('phone Store shows the first card artwork in the first viewport @phone', as
   // Measured 665 (was 761): the first row's artwork fits above the fold.
   expect(top).toBeLessThan(844 - 150);
 });
-
-for (const width of [1280, 1440]) {
-  test(`desktop Coverflow front card paints its price and Buy row at ${width}px`, async ({ page, hasTouch }) => {
-    test.skip(hasTouch, 'Desktop Coverflow runs in the desktop projects.');
-    await page.setViewportSize({ width, height: 900 });
-    const html = await (await page.request.get('store/')).text();
-    const slugs = [...new Set([...html.matchAll(/data-store-item-slug="([^"]+)"/g)].map((match) => match[1]!))];
-    await page.route(/\/api\/store\/listing-prices(?:\?.*)?$/, (route) =>
-      route.fulfill({
-        json: slugs.map((storeItemSlug) => ({
-          storeItemSlug,
-          presentationState: 'ready',
-          availabilityState: 'stocked',
-          displayPrice: '€28.00',
-          preorder: null,
-        })),
-      }),
-    );
-    await page.goto('store/');
-    await waitForShell(page);
-    await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
-    const group = page.locator('[data-store-coverflow-group]');
-    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
-    await expect(page.locator('[data-store-coverflow-transitioning]')).toHaveCount(0);
-    const active = group.locator('[data-store-coverflow-position="active"]');
-    const price = active.locator('.store-item-card__price');
-    await expect(price).toContainText('€28.00');
-    await price.scrollIntoViewIfNeeded();
-    await expect(active.locator('[data-store-card-buy]')).toBeVisible();
-    // Paint containment on the listing card would clip the row below the cover box; hit testing follows that clip.
-    expect(
-      await price.evaluate((element) => {
-        const box = element.getBoundingClientRect();
-        const hit = document.elementFromPoint(box.left + 4, box.top + box.height / 2);
-        return Boolean(hit && element.contains(hit));
-      }),
-    ).toBe(true);
-  });
-}

@@ -69,7 +69,7 @@ export default defineConfig({
       name: 'webkit-mobile',
       use: { ...devices['iPhone 13'] },
       testMatch:
-        /(routes|shell-navigation|store-cart|withdrawal|player-continuity|home-swipe-rows|home-motto|home-touch-prefetch)\.spec\.ts$/,
+        /(routes|shell-navigation|store-cart|store-crate|withdrawal|player-continuity|home-swipe-rows|home-motto|home-touch-prefetch)\.spec\.ts$/,
       grep: [phoneSpecs, phone],
     },
   ],

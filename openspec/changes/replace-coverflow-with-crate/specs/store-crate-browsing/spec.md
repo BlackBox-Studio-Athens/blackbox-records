@@ -46,7 +46,7 @@ Opening the Crate SHALL put in hand the card the Grid is on: the one the shopper
 
 - **WHEN** the view switches with motion allowed
 - **THEN** only covers on screen travel between card and bin, each as one transform, while card text fades
-- **AND** the switch finishes within 750ms and a switch press during it is ignored.
+- **AND** the switch finishes within 750ms, and a switch press during it lands the covers at once and then switches.
 
 #### Scenario: The shopper prefers reduced motion
 

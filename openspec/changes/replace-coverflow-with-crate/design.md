@@ -79,7 +79,14 @@ See proposal.md for why.
   3. Read the sleeve rests.
   4. Animate with `element.animate` from the viewport deltas.
 - No inline style or attribute survives the animation, so cached pages stay clean. Every pose uses the same transform-function list, so interpolation never falls back to matrices.
+- The scroll is `behavior: 'instant'`: the page's own `scroll-behavior: smooth` would leave the stage moving while it is measured.
+- A switch press while covers still fly lands them at once (the animations have no fill) and then switches, so a press is never lost.
 - _Alternative:_ page coordinates break because opening the Crate collapses the Grid and moves the scroll.
+
+**5a. The Grid | Crate bar is sticky under the header.**
+
+- "The card the Grid is on" only means something if the switch is reachable from where the shopper is looking. A bar at the top of a long Grid forces a scroll back to the top, which would always open on the first items. The sticky bar keeps the switch in reach; on-screen cards are measured below it, and cards brought back into view clear it with `scroll-margin-top`.
+- _Alternative:_ remembering the held card however far the shopper scrolls would reopen a bin they had walked away from.
 
 **6. Sleeves are created, not cloned, and load only within the drawn window.**
 
@@ -94,7 +101,8 @@ See proposal.md for why.
 
 **8. Back restores the Crate from the history entry.**
 
-- The view merges `{ storeCrate: { bin, hands, held } }` into `history.state` with `replaceState`, keeping the shell's own keys. Items are identified by Store Item slug.
+- The view merges `{ storeCrate: { bin, returnTo, hands } }` into `history.state` with `replaceState`, keeping the shell's own keys. Items are identified by Store Item slug.
+- Browsers rate-limit history writes, so the record is written once digging pauses (400ms) and at once on any press inside the Crate, before an item link leaves the page. `destroy()` never writes: by then the shell has moved to the next entry.
 - On mount, a recorded entry whose item is still in an open bin reopens the Crate instantly.
 - Shell snapshots drop the Crate root attribute, the stage host's children and the hand marker in a few inline lines in `shell-page-snapshot.ts`, which never imports the Crate view.
 

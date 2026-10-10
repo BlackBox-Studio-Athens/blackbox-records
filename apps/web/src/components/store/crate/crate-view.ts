@@ -66,7 +66,7 @@ export interface StoreCrate {
   readonly isOpen: boolean;
   /** The Grid filter that matches the bin in hand while the Crate is open, otherwise null. */
   readonly formatKey: string | null;
-  /** Opens on the card the Grid is on. Ignored while covers are still moving. */
+  /** Opens on the card the Grid is on; covers still flying from the last switch land at once first. */
   open(): void;
   /** A format choice: walks to its bin, or leaves for the Grid with that filter when it has no bin. */
   choose(formatKey: string): void;
@@ -941,9 +941,10 @@ export function mountStoreCrate(
     cards.flatMap((card, id) => (card.hidden || card.hasAttribute('data-distro-search-hidden') ? [] : [id]));
   const frameOf = (id: ItemId) => cards[id]?.querySelector<HTMLElement>('.store-item-card__image-frame') ?? null;
 
-  /** The visible cards whose artwork centre is on screen, found by binary search over their rows. */
+  /** The visible cards whose artwork centre is on screen below the sticky bar, found by binary search over rows. */
   function onScreen(ids: readonly ItemId[]): ItemId[] {
-    const top = readRootScrollPaddingTop();
+    const bar = root.querySelector('[data-store-crate-bar]')?.getBoundingClientRect();
+    const top = Math.max(readRootScrollPaddingTop(), bar?.bottom ?? 0);
     const bottom = window.innerHeight;
     const centre = (id: ItemId) => {
       const rect = (frameOf(id) ?? cards[id]!).getBoundingClientRect();
@@ -1117,8 +1118,15 @@ export function mountStoreCrate(
     settle(animations);
   }
 
+  // A switch press while covers are still flying lands them at once and then switches, so it is never lost.
+  function land() {
+    flying.forEach((animation) => animation.cancel());
+    flying = [];
+  }
+
   function open() {
-    if (flying.length > 0 || state.mode.view === 'crate') return;
+    land();
+    if (state.mode.view === 'crate') return;
     const ids = visibleIds();
     const shown = onScreen(ids);
     const rects = new Map<ItemId, DOMRect>();
@@ -1146,7 +1154,8 @@ export function mountStoreCrate(
   }
 
   function close(to: string | null = null) {
-    if (flying.length > 0 || state.mode.view !== 'crate') return;
+    land();
+    if (state.mode.view !== 'crate') return;
     const bin = state.mode.focus.at;
     const view = built.get(bin);
     const rects = new Map<ItemId, DOMRect>();

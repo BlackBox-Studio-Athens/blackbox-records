@@ -8,14 +8,25 @@
   --crate-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The bar keeps its row from the first paint, so the switch appearing after hydration moves nothing. */
+/* The bar keeps its row from the first paint, so the switch appearing after hydration moves nothing. It stays under
+   the header while the Grid scrolls, so Crate always opens on the cards the shopper is looking at. */
 .store-crate-bar {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
   min-height: 2.875rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  padding-block: 0.5rem;
+  background: var(--background);
+}
+
+/* A card brought back into view clears the header and the sticky bar. */
+.store-crate .store-item-card--listing {
+  scroll-margin-top: calc(var(--header-height) + 4.5rem);
 }
 
 /* Grid and Crate read as one switch; the pressed side takes the ink face. */
