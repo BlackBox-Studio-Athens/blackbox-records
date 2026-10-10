@@ -299,12 +299,13 @@ describe('StorePreorderShowcase presentation', () => {
     },
   );
 
-  it('presents a single current video as text while keeping explicit Watch available', async () => {
-    stubReads([ready(clip.slug)], [{ ...clip, clips: clip.clips?.slice(0, 1) }]);
+  it('presents only the background video as text while keeping explicit Watch available', async () => {
+    stubReads([ready(clip.slug)], [clip]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const html = renderToStaticMarkup(render());
     expect(html).toContain('<span class="home-preorders__clip" aria-current="true">First official video</span>');
     expect(html).not.toMatch(/<button[^>]*home-preorders__clip/);
+    expect(html).not.toContain('Second official video');
     expect(html).toContain('Watch full video');
   });
 

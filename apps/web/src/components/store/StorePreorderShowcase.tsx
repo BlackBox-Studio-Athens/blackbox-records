@@ -229,7 +229,6 @@ function PreorderChapter({
         ]
       : [];
   const clip = clips[0];
-  const videoLabel = clips.length === 1 ? 'Official video' : 'Official videos';
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
   const background = (desktopVideo && clip?.backgroundVideoDesktopUrl) || clip?.backgroundVideoUrl;
@@ -458,13 +457,11 @@ function PreorderChapter({
                 Watch full video
               </button>
             </div>
-            <div className="home-preorders__clips" role="group" aria-label={videoLabel}>
-              <span className="home-preorders__clips-label">{videoLabel}</span>
-              {clips.map((choice, index) => (
-                <span key={choice.id} className="home-preorders__clip" aria-current={index === 0 ? 'true' : undefined}>
-                  {choice.title}
-                </span>
-              ))}
+            <div className="home-preorders__clips" role="group" aria-label="Official video">
+              <span className="home-preorders__clips-label">Official video</span>
+              <span className="home-preorders__clip" aria-current="true">
+                {clip.title}
+              </span>
             </div>
             {playerSession && (
               <p id={sessionNoteId} className="home-preorders__media-note" role="status">

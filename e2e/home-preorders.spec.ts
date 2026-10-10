@@ -482,16 +482,14 @@ test('Home chapters use fresh prices, plain video titles and explicit Watch and 
     '#preorder-next-record',
   );
   await expect(chapter(page, 'Next record').getByRole('link', { name: /^Go to / })).toHaveCount(0);
-  const videos = release.getByRole('group', { name: 'Official videos' });
+  const videos = release.getByRole('group', { name: 'Official video', exact: true });
   const current = videos.locator('[aria-current="true"]');
   await expect(current).toHaveText('First official video');
   await expect(current).toHaveJSProperty('tagName', 'SPAN');
   await expect(current).toHaveCSS('text-decoration-line', 'none');
   await expect(current).not.toHaveCSS('cursor', 'pointer');
-  const second = videos.getByText('Second official video', { exact: true });
-  await expect(second).toHaveJSProperty('tagName', 'SPAN');
-  await expect(second).toHaveCSS('text-decoration-line', 'none');
-  await expect(second).not.toHaveCSS('cursor', 'pointer');
+  await expect(videos.locator('.home-preorders__clip')).toHaveCount(1);
+  await expect(videos.getByText('Second official video', { exact: true })).toHaveCount(0);
   await expect(videos.getByRole('button')).toHaveCount(0);
   expect(fixture.providerRequests).toEqual([]);
   const watch = release.getByRole('button', { name: 'Watch full video', exact: true });
