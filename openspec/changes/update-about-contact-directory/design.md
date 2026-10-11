@@ -15,6 +15,8 @@ Make every About address deliverable and copyable without weakening the native `
 - The snapshot sanitizer clears `data-copied` and the status text, so a page cached inside the feedback window returns idle.
 - Clipboard failure announces `Select the address to copy`, matching the Staff order-reference fallback.
 - The row hover moves to the list item via `:has()` so the link and copy cell highlight together; focus stays on each control.
+- The 11 October responsive repair uses each row's width, including tablet secondary columns: at 26rem or below the mail icon and copy control sit beside the role, leaving the address its full line. Wider rows keep their existing composition.
+- Mailbox plus `@` and domain are inline blocks. They wrap as whole parts when possible, with emergency wrapping for enlarged text or unusually long parts. The link's accessible name uses the original role and complete address; mailto and clipboard values remain authored strings.
 
 ## Risks / Trade-offs
 

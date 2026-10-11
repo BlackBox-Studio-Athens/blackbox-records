@@ -73,10 +73,18 @@ const {
                       itemIndex === 0 ? 'about-contact__item--primary' : 'about-contact__item--secondary',
                     ]}
                   >
-                    <a class="about-contact__link" href={`mailto:${item.value}`}>
+                    <a
+                      class="about-contact__link"
+                      href={`mailto:${item.value}`}
+                      aria-label={`${item.label} ${item.value}`}
+                    >
                       <span class="about-contact__text">
                         <span class="about-contact__label">{item.label}</span>
-                        <span class="about-contact__address">{item.value}</span>
+                        <span class="about-contact__address">
+                          {item.value.split('@').map((part, partIndex) => (
+                            <span>{partIndex === 0 ? `${part}@` : part}</span>
+                          ))}
+                        </span>
                       </span>
                       <Mail className="about-contact__icon" aria-hidden="true" size={18} strokeWidth={1.5} />
                     </a>

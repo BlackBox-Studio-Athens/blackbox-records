@@ -6,6 +6,7 @@ The About contact directory points at `@blackboxrecords.com`, a parked domain wi
 
 - Move General and Demo Submissions to `info@` and `demos@blackboxrecordsathens.com`; replace Press with Tour Booking at `touring@blackboxrecordsathens.com`.
 - Add one copy control per contact row beside the existing `mailto:` link, with in-place copied feedback.
+- Repair narrow-row wrapping: give the address the full line below its controls and keep the mailbox and domain together whenever each part fits.
 - Document the About aliases that Cloudflare Email Routing must forward.
 
 ## Capabilities

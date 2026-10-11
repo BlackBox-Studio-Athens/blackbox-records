@@ -17,3 +17,9 @@
 ## 4. Production content
 
 - [x] 4.1 Publish the three About contact edits through PRD staff; verify the public About page shows the new addresses and copy controls.
+
+## 5. Responsive email wrapping repair
+
+- [x] 5.1 Reproduce arbitrary email breaks on phones and narrow tablet columns; give narrow-row addresses their full line width and wrap at the mailbox/domain boundary.
+- [x] 5.2 Verify complete addresses, intact domains, mailto destinations, copy controls and focus across 320–1440px, phone portrait/landscape and enlarged text; add browser regression coverage.
+- [x] 5.3 Run scoped tests, strict OpenSpec and final affected validation; record evidence and commit the repair locally without a release.

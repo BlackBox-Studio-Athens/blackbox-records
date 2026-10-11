@@ -17,9 +17,11 @@ describe('About contact presentation', () => {
   });
 
   it('keeps complete-row links, visible labels and addresses, and decorative mail icons', () => {
-    expect(aboutPage).toContain('<a class="about-contact__link"');
+    expect(aboutPage).toMatch(/<a\s+class="about-contact__link"/);
     expect(aboutPage).toContain('<span class="about-contact__label">{item.label}</span>');
-    expect(aboutPage).toContain('<span class="about-contact__address">{item.value}</span>');
+    expect(aboutPage).toContain('<span class="about-contact__address">');
+    expect(aboutPage).toContain("item.value.split('@').map((part, partIndex)");
+    expect(aboutPage).toContain('partIndex === 0 ? `${part}@` : part');
     expect(aboutPage).toMatch(/<Mail[^>]*aria-hidden="true"[^>]*size=\{18\}/s);
     expect(globalCss).toMatch(/\.about-contact__link\s*{[^}]*min-height:\s*2\.75rem/s);
     expect(globalCss).toMatch(/\.about-contact__icon\s*{[^}]*width:\s*1\.125rem[^}]*height:\s*1\.125rem/s);

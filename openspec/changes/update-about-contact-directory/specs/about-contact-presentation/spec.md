@@ -59,7 +59,15 @@ The system SHALL preserve the selected Primary Inbox hierarchy without two-dimen
 - **WHEN** the About contact directory renders at 320 CSS pixels wide
 - **THEN** General, Demo Submissions, and Tour Booking stack in authored order
 - **AND** labels, email addresses, mail icons, and copy controls remain visible
-- **AND** long addresses wrap within the viewport without clipping or horizontal page scrolling.
+- **AND** the address can use the full row width below the role and controls
+- **AND** the current addresses stay on one line when they fit, otherwise wrap after `@` with the complete domain together, without clipping or horizontal page scrolling.
+
+#### Scenario: Contact columns or enlarged text reduce the available width
+
+- **WHEN** a secondary contact column is narrow or the visitor enlarges the text
+- **THEN** the row adapts to its own available width and keeps the address and controls visible
+- **AND** an unusually long mailbox or domain may wrap further only when that part cannot fit on a line by itself
+- **AND** visual wrapping never changes the authored address, mailto destination, or copied value.
 
 ### Requirement: About contact presentation remains inside the BlackBox visual system
 
