@@ -590,7 +590,8 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
       original.pathname.startsWith(root.pathname) &&
       /\/media\/content\/[a-f0-9]{64}$/.test(original.pathname)
     ) {
-      return asset.href;
+      // Release smoke verifies published media availability; image_transform checks the provider separately.
+      return '/' + original.pathname.slice(root.pathname.length);
     }
   }
   if (asset.origin !== root.origin || !asset.pathname.startsWith(root.pathname)) {

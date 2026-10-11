@@ -39,11 +39,17 @@ describe('UAT static smoke', () => {
     ).toThrow();
     expect(() => findPublicMediaPath('<main></main>', 'https://example.test/')).toThrow();
   });
-  it('accepts direct Images delivery only for media from the tested deployment', () => {
+  it('checks the published original behind direct Images delivery on the tested deployment', () => {
     const media = 'b'.repeat(64);
     const source = `https://images.blackboxrecordsathens.com/cdn-cgi/image/width=480,format=webp,quality=68/https://blackbox-records-web-uat.pages.dev/media/content/${media}`;
     const html = `<main><img src="${source}"></main>`;
-    expect(findPublicMediaPath(html, 'https://blackbox-records-web-uat.pages.dev')).toBe(source);
+    expect(findPublicMediaPath(html, 'https://blackbox-records-web-uat.pages.dev')).toBe(`/media/content/${media}`);
+    expect(
+      findPublicMediaPath(
+        html.replace('/media/content/', '/blackbox-records/media/content/'),
+        'https://blackbox-records-web-uat.pages.dev/blackbox-records/',
+      ),
+    ).toBe(`/media/content/${media}`);
     expect(imageTransformProbePaths(html, 'https://blackbox-records-web-uat.pages.dev')).toEqual({
       mediaPath: `/media/content/${media}`,
       transformPath: `/_image?href=%2Fmedia%2Fcontent%2F${media}&w=480`,

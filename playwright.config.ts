@@ -16,7 +16,8 @@ const artifacts = '.codex-artifacts/e2e';
 // Phone projects run these specs whole (each skips its desktop-only cases) plus every test titled @phone elsewhere.
 // A project's grep sees the spec file name in the title path, so one grep selects both. Desktop projects skip @phone
 // tests: a 390px viewport there still reports a mouse, hover and a fine pointer.
-const phoneSpecs = /\b(routes|shell-navigation|store-cart|withdrawal|player-continuity)\.spec\.ts\b/;
+const phoneSpecs =
+  /\b(routes|shell-navigation|store-cart|withdrawal|player-continuity|public-image-fallback)\.spec\.ts\b/;
 const phone = /@phone\b/;
 
 export default defineConfig({
@@ -69,7 +70,7 @@ export default defineConfig({
       name: 'webkit-mobile',
       use: { ...devices['iPhone 13'] },
       testMatch:
-        /(routes|shell-navigation|store-cart|store-crate|withdrawal|player-continuity|home-swipe-rows|home-motto|home-touch-prefetch)\.spec\.ts$/,
+        /(routes|shell-navigation|store-cart|store-crate|withdrawal|player-continuity|public-image-fallback|home-swipe-rows|home-motto|home-touch-prefetch)\.spec\.ts$/,
       grep: [phoneSpecs, phone],
     },
   ],

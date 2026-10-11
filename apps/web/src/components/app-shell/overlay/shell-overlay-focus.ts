@@ -35,7 +35,10 @@ export function scheduleOverlayContentFocus({
   scheduler: OverlayFocusScheduler;
 }) {
   scheduler.requestAnimationFrame(() => {
-    scrollWithLenis(getScrollContainer(), 0, { immediate: true });
+    const scrollContainer = getScrollContainer();
+    // A late frame after unmount must not turn a missing panel into the document scroll root.
+    if (!scrollContainer?.isConnected) return;
+    scrollWithLenis(scrollContainer, 0, { immediate: true });
     getCloseButton()?.focus();
   });
 }

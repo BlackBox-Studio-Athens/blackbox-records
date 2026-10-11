@@ -12,7 +12,7 @@ type FakeFocusableElement = Pick<HTMLElement, 'focus' | 'isConnected'> & {
   focus: ReturnType<typeof vi.fn<() => void>>;
 };
 
-type FakeScrollContainer = Pick<HTMLElement, 'scrollTo'> & {
+type FakeScrollContainer = Pick<HTMLElement, 'scrollTo' | 'isConnected'> & {
   scrollTo: ReturnType<typeof vi.fn<(options: ScrollToOptions) => void>>;
 };
 
@@ -42,6 +42,7 @@ function createFocusableElement({ isConnected = true } = {}): FakeFocusableEleme
 
 function createScrollContainer(): FakeScrollContainer {
   return {
+    isConnected: true,
     scrollTo: vi.fn<(options: ScrollToOptions) => void>(),
   };
 }
@@ -96,6 +97,33 @@ describe('overlay focus scheduling', () => {
 
     expect(scrollContainer.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
     expect(closeButton.focus).toHaveBeenCalledOnce();
+  });
+
+  it.each(['removed', 'disconnected'] as const)('does not move the page after the overlay is %s', (state) => {
+    const scheduler = createScheduler();
+    const closeButton = createFocusableElement();
+    const scrollContainer = createScrollContainer();
+    let currentContainer: FakeScrollContainer | null = scrollContainer;
+    const scrollDocument = vi.fn();
+    vi.stubGlobal('window', { scrollTo: scrollDocument });
+
+    try {
+      scheduleOverlayContentFocus({
+        getCloseButton: () => closeButton,
+        getScrollContainer: () => currentContainer as unknown as HTMLElement | null,
+        scheduler,
+      });
+      if (state === 'removed') currentContainer = null;
+      else Object.assign(scrollContainer, { isConnected: false });
+
+      scheduler.flush();
+
+      expect(scrollDocument).not.toHaveBeenCalled();
+      expect(scrollContainer.scrollTo).not.toHaveBeenCalled();
+      expect(closeButton.focus).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 
