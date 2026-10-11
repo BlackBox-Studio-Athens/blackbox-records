@@ -419,7 +419,8 @@ test('Home hero links only to the Store, fits phone widths and has no Scroll lab
   await expect(page.getByRole('region', { name: 'Pre-orders', exact: true })).toBeVisible();
 
   const hero = page.locator('#homepage-hero-section');
-  await expect(hero.getByRole('link', { name: 'Browse the Store' })).toHaveAttribute('href', /\/store\/$/);
+  const browse = hero.getByRole('link', { name: 'Browse the Store' });
+  await expect(browse).toHaveAttribute('href', /\/store\/$/);
   await expect(hero.getByRole('link')).toHaveCount(1);
   await expect(hero).not.toContainText(/scroll/i);
 
@@ -440,11 +441,22 @@ test('Home hero links only to the Store, fits phone widths and has no Scroll lab
     expect(layout.mottoLeft, `${width}px motto`).toBeCloseTo(layout.logoLeft, 0);
     expect(layout.links).toHaveLength(1);
     for (const link of layout.links) {
-      expect(link.height, `${width}px link`).toBeGreaterThanOrEqual(44);
+      expect(link.height, `${width}px drawn link`).toBe(28);
       expect(link.left, `${width}px link`).toBeGreaterThanOrEqual(layout.logoLeft - 0.5);
       expect(link.right, `${width}px link`).toBeLessThanOrEqual(width - layout.logoLeft + 0.5);
     }
   }
+
+  await plantSentinel(page);
+  await page.keyboard.press('Tab');
+  await browse.focus();
+  await expect(browse).toHaveCSS('outline-style', 'solid');
+  // Firefox can round the shared 2px outline at fractional device scales.
+  expect(await browse.evaluate((link) => parseFloat(getComputedStyle(link).outlineWidth))).toBeGreaterThanOrEqual(1.5);
+  await browse.press('Enter');
+  await expect(page).toHaveURL(/\/store\/$/);
+  await waitForShell(page);
+  expect(await sentinelIntact(page)).toBe(true);
 });
 
 test('Home chapters use fresh prices, plain video titles and explicit Watch and close before shell navigation', async ({

@@ -38,7 +38,16 @@ const heroImageWidths = [900, 1400];
     </motto-word-cycle>
     <MottoWordCycleLoader client:load />
     <div class="homepage-hero-section__actions">
-      <a href={createProjectRelativeUrl('/store/')} data-astro-prefetch class={buttonVariants({ size: 'lg' })}>
+      <a
+        href={createProjectRelativeUrl('/store/')}
+        data-astro-prefetch
+        class={buttonVariants({
+          variant: 'outline',
+          size: 'sm',
+          class:
+            'min-h-7 px-2 text-xs border-control-ink/48 bg-background/35 text-[#d8d8d8] pointer-coarse:before:-inset-[9px]',
+        })}
+      >
         Browse the Store
       </a>
     </div>

@@ -1,4 +1,46 @@
-import { expect, test, waitForShell } from './fixtures';
+import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+
+test('@phone Home Browse keeps its compact outline and full tap target', async ({ page }) => {
+  await page.goto('./');
+  await waitForShell(page);
+  const browse = page.locator('#homepage-hero-section').getByRole('link', { name: 'Browse the Store' });
+  await expect(browse).toBeVisible();
+  await expect(browse).toHaveAttribute('href', /\/store\/$/);
+
+  for (const width of [390, 320, 280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.evaluate(() => document.fonts.ready);
+    const layout = await browse.evaluate((link) => {
+      const rect = link.getBoundingClientRect();
+      const halo = getComputedStyle(link, '::before');
+      const x = rect.x + rect.width / 2;
+      return {
+        width: rect.width,
+        height: rect.height,
+        left: rect.left,
+        logoLeft: document.querySelector('header img')!.getBoundingClientRect().left,
+        fontSize: getComputedStyle(link).fontSize,
+        haloHeight: parseFloat(halo.height),
+        edgeHits: [rect.top - 7, rect.bottom + 7].map((y) => link.contains(document.elementFromPoint(x, y))),
+        overflow: document.documentElement.scrollWidth > innerWidth,
+      };
+    });
+    expect(layout.width, `${width}px drawn width`).toBeCloseTo(100, 0);
+    expect(layout.height, `${width}px drawn height`).toBe(28);
+    expect(layout.fontSize).toBe('12px');
+    expect(layout.left, `${width}px gutter`).toBeCloseTo(layout.logoLeft, 0);
+    expect(layout.haloHeight, `${width}px tap target`).toBeGreaterThanOrEqual(44);
+    expect(layout.edgeHits, `${width}px target edges`).toEqual([true, true]);
+    expect(layout.overflow, `${width}px overflow`).toBe(false);
+  }
+
+  await plantSentinel(page);
+  const box = (await browse.boundingBox())!;
+  await page.touchscreen.tap(box.x + box.width / 2, box.y - 7);
+  await expect(page).toHaveURL(/\/store\/$/);
+  await waitForShell(page);
+  expect(await sentinelIntact(page)).toBe(true);
+});
 
 test('@phone a cancelled swipe on a Home news card does not fetch its overlay, but a tap opens it', async ({
   page,

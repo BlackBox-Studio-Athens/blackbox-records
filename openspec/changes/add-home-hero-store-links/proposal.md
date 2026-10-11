@@ -9,7 +9,7 @@ The Home hero fills the first screen without any sign that the label sells recor
 - Under the motto, keep Browse the Store (to `/store/`) and remove See pre-orders entirely, as requested in the 11 October follow-up.
 - Defer the showcase to browser idle time so the main page loads first; Browse the Store stays in the initial HTML and never depends on the showcase.
 - Left-align the motto and button at the page gutter on phones, in line with the logo.
-- Prepare three smaller, quieter Browse treatments, including dark framed options, for owner review before applying a new treatment.
+- Apply the owner-approved smaller Quiet outline Browse treatment on both mobile and desktop, while preserving a 44 px touch target and visible keyboard focus.
 - Remove the Scroll label. The animated scroll line and its states stay.
 - Retire the Home `hero.scroll_indicator_text` content field: nothing renders it, and editors no longer see it.
 

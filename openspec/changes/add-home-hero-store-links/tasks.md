@@ -25,4 +25,4 @@
 ## 5. Browse treatment review
 
 - [x] 5.1 Prepare three smaller, quieter Browse drafts on the current Home hero, including dark framed options; inspect desktop and phone views and present the comparison.
-- [ ] 5.2 After the owner chooses a draft, apply the selected Browse treatment and verify its responsive and accessible behavior.
+- [x] 5.2 Apply the owner-approved smaller Quiet outline B and verify its responsive layout, keyboard focus and 44 px touch target on desktop and phone browser engines; record the outcome in `validation-browse-quiet-outline.md`.

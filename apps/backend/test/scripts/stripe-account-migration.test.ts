@@ -450,6 +450,7 @@ describe('reviewed account migration', () => {
   ])('preserves a valid $label D1 SELECT array', ({ rows }) => {
     expect(parseAccountMigrationQueryRows(rows)).toBe(rows);
   });
+  // Keep the test deadline above the subprocess's 15s deadline.
   it('prints a safe actionable CLI reason and never echoes raw provider messages', () => {
     const script = fileURLToPath(new URL('../../scripts/migrate-stripe-account.ts', import.meta.url));
     const result = spawnSync(process.execPath, ['--import', 'tsx', script, '--unknown'], {
@@ -460,7 +461,7 @@ describe('reviewed account migration', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('Unknown or incomplete migration argument');
     expect(formatAccountMigrationError(new Error('private provider ID and key'))).not.toContain('private provider');
-  });
+  }, 20_000);
   it.each(['uat', 'prd'] as const)(
     'verifies the %s Worker artwork and Pages content URLs unchanged',
     async (environment) => {
