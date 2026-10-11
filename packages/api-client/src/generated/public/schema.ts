@@ -281,7 +281,7 @@ export type components = {
         };
         AvailabilityAlertRequestBody: {
             /**
-             * @description The shopper ticked: "Email me once when this can be bought or pre-ordered."
+             * @description The shopper ticked: "Email me once when this item can be bought or pre-ordered."
              * @enum {boolean}
              */
             consent: true;

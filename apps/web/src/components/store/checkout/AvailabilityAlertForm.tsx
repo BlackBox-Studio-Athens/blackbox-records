@@ -2,24 +2,30 @@ import * as React from 'react';
 import { Mail } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/platform/components/PurchaseInformation';
 import type { PublicCheckoutApi } from './public-checkout-api';
 
 export const AVAILABILITY_ALERT_COPY = {
   open: 'Email me when it lands',
   email: 'Email',
   emailPlaceholder: 'you@example.com',
-  consent: 'Email me once when this can be bought or pre-ordered.',
-  send: 'Send',
+  consent: 'Email me once when this item can be bought or pre-ordered.',
+  optional: 'Optional:',
+  fine: 'BlackBox Records uses your email only for what you ticked. Alert requests are kept for up to 12 months.',
+  send: 'Notify me',
   sending: 'Sending',
   cancel: 'Cancel',
   invalidEmail: 'Enter a valid email.',
   missingConsent: 'Tick the box so we can email you.',
   failed: "Couldn't save that. Try again.",
-  done: "We'll email you once when it can be ordered.",
+  done: (email: string) => `We'll email ${email} once it can be ordered.`,
+  newsletterJoined: "You're also on the newsletter.",
+  newsletterFailed: "The newsletter sign-up didn't go through. Use the newsletter form to try again.",
 } as const;
 
 export type AvailabilityAlertStep = 'closed' | 'open' | 'sending' | 'done';
 export type AvailabilityAlertErrors = { email?: string; consent?: string; form?: string };
+export type NewsletterOutcome = 'none' | 'joined' | 'failed';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -46,6 +52,17 @@ export async function sendAvailabilityAlert(
   }
 }
 
+// Runs only after the alert succeeded; a failure here never undoes the alert.
+export async function joinNewsletter(api: PublicCheckoutApi | undefined, email: string): Promise<NewsletterOutcome> {
+  try {
+    const client = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
+    await client.registerNewsletterSignup({ email: email.trim(), consentAccepted: true });
+    return 'joined';
+  } catch {
+    return 'failed';
+  }
+}
+
 // Notify me: a quiet action that opens an in-place form; the Worker decides eligibility again on submit.
 export default function AvailabilityAlertForm({
   api,
@@ -54,13 +71,24 @@ export default function AvailabilityAlertForm({
 }: {
   api?: PublicCheckoutApi | undefined;
   /** Starting state; the page always starts closed. */
-  initial?: { step: AvailabilityAlertStep; email?: string; consent?: boolean; errors?: AvailabilityAlertErrors };
+  initial?: {
+    step: AvailabilityAlertStep;
+    email?: string;
+    consent?: boolean;
+    newsletter?: boolean;
+    newsletterOutcome?: NewsletterOutcome;
+    errors?: AvailabilityAlertErrors;
+  };
   storeItemSlug: string;
 }) {
   const id = React.useId();
   const [step, setStep] = React.useState<AvailabilityAlertStep>(initial?.step ?? 'closed');
   const [email, setEmail] = React.useState(initial?.email ?? '');
   const [consent, setConsent] = React.useState(initial?.consent ?? false);
+  const [newsletter, setNewsletter] = React.useState(initial?.newsletter ?? false);
+  const [newsletterOutcome, setNewsletterOutcome] = React.useState<NewsletterOutcome>(
+    initial?.newsletterOutcome ?? 'none',
+  );
   const [errors, setErrors] = React.useState<AvailabilityAlertErrors>(initial?.errors ?? {});
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const emailRef = React.useRef<HTMLInputElement>(null);
@@ -96,6 +124,7 @@ export default function AvailabilityAlertForm({
     setStep('sending');
     const result = await sendAvailabilityAlert(api, storeItemSlug, email);
     if (result === 'done') {
+      setNewsletterOutcome(newsletter ? await joinNewsletter(api, email) : 'none');
       setStep('done');
     } else {
       setErrors(result);
@@ -123,7 +152,9 @@ export default function AvailabilityAlertForm({
   if (step === 'done') {
     return (
       <p ref={doneRef} className="availability-alert__done" role="status" tabIndex={-1} data-availability-alert-done>
-        <span aria-hidden="true">✓</span> {AVAILABILITY_ALERT_COPY.done}
+        <span aria-hidden="true">✓</span> {AVAILABILITY_ALERT_COPY.done(email.trim())}
+        {newsletterOutcome === 'joined' && ` ${AVAILABILITY_ALERT_COPY.newsletterJoined}`}
+        {newsletterOutcome === 'failed' && ` ${AVAILABILITY_ALERT_COPY.newsletterFailed}`}
       </p>
     );
   }
@@ -136,7 +167,7 @@ export default function AvailabilityAlertForm({
     <form
       className="availability-alert"
       noValidate
-      aria-label="Notify me"
+      aria-labelledby={`${id}-title`}
       data-availability-alert-form
       onSubmit={(event) => void submit(event)}
       onKeyDown={(event) => {
@@ -146,26 +177,41 @@ export default function AvailabilityAlertForm({
         }
       }}
     >
-      <label className="availability-alert__label" htmlFor={`${id}-email`}>
+      <p id={`${id}-title`} className="availability-alert__title">
+        <Mail aria-hidden="true" strokeWidth={1.75} />
+        {AVAILABILITY_ALERT_COPY.open}
+      </p>
+      <label className="accessibility-visually-hidden-text" htmlFor={`${id}-email`}>
         {AVAILABILITY_ALERT_COPY.email}
       </label>
-      <input
-        ref={emailRef}
-        id={`${id}-email`}
-        className="availability-alert__input"
-        type="email"
-        name="email"
-        autoComplete="email"
-        placeholder={AVAILABILITY_ALERT_COPY.emailPlaceholder}
-        value={email}
-        disabled={sending}
-        aria-invalid={errors.email ? 'true' : undefined}
-        aria-describedby={errors.email ? emailErrorId : undefined}
-        onChange={(event) => {
-          setEmail(event.currentTarget.value);
-          if (errors.email) setErrors(({ email: _email, ...rest }) => rest);
-        }}
-      />
+      <div className="availability-alert__row">
+        <input
+          ref={emailRef}
+          id={`${id}-email`}
+          className="availability-alert__input"
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder={AVAILABILITY_ALERT_COPY.emailPlaceholder}
+          value={email}
+          disabled={sending}
+          aria-invalid={errors.email ? 'true' : undefined}
+          aria-describedby={errors.email ? emailErrorId : undefined}
+          onChange={(event) => {
+            setEmail(event.currentTarget.value);
+            if (errors.email) setErrors(({ email: _email, ...rest }) => rest);
+          }}
+        />
+        <Button
+          type="submit"
+          size="lg"
+          className="availability-alert__send"
+          disabled={sending}
+          aria-busy={sending ? 'true' : undefined}
+        >
+          {sending ? AVAILABILITY_ALERT_COPY.sending : AVAILABILITY_ALERT_COPY.send}
+        </Button>
+      </div>
       {errors.email && (
         <p id={emailErrorId} className="availability-alert__error">
           {errors.email}
@@ -192,21 +238,28 @@ export default function AvailabilityAlertForm({
           {errors.consent}
         </p>
       )}
+      <label className="availability-alert__consent">
+        <input
+          type="checkbox"
+          name="newsletter"
+          checked={newsletter}
+          disabled={sending}
+          onChange={(event) => setNewsletter(event.currentTarget.checked)}
+        />
+        <span>
+          <span className="availability-alert__optional">{AVAILABILITY_ALERT_COPY.optional}</span>{' '}
+          {NEWSLETTER_CONSENT_LABEL}
+        </span>
+      </label>
+      <p className="availability-alert__fine">
+        {AVAILABILITY_ALERT_COPY.fine} <PrivacyLink />
+      </p>
       {errors.form && (
         <p className="availability-alert__error" role="alert">
           {errors.form}
         </p>
       )}
       <div className="availability-alert__actions">
-        <Button
-          type="submit"
-          size="lg"
-          className="availability-alert__send"
-          disabled={sending}
-          aria-busy={sending ? 'true' : undefined}
-        >
-          {sending ? AVAILABILITY_ALERT_COPY.sending : AVAILABILITY_ALERT_COPY.send}
-        </Button>
         <Button type="button" variant="link" disabled={sending} onClick={close}>
           {AVAILABILITY_ALERT_COPY.cancel}
         </Button>

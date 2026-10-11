@@ -82,3 +82,14 @@ Screenshots are in `.codex-artifacts/design/final/`.
 - Alert delivery through Resend to the UAT sink.
 - The Staff control against a running Local stack.
 - Real alert delivery in the commerce-only Local Worker: it has no publication binding, so alerts stay pending there.
+
+## Notify me form refinement (task 4.6, 11 October 2026)
+
+- **Approval.** The owner approved the design review on 11 October 2026: visible heading, "Notify me" submit, one-row field and button from 40rem, an optional unticked newsletter consent, small print with the privacy link, and a confirmation that names the address. The required one-off consent stays, now reading "Email me once when this item can be bought or pre-ordered." (`blackbox-availability-alert-v2`; stored v1 rows keep their version).
+- **Newsletter consent.** It reuses `NEWSLETTER_CONSENT_LABEL`, which moved to `PurchaseInformation.tsx` so `checkout-web` and the newsletter form share it without a module cycle. Its registration stays `blackbox-newsletter-v1` through the existing route, sent only after the alert succeeds.
+- **Checks.**
+  - The focused `StoreItemPurchaseActions.test.tsx` and backend alert tests passed.
+  - `pnpm test:e2e e2e/availability-alerts.spec.ts` passed 5 of 5. It covers 1440px with the newsletter ticked (one newsletter request after the alert) and 390px without it (none), plus the row layout and no horizontal overflow.
+  - Screenshots: `.codex-artifacts/availability/repressing-open-{1440,390}.png` and `repressing-notified-{1440,390}.png`.
+- **Validation.** `pnpm validate` passed every phase on base `f9e78319` (`.codex-artifacts/validation/2026-10-11T11-16-22-974Z-26276-c17623/summary.json`). It was recorded as invalidated because a concurrent session edited shell-page and Crate files during the run; none of those files are part of this change.
+- **Open before PRD.** The privacy page's controller identity and privacy contact still read "to be confirmed", so the privacy link stays hidden outside Local. GDPR notice wording needs that content.

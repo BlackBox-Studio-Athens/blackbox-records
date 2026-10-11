@@ -50,6 +50,14 @@ for (const width of [1440, 390]) {
       requests.push(route.request().postDataJSON());
       return route.fulfill({ json: { status: 'requested' } });
     });
+    // The newsletter request may only follow a successful alert, and only when its own box is ticked.
+    const joinNewsletter = width === 1440;
+    const newsletterRequests: unknown[] = [];
+    await page.route('**/api/newsletter/registrations', (route) => {
+      expect(requests).toHaveLength(1);
+      newsletterRequests.push(route.request().postDataJSON());
+      return route.fulfill({ status: 202, json: { status: 'registered' } });
+    });
     const purchase = await openItem(page, zeroStockOffer('repressing', '2027-01'));
 
     const status = purchase.locator('[data-store-item-purchase-status]');
@@ -66,16 +74,26 @@ for (const width of [1440, 390]) {
     await expect(trigger).toBeVisible();
     expect((await trigger.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await trigger.click();
-    const form = purchase.getByRole('form', { name: 'Notify me' });
+    const form = purchase.getByRole('form', { name: 'Email me when it lands' });
     const email = form.getByLabel('Email', { exact: true });
-    const consent = form.getByRole('checkbox', { name: 'Email me once when this can be bought or pre-ordered.' });
+    const consent = form.getByRole('checkbox', { name: 'Email me once when this item can be bought or pre-ordered.' });
+    const newsletter = form.getByRole('checkbox', { name: /^Optional: I agree to receive BlackBox Records/ });
+    const send = form.getByRole('button', { name: 'Notify me', exact: true });
     await expect(email).toBeFocused();
     await expect(consent).not.toBeChecked();
+    await expect(newsletter).not.toBeChecked();
+    // One row from 40rem; on phones Notify me drops below the field.
+    const [emailBox, sendBox] = [(await email.boundingBox())!, (await send.boundingBox())!];
+    if (width === 1440) expect(Math.abs(sendBox.y - emailBox.y)).toBeLessThan(2);
+    else expect(sendBox.y).toBeGreaterThan(emailBox.y + emailBox.height - 1);
+    await purchase
+      .locator('[data-store-item-availability]')
+      .screenshot({ path: `.codex-artifacts/availability/repressing-open-${width}.png` });
     expect((await email.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     // 16px on phones so iOS Safari does not zoom the page into the field; desktop keeps 0.95rem.
     await expect(email).toHaveCSS('font-size', width === 390 ? '16px' : '15.2px');
 
-    await form.getByRole('button', { name: 'Send', exact: true }).click();
+    await send.click();
     await expect(form.getByText('Enter a valid email.', { exact: true })).toBeVisible();
     await expect(form.getByText('Tick the box so we can email you.', { exact: true })).toBeVisible();
     await expect(email).toHaveAttribute('aria-invalid', 'true');
@@ -83,7 +101,7 @@ for (const width of [1440, 390]) {
     expect(requests).toHaveLength(0);
     // A consent-only error moves focus to the checkbox so its described error is announced.
     await email.fill('listener@example.com');
-    await form.getByRole('button', { name: 'Send', exact: true }).click();
+    await send.click();
     await expect(consent).toBeFocused();
     await expect(consent).toHaveAttribute('aria-describedby', /consent-error/);
     expect(requests).toHaveLength(0);
@@ -95,12 +113,18 @@ for (const width of [1440, 390]) {
     await trigger.press('Enter');
     await email.fill('listener@example.com');
     await consent.check();
-    await form.getByRole('button', { name: 'Send', exact: true }).click();
+    if (joinNewsletter) await newsletter.check();
+    await send.click();
     const done = purchase.locator('[data-availability-alert-done]');
-    await expect(done).toHaveText("✓ We'll email you once when it can be ordered.");
+    await expect(done).toHaveText(
+      `✓ We'll email listener@example.com once it can be ordered.${joinNewsletter ? " You're also on the newsletter." : ''}`,
+    );
     await expect(done).toHaveAttribute('role', 'status');
     await expect(done).toBeFocused();
     expect(requests).toEqual([{ email: 'listener@example.com', consent: true }]);
+    expect(newsletterRequests).toEqual(
+      joinNewsletter ? [{ email: 'listener@example.com', consentAccepted: true }] : [],
+    );
     await expectNoHorizontalOverflow(page);
     await purchase
       .locator('[data-store-item-availability]')

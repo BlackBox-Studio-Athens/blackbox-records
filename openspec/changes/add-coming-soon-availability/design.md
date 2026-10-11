@@ -154,7 +154,7 @@ Approved styles (owner review, 7 October 2026, `/demo/coming-soon-styles`): stat
 
 - Notify me lives in the Store item page's purchase island (`StoreItemPurchaseActions.tsx`) under the disabled status control, so it reads the same offer without a second request. A plain `<form>` holds:
   - an email input;
-  - an unticked consent checkbox ("Email me once when this can be bought or pre-ordered.");
+  - an unticked consent checkbox ("Email me once when this item can be bought or pre-ordered.", `blackbox-availability-alert-v2` from 11 October 2026; v1 read "this can be"), then an optional unticked newsletter consent that reuses the newsletter form copy and registers through the newsletter route only after the alert succeeds;
   - a submit button.
 - Validation, error association and the inline status pattern are copied from the newsletter form.
 - Visual direction goes through the Impeccable shape and approval gates during apply. It follows the monochrome hard-edged language and adds no icons or urgency.

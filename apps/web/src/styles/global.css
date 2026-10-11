@@ -4961,16 +4961,37 @@ body.is-app-shell-overlay-open {
 
 @media (min-width: 40rem) {
   .availability-alert {
-    width: 14rem;
+    max-width: 30rem;
   }
 }
 
-.availability-alert__label {
-  color: var(--muted-foreground);
+.availability-alert__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 0.75rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+}
+
+.availability-alert__title svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Field and Notify me share a row from 40rem; on phones the button sits below the field. */
+.availability-alert__row {
+  display: grid;
+  gap: 0.6rem;
+}
+
+@media (min-width: 40rem) {
+  .availability-alert__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .availability-alert__input {
@@ -4989,6 +5010,10 @@ body.is-app-shell-overlay-open {
   .availability-alert__input {
     font-size: 0.95rem;
   }
+}
+
+.availability-alert__input::placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 60%, transparent);
 }
 
 .availability-alert__input:focus-visible {
@@ -5021,6 +5046,24 @@ body.is-app-shell-overlay-open {
 .availability-alert__consent input[aria-invalid='true'] {
   outline: 1px solid var(--store-accent-active);
   outline-offset: 2px;
+}
+
+.availability-alert__optional {
+  color: var(--foreground);
+}
+
+.availability-alert__fine {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* An inline link in running text; WCAG 2.5.8 exempts it from the 44px target the standalone link keeps. */
+.availability-alert__fine a {
+  display: inline;
+  min-height: 0;
 }
 
 .availability-alert__error {

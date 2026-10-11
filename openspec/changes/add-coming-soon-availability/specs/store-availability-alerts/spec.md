@@ -8,14 +8,14 @@ Lets a shopper ask, with an email address and explicit one-off consent, to be to
 
 ### Requirement: Shoppers request a one-off availability alert
 
-The Store Item page SHALL offer Notify me only while the variant's Store Offer reads Coming Soon or Repressing, as a quiet text action "Email me when it lands" with a small mail icon that opens the form in place. The form SHALL ask for an email address and an unticked one-off consent, with no account, and SHALL submit only the email, consent state and Store Item identity to the Worker. Consent copy SHALL read "Email me once when this can be bought or pre-ordered." The address SHALL NOT be added to the newsletter.
+The Store Item page SHALL offer Notify me only while the variant's Store Offer reads Coming Soon or Repressing, as a quiet text action "Email me when it lands" with a small mail icon that opens the form in place. The form SHALL ask for an email address and an unticked one-off consent, with no account, and SHALL submit only the email, consent state and Store Item identity to the alert route. Consent copy SHALL read "Email me once when this item can be bought or pre-ordered."
 
 #### Scenario: Shopper asks to be notified
 
 - **GIVEN** a Store Item page whose offer reads Coming Soon or Repressing
 - **WHEN** a shopper enters a valid email, ticks the consent and submits
 - **THEN** the Worker records one pending alert for that variant and email
-- **AND** the form confirms inline in an accessible status region without leaving the page.
+- **AND** the form confirms inline in an accessible status region that names the submitted address, without leaving the page.
 
 #### Scenario: Offer is not eligible
 
@@ -35,9 +35,24 @@ The Store Item page SHALL offer Notify me only while the variant's Store Offer r
 - **THEN** the Worker keeps one alert and returns the same success response as for a new request
 - **AND** the response never reveals whether the address was already waiting.
 
+### Requirement: The Notify me form states its purpose and offers the newsletter separately
+
+The open form SHALL keep "Email me when it lands" as its visible heading, and its submit action SHALL read "Notify me". A separate, unticked newsletter consent marked Optional SHALL use the newsletter form's consent copy word for word. Small print SHALL say the email is used only for what the shopper ticked and that alert requests are kept for up to 12 months, followed by the privacy link.
+
+#### Scenario: Shopper also opts into the newsletter
+
+- **WHEN** a shopper ticks both the alert consent and the optional newsletter consent and submits
+- **THEN** the browser registers the address through the newsletter registration route only after the alert succeeds
+- **AND** a newsletter failure leaves the alert confirmed and says the newsletter sign-up did not go through.
+
+#### Scenario: Shopper leaves the newsletter unticked
+
+- **WHEN** a shopper submits with only the alert consent ticked
+- **THEN** no newsletter request is sent.
+
 ### Requirement: Availability alerts are private and bounded
 
-Alert email addresses SHALL be stored only in the Worker's alert records, SHALL NOT be added to any Resend Contact, Segment or Topic, and SHALL NOT appear in any public response, log or staff screen. Each variant SHALL hold a bounded number of pending alerts. A pending alert SHALL expire 12 months after its request.
+Alert email addresses SHALL be stored only in the Worker's alert records, SHALL NOT be added to any Resend Contact, Segment or Topic by the alert route, and SHALL NOT appear in any public response, log or staff screen. Each variant SHALL hold a bounded number of pending alerts. A pending alert SHALL expire 12 months after its request.
 
 #### Scenario: Alert data stays private
 

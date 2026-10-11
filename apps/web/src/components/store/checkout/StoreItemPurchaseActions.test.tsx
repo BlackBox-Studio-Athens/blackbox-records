@@ -14,8 +14,10 @@ import StoreItemPurchaseActions, {
 } from './StoreItemPurchaseActions';
 import StoreItemPurchaseStatus from './StoreItemPurchaseStatus';
 import { takePendingStoreCartAddItems } from '@/components/store/cart/store-cart-events';
+import { NEWSLETTER_CONSENT_LABEL } from '@/platform/components/PurchaseInformation';
 import AvailabilityAlertForm, {
   AVAILABILITY_ALERT_COPY,
+  joinNewsletter,
   availabilityAlertErrors,
   sendAvailabilityAlert,
 } from './AvailabilityAlertForm';
@@ -496,13 +498,21 @@ describe('StoreItemPurchaseActions', () => {
 });
 
 describe('Notify me', () => {
-  it('opens to an email field and an unticked one-off consent with Send and Cancel', () => {
+  it('opens under its heading to an email field, an unticked one-off consent, an optional newsletter consent and Notify me', () => {
     const html = renderToStaticMarkup(<AvailabilityAlertForm initial={{ step: 'open' }} storeItemSlug="item" />);
+    const titleId = /<form[^>]*aria-labelledby="([^"]+)"/.exec(html)?.[1];
+    expect(html).toMatch(
+      new RegExp(`<p id="${titleId}" class="availability-alert__title">.*Email me when it lands</p>`),
+    );
+    expect(html).toContain('class="accessibility-visually-hidden-text"');
     expect(html).toContain('>Email</label>');
     expect(html).toMatch(/<input[^>]*type="email"[^>]*autoComplete="email"/);
     expect(html).toContain(AVAILABILITY_ALERT_COPY.consent);
     expect(html).toMatch(/<input type="checkbox" name="consent"(?![^>]*checked)[^>]*>/);
-    expect(html).toContain('>Send</button>');
+    expect(html).toMatch(/<input type="checkbox" name="newsletter"(?![^>]*checked)[^>]*>/);
+    expect(html).toContain(NEWSLETTER_CONSENT_LABEL);
+    expect(html).toContain(AVAILABILITY_ALERT_COPY.fine);
+    expect(html).toContain('>Notify me</button>');
     expect(html).toContain('site-button--link');
     expect(html).toContain('>Cancel</button>');
     expect(html).not.toContain('aria-invalid');
@@ -536,16 +546,34 @@ describe('Notify me', () => {
     );
   });
 
-  it('keeps the Send width while sending and confirms in a status region', () => {
+  it('keeps the Notify me width while sending and confirms in a status region', () => {
     const sending = renderToStaticMarkup(
       <AvailabilityAlertForm initial={{ step: 'sending', email: 'a@b.co', consent: true }} storeItemSlug="item" />,
     );
     expect(sending).toMatch(/<button[^>]*availability-alert__send[^>]*aria-busy="true"[^>]*>Sending<\/button>/);
-    const done = renderToStaticMarkup(<AvailabilityAlertForm initial={{ step: 'done' }} storeItemSlug="item" />);
+    const done = renderToStaticMarkup(
+      <AvailabilityAlertForm initial={{ step: 'done', email: ' a@b.co ' }} storeItemSlug="item" />,
+    );
     expect(done).toContain('role="status"');
     expect(done).toContain('tabindex="-1"');
-    expect(done).toContain('We&#x27;ll email you once when it can be ordered.');
+    expect(done).toContain('We&#x27;ll email a@b.co once it can be ordered.');
+    expect(done).not.toContain('newsletter');
     expect(done).not.toContain('<form');
+    const joined = renderToStaticMarkup(
+      <AvailabilityAlertForm
+        initial={{ step: 'done', email: 'a@b.co', newsletterOutcome: 'joined' }}
+        storeItemSlug="item"
+      />,
+    );
+    expect(joined).toContain('You&#x27;re also on the newsletter.');
+    const failed = renderToStaticMarkup(
+      <AvailabilityAlertForm
+        initial={{ step: 'done', email: 'a@b.co', newsletterOutcome: 'failed' }}
+        storeItemSlug="item"
+      />,
+    );
+    expect(failed).toContain('We&#x27;ll email a@b.co once it can be ordered.');
+    expect(failed).toContain('The newsletter sign-up didn&#x27;t go through.');
   });
 
   it('sends only the email, consent and Store Item, and reads any failure as retryable', async () => {
@@ -573,6 +601,17 @@ describe('Notify me', () => {
     expect(retry).toContain('value="listener@example.com"');
     expect(retry).toMatch(/<input type="checkbox" name="consent" checked=""/);
     expect(retry).toContain('role="alert">Couldn&#x27;t save that. Try again.</p>');
+  });
+
+  it('joins the newsletter with the trimmed email and reads its failure without undoing the alert', async () => {
+    const registerNewsletterSignup = vi
+      .fn<PublicCheckoutApi['registerNewsletterSignup']>()
+      .mockResolvedValueOnce({} as Awaited<ReturnType<PublicCheckoutApi['registerNewsletterSignup']>>)
+      .mockRejectedValueOnce(new Error('newsletter_unavailable'));
+    const api = createApi({ registerNewsletterSignup });
+    await expect(joinNewsletter(api, ' listener@example.com ')).resolves.toBe('joined');
+    expect(registerNewsletterSignup).toHaveBeenCalledWith({ email: 'listener@example.com', consentAccepted: true });
+    await expect(joinNewsletter(api, 'listener@example.com')).resolves.toBe('failed');
   });
 });
 

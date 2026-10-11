@@ -10,8 +10,8 @@ export const AVAILABILITY_ALERT_MAX_ATTEMPTS = 5;
 export const AVAILABILITY_ALERT_LEASE_MS = 10 * 60 * 1000;
 export const AVAILABILITY_ALERT_RETENTION_MONTHS = 12;
 
-export const AVAILABILITY_ALERT_CONSENT_COPY = 'Email me once when this can be bought or pre-ordered.';
-export const AVAILABILITY_ALERT_CONSENT_COPY_VERSION = 'blackbox-availability-alert-v1';
+export const AVAILABILITY_ALERT_CONSENT_COPY = 'Email me once when this item can be bought or pre-ordered.';
+export const AVAILABILITY_ALERT_CONSENT_COPY_VERSION = 'blackbox-availability-alert-v2';
 
 // Delay before attempt 2, 3, 4 and 5.
 const retryDelaysMs = [15 * 60 * 1000, 60 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];

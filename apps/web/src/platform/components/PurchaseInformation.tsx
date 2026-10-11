@@ -2,6 +2,10 @@ import { getPurchaseInformation, isPurchaseInformationDraft } from '@/platform/l
 import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
 import Prose from './Prose';
 
+// Newsletter consent copy, shared by every form that offers the newsletter so recorded consent matches one text.
+export const NEWSLETTER_CONSENT_LABEL =
+  'I agree to receive BlackBox Records release, distro, and event updates. I can unsubscribe anytime.';
+
 const linkClass = 'inline-flex min-h-11 items-center underline underline-offset-4';
 
 export function PrivacyLink({

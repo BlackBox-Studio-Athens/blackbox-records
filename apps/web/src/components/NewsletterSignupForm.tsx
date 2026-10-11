@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Prose from '../platform/components/Prose';
 import type { Prose as ProseValue } from '@blackbox/content-model';
-import { PrivacyLink } from '@/platform/components/PurchaseInformation';
+import { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/platform/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,7 @@ export type NewsletterSignupState =
       target: NewsletterSignupErrorTarget;
     };
 
-export const NEWSLETTER_CONSENT_LABEL =
-  'I agree to receive BlackBox Records release, distro, and event updates. I can unsubscribe anytime.';
+export { NEWSLETTER_CONSENT_LABEL };
 export const NEWSLETTER_INVALID_EMAIL_MESSAGE = 'Enter a valid email address.';
 export const NEWSLETTER_PROVIDER_UNAVAILABLE_MESSAGE = 'Newsletter signup is temporarily unavailable.';
 
