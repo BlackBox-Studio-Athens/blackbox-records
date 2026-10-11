@@ -100,7 +100,7 @@
 - [x] 8.1 Verify `pnpm build:web` keeps every eager bundle graph within budget, and record the Crate chunk size.
 - [x] 8.2 Run the regression specs: `store-preorders`, `store-cart`, `player-continuity`, `shell-navigation`, `routes` and `performance-acceptance`.
 - [ ] 8.3 Compare Store and Distro before and after with the `desktop-load`, `mobile-load`, `wide-scroll` and `mobile-scroll` profiles, and run the Crate profiles at 4× CPU slowdown with no long task of 50ms or more. Record the results in `validation.md`.
-- [ ] 8.4 Run `pnpm validate` on the final tree and record the summary path, source SHA, acceptance rows and remaining gaps (the dormant tape rack) in `validation.md`.
+- [x] 8.4 Run `pnpm validate` on the final tree and record the summary path, source SHA, acceptance rows and remaining gaps (the dormant tape rack) in `validation.md`.
 
 ## Workflow follow-up
 

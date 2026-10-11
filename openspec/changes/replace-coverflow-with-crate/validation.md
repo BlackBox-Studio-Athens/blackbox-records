@@ -17,7 +17,9 @@ Commits on `main`, all local and none pushed:
 | `b536f73a` | Flip restyle fix; Crate performance profiles               |
 | `c97fb060` | Docs                                                       |
 
-The final commit adds the logo export, its ESLint ignore and the `eqeqeq` fix. The final `pnpm validate` summary path is recorded below once that run passes.
+`f7b019ca` adds the logo export, its ESLint ignore and the `eqeqeq` fix.
+
+**Final `pnpm validate`:** passed, `mode: local`, on a clean tree at `76d9acfa`. The before and after fingerprints match (`e3b0c442…`, 0 changed files). Summary: `.codex-artifacts/validation/2026-10-11T02-28-45-946Z-40648-af2d7a/summary.json`. Nx flagged `web-pages:test` as flaky on this run, and it passed. Two earlier runs failed only on `cms-runtime:test` workerd timeouts while other sessions loaded the machine. This change does not touch that module.
 
 ## Acceptance rows
 
@@ -35,7 +37,7 @@ The final commit adds the logo export, its ESLint ignore and the `eqeqeq` fix. T
 - Crate unit tests pass: 36, plus the snapshot and layout tests.
 - `vitest` over `src/components/store`, `src/layouts`, `src/styles`, `src/pages`, `src/components/app-shell` and `test`: 149 files, 1206 tests passed.
 - `astro check`: 0 errors.
-- `pnpm check:boundaries`: passed before the logo export was added. The final `pnpm validate` reruns it.
+- `pnpm check:boundaries`: passed, and the final `pnpm validate` passed with the logo export.
 - `pnpm openspec -- validate replace-coverflow-with-crate --type change --strict`: valid.
 
 **Build and bundles** (`pnpm build:web` passed)
