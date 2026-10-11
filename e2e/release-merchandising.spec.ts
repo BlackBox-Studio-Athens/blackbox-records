@@ -526,21 +526,19 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await image.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   await expect(image).toHaveCSS('transform', restingArtwork);
   // The artwork and the edition action share one destination and one engaged state; Listen stays independent.
-  // The record only shows on desktop layouts.
+  // No decorative record is rendered at any width.
   await page.setViewportSize({ width: 1440, height: 900 });
-  const record = lead.locator('.release-vinyl-peek');
-  await expect(record).toHaveCSS('transform', 'none');
+  await expect(page.locator('.release-vinyl-peek')).toHaveCount(0);
   await expect(artwork).toHaveAttribute('href', (await purchase.getAttribute('href'))!);
   const restingAction = await purchase.evaluate((element) => getComputedStyle(element).backgroundColor);
   for (const target of [purchase, artwork]) {
     await target.hover();
-    await expect(record).not.toHaveCSS('transform', 'none');
     await expect(purchase).not.toHaveCSS('background-color', restingAction);
     await expect(image).toHaveCSS('transform', restingArtwork);
     await page.mouse.move(0, 0);
-    await expect(record).toHaveCSS('transform', 'none');
   }
   await page.setViewportSize({ width: 390, height: 900 });
+  await expect(page.locator('.release-vinyl-peek')).toHaveCount(0);
   await expect(artwork).toHaveAccessibleName(/disintegration/i);
   await expect(artwork).toHaveAttribute('tabindex', '-1');
   await expect(title).toHaveAccessibleName(/disintegration/i);

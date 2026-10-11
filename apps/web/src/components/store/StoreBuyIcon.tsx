@@ -7,13 +7,12 @@ import cdBase from './buy-icons/cd-base.svg?url&no-inline';
 import cdSpin from './buy-icons/cd-spin.svg?url&no-inline';
 import cdTop from './buy-icons/cd-top.svg?url&no-inline';
 import vinylBase from './buy-icons/vinyl-base.svg?url&no-inline';
-import vinylSpin from './buy-icons/vinyl-spin.svg?url&no-inline';
 import vinylTop from './buy-icons/vinyl-top.svg?url&no-inline';
 
 type BuyIconLayers = { base: string; spins: { src: string; origin: string }[]; top: string };
 
 // Spin origins are the rotate-origin comments in each layer file, as percentages of the 18-unit canvas.
-const vinyl: BuyIconLayers = { base: vinylBase, spins: [{ src: vinylSpin, origin: '41.667% 41.667%' }], top: vinylTop };
+const vinyl: BuyIconLayers = { base: vinylBase, spins: [], top: vinylTop };
 const cd: BuyIconLayers = { base: cdBase, spins: [{ src: cdSpin, origin: '41.667% 41.667%' }], top: cdTop };
 const cassette: BuyIconLayers = {
   base: cassetteBase,
@@ -31,7 +30,7 @@ function layersFor(formatGroup: DistroGroupName | undefined): BuyIconLayers {
   return vinyl;
 }
 
-// The format's product in stacked images: light, shell and plus stay still while the print or reels turn.
+// Vinyl stays still; CD print and cassette reels turn beneath their stationary light, shell and plus.
 // Images keep each layer's gradient ids private to its own document, so every card can repeat them.
 export default function StoreBuyIcon({ formatGroup }: { formatGroup?: DistroGroupName }) {
   const { base, spins, top } = layersFor(formatGroup);

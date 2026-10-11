@@ -92,7 +92,7 @@ describe('Store collection category surfaces', () => {
     );
     expect(storeBuyIconSource).toMatch(/<span className="store-buy-icon" aria-hidden="true">/);
     // Every layer is one shared file URL, never a data: URI repeated on each card.
-    expect(storeBuyIconSource.match(/\.svg\?url&no-inline';/g)).toHaveLength(10);
+    expect(storeBuyIconSource.match(/\.svg\?url&no-inline';/g)).toHaveLength(9);
   });
 
   it('links a Release item artist above the card link', () => {

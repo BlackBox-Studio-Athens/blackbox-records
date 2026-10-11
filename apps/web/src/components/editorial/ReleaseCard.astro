@@ -1,8 +1,6 @@
 ---
 import Prose from '@/components/Prose.astro';
-import { getImage, Image } from 'astro:assets';
-// Public-domain scan of a 1967 Caedmon LP (Wikimedia Commons); its own label is covered by the release artwork.
-import vinylRecordUrl from './vinyl-record.webp?url';
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Card, CardContent } from '@/components/ui/card';
@@ -112,10 +110,6 @@ const neutralPhysicalState = physicalBadgeState(neutralPresentation);
 // A native edition's Store path is the one destination the artwork and the edition action share, together with
 // their hover and focus feedback; without one the artwork keeps the release detail link and nothing is shared.
 const editionHref = isReleaseShowcase && commerceLink?.isNativeStoreLink ? commerceLink.href : undefined;
-const vinylLabel =
-  editionHref && physicalFormat === 'vinyl'
-    ? await getImage({ src: release.data.cover_image, width: 320, quality: editorialImageQuality })
-    : undefined;
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -169,15 +163,6 @@ const dataAttributes = embeddedPlayerData
             : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'
       }
     >
-      {vinylLabel && (
-        <span
-          class="release-vinyl-peek"
-          aria-hidden="true"
-          style={`--release-vinyl-record: url("${vinylRecordUrl}"); --release-vinyl-label: url("${vinylLabel.src}")`}
-        >
-          <span class="release-vinyl-peek__record"></span>
-        </span>
-      )}
       <ArtworkTag
         href={isReleaseShowcase ? (editionHref ?? detailPath) : undefined}
         aria-label={editionHref ? `${release.data.title}, ${neutralPresentation.action}` : undefined}
