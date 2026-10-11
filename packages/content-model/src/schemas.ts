@@ -25,7 +25,7 @@ const internalOrHttpsUrl = z.string().refine(isInternalOrHttpsUrl, {
   message: 'Use a safe internal path beginning with / or a full HTTPS URL.',
 });
 
-export const bandcampEmbedUrlSchema = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
+export const bandcampEmbedUrlSchema = z.string().refine((value) => buildBandcampEmbedUrl(value) !== '', {
   message: 'Use the official Bandcamp iframe src from Share/Embed. Public album or track URLs are not valid embeds.',
 });
 

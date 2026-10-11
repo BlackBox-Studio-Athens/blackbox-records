@@ -23,13 +23,22 @@ describe('app shell routing helpers', () => {
     }
   });
 
-  it('does not treat Store items, checkout routes, unknown children, or legacy Distro as shell sections', () => {
+  it('routes Store Items and purchase information through the shell so the player survives', () => {
+    expect(parseShellSectionRoute('/blackbox-records/store/disintegration-black-vinyl-lp')).toEqual({
+      kind: 'store-item',
+      pathname: '/store/disintegration-black-vinyl-lp/',
+    });
+    for (const pathname of ['/terms/', '/privacy/', '/withdrawal/']) {
+      expect(parseShellSectionRoute(`/blackbox-records${pathname}`)).toEqual({ kind: 'information', pathname });
+    }
+  });
+
+  it('does not treat checkout routes, nested Store paths, or legacy Distro as shell sections', () => {
     for (const pathname of [
-      '/store/disintegration-black-vinyl-lp/',
       '/store/checkout/',
       '/store/checkout/return/',
       '/store/disintegration-black-vinyl-lp/checkout/',
-      '/store/unknown/',
+      '/store/disintegration-black-vinyl-lp/checkout/return/',
       '/distro/',
     ]) {
       expect(parseShellSectionRoute(`/blackbox-records${pathname}`)).toBeNull();

@@ -12,10 +12,12 @@ export const SHELL_SECTION_LABELS = {
   about: 'Who we are',
   artists: 'Artists',
   home: 'Home',
+  information: 'Information',
   news: 'News',
   releases: 'Releases',
   services: 'Services',
   store: 'Store',
+  'store-item': 'Store',
 } as const;
 
 export function isModifiedEvent(event: MouseEvent) {

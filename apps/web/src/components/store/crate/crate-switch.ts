@@ -47,7 +47,6 @@ export function connectStoreCrate(searchRoot: HTMLElement, host: StoreCrateHost)
   gridButton.disabled = false;
   crateButton.disabled = false;
   root.setAttribute('data-store-crate-ready', '');
-  if (restore) prefetch();
 
   return {
     choose(formatKey) {
@@ -69,6 +68,9 @@ export function connectStoreCrate(searchRoot: HTMLElement, host: StoreCrateHost)
         }
       }
       crateRoot.dataset.storeCrateSwitch = on ? 'on' : 'off';
+      // The restored Crate mounts after the island's first sync, which still carries its initial All formats. A Crate
+      // mounted earlier (the view module is cached after shell navigation) would read that as a choice and close.
+      if (restore) prefetch();
     },
     dispose() {
       disposed = true;

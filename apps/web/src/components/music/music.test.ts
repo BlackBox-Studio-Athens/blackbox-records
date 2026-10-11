@@ -36,6 +36,19 @@ describe('Bandcamp embed URL resolution', () => {
     expect(buildBandcampEmbedUrl(embedUrl)).toBe(embedUrl);
   });
 
+  it('renders the house dark appearance whatever share code was pasted', () => {
+    expect(
+      buildBandcampEmbedUrl(
+        'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=small/bgcol=ffffff/linkcol=0687f5/tracklist=false/artwork=small/transparent=false/',
+      ),
+    ).toBe(
+      'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
+    );
+    expect(buildBandcampEmbedUrl('https://bandcamp.com/EmbeddedPlayer/track=2461449138/')).toBe(
+      'https://bandcamp.com/EmbeddedPlayer/track=2461449138/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/tracklist=false/transparent=true/',
+    );
+  });
+
   it('rejects public Bandcamp album and track page URLs', () => {
     expect(buildBandcampEmbedUrl('https://chronoboros.bandcamp.com/album/caregivers')).toBe('');
     expect(buildBandcampEmbedUrl('https://afterwise.bandcamp.com/track/silverfeedssilence')).toBe('');

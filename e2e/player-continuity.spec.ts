@@ -68,6 +68,45 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   await expect(page.getByRole('button', { name: 'Open player' })).toBeHidden();
 });
 
+test('player survives a Store Item and the purchase information pages', async ({ page, isMobile }) => {
+  test.setTimeout(180_000);
+  await page.route(providerEmbeds, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  await plantSentinel(page);
+
+  await press(page.locator('[data-music-streaming-service-embedded-player-trigger]').first(), isMobile);
+  const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
+  await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await press(page.getByRole('button', { name: 'Minimize player' }), isMobile);
+  const originalIframe = await iframe.elementHandle();
+  const isOriginalIframeConnected = () => originalIframe.evaluate((element) => element.isConnected);
+
+  await openSection(page, 'Store', isMobile);
+  await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible({ timeout: 60_000 });
+  // The card's stretched link sits under its Listen and artist controls, so a tap at its centre can land on them.
+  await page.locator('main a[href$="/store/disintegration-black-vinyl-lp/"]').first().dispatchEvent('click');
+  await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // The item's purchase island hydrates after the swap and reads the stubbed offer.
+  await expect(page.getByRole('button', { name: /add to cart/i }).first()).toBeEnabled();
+  expect(await isOriginalIframeConnected()).toBe(true);
+
+  await press(page.getByRole('contentinfo').getByRole('link', { name: 'Withdraw from an order' }), isMobile);
+  await expect(page).toHaveURL(/\/withdrawal\/$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Withdraw from an order' })).toBeVisible();
+  expect(await isOriginalIframeConnected()).toBe(true);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
+  await expect(page.getByRole('button', { name: /add to cart/i }).first()).toBeEnabled();
+  expect(await sentinelIntact(page)).toBe(true);
+  expect(await isOriginalIframeConnected()).toBe(true);
+});
+
 test('Back closes the open player without moving the page beneath; its controls leave no extra entry', async ({
   page,
   isMobile,

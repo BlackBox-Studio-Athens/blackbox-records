@@ -2,7 +2,8 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
 import { stripBasePath } from '@/platform/utils/urls';
 
 export type OverlayKind = 'artists' | 'news' | 'releases';
-export type ShellSectionKind = 'about' | 'artists' | 'home' | 'news' | 'releases' | 'services' | 'store';
+export type ShellSectionKind =
+  'about' | 'artists' | 'home' | 'information' | 'news' | 'releases' | 'services' | 'store' | 'store-item';
 
 export type OverlayRoute = {
   kind: OverlayKind;
@@ -32,6 +33,9 @@ const shellSectionRouteMatchers: Array<{ kind: ShellSectionKind; pattern: RegExp
   { kind: 'store', pattern: /^\/store\/distro\/?$/ },
   { kind: 'store', pattern: /^\/store\/merch\/?$/ },
   { kind: 'about', pattern: /^\/about\/?$/ },
+  // Store Items swap like sections so the player survives; checkout documents stay native. Collections match first.
+  { kind: 'store-item', pattern: /^\/store\/(?!checkout\/?$)[^/]+\/?$/ },
+  { kind: 'information', pattern: /^\/(?:terms|privacy|withdrawal)\/?$/ },
 ];
 
 export function normalizeAppPathname(pathname: string) {

@@ -36,9 +36,12 @@ export function buildBandcampPlayerProvider(bandcampEmbedUrl?: string): Bandcamp
   if (pathSegments[0] !== 'EmbeddedPlayer' || !entityMatch) return null;
   if (pathSegments.slice(2).some((segment) => !BANDCAMP_EMBED_OPTION_PATTERN.test(segment))) return null;
 
+  // Only the entity comes from the stored URL: a dark bgcol switches Bandcamp to its dark theme, and transparent lets
+  // the player modal's surface show through, whatever share code staff pasted.
+  const isTrack = entityMatch[1] === 'track';
   return {
-    embedLayout: entityMatch[1] === 'track' ? 'bandcamp-track' : 'bandcamp-album',
-    embedUrl: parsedUrl.toString(),
+    embedLayout: isTrack ? 'bandcamp-track' : 'bandcamp-album',
+    embedUrl: `${BANDCAMP_EMBED_ORIGIN}/EmbeddedPlayer/${entityMatch[0]}/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/${isTrack ? 'tracklist=false/' : ''}transparent=true/`,
     id: 'bandcamp',
   };
 }

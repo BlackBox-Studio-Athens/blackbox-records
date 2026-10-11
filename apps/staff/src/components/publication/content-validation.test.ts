@@ -52,12 +52,15 @@ it('accepts YouTube video URLs and rejects other hosts and malformed identities'
 });
 
 it('reads the Bandcamp player URL from pasted embed code or a bare src', () => {
+  // Bandcamp's default light share code is stored with the house dark appearance.
   const src =
-    'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/transparent=true/';
+    'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=ffffff/linkcol=0687f5/transparent=true/';
+  const houseSrc =
+    'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
   expect(
     bandcampEmbedSrc(`<iframe style="border: 0" src="${src}" seamless><a href="https://x.bandcamp.com">X</a></iframe>`),
-  ).toBe(src);
-  expect(bandcampEmbedSrc(` ${src} `)).toBe(src);
+  ).toBe(houseSrc);
+  expect(bandcampEmbedSrc(` ${src} `)).toBe(houseSrc);
   expect(bandcampEmbedSrc('https://artist.bandcamp.com/album/example')).toBeNull();
   expect(bandcampEmbedSrc('<iframe src="https://evil.example/EmbeddedPlayer/album=1/"></iframe>')).toBeNull();
 });
