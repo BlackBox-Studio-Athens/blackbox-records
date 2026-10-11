@@ -55,10 +55,15 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
 
   // Stop asks once in place: the first press arms it (Stop?), the second ends the session.
   const stop = page.getByRole('button', { name: 'Stop player' });
+  // Prepare touch geometry before the three-second confirmation window starts.
+  if (isMobile) await stop.tap({ trial: true });
+  const stopBox = isMobile ? await stop.boundingBox() : null;
+  if (isMobile) expect(stopBox).not.toBeNull();
   await press(stop, isMobile);
   await expect(stop).toHaveText('Stop?');
   await expect(iframe).toHaveCount(1);
-  await press(stop, isMobile);
+  if (stopBox) await page.touchscreen.tap(stopBox.x + stopBox.width / 2, stopBox.y + stopBox.height / 2);
+  else await press(stop, isMobile);
   await expect(iframe).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open player' })).toBeHidden();
 });
@@ -122,6 +127,9 @@ test('on phones the floating player leaves the page end and the Menu reachable; 
   await expect(modal).toBeVisible();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+  // The lazy controls replace the loading header and focus Close when they mount.
+  await expect(modal.getByRole('button', { name: 'Bandcamp', exact: true })).toBeVisible();
+  await expect(modal.getByRole('button', { name: 'Close player', exact: true })).toBeFocused();
   await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), hasTouch);
   await press(page.getByRole('button', { name: 'Minimize player' }), hasTouch);
   await expect(modal).toBeHidden();

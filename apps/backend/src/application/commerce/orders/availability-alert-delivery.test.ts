@@ -136,10 +136,9 @@ describe('availability alert drain', () => {
   });
 
   it('holds an alert back until the accepted publication names its item, and never uses the product name', async () => {
-    const { itemNames, logger, provider, repository, run } = setup([
+    const { logger, provider, repository, run } = setup([
       delivery({ storeItemSlug: parseStoreItemSlug('unpublished-item') }),
     ]);
-    itemNames.mockRejectedValueOnce(new Error('snapshot unavailable'));
     const failing = setup([delivery()]);
     failing.itemNames.mockRejectedValueOnce(new Error('snapshot unavailable'));
 

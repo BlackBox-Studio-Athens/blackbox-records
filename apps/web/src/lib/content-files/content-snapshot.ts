@@ -50,6 +50,9 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
       .filter((record) => record.collection === 'artists')
       .map((record) => [record.id, record.slug]),
   );
+  const storeItems = new Map(
+    (loaded.snapshot.storeItems ?? []).map((item) => [`${item.sourceKind}/${item.sourceId}`, item] as const).reverse(),
+  );
   function field(value: unknown): unknown {
     if (Array.isArray(value)) return value.map(field);
     if (!value || typeof value !== 'object') return value;
@@ -68,11 +71,7 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
       const { body, ...editorial } = projectProseFields(record.collection, record.data);
       const data = field(editorial) as Record<string, unknown>;
       if (loaded.snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
-        const item = loaded.snapshot.storeItems.find(
-          (item) =>
-            item.sourceKind === (record.collection === 'releases' ? 'release' : 'distro') &&
-            item.sourceId === record.slug,
-        );
+        const item = storeItems.get(`${record.collection === 'releases' ? 'release' : 'distro'}/${record.slug}`);
         data.store_item = item ? { storeItemSlug: item.storeItemSlug, variantId: item.variantId } : null;
       }
       if (record.collection === 'artists') data.slug = record.slug;

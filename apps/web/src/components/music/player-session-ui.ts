@@ -26,25 +26,14 @@ export function derivePlayerPresentationState({
   providerLabel,
   status,
 }: DerivePlayerPresentationInput): PlayerPresentationState {
-  if (!hasSession) {
-    return {
-      closeActionAriaLabel: 'Close player',
-      closeActionLabel: 'Close',
-      isLoading: false,
-      isMiniPlayerVisible: false,
-      miniPlayerStatusLabel: 'Player Ready',
-      openPlayerActionLabel: OPEN_PLAYER_ACTION_LABEL,
-    };
-  }
-
-  const isReadyToMinimize = isLoaded && hasEmbedInteraction;
+  const isReadyToMinimize = hasSession && isLoaded && hasEmbedInteraction;
 
   return {
     closeActionAriaLabel: isReadyToMinimize ? 'Minimize player' : 'Close player',
     closeActionLabel: isReadyToMinimize ? 'Minimize' : 'Close',
-    isLoading: !isLoaded,
+    isLoading: hasSession && !isLoaded,
     isMiniPlayerVisible: Boolean(status === 'minimized' && isReadyToMinimize),
-    miniPlayerStatusLabel: providerLabel ? `Player Ready · ${providerLabel}` : 'Player Ready',
+    miniPlayerStatusLabel: hasSession && providerLabel ? `Player Ready · ${providerLabel}` : 'Player Ready',
     openPlayerActionLabel: OPEN_PLAYER_ACTION_LABEL,
   };
 }

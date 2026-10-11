@@ -161,33 +161,31 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       if (page.has_more && !startingAfter) throw new Error('Incomplete Checkout line pagination.');
     } while (startingAfter);
 
-    return stripeLineItems.flatMap((lineItem) => {
+    return stripeLineItems.map((lineItem) => {
       if (!lineItem.quantity || !lineItem.price?.id) {
         throw new Error('Incomplete Checkout line item.');
       }
 
-      return [
-        {
-          customAmountValid:
-            !!lineItem.price.custom_unit_amount &&
-            lineItem.quantity === 1 &&
-            Number.isSafeInteger(lineItem.price.custom_unit_amount.minimum) &&
-            Number.isSafeInteger(lineItem.price.custom_unit_amount.maximum) &&
-            Number.isSafeInteger(lineItem.amount_total) &&
-            lineItem.amount_total >= (lineItem.price.custom_unit_amount.minimum ?? 1) &&
-            lineItem.amount_total <= (lineItem.price.custom_unit_amount.maximum ?? Number.MAX_SAFE_INTEGER),
-          lineVatMinor: lineItem.amount_tax ?? null,
-          appliedTaxCount: Array.isArray(lineItem.taxes) ? lineItem.taxes.length : null,
-          taxRatePercent: lineItem.taxes?.length === 1 ? lineItem.taxes[0]!.rate.percentage : null,
-          currencyCode: lineItem.currency?.toUpperCase() ?? null,
-          taxInclusive: lineItem.price?.tax_behavior === 'inclusive',
-          discountMinor: lineItem.amount_discount ?? null,
-          lineAmountMinor:
-            Number.isInteger(lineItem.amount_total) && lineItem.amount_total > 0 ? lineItem.amount_total : null,
-          quantity: createCartQuantity(lineItem.quantity),
-          stripePriceId: parseStripePriceId(lineItem.price.id),
-        },
-      ];
+      return {
+        customAmountValid:
+          !!lineItem.price.custom_unit_amount &&
+          lineItem.quantity === 1 &&
+          Number.isSafeInteger(lineItem.price.custom_unit_amount.minimum) &&
+          Number.isSafeInteger(lineItem.price.custom_unit_amount.maximum) &&
+          Number.isSafeInteger(lineItem.amount_total) &&
+          lineItem.amount_total >= (lineItem.price.custom_unit_amount.minimum ?? 1) &&
+          lineItem.amount_total <= (lineItem.price.custom_unit_amount.maximum ?? Number.MAX_SAFE_INTEGER),
+        lineVatMinor: lineItem.amount_tax ?? null,
+        appliedTaxCount: Array.isArray(lineItem.taxes) ? lineItem.taxes.length : null,
+        taxRatePercent: lineItem.taxes?.length === 1 ? lineItem.taxes[0]!.rate.percentage : null,
+        currencyCode: lineItem.currency?.toUpperCase() ?? null,
+        taxInclusive: lineItem.price?.tax_behavior === 'inclusive',
+        discountMinor: lineItem.amount_discount ?? null,
+        lineAmountMinor:
+          Number.isInteger(lineItem.amount_total) && lineItem.amount_total > 0 ? lineItem.amount_total : null,
+        quantity: createCartQuantity(lineItem.quantity),
+        stripePriceId: parseStripePriceId(lineItem.price.id),
+      };
     });
   }
 }

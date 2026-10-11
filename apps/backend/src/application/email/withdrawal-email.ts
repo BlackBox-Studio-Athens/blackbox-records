@@ -1,4 +1,4 @@
-import { createBlackBoxEmailTemplate } from './templates';
+import { createBlackBoxEmailTemplate, escapeHtml } from './templates';
 import { sendTransactionalEmail } from './transactional-email';
 import type { EmailProviderGateway } from './spi';
 import type { EmailRuntimeConfig } from './types';
@@ -30,10 +30,7 @@ export async function sendWithdrawalEmail(input: {
 }) {
   const text = withdrawalReceiptText(input.notice);
   // Visitor fields are plain text only, never headers, HTML, hyperlinks or recipient overrides.
-  const escaped = text.replace(
-    /[&<>"']/g,
-    (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!,
-  );
+  const escaped = escapeHtml(text);
   return sendTransactionalEmail(input.provider, input.config, {
     content: createBlackBoxEmailTemplate({
       subject:

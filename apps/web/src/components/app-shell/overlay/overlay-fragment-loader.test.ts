@@ -41,7 +41,7 @@ describe('overlay fragment loader', () => {
       },
       signal: null,
     });
-    expect(loader.hasCachedHtml('/blackbox-records/artists/afterwise/')).toBe(true);
+    expect(loader.getCachedHtml('/blackbox-records/artists/afterwise/')).toBe('<article>Afterwise</article>');
   });
 
   it('rejects paths that cannot render as overlay fragments', async () => {

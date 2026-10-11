@@ -925,27 +925,6 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('can read Store Offer price without refreshing D1 catalog state', async () => {
-    await expect(
-      readStoreOffer(
-        storeItems,
-        itemAvailability,
-        stock,
-        catalogReconciler,
-        productProjections,
-        storeItem.storeItemSlug,
-      ),
-    ).resolves.toEqual(
-      expect.objectContaining({
-        canCheckout: true,
-        catalogStatus: 'ready',
-      }),
-    );
-
-    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
-    expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
-  });
-
   it('does not perform catalog writes when a public read discovers a replacement price', async () => {
     const saveMapping = vi.fn();
     const saveSnapshot = vi.fn();
@@ -1038,60 +1017,6 @@ describe('checkout use cases', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     ]);
-  });
-
-  it('starts checkout without a browser-selected locker for manual BOX NOW fulfillment', async () => {
-    await expect(
-      startCheckout(
-        storeItems,
-        itemAvailability,
-        stock,
-        catalogReconciler,
-        productProjections,
-        checkoutGateway,
-        orders,
-        {
-          cancelUrl: 'https://example.com/checkout',
-          successUrl: 'https://example.com/return',
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-      ),
-    ).resolves.toEqual({
-      checkoutSessionId: 'cs_test_123',
-      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
-    });
-
-    expect(orders.records.get('cs_test_123')).toMatchObject({
-      shippingLocker: null,
-      status: 'pending_payment',
-    });
-  });
-
-  it('can start checkout while refreshing D1 catalog state', async () => {
-    await expect(
-      startCheckout(
-        storeItems,
-        itemAvailability,
-        stock,
-        catalogReconciler,
-        productProjections,
-        checkoutGateway,
-        orders,
-        {
-          cancelUrl: 'https://example.com/checkout',
-          successUrl: 'https://example.com/return',
-          storeItemSlug: storeItem.storeItemSlug,
-          variantId: storeItem.variantId,
-        },
-        undefined,
-      ),
-    ).resolves.toEqual({
-      checkoutSessionId: 'cs_test_123',
-      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
-    });
-
-    expect(catalogReconciler.calls[0]?.options.apply).toBe(true);
   });
 
   it('rejects disabled native checkout before Stripe or order writes', async () => {
@@ -1514,6 +1439,7 @@ describe('checkout use cases', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     );
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(true);
   });
 
   it('reserves the native 30-minute minimum plus one minute for creation before requesting provider authority', async () => {

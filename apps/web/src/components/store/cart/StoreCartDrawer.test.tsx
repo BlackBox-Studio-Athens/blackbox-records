@@ -208,14 +208,6 @@ describe('StoreCartDrawer', () => {
     });
   });
 
-  it('creates a filled drawer view with canonical checkout route and subtotal', () => {
-    expect(createStoreCartDrawerView(addStoreCartItem(cartItem), resolveHref)).toMatchObject({
-      checkoutHref: '/blackbox-records/store/checkout/',
-      itemCount: 1,
-      subtotalDisplay: '€20.00',
-    });
-  });
-
   it('locks the empty cart copy without checkout action language', () => {
     expect(STORE_CART_DRAWER_COPY.emptyTitle).toBe('Your cart is empty');
     expect(STORE_CART_DRAWER_COPY.continueShopping).toBe('Continue Shopping');

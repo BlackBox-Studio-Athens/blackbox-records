@@ -11,10 +11,7 @@ export async function GET() {
     listNewsArticles(),
     listStoreCollectionEntries(),
   ]);
-  const storeCategories = getDiscoverableStoreCatalogCategories([
-    'all',
-    ...storeEntries.flatMap((entry) => entry.categoryIds),
-  ]);
+  const storeCategories = getDiscoverableStoreCatalogCategories(storeEntries.flatMap((entry) => entry.categoryIds));
 
   const staticPaths = [
     '/',

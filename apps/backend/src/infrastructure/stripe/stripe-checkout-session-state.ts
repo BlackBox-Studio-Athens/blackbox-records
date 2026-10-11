@@ -26,9 +26,7 @@ export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): 
     checkoutUrl: readOptionalString(session.url),
     currencyCode: readOptionalString(session.currency)?.toUpperCase() ?? null,
     customer: {
-      email:
-        readOptionalString(session.customer_details?.email) ??
-        readOptionalString(typeof session.customer_email === 'string' ? session.customer_email : null),
+      email: readOptionalString(session.customer_details?.email) ?? readOptionalString(session.customer_email),
       name: readOptionalString(session.customer_details?.name),
       phone: readOptionalString(session.customer_details?.phone),
     },
@@ -73,5 +71,5 @@ function readAddressSnapshot(
 }
 
 function readOptionalString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
+  return typeof value === 'string' ? value.trim() || null : null;
 }

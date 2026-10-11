@@ -2,8 +2,7 @@
 import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import { createProjectRelativeUrl } from '@/platform/config/site';
-import type { ArtistRosterReleaseContext } from '@/lib/catalog-data';
+import { createArtistDetailPath, type ArtistRosterReleaseContext } from '@/lib/catalog-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/components/ui/utils';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
@@ -18,7 +17,7 @@ interface Props {
 
 const { artist, imageLoading = 'lazy', imagePriority = false, releaseContext, variant } = Astro.props;
 const artistName = artist.data.title || 'Artist';
-const artistUrl = createProjectRelativeUrl(`/artists/${artist.data.slug}/`);
+const artistUrl = createArtistDetailPath(artist);
 const isRosterDetailedVariant = variant === 'roster-detailed';
 const releaseCount = releaseContext?.releaseCount ?? 0;
 const latestReleaseTitle = releaseContext?.latestReleaseTitle || 'No releases yet';

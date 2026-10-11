@@ -78,21 +78,7 @@ export type StripeCatalogExpectedPrice = {
     }
 );
 
-export type DesiredPrice = {
-  currencyCode: string;
-  revision: string;
-} & (
-  | {
-      amountMinor: number;
-      kind: 'fixed';
-    }
-  | {
-      kind: 'pay_what_you_want';
-      maximumAmountMinor: number;
-      minimumAmountMinor: number;
-      presetAmountMinor: number;
-    }
-);
+export type DesiredPrice = StripeCatalogExpectedPrice & { revision: string };
 
 export type StripeCatalogProductProjection = {
   description: string;

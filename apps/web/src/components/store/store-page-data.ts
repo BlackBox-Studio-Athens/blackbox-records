@@ -1,6 +1,7 @@
 import { getStoreItemBySlug, listStoreItems, type StoreItem } from '@/lib/catalog-data';
 import { createStoreItemAvailability, type ItemAvailability } from '@/lib/item-availability';
 import type { CartLineItemSnapshot } from '@/components/store/cart/store-cart';
+import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
 import { getImage } from 'astro:assets';
 
 export type StorePageEntry = {
@@ -8,13 +9,7 @@ export type StorePageEntry = {
   primaryAvailability: ItemAvailability | null;
 };
 
-export type StorePagePricedCartSeed = Omit<
-  CartLineItemSnapshot,
-  'availabilityLabel' | 'priceAmountMinor' | 'priceCurrencyCode' | 'priceDisplay' | 'priceKind' | 'variantId'
-> & {
-  availabilityLabel: string;
-  variantId: string | null;
-};
+export type StorePagePricedCartSeed = StoreItemCartSeed;
 
 export async function getStorePageEntryBySlug(slug: string): Promise<StorePageEntry | null> {
   const storeItem = await getStoreItemBySlug(slug);

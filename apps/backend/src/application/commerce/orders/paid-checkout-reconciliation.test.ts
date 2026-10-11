@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { athensToday, isPreorderOpen } from '../../../domain/commerce';
 
 import { reconcileCheckoutSession } from '../checkout';
@@ -364,6 +364,7 @@ describe('paid checkout reconciliation', () => {
   });
 
   it('uses finalized Stripe line item quantities before decrementing paid stock', async () => {
+    const finalize = vi.spyOn(paidCheckoutFinalizer, 'finalizePaidCheckout');
     const result = await applyPaidCheckoutReconciliation(
       orders,
       paidCheckoutFinalizer,
@@ -378,6 +379,9 @@ describe('paid checkout reconciliation', () => {
       ],
     );
 
+    expect(finalize).toHaveBeenCalledWith(
+      expect.objectContaining({ lineItems: [expect.objectContaining({ lineVatMinor: null, taxRatePercent: null })] }),
+    );
     expect(result).toMatchObject({
       kind: 'applied',
       stock: {
@@ -388,6 +392,33 @@ describe('paid checkout reconciliation', () => {
         quantityDelta: -2,
       },
     });
+  });
+
+  it('keeps the first tax fields when legacy provider price rows aggregate', async () => {
+    const finalize = vi.spyOn(paidCheckoutFinalizer, 'finalizePaidCheckout');
+    await applyPaidCheckoutReconciliation(orders, paidCheckoutFinalizer, paidReconciliation(), appliedAt, [
+      {
+        lineAmountMinor: 1250,
+        lineVatMinor: 0,
+        taxRatePercent: 0,
+        quantity: cartQuantity(1),
+        stripePriceId: primaryStripePriceId,
+      },
+      {
+        lineAmountMinor: 1250,
+        lineVatMinor: 242,
+        taxRatePercent: 24,
+        quantity: cartQuantity(1),
+        stripePriceId: primaryStripePriceId,
+      },
+    ]);
+    expect(finalize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lineItems: [
+          { lineAmountMinor: 2500, lineVatMinor: 0, taxRatePercent: 0, quantity: 2, unitAmountMinor: 1250, variantId },
+        ],
+      }),
+    );
   });
 
   it('uses the Stripe paid session amount for pay-what-you-want finalization', async () => {

@@ -416,9 +416,6 @@ describe('StripeCheckoutGateway', () => {
         checkout: {
           sessions: {
             create,
-            expire: vi.fn(),
-            retrieve: vi.fn(),
-            listLineItems: vi.fn(),
           },
         },
       } as never,
@@ -537,10 +534,7 @@ describe('StripeCheckoutGateway', () => {
       {
         checkout: {
           sessions: {
-            create: vi.fn(),
-            expire: vi.fn(),
             listLineItems,
-            retrieve: vi.fn(),
           },
         },
       } as never,

@@ -15,14 +15,14 @@ function compareReleaseTitle(left: ReleaseDateEntry, right: ReleaseDateEntry) {
 }
 
 function sortReleasedNewestFirst<T extends ReleaseDateEntry>(releaseEntries: T[]) {
-  return releaseEntries.slice().sort((left, right) => {
+  return releaseEntries.sort((left, right) => {
     const dateDifference = (right.data.release_date?.getTime() ?? 0) - (left.data.release_date?.getTime() ?? 0);
     return dateDifference || compareReleaseTitle(left, right);
   });
 }
 
 function sortUpcomingSoonestFirst<T extends ReleaseDateEntry>(releaseEntries: T[]) {
-  return releaseEntries.slice().sort((left, right) => {
+  return releaseEntries.sort((left, right) => {
     const dateDifference =
       (left.data.release_date?.getTime() ?? Infinity) - (right.data.release_date?.getTime() ?? Infinity);
     return dateDifference || compareReleaseTitle(left, right);

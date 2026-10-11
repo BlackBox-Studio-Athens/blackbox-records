@@ -89,7 +89,8 @@ export default function CheckoutOfferStatus({
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
-  const hasCheckoutLine = cartLines.length > 0 || Boolean(workerFallbackLineItem);
+  const reviewLines = cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : [];
+  const hasCheckoutLine = reviewLines.length > 0;
   const delivery = useDeliveryQuote(
     cartLines.length
       ? cartLines
@@ -117,7 +118,7 @@ export default function CheckoutOfferStatus({
       ? delivery.loading
         ? 'Checking delivery'
         : 'Delivery unavailable'
-      : view.canStartCheckout && shippingGateView.canContinueToPayment
+      : view.canStartCheckout
         ? 'Ready'
         : view.badgeLabel;
   const badgeClassName = cn(
@@ -139,15 +140,7 @@ export default function CheckoutOfferStatus({
           if (isActive) setView(createCartCheckoutOfferView(capabilities));
         } catch {
           if (isActive) {
-            setView({
-              badgeLabel: 'Checkout unavailable',
-              canStartCheckout: false,
-              detail: 'Could not load checkout status.',
-              isReady: false,
-              statusLabel: 'Checkout unavailable',
-              tone: 'error',
-              variantId: null,
-            });
+            setView(createCheckoutOfferView({ kind: 'error', message: 'Could not load checkout status.' }));
           }
         }
         return;
@@ -199,11 +192,6 @@ export default function CheckoutOfferStatus({
   async function handleStartCheckout() {
     if (!delivery.quote || delivery.loading) return;
     const checkoutApi = api ?? createPublicCheckoutApi();
-
-    if (!shippingGateView.canContinueToPayment) {
-      setCheckoutError('Stripe will collect the shipping details.');
-      return;
-    }
 
     const currentCartLines = readStoreCartState(window.localStorage).lines;
     if (currentCartLines.length === 0 && !workerFallbackLineItem) {
@@ -262,17 +250,13 @@ export default function CheckoutOfferStatus({
           </Badge>
         </div>
 
-        <PreorderCartNotice
-          lines={cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : []}
-        />
+        <PreorderCartNotice lines={reviewLines} />
         <DeliverySummary {...delivery} />
         {hasCheckoutLine && (
           <InternationalOrderNotice
             variant="card"
             borderTone="neutral"
-            itemTitles={(cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : []).map(
-              (line) => line.title,
-            )}
+            itemTitles={reviewLines.map((line) => line.title)}
           />
         )}
 

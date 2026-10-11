@@ -81,11 +81,7 @@ export async function createRequestIdentity(input: {
 }
 
 function compareCheckoutLines(left: CheckoutFingerprintLine, right: CheckoutFingerprintLine): number {
-  return (
-    compareStrings(left.storeItemSlug, right.storeItemSlug) ||
-    compareStrings(left.variantId, right.variantId) ||
-    left.quantity - right.quantity
-  );
+  return compareStrings(left.storeItemSlug, right.storeItemSlug) || compareStrings(left.variantId, right.variantId);
 }
 
 function compareStrings(left: string, right: string): number {

@@ -29,10 +29,6 @@ export function createOverlayFragmentLoader({
     return cache.get(normalizeOverlayPathname(pathname)) ?? '';
   }
 
-  function hasCachedHtml(pathname: string) {
-    return cache.has(normalizeOverlayPathname(pathname));
-  }
-
   async function fetchHtml(pathname: string, signal?: AbortSignal) {
     const normalizedPathname = normalizeOverlayPathname(pathname);
     const cachedHtml = cache.get(normalizedPathname);
@@ -85,7 +81,6 @@ export function createOverlayFragmentLoader({
   return {
     fetchHtml,
     getCachedHtml,
-    hasCachedHtml,
     prefetchHref,
   };
 }

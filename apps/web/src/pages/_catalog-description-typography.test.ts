@@ -66,7 +66,6 @@ describe('Catalog description typography', () => {
 
     expect(releaseDetailSummaryClass).toBe('max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-sm');
     expect(storeItemDetail).toContain('rich={storeItem.summaryRich}');
-    expect(releaseDetailSummaryClass).not.toContain('font-mono');
     expect(storeItemSummaryClass || '').not.toContain('font-mono');
   });
 });

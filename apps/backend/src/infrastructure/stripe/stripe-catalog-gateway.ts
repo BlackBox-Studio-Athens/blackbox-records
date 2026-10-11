@@ -23,10 +23,6 @@ import { CheckoutConfigurationError } from '../../application/commerce/checkout'
 import type { AppBindings } from '../../platform/env';
 import { createStripeClientOptions } from './stripe-checkout-gateway';
 
-type StripePriceWithExpandedProduct = Stripe.Price & {
-  product: string | Stripe.Product | Stripe.DeletedProduct;
-};
-
 export type StripeAccountCatalogInput = {
   productId: string;
   operationId: string;
@@ -216,14 +212,7 @@ export class StripeCatalogGatewayClient
         metadata: product.metadata,
       };
     } catch (error) {
-      if (
-        isStripeNotFoundError(error) &&
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'resource_missing'
-      )
-        return null;
+      if (isStripeNotFoundError(error) && 'code' in error && error.code === 'resource_missing') return null;
       throw error;
     }
   }
@@ -412,9 +401,9 @@ export class StripeCatalogGatewayClient
 
   public async retrievePrice(priceId: string): Promise<StripeCatalogPrice | null> {
     try {
-      const price = (await this.stripe.prices.retrieve(priceId, {
+      const price = await this.stripe.prices.retrieve(priceId, {
         expand: ['product'],
-      })) as StripePriceWithExpandedProduct;
+      });
 
       return toCatalogPrice(price);
     } catch (error) {
@@ -533,7 +522,7 @@ export class StripeCatalogGatewayClient
         starting_after: startingAfter,
       });
 
-      prices.push(...page.data.map((price) => toCatalogPrice(price as StripePriceWithExpandedProduct)));
+      prices.push(...page.data.map((price) => toCatalogPrice(price)));
       startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
     } while (startingAfter);
 
@@ -566,7 +555,7 @@ export function createStripeAccountCatalogGateway(
   );
 }
 
-function toCatalogPrice(price: StripePriceWithExpandedProduct): StripeCatalogPrice {
+function toCatalogPrice(price: Stripe.Price): StripeCatalogPrice {
   const product = getActiveProduct(price.product);
 
   return {
@@ -631,7 +620,7 @@ function createStripePriceCreateParams(
 
 function matchesCatalogPriceInput(price: StripeCatalogPrice, input: StripeCatalogPriceCreateInput): boolean {
   if (price.taxBehavior !== 'inclusive') return false;
-  if (price.priceKind !== input.kind || price.currencyCode?.toUpperCase() !== input.currencyCode.toUpperCase()) {
+  if (price.priceKind !== input.kind || price.currencyCode !== input.currencyCode.toUpperCase()) {
     return false;
   }
 
@@ -696,7 +685,7 @@ function toCatalogProduct(product: Stripe.Product): StripeCatalogProduct {
   };
 }
 
-function getActiveProduct(product: StripePriceWithExpandedProduct['product']): Stripe.Product | null {
+function getActiveProduct(product: Stripe.Price['product']): Stripe.Product | null {
   if (typeof product === 'string' || 'deleted' in product) {
     return null;
   }
@@ -753,6 +742,6 @@ function getStripeLastResponse(object: unknown): {
     : null;
 }
 
-function isStripeNotFoundError(error: unknown): boolean {
+function isStripeNotFoundError(error: unknown): error is object {
   return typeof error === 'object' && error !== null && 'statusCode' in error && Number(error.statusCode) === 404;
 }

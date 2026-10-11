@@ -24,9 +24,8 @@ interface Props {
   discoverableCategories: readonly StoreCatalogCategory[];
 }
 const { category, entries, discoverableCategories } = Astro.props;
-const distroGroups = groupStoreDistroCollectionEntries(
-  category.id === 'all' ? selectStoreCollectionEntries(entries, 'distro') : [],
-);
+const distroGroups =
+  category.id === 'all' ? groupStoreDistroCollectionEntries(selectStoreCollectionEntries(entries, 'distro')) : [];
 const catalogId = 'all-store-catalog';
 ---
 

@@ -21,6 +21,31 @@ Nx 23.2.1 owns affected selection, task scheduling and deterministic local cachi
 - The summary in `.codex-artifacts/validation/<run>/summary.json` adds `slots`, `lockWaitMs`, `formatted` and `passes`; a rerun also records `supersededPhases` and `firstPassSourceChanges`. Local evidence remains partial where browser, provider, publication or release acceptance was not run.
 - Root contract tests run as five cached groups, `workspace:test-agent`, `test-release`, `test-runner`, `test-boundaries` and `test-content`, each with declared inputs in the root `project.json`; `workspace:test` is their alias and `pnpm test:contracts` runs all five. Root lint, architecture and environment tasks also declare their inputs; only `format` keeps whole-repository inputs. An edit limited to documentation or OpenSpec change files therefore executes only formatting, plus `workspace:architecture` when it touches an agent guidance document. The root `package.json` is an input of root tasks only: a script edit there reruns root tasks and leaves module tests and package lint and type checks cached. `scripts/check-module-projects.mjs` fails when another root task hashes documentation or OpenSpec change files or when the shared `toolchain` input lists the root `package.json` again, and the weekly uncached CI run below catches an input declared too narrowly.
 
+### Local Actions rehearsal
+
+The official `act` executable is available for future, explicitly requested workflow rehearsals. It is optional; everyday development keeps `pnpm test <module|file>` and `pnpm validate`. There is no project wrapper or automatic local Actions run.
+
+On this Windows machine, WinGet installed act v0.2.89, Docker's Linux engine reports 29.8.2, and the Ubuntu image below is cached. Open a new terminal after installation so its PATH includes act. On another machine, use `winget install --id nektos.act --exact` and start Docker Desktop in Linux-container mode.
+
+Run from the repository root. Resolve the Docker endpoint explicitly because act does not automatically follow Docker contexts:
+
+```powershell
+$env:DOCKER_HOST = docker context inspect --format '{{.Endpoints.docker.Host}}'
+$localActions = @('-W', '.github/workflows/pages.yml', '-P', 'ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-24.04', '--container-architecture', 'linux/amd64', '--bind=false', '--use-gitignore=true', '--container-options', '--cpus=3')
+act @localActions --list
+act @localActions --dryrun --job check-candidate --matrix part:tests
+
+# Execution: obtain the maintainer grant and arrange an idle validation machine first.
+act @localActions --job check-candidate --matrix part:tests
+act @localActions --job e2e --matrix shard:1
+```
+
+Select one job and matrix leg: `check-candidate` has `part:lint`, `part:typecheck` and `part:tests`; `e2e` has `shard:1` through `shard:4`; `staff-previews` has `browser:chromium` and `browser:firefox`; `e2e-webkit` has no matrix. Avoid whole-workflow execution: the same file also contains UAT deployment work. The copy mode includes uncommitted source and respects Git ignore rules. Stock act reads personal and repository `.actrc` files; review those settings when diagnosing a run.
+
+Container execution remains release-tier work under the existing maintainer-issued `pnpm feedback:grant-full <minutes>` policy. Stock act does not coordinate repository machine slots or enforce workflow timeouts; run it separately from other validation and supervise it. Keep manual logs under `.codex-artifacts/act/` and record the selection and source identity when using a run as evidence.
+
+The real v0.2.89 rehearsal reached the existing workflow's lint command, but its artifact server rejected the pinned `actions/upload-artifact@v7.0.1` request (`unknown field "mime_type"`). [Upstream issue 6114](https://github.com/nektos/act/issues/6114) also describes signature-padding incompatibility. No compatibility patch or action downgrade is installed. Browser jobs may need additional Linux system libraries; their full local acceptance was not completed. GitHub remains authoritative for release acceptance, permissions, concurrency and environment protection.
+
 ### Module iteration
 
 - Find the nearest `project.json` to identify a module; inspect its effective Nx targets with `pnpm exec nx show project stock --json`.

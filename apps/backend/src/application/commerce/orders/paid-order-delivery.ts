@@ -44,7 +44,7 @@ export async function attemptPaidOrderDelivery(input: {
 
   switch (input.delivery.kind) {
     case 'shopper_confirmation':
-      return emailAttemptResult(
+      return deliveryAttemptResult(
         await sendPaidOrderShopperEmail({
           config: input.config,
           logger: input.logger,
@@ -53,7 +53,7 @@ export async function attemptPaidOrderDelivery(input: {
         }),
       );
     case 'ops_fulfillment':
-      return emailAttemptResult(
+      return deliveryAttemptResult(
         await sendPaidOrderOpsEmail({
           config: input.config,
           logger: input.logger,
@@ -78,7 +78,7 @@ export async function attemptPaidOrderDelivery(input: {
       });
       logNewsletterRegistrationOutcome(input.logger ?? console, result, { source: 'checkout-opt-in' });
 
-      return newsletterAttemptResult(result);
+      return deliveryAttemptResult(result);
     }
   }
 }
@@ -124,18 +124,10 @@ function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailI
   };
 }
 
-function emailAttemptResult(result: EmailOperationResult): PaidOrderDeliveryAttemptResult {
-  return result.status === 'sent'
-    ? { kind: 'delivered', providerMessageId: null }
-    : {
-        kind: 'not_delivered',
-        retryable: result.retryable,
-        safeReason: result.providerSafeReason ?? 'unknown',
-      };
-}
-
-function newsletterAttemptResult(result: NewsletterRegistrationResult): PaidOrderDeliveryAttemptResult {
-  return result.status === 'registered'
+function deliveryAttemptResult(
+  result: EmailOperationResult | NewsletterRegistrationResult,
+): PaidOrderDeliveryAttemptResult {
+  return result.status === 'sent' || result.status === 'registered'
     ? { kind: 'delivered', providerMessageId: null }
     : {
         kind: 'not_delivered',

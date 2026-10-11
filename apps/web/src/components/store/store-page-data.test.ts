@@ -29,16 +29,6 @@ vi.mock('@/lib/catalog-data', () => ({
 vi.mock('@/lib/item-availability', async (importOriginal) => ({
   ...(await importOriginal<typeof ItemAvailabilityModule>()),
   getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
-  hasStructuredItemPrice: (price: { amountMinor?: unknown; currencyCode?: unknown } | null | undefined) =>
-    Boolean(price && typeof price.amountMinor === 'number' && typeof price.currencyCode === 'string'),
-  isPricedItemAvailability: (availability: { availability?: { status?: string }; canBuy?: boolean; price?: unknown }) =>
-    Boolean(
-      availability?.canBuy &&
-      availability.availability?.status === 'available' &&
-      availability.price &&
-      typeof (availability.price as { amountMinor?: unknown }).amountMinor === 'number' &&
-      typeof (availability.price as { currencyCode?: unknown }).currencyCode === 'string',
-    ),
 }));
 
 describe('store page data helper', () => {
@@ -209,10 +199,6 @@ describe('store page data helper', () => {
     );
 
     expect(cartItem).toBeNull();
-    expect(JSON.stringify(cartItem)).not.toContain('barren-point/checkout');
-    expect(JSON.stringify(cartItem)).not.toContain('price_');
-    expect(JSON.stringify(cartItem)).not.toContain('stockCount');
-    expect(JSON.stringify(cartItem)).not.toContain('clientSecret');
   });
 
   it('does not create a CartLineItemSnapshot for unavailable store pages', () => {

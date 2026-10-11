@@ -40,7 +40,9 @@ describe('app shell startup closure', () => {
     );
     expect(source).toContain("const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch')");
     expect(source.match(/preloadStoreDistroSearch\(\)/g)).toHaveLength(2);
-    expect(source).toContain("if (parseShellSectionRoute(pathname)?.kind === 'store')");
+    expect(source).toContain(
+      "if (kind !== 'store') return undefined;\n    void preloadStoreDistroSearch().catch(() => undefined);",
+    );
     expect(source).toContain('parseShellSectionRoute(new URL(href, window.location.href).pathname)');
     expect(source).not.toContain("document.readyState === 'complete'");
     expect(source).not.toContain("window.addEventListener('load', connect");

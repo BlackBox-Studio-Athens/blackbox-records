@@ -1,12 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('astro:config/client', () => ({
-  base: '/blackbox-records/',
-  site: 'https://blackbox-studio-athens.github.io',
-}));
+import { describe, expect, it } from 'vitest';
 
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from '@blackbox/content-model';
 import { buildEmbeddedPlayerData } from './music';

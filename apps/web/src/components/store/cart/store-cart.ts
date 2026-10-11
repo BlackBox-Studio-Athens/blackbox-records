@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
+import { createMoney, formatMoney } from './money';
 export { STORE_CART_ADD_ITEM_EVENT } from './store-cart-events';
 
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
@@ -79,25 +79,15 @@ const cartLineItemSnapshotSchema = z
   .transform((snapshot, context): CartLineItemSnapshot => {
     const priceKind = snapshot.priceKind ?? 'fixed';
 
-    if (priceKind === 'pay_what_you_want') {
-      return {
-        ...snapshot,
-        priceAmountMinor: null,
-        priceCurrencyCode: snapshot.priceCurrencyCode.toUpperCase(),
-        priceKind,
-      };
-    }
-
-    if (snapshot.priceAmountMinor === null) {
+    if (priceKind === 'fixed' && snapshot.priceAmountMinor === null) {
       context.addIssue({ code: z.ZodIssueCode.custom, message: 'Fixed cart line price amount is missing.' });
       return z.NEVER;
     }
 
-    const price = createMoney({ amountMinor: snapshot.priceAmountMinor, currencyCode: snapshot.priceCurrencyCode });
     return {
       ...snapshot,
-      priceAmountMinor: moneyToMinorAmount(price),
-      priceCurrencyCode: moneyToCurrencyCode(price),
+      priceAmountMinor: priceKind === 'pay_what_you_want' ? null : snapshot.priceAmountMinor,
+      priceCurrencyCode: snapshot.priceCurrencyCode.toUpperCase(),
       priceKind,
     };
   });
@@ -229,18 +219,11 @@ export function addStoreCartItem(
   });
 }
 
-function setCartLineQuantityByVariant(
-  variantId: string,
-  quantity: unknown,
-  state: StoreCartState = createEmptyStoreCartState(),
-): StoreCartState {
+function setCartLineQuantityByVariant(variantId: string, quantity: unknown, state: StoreCartState): StoreCartState {
   const sanitizedQuantity = sanitizeCartQuantity(quantity);
-  const currentState = normalizeStoreCartState(state);
 
   return normalizeStoreCartState({
-    lines: currentState.lines.map((line) =>
-      line.variantId === variantId ? { ...line, quantity: sanitizedQuantity } : line,
-    ),
+    lines: state.lines.map((line) => (line.variantId === variantId ? { ...line, quantity: sanitizedQuantity } : line)),
   });
 }
 

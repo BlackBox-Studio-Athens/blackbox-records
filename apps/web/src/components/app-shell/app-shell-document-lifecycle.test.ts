@@ -31,7 +31,7 @@ describe('app shell document lifecycle', () => {
     const { body } = readDocumentRoutingEffect();
 
     expect(body).toContain('rememberDocumentIslandServerMarkup(document);');
-    expect(body).toContain('scheduleIdleShellTask(');
+    expect(body).toContain('scheduleShellIdleTask(window,');
     expect(body).toContain('cancelIdleSnapshot();');
     expect(body).not.toMatch(/^\s*cacheDocumentSnapshot\(\);$/m);
   });

@@ -1,0 +1,78 @@
+# Backend runtime: actual compiled-chain asset causal experiment
+
+Completed **causal experiment only** by original module29 implementer `01a126b3-3ce1-7692-848a-6adb8165187a`, on existing `main`, 2026-10-10. No product repair or module/browser/release acceptance is claimed. HEAD before/after: `f7b019ca043e5f082c5b7aca67c4f0dbb3685ed0`.
+
+The full actual compiled CMS chain reproduces the corruption with a fresh ephemeral registered actor. Three separately consumed stages contain correct bytes, while the untouched streamed HTTP response is corrupt. The final authorized observation demonstrates that materializing the **full binary font after named RPC**, then returning those bytes with the original response status and headers, delivers a valid font in this fixture. This supports a narrowly scoped Local workaround candidate; it does not establish an upstream defect or a production fix.
+
+## Inputs and execution boundary
+
+Read/reused the complete prepared result, plan/inputs/wrapper, complete font diagnosis and audit, complete support result/handoff, separate registered-DO addendum and retained evidence. Their source-bound hashes matched admission and closeout. The earlier reduced external and registered-DO models passed, but were not treated as proof of the actual compiled chain.
+
+The previous PID4404 stack had exited; ports4321/8787/12110–12 were free. `pnpm openspec:guard` passed. The documented `pnpm dev:stack:stripe-mock` launcher started the owned normal stack, retaining existing Local data/publication. Its ordinary rebuilds refreshed generated identities. No diagnostic migration, private-context copy, snapshot publication/restore, canonical state edit or hosted action was performed. The fixture's D1/R2/DO storage was ephemeral (`persist:false`).
+
+The producer was the **running compiled** `blackbox-public-local` worker, its actual asset-fronted registered entrypoint and real `ASSETS`. Upstream URL:
+
+`http://127.0.0.1:4321/blackbox-records/_astro/veneer_regular.FoOrAPIo.woff2`
+
+The consumer imported the entire compiled CMS entrypoint, exported the real classes/default for the baseline, and subsequently subclassed the real native `CmsRuntime` for observations. Original `app.fetch`, preview-host routing, registered namespace, `getByName('editorial').fetchWithBindings`, authentication, `previewRead`, service binding and native Request/Response constructors remained in the path. All491 compiled CMS module/config files in each ignored mirror were byte-matched against the respective actual build; no import was replaced with a reduced body, fake DurableObjectState or fake service producer.
+
+Generated CMS config semantics were retained, including `2026-08-31`, `nodejs_compat`, resource binding names, migrations, immediate DO strategy, `PUBLIC_SITE` service target and asset middleware. Fixture-only differences: worker name/main, removal of generated config-location metadata, rebasing asset/migration paths and ephemeral persistence. The public worker retained its actual `2026-09-16` config. Node `v24.21.0`, Wrangler `4.141.0`, Miniflare `5.20260925.0-alpha`, workerd `1.20260925.1`; observed workerd executable SHA-256 `67e15f27397a2bfaba721b4896537d9883f17c074b0ddfee3d42e30a9b534982`.
+
+## Results and entry/bypass proof
+
+Every body below is78,616 bytes. Full HTTP/body files, status, headers, chunk hashes and registries/process identities are retained under `.codex-artifacts/simplification/backend-runtime-asset-causal-execution/`.
+
+| Observation                                                        | Body SHA-256                                                       | Meaning                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------- |
+| Normal public HTTP control                                         | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Correct source bytes                                    |
+| Normal private HTTP before/after main observations                 | `d848014b8d7cd72183a5135b3fee7b4f7f102ea47c2a89338564e786390ae57e` | Corruption persists after normal restart                |
+| Unmodified full-class/default baseline, fresh ephemeral storage    | `d848014b8d7cd72183a5135b3fee7b4f7f102ea47c2a89338564e786390ae57e` | Persisted editorial state is not required to reproduce  |
+| Separate GET: real PUBLIC_SITE response before header wrapper      | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Actor hook returns exact upstream URL and actor ID      |
+| Separate GET: original wrapper response consumed inside actor      | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Actual actor hook returns matching actor ID             |
+| Separate GET: original app.fetch response consumed after named RPC | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Outer hook returns its stage marker                     |
+| Separate GET: original stream returned unchanged                   | `d848014b8d7cd72183a5135b3fee7b4f7f102ea47c2a89338564e786390ae57e` | Original bad body retained                              |
+| Later logging/stream hook controls                                 | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Perturbed observations; not replacement baseline passes |
+| One final authorized GET: full binary materialization after RPC    | `92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d` | Complete binary-font delivery succeeds                  |
+
+The three initial consumed-stage responses carry the full observed body as base64 in diagnostic JSON, not just a digest. Each consumer writes a separate decoded `.woff2` file. They deliberately change body ownership/return representation. No clone/tee was used. They establish byte identity at those consumption points, not equivalence of untouched streaming delivery.
+
+Initial `console.log` markers were suppressed by Wrangler. A later stream observation with info logging and additional outer logging returned good bytes but still exposed no console markers. The following explicitly perturbed header observation returned `X-Asset-Probe-Actor: 8973b39281619c36f8fedf90ac1a02924a6dcf4d411d429af9596b185ecb3697` and `X-Asset-Probe-Outer: after-original-app-fetch`; this proves the actual actor and outer entry execute at this fixed URL. Those diagnostic headers are confined to the ignored observation and were absent from the unmodified baseline and final binary case. Their good body is not claimed as an unchanged-header stream proof.
+
+For the binary case, synchronous `console.error` captured all four real markers without diagnostic HTTP headers: outer entry, actual actor with the same namespace ID, completion of original `app.fetch`, and materialization of78,616 bytes. `binary-observation/instrumented.log` retains them. Thus an asset middleware bypass is not being mislabeled as an actor observation.
+
+The actual CMS serving config has `ASSETS.run_worker_first:true`, `directory:../client`, resolved to `apps/backend/dist/client`. Its physical font `assets/fonts/brand/veneer_regular.woff2` is also78,616 bytes/hash `92be…e2d`. There is **no** physical `blackbox-records/_astro/veneer_regular.FoOrAPIo.woff2` at that CMS asset root. The relevant source and public build copies are valid too. No corrupt physical derived font or direct CMS-ASSETS bypass was found.
+
+Correct source block offsets: `0,8192,16384,24576,32768,40960,49152,57344,65536,73728`. Bad untouched response offsets: `0,8192,57344,16384,24576,32768,40960,49152,65536,73728` (last block4888 bytes). The response reorders intact blocks; it does not differ in length.
+
+## Binary candidate limits and precise follow-up
+
+The final mode consumes original `app.fetch` after RPC into one owned ArrayBuffer and returns `new Response(bytes, {status, statusText, headers: original.headers})`. The client received complete binary `font/woff2`, with private/no-store, no-referrer, nosniff and noindex/nofollow retained. Transport framing changed from chunked to `Content-Length:78616`. ETag changed between the retained untouched control and this final response (`"025c664fe88f257e72cbfb2d5574c738"` versus `"8a7b07e5d4a0fc9cf56c6ad4416d6345"`); the final observation required a second documented stack rebuild/producer instance after the earlier owned stack had already been closed. The fixture forwards the contemporaneous original headers, but no pre-buffer header digest was captured in this last run. Therefore the cross-restart ETag comparison does not independently prove ETag equality or attribute its change to buffering.
+
+Source and received binary WOFF2 payloads decompress successfully to153,255 bytes, SHA-256 `eabc54770c5c58b9817ff1cb6a454ee2ca2487a95196923e1e74929ce7f9fc12`. The preserved corrupt stream fails with `ERR__ERROR_FORMAT_BLOCK_LENGTH_1`. This reuses the hash-matched WOFF2 directory offset102/compressed length78,512 and is a bounded Brotli/container check, not full OpenType sanitizer/browser acceptance. `binary-check.json` preserves exact header/framing comparisons and these outcomes.
+
+The raw binary runner's generic `materialized:false` flag describes its raw client-body branch and is misleading about worker ownership. The explicit final evidence records **worker materialization:true / client body:binary font**. Raw histories remain unchanged.
+
+A possible repair belongs to **module29 `apps/backend/src/cms-worker.ts`**, at the outer preview-host branch immediately after named `fetchWithBindings` resolves. The demonstrated operation is post-RPC full binary materialization, not buffering inside `previewRead`. A minimal follow-up candidate would constrain that operation to LOCAL, preview-host GETs, status200 `font/woff2` responses, after all existing actor path/auth/privacy guards. It would retain native status/statusText/headers and leave HEAD, partial/not-modified responses, errors, JSON/media/HTML and UAT/PRD streaming alone. Do not move PUBLIC_SITE fetching outside the actor or bypass its authorization/asset whitelist.
+
+This is a candidate, **not an applied or fully proven repair**. Evidence covers this one font/installed Local chain; later logging perturbations also produced valid streams, so buffering is not proven to be the unique or necessary remedy. Full buffering waits for the complete response and uses O(body-size) Local memory; first-request5408ms includes fixture/runtime/service startup and diagnostic logging, and is not a performance measurement. Lazy transport/lifetime/scheduling can affect bytes before or after the post-RPC consumption point. The exact Miniflare/workerd/SDK component at fault remains unassigned; no upstream defect is claimed. Parent can authorize the narrowly owned candidate and require actual normal private font/browser acceptance with exact retained guards before accepting it. No font replacement, version pin, readiness/timeout/assertion weakening or blanket cache wipe is supported.
+
+## Fingerprints, commands and resources
+
+Full owned9-file manifest: `e03d91f3e0b8a3efeaa68e26c7caff12a13d95487736d644e8ce9706474d3952`, unchanged from preparation/current module metadata. Sole relevant production source `cms-worker.ts`: `69b7e102ae1915fad5ff91dc0f1395a9bd7847938cc63981eae46ee7f90540a1`. Connected/source26-file manifest: `b4c2ce5e2d6c221b5b8fee2849ee6202a19db3c667024dea86aea27c323e862f`. Protected11-file manifest: `ab40184a4f25a5c5d3b8f6f1e8549cdab0c42c2bc10a86201bacd8bfebb549ad`. Four source/public font manifest: `dae16cde2d278c128e28b8de12aec4d7a3bec3e0f577887dffac65754090f211`. All covered source/protected/font inputs match before/after; each native run's compiled inputs are stable across that run.
+
+| Generated compiled manifest | Prepared                                                           | First documented restart/main observations                         | Second documented restart/binary observation                       |
+| --------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| CMS491 records              | `c846f0bdeb243eae5b413a9f0f541df6eb515fc5b875e5534c1793b422e27aaf` | `8f4e207b0b6450b57817f78c698dfe6ed3fe98802bbee258165d022cd7ef50ea` | `a00aa6957b565ec1bab2c7565529459435150af298979af1cf989cf99d537f98` |
+| Public146 records           | `b800ebad889bb4b8c6aa03672592a1a2a030939232e3c574f349b020b99f0337` | `67d7840119eb3a11673128dbb075f58915e841fcb3d80904388d7ac3a7397195` | `4bdcf84ad3e7c4cd7f919d27afa2ccc81cb4d765f2f40d4bfdc8607a36609a93` |
+
+Exact current entry/config/module records, original class module mirrors, and native config/service/process identities are retained in the per-attempt input/mirror/evidence files. Rebuilds changed generated artifacts only; there were no manual canonical generated edits.
+
+Commands: `pnpm openspec:guard` passed; documented `pnpm dev:stack:stripe-mock` started twice; ignored runner reused the existing `unstable_dev` fixture runner and acquired/released one published machine slot per native launch sequence; `node …/run.mjs` produced the unmodified baseline/four separate observations, the narrowly required hook controls, and one binary observation. Offline Node Brotli/body/header comparison produced `binary-check.json`; owned cleanup produced `closeout.json`; final `pnpm local:status` reported no stack,0/3 slots, Chrome free. Every exec used `login:false` and explicit no-profile PowerShell execution; child workers used `windowsHide:true`.
+
+Setup histories retained: first no_bundle wrapper import outside module root failed with `Invalid module specifier`; no product files were changed to solve it. An ignored byte-matched compiled mirror fixed bootstrap. A cleanup assertion initially rejected an already-unregistered normal service; that error is retained and corrected to accept absence while rejecting a changed holder. Prior failures, prep, font/support/addendum/raw histories, module29 canonical review/implementation/type note and shared tasks are unchanged.
+
+Both owned normal stacks were closed (sessions23899 and43916; root PIDs43344 and13612). All owned isolated children stopped with exit0; native experiment slot leases were released. Normal/public/fixture/debug ports have no listeners. Normal registrations were already removed by shutdown; final registry is `{}`. The stale own stack lease was reclaimed through the existing helper; final lease is null. No unrelated processes were killed.
+
+Production delta: **0 physical/nonblank lines,0 files modified/added/deleted**. Test delta: **0 physical/nonblank lines,0 files modified/added/deleted**. One new audit Markdown note plus ignored fixture copies/configs/logs/body/machine evidence were saved. No canonical test, font, runtime/version, configuration, dependency, graph, task marker, commit or provider change. No test/lint/global/browser reruns; this source0 turn establishes only bounded native causal evidence. Tasks remain10/60 complete; prior failed private CMS/browser and other acceptance histories remain authoritative pending final verification.
+
+Machine evidence index: `.codex-artifacts/simplification/backend-runtime-asset-causal-execution/evidence.json`. Core native result: `attempt-02/evidence-completed.json`; final binary result/log: `binary-observation/evidence-completed.json` / `instrumented.log`; body/decompression comparison: `binary-check.json`; final identities/resources: `closeout.json`.

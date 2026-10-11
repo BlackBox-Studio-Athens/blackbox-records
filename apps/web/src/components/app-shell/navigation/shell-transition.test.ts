@@ -11,14 +11,10 @@ describe('shell page enter transition', () => {
     await warmShellNavigationMotion();
     const mainElement = { style: { removeProperty: vi.fn() } } as unknown as HTMLElement;
 
-    // motion/mini loads through a dynamic import, so retry until the animation runs.
-    await vi.waitFor(() => {
-      triggerShellPageEnterTransition({
-        animationsRef: { current: [] },
-        getMainElement: () => mainElement,
-        shouldReduceMotion: () => false,
-      });
-      expect(animate).toHaveBeenCalled();
+    triggerShellPageEnterTransition({
+      animationsRef: { current: [] },
+      getMainElement: () => mainElement,
+      shouldReduceMotion: () => false,
     });
 
     expect(animate).toHaveBeenLastCalledWith(mainElement, { opacity: [0.68, 1] }, expect.any(Object));

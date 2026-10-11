@@ -70,9 +70,7 @@ describe('verifyOperatorAccess', () => {
     ['missing', undefined],
     ['malformed', 'not-a-jwt'],
   ])('rejects a %s assertion', async (_case, token) => {
-    const signer = await createSigner('key-1');
-
-    await expect(verifyHosted(token, createLocalJWKSet({ keys: [signer.jwk] }))).resolves.toMatchObject({
+    await expect(verifyHosted(token, createLocalJWKSet({ keys: [] }))).resolves.toMatchObject({
       status: 'unauthorized',
     });
   });
@@ -85,9 +83,8 @@ describe('verifyOperatorAccess', () => {
       .setIssuedAt()
       .setExpirationTime('5m')
       .sign(new TextEncoder().encode('test-secret-with-enough-length'));
-    const signer = await createSigner('key-1');
 
-    await expect(verifyHosted(token, createLocalJWKSet({ keys: [signer.jwk] }))).resolves.toMatchObject({
+    await expect(verifyHosted(token, createLocalJWKSet({ keys: [] }))).resolves.toMatchObject({
       status: 'unauthorized',
     });
   });
@@ -103,8 +100,7 @@ describe('verifyOperatorAccess', () => {
     ['invalid email', { email: 'invalid' }],
   ])('rejects %s', async (_case, overrides) => {
     const trusted = await createSigner('trusted');
-    const other = await createSigner('trusted');
-    const signer = 'signingKey' in overrides && overrides.signingKey === 'other' ? other : trusted;
+    const signer = 'signingKey' in overrides ? await createSigner('trusted') : trusted;
     const token = await signer.sign(overrides);
 
     await expect(verifyHosted(token, createLocalJWKSet({ keys: [trusted.jwk] }))).resolves.toMatchObject({

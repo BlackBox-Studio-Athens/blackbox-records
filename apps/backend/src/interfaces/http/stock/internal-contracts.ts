@@ -38,43 +38,31 @@ export const getInternalApiDescriptionRoute = createRoute({
 });
 
 const internalContractModules = [
-  {
-    name: 'internal-discovery',
-    paths: [getInternalApiDiscoveryRoute.path, getInternalApiDescriptionRoute.path],
-  },
-  {
-    name: 'internal-orders',
-    paths: [
-      '/api/internal/orders/search',
-      '/api/internal/orders',
-      '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
-      '/api/internal/order-withdrawals',
-    ],
-  },
-  {
-    name: 'internal-stock',
-    paths: [
-      '/api/internal/inventory',
-      '/api/internal/variants',
-      '/api/internal/variants/{variantId}/stock',
-      '/api/internal/variants/{variantId}/stock/zero-stock-state',
-      '/api/internal/variants/{variantId}/stock/low-stock-notice',
-      '/api/internal/variants/{variantId}/stock/preorder',
-      '/api/internal/variants/{variantId}/stock/history',
-      '/api/internal/variants/{variantId}/stock/changes',
-      '/api/internal/variants/{variantId}/stock/counts',
-    ],
-  },
-  {
-    name: 'internal-catalog',
-    paths: [
-      '/api/internal/variants/{variantId}/selling',
-      '/api/internal/variants/{variantId}/price/initialize',
-      '/api/internal/variants/{variantId}/price',
-      '/api/internal/items/setup',
-      '/api/internal/variants/{variantId}/publication',
-    ],
-  },
+  [getInternalApiDiscoveryRoute.path, getInternalApiDescriptionRoute.path],
+  [
+    '/api/internal/orders/search',
+    '/api/internal/orders',
+    '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
+    '/api/internal/order-withdrawals',
+  ],
+  [
+    '/api/internal/inventory',
+    '/api/internal/variants',
+    '/api/internal/variants/{variantId}/stock',
+    '/api/internal/variants/{variantId}/stock/zero-stock-state',
+    '/api/internal/variants/{variantId}/stock/low-stock-notice',
+    '/api/internal/variants/{variantId}/stock/preorder',
+    '/api/internal/variants/{variantId}/stock/history',
+    '/api/internal/variants/{variantId}/stock/changes',
+    '/api/internal/variants/{variantId}/stock/counts',
+  ],
+  [
+    '/api/internal/variants/{variantId}/selling',
+    '/api/internal/variants/{variantId}/price/initialize',
+    '/api/internal/variants/{variantId}/price',
+    '/api/internal/items/setup',
+    '/api/internal/variants/{variantId}/publication',
+  ],
 ] as const;
 
-export const internalContractPaths = internalContractModules.flatMap((contractModule) => contractModule.paths);
+export const internalContractPaths = internalContractModules.flat();

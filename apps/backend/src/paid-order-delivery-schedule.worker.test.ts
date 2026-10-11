@@ -1,7 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it, vi } from 'vitest';
 
-import worker from './index';
 import { runPaidOrderDeliverySchedule } from './application/commerce/orders/run-paid-order-delivery-schedule';
 import { productEnvironmentProfiles, type AppBindings } from './platform/env';
 
@@ -11,9 +10,7 @@ const getBooleanValue: NonNullable<AppBindings['FLAGS']>['getBooleanValue'] = ()
 const unavailableFlags = { getBooleanValue } as NonNullable<AppBindings['FLAGS']>;
 
 describe('paid order delivery schedule', () => {
-  it('exports one scheduled handler and treats an empty delivery queue as a no-op', async () => {
-    expect(worker.scheduled).toBeTypeOf('function');
-
+  it('treats an empty delivery queue as a no-op', async () => {
     await expect(runPaidOrderDeliverySchedule(env, new Date('2026-09-01T10:30:00.000Z'))).resolves.toEqual([]);
   });
 

@@ -1,4 +1,4 @@
-import { createBlackBoxEmailTemplate } from './templates';
+import { createBlackBoxEmailTemplate, escapeHtml } from './templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
 import { latestEmailShipEstimate, shipEstimateText } from './ship-estimate-format';
 
@@ -22,7 +22,6 @@ export type ShopperNotificationStatus =
     };
 
 const emailDesignTokens = {
-  accent: '#922f3f',
   accentMuted: '#cf6b80',
   border: '#262626',
   borderStrong: '#2b2b2b',
@@ -32,7 +31,6 @@ const emailDesignTokens = {
   panelRaised: '#141414',
   shell: '#0d0d0d',
   text: '#f5f5f5',
-  textSubtle: '#d8d8d8',
   warningBackground: '#211113',
   warningBorder: '#922f3f',
   warningText: '#ffd7de',
@@ -128,14 +126,16 @@ export function buildPaidOrderOpsEmail(input: {
         'Keep manual shipment notes in operator records.',
       ];
 
+  const money = monetaryRows(input.order);
+
   return createBlackBoxEmailTemplate({
     bodyHtml: renderEmailFrame({
       brand: input.brand,
       contentHtml: [
         renderActionList(actions),
         warnings.length ? renderWarningList(warnings) : '',
-        renderLineItemSummary(input.order, { includeVariant: true }),
-        monetaryRows(input.order).length ? renderDetailTable(monetaryRows(input.order)) : '',
+        renderLineItemSummary(input.order),
+        money.length ? renderDetailTable(money) : '',
         renderDetailSection('Order', [
           ['Reference', [input.order.orderReference]],
           ['Payment state', ['Paid']],
@@ -163,7 +163,7 @@ export function buildPaidOrderOpsEmail(input: {
       `Order reference: ${input.order.orderReference}`,
       'Payment state: Paid',
       `Total paid: ${formatTotalPaid(input.order)}`,
-      ...monetaryRows(input.order).map(([label, amount]) => `${label}: ${amount}`),
+      ...money.map(([label, amount]) => `${label}: ${amount}`),
       `Item / variant / quantity: ${formatOpsLineItems(input.order)}`,
       '',
       'Shopper:',
@@ -339,25 +339,18 @@ function renderStackedValues(values: string[]): string {
     .join('');
 }
 
-function renderLineItemSummary(order: PaidOrderEmailInput, options: { includeVariant: boolean }): string {
+function renderLineItemSummary(order: PaidOrderEmailInput): string {
   return [
     `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 20px 0;border:1px solid ${emailDesignTokens.borderStrong};background:${emailDesignTokens.panelRaised};">`,
     `<tr><td colspan="2" style="padding:14px 16px 10px 16px;color:${emailDesignTokens.metadata};font-size:11px;line-height:1;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;">Items</td></tr>`,
-    ...order.lineItems.map((lineItem) => renderLineItemRow(lineItem, options)),
+    ...order.lineItems.map((lineItem) => renderLineItemRow(lineItem)),
     '</table>',
   ].join('');
 }
 
-function renderLineItemRow(
-  lineItem: PaidOrderEmailInput['lineItems'][number],
-  options: { includeVariant: boolean },
-): string {
+function renderLineItemRow(lineItem: PaidOrderEmailInput['lineItems'][number]): string {
   const itemName = lineItem.displayName;
-  const itemMeta = [
-    lineItem.optionLabel,
-    `Quantity: ${lineItem.quantity}`,
-    options.includeVariant ? `Variant: ${lineItem.variantId}` : null,
-  ]
+  const itemMeta = [lineItem.optionLabel, `Quantity: ${lineItem.quantity}`, `Variant: ${lineItem.variantId}`]
     .filter(Boolean)
     .join(' | ');
   const productImageStyle = [
@@ -461,8 +454,8 @@ function monetaryRows(order: PaidOrderEmailInput): Array<[string, string]> {
     !order.acceptedParcelTier
   )
     return [];
-  const format = (amount: number) =>
-    new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(amount / 100);
+  const formatter = new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' });
+  const format = (amount: number) => formatter.format(amount / 100);
   return [
     ['Merchandise', format(order.merchandiseGrossMinor)],
     [
@@ -508,13 +501,4 @@ function collectOpsWarnings(shopperNotification: ShopperNotificationStatus): str
   }
 
   return warnings;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

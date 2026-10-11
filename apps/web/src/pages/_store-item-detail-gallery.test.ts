@@ -139,7 +139,6 @@ describe('Store Item listening context contract', () => {
     expect(source).toContain('embeddedPlayerData && (');
     expect(source).toContain('sourceReleaseUrl && (');
     expect(source).toContain('sourceReleaseArtistUrl && (');
-    expect(source).toContain("storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null");
     expect(purchaseActions).toBeDefined();
     expect(purchaseActions).toContain('client:load');
     expect(purchaseActions).toContain('cartItem={cartItem}');

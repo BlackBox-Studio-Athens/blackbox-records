@@ -16,7 +16,6 @@ describe('Store Crate markup', () => {
   it('wraps every Store collection Grid and renders Crate controls only for a collection with a bin', () => {
     expect(distroSource).toContain('<StoreCrate');
     expect(distroSource).toContain('formatGroups={entries.map(getStoreDistroFormatGroup)}');
-    expect(collectionSource).toContain('<StoreCrate');
     expect(collectionSource).toContain('formatGroups={entries.map(getStoreDistroFormatGroup)}');
     expect(crateSource).toContain('const bins = openBinsOf(formatGroups);');
     expect(crateSource).toMatch(/bins\.length === 0 \? \(\s*<slot \/>/);

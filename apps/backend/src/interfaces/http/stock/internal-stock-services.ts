@@ -59,7 +59,6 @@ export function createInternalStockServices(bindings: AppBindings) {
         availableOnlineQuantity: availability?.availableOnlineQuantity ?? 0,
         heldQuantity: availability?.heldQuantity ?? 0,
         stock: state,
-        itemType: record?.itemType ?? null,
         ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}),
       };
     },

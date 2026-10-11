@@ -1,9 +1,8 @@
-import { Resend, type ErrorResponse } from 'resend';
+import type { Resend, ErrorResponse } from 'resend';
 
 import {
   type EmailProviderGateway,
   type EmailProviderOperationResult,
-  type EmailRuntimeConfig,
   type ProviderEmailMessage,
   type ProviderNewsletterContact,
 } from '../../application/email';
@@ -86,10 +85,6 @@ export class ResendEmailGateway implements EmailProviderGateway {
       }),
     );
   }
-}
-
-export function createResendEmailGatewayFromConfig(config: EmailRuntimeConfig): EmailProviderGateway {
-  return new ResendEmailGateway(new Resend(config.apiKey));
 }
 
 function mapResendResponse(response: ResendResponse): EmailProviderOperationResult {

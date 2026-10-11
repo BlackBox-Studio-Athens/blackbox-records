@@ -68,8 +68,13 @@ describe('Worker observability logger', () => {
         'https://backend.test/api/checkout/sessions/cs_test_123/state?signature=secret&email=buyer@example.com',
       ),
     ).toBe('/api/checkout/sessions/:checkoutSessionId/state');
-    expect(normalizeTelemetryPath('/api/internal/variants/variant_123/stock/change?token=secret')).toBe(
-      '/api/internal/variants/:variantId/stock/change',
+    for (const suffix of ['', '/history', '/change', '/count']) {
+      expect(normalizeTelemetryPath(`/api/internal/variants/variant_123/stock${suffix}?token=secret`)).toBe(
+        `/api/internal/variants/:variantId/stock${suffix}`,
+      );
+    }
+    expect(normalizeTelemetryPath('/api/internal/variants/variant_123/stock/zero-stock-state?token=secret')).toBe(
+      '/api/internal/variants/variant_123/stock/zero-stock-state',
     );
   });
 

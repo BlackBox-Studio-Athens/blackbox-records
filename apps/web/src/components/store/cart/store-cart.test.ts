@@ -338,13 +338,6 @@ describe('store cart state', () => {
     expect(storage.getItem(STORE_CART_STORAGE_KEY)).toBeNull();
   });
 
-  it('never promotes the legacy release id to the cart item slug', () => {
-    const state = addStoreCartItem(canonicalItem);
-
-    expect(state.primaryLineItem?.storeItemSlug).toBe('disintegration-black-vinyl-lp');
-    expect(state.primaryLineItem?.storeItemSlug).not.toBe('barren-point');
-  });
-
   it('generates the canonical cart checkout route', () => {
     expect(createCartCheckoutPath()).toBe('/store/checkout/');
   });

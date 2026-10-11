@@ -12,8 +12,6 @@ import {
   readParsedShellPageSnapshot,
   rememberDocumentIslandServerMarkup,
   sanitizeStoreCrateSnapshot,
-  scheduleIdleShellTask,
-  SHELL_IDLE_SNAPSHOT_TIMEOUT_MS,
   updateDocumentMetadata,
 } from './shell-page-snapshot';
 
@@ -853,36 +851,5 @@ describe('shell page snapshots', () => {
 
     expect(main.querySelectorAll).toHaveBeenCalledTimes(1);
     expect(main.querySelectorAll).toHaveBeenCalledWith('astro-island');
-  });
-
-  it('schedules idle work with a timeout and cancels it', () => {
-    const task = vi.fn();
-    const scheduler = {
-      cancelIdleCallback: vi.fn(),
-      clearTimeout: vi.fn(),
-      requestIdleCallback: vi.fn(() => 42),
-      setTimeout: vi.fn(),
-    };
-
-    const cancel = scheduleIdleShellTask(task, scheduler as unknown as Window);
-    expect(scheduler.requestIdleCallback).toHaveBeenCalledWith(task, { timeout: SHELL_IDLE_SNAPSHOT_TIMEOUT_MS });
-    expect(scheduler.setTimeout).not.toHaveBeenCalled();
-
-    cancel();
-    expect(scheduler.cancelIdleCallback).toHaveBeenCalledWith(42);
-  });
-
-  it('falls back to a timer where requestIdleCallback is missing', () => {
-    const task = vi.fn();
-    const scheduler = {
-      clearTimeout: vi.fn(),
-      setTimeout: vi.fn(() => 7),
-    };
-
-    const cancel = scheduleIdleShellTask(task, scheduler as unknown as Window);
-    expect(scheduler.setTimeout).toHaveBeenCalledWith(task, expect.any(Number));
-
-    cancel();
-    expect(scheduler.clearTimeout).toHaveBeenCalledWith(7);
   });
 });

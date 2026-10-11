@@ -19,38 +19,22 @@ export type PlayerShellViewState = {
 };
 
 export function derivePlayerShellViewState(activeSession: ActivePlayerSession | null): PlayerShellViewState {
-  if (!activeSession) {
-    const presentation = derivePlayerPresentationState({
-      hasEmbedInteraction: false,
-      hasSession: false,
-      isLoaded: false,
-    });
-
-    return {
-      activePlayerEmbedLayout: '',
-      activePlayerProviderId: '',
-      activePlayerTitle: '',
-      isMiniPlayerVisible: presentation.isMiniPlayerVisible,
-      isPlayerLoading: presentation.isLoading,
-      miniPlayerStatusLabel: presentation.miniPlayerStatusLabel,
-      playerModalDismissActionLabel: presentation.closeActionLabel,
-      playerModalDismissAriaLabel: presentation.closeActionAriaLabel,
-    };
-  }
-
-  const isLoaded = activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded';
-  const presentation = derivePlayerPresentationState({
-    hasEmbedInteraction: activeSession.hasEmbedInteraction,
-    hasSession: true,
-    isLoaded,
-    providerLabel: PLAYER_PROVIDER_LABELS[activeSession.providerId],
-    status: activeSession.status,
-  });
+  const presentation = derivePlayerPresentationState(
+    activeSession
+      ? {
+          hasEmbedInteraction: activeSession.hasEmbedInteraction,
+          hasSession: true,
+          isLoaded: activeSession.iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState === 'loaded',
+          providerLabel: PLAYER_PROVIDER_LABELS[activeSession.providerId],
+          status: activeSession.status,
+        }
+      : { hasEmbedInteraction: false, hasSession: false, isLoaded: false },
+  );
 
   return {
-    activePlayerEmbedLayout: activeSession.embedLayout,
-    activePlayerProviderId: activeSession.providerId,
-    activePlayerTitle: activeSession.releaseTitle,
+    activePlayerEmbedLayout: activeSession ? activeSession.embedLayout : '',
+    activePlayerProviderId: activeSession ? activeSession.providerId : '',
+    activePlayerTitle: activeSession ? activeSession.releaseTitle : '',
     isMiniPlayerVisible: presentation.isMiniPlayerVisible,
     isPlayerLoading: presentation.isLoading,
     miniPlayerStatusLabel: presentation.miniPlayerStatusLabel,

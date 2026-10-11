@@ -3,6 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { derivePlayerPresentationState, OPEN_PLAYER_ACTION_LABEL } from './player-session-ui';
 
 describe('player session UI state', () => {
+  it('keeps idle presentation neutral despite stale session flags', () => {
+    const idle = { hasSession: false, hasEmbedInteraction: false, isLoaded: false };
+    expect(
+      derivePlayerPresentationState({
+        ...idle,
+        hasEmbedInteraction: true,
+        isLoaded: true,
+        providerLabel: 'Bandcamp',
+        status: 'minimized',
+      }),
+    ).toEqual(derivePlayerPresentationState(idle));
+  });
+
   it('keeps the mini player hidden when the session was never interacted with', () => {
     const state = derivePlayerPresentationState({
       hasSession: true,

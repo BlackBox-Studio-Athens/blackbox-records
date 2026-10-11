@@ -23,17 +23,10 @@ export function routeNewsletterContact(
   config: Pick<EmailRuntimeConfig, 'productEnvironmentProfile' | 'uatRecipientOverrideEmail'>,
   intendedSubscriberEmail: string,
 ): NewsletterContactRouting {
-  if (config.productEnvironmentProfile.emailDeliveryPolicy === 'uat-sink' && config.uatRecipientOverrideEmail) {
-    return {
-      contactEmail: config.uatRecipientOverrideEmail,
-      intendedSubscriberEmail,
-      isSinkRouted: true,
-    };
-  }
-
+  const recipient = routeTransactionalEmailRecipient(config, intendedSubscriberEmail);
   return {
-    contactEmail: intendedSubscriberEmail,
+    contactEmail: recipient.to,
     intendedSubscriberEmail,
-    isSinkRouted: false,
+    isSinkRouted: recipient.isSinkRouted,
   };
 }

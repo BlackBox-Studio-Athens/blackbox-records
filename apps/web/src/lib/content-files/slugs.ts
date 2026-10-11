@@ -20,9 +20,7 @@ export type SlugCollision = {
 };
 
 export function createSlugSuggestion(value: string): string {
-  return slugify(value, {
-    lowercase: true,
-  });
+  return slugify(value);
 }
 
 export function validateSlug(value: string): SlugValidationResult {

@@ -13,7 +13,6 @@ import {
   deriveShopperPreorder,
   parseStoreItemSlug,
   parseVariantId,
-  resolveTaxCollectionMode,
   isAcceptedDeliveryCategory,
   type AcceptedMonetaryPolicy,
   type CartQuantity,
@@ -250,7 +249,6 @@ export async function startCheckout(
   if (
     !delivery ||
     !options.monetaryPolicyReference ||
-    !resolveTaxCollectionMode(options.monetaryPolicyReference) ||
     !isAcceptedDeliveryCategory(options.monetaryPolicyReference, delivery.tier)
   )
     throw new CheckoutUnavailableError();

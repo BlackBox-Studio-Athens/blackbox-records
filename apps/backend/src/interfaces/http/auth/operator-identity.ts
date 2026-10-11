@@ -121,7 +121,7 @@ function isLoopbackHostname(hostname: string): boolean {
 }
 
 function remoteKeyResolver(issuer: string): JWTVerifyGetKey {
-  const jwksUrl = new URL('/cdn-cgi/access/certs', issuer).href;
+  const jwksUrl = `${issuer}/cdn-cgi/access/certs`;
   let resolver = remoteJwks.get(jwksUrl);
 
   if (!resolver) {

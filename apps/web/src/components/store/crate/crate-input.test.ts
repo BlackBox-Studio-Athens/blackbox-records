@@ -94,7 +94,6 @@ describe('the tip gesture', () => {
     finger.move(at(0, 8, 16));
     finger.up();
     expect(sent.map((intent) => intent.type)).toEqual(['tip', 'letGo']);
-    expect(sent[1]).toMatchObject({ type: 'letGo' });
   });
 
   it('ignores small jitters, other buttons and vertical drags in the rack', () => {

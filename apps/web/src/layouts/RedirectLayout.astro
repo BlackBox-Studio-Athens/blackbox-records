@@ -30,7 +30,7 @@ const { pageTitle, pageDescription, preserveFragment = false, redirectUrl } = As
     <script is:inline data-preserve-fragment={preserveFragment ? 'true' : undefined} data-redirect-url={redirectUrl}>
       const currentScriptElement = document.currentScript;
       const redirectTarget = currentScriptElement?.dataset.redirectUrl;
-      if (window.location && redirectTarget) {
+      if (redirectTarget) {
         const target =
           currentScriptElement?.dataset.preserveFragment === 'true'
             ? `${redirectTarget}${window.location.hash}`

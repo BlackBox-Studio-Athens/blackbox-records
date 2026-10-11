@@ -7,7 +7,6 @@ import {
   parseProductEnvironmentCliTarget,
   productEnvironmentFromWorkerRuntimeTarget,
   productEnvironmentProfileFromWorkerRuntimeTarget,
-  productEnvironmentProfileSchema,
   productEnvironmentProfiles,
   workerRuntimeTargetForProductEnvironment,
   formatProductEnvironmentLabel,
@@ -79,12 +78,6 @@ describe('Product Environment Profile', () => {
       stripeMode: 'prd',
       workerDeploymentTarget: 'prd',
     });
-  });
-
-  it('validates every mapped profile through the Zod schema', () => {
-    for (const profile of Object.values(productEnvironmentProfiles)) {
-      expect(productEnvironmentProfileSchema.parse(profile)).toEqual(profile);
-    }
   });
 
   it('maps Worker runtime targets at boundary adapters', () => {

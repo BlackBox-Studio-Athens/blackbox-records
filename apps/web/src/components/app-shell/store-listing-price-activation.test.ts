@@ -56,7 +56,6 @@ describe('Store listing-price activation', () => {
     const reader = getPreparedStoreListingPriceReader(state, '/store/');
     expect(await reader?.()).toEqual(direct.records);
     expect(await reader?.()).toEqual(direct.records);
-    expect(readListingPrices).not.toHaveBeenCalled();
     expect(direct.browser.blackboxStoreListingPriceDocument).toBeUndefined();
     direct.run();
     expect(direct.fetch).toHaveBeenCalledOnce();

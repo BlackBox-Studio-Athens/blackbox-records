@@ -199,14 +199,7 @@ describe('Releases physical merchandising', () => {
     ]);
     expect(new Set([...result.principal, ...result.remainder].map((entry) => entry.id)).size).toBe(many.length);
   });
-  it('format identity controls wording and unranked ties retain catalog order', () => {
-    expect(
-      releasePresentation(
-        { ...entries[0]!, edition: { kind: 'native', format: 'cd', storeSlug: 'lotus-vinyl' } },
-        records[0],
-        today,
-      ).action,
-    ).toBe('Pre-order CD');
+  it('keeps editorial editions, unranked catalog order and empty catalogs', () => {
     expect(releasePresentation({ ...entries[0]!, edition: { kind: 'none' } }, records[0], today).state).toBe(
       'editorial',
     );

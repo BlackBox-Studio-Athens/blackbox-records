@@ -71,9 +71,7 @@ export async function listArtistProfiles() {
 
 export async function listArtistRosterProfiles() {
   return (await listArtistProfiles()).sort(
-    (left, right) =>
-      Number(right.data.is_active ?? true) - Number(left.data.is_active ?? true) ||
-      sortArtistProfilesByName(left, right),
+    (left, right) => Number(right.data.is_active ?? true) - Number(left.data.is_active ?? true),
   );
 }
 

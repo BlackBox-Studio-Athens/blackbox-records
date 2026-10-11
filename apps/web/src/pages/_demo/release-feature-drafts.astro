@@ -68,16 +68,7 @@ const releaseModels = await Promise.all(
 const releaseModelById = new Map(releaseModels.map((releaseModel) => [releaseModel.releaseEntry.id, releaseModel]));
 const latestOutNowModel = outNowReleases[0] ? releaseModelById.get(outNowReleases[0].id) : null;
 
-function isReleaseModel(
-  releaseModel: (typeof releaseModels)[number] | undefined,
-): releaseModel is (typeof releaseModels)[number] {
-  return Boolean(releaseModel);
-}
-
-const upcomingModels = upcomingReleases
-  .map((releaseEntry) => releaseModelById.get(releaseEntry.id))
-  .filter(isReleaseModel);
-const primaryUpcomingModel = upcomingModels[0] || null;
+const primaryUpcomingModel = upcomingReleases[0] ? (releaseModelById.get(upcomingReleases[0].id) ?? null) : null;
 const archiveModels = releaseModels.slice(0, 8);
 ---
 

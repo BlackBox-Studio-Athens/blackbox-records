@@ -36,20 +36,13 @@ describe('createHttpApp', () => {
       expect([...entry.headers]).toEqual([...ordinary.headers]);
     },
   );
-  it('returns 404 for unmatched routes', async () => {
-    const app = createHttpApp();
-
-    const response = await app.request('http://backend.test/nope');
-
-    expect(response.status).toBe(404);
-    expectNoStoreCacheControl(response);
-  });
-
   it('returns a JSON fallback body for unmatched routes', async () => {
     const app = createHttpApp();
 
     const response = await app.request('http://backend.test/nope');
 
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain('application/problem+json');
     await expect(response.json()).resolves.toEqual({
       type: '/problems/not_found',
       title: 'Not Found',
@@ -59,14 +52,6 @@ describe('createHttpApp', () => {
       error: 'Not Found',
     });
     expectNoStoreCacheControl(response);
-  });
-
-  it('returns JSON content type for unmatched routes', async () => {
-    const app = createHttpApp();
-
-    const response = await app.request('http://backend.test/nope');
-
-    expect(response.headers.get('content-type')).toContain('application/problem+json');
   });
 
   it('allows configured browser origins to call local API routes', async () => {

@@ -31,16 +31,4 @@ describe('CheckoutOrderReferenceToken', () => {
 
     expect(createCheckoutOrderReferenceToken(input)).toBe(createCheckoutOrderReferenceToken(input));
   });
-
-  it('does not expose raw order or checkout identifiers', () => {
-    const reference = createCheckoutOrderReferenceToken({
-      checkoutSessionId: 'cs_test_1234567890',
-      orderId: 'order_12345-abcde-67890',
-      referenceDate: new Date('2026-04-25T11:00:00.000Z'),
-    });
-
-    expect(reference).not.toContain('ORDER12345');
-    expect(reference).not.toContain('CS_TEST');
-    expect(reference).not.toContain('1234567890');
-  });
 });

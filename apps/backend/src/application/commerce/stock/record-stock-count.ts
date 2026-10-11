@@ -1,5 +1,5 @@
 import type { OperatorStockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
-import { createStockQuantity, createStockState, parseVariantId } from '../../../domain/commerce';
+import { createStockState, parseVariantId } from '../../../domain/commerce';
 import {
   InvalidStockOperationError,
   StockConflictError,
@@ -39,8 +39,8 @@ export async function recordStockCount(
   let nextStock;
   try {
     nextStock = createStockState({
-      onlineQuantity: createStockQuantity(command.onlineQuantity),
-      quantity: createStockQuantity(command.countedQuantity),
+      onlineQuantity: command.onlineQuantity,
+      quantity: command.countedQuantity,
     });
   } catch {
     throw new InvalidStockOperationError('Online stock cannot exceed counted stock.');

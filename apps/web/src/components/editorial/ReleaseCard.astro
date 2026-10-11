@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
 import { neutralReleasePresentation, physicalBadgeState, RELEASE_DETAIL_LINK_CLASS } from './release-presentation';
-import { createArtistDetailPath, createReleaseDetailPath } from '@/lib/catalog-data';
+import { createArtistDetailPath, createReleaseDetailPath, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import {
@@ -40,8 +40,7 @@ const {
   role = 'catalog',
   singleColumn = false,
 } = Astro.props;
-const artistFallbackName = release.data.artist.id ? release.data.artist.id.replace(/-/g, ' ') : 'Artist';
-const artistName = artist?.data.title || artistFallbackName;
+const artistName = resolveReleaseArtistDisplayName(release, artist);
 const releaseCardTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, releaseCardTitle);
 const bandcampProvider = embeddedPlayerData?.providers.find((provider) => provider.id === 'bandcamp');

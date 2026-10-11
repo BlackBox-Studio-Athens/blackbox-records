@@ -638,10 +638,10 @@ export function mountStoreCrate(
     img.src = source.getAttribute('src') ?? '';
   }
 
-  function write(piece: Piece, next: Written, transition: string, opacity: number, shadeTransition: string) {
+  function write(piece: Piece, next: Written, opacity: number, shadeTransition: string) {
     const was = piece.written;
     const style = piece.el.style;
-    if (was?.transition !== transition) style.transition = transition;
+    if (was?.transition !== next.transition) style.transition = next.transition;
     if (was?.transform !== next.transform) style.transform = next.transform;
     if (was?.opacity !== next.opacity) {
       for (const face of piece.faces) face.style.opacity = next.opacity;
@@ -730,7 +730,6 @@ export function mountStoreCrate(
           label: drawn ? label : '',
           behind: g.mechanic === 'flip' && !hoverless && d > 0,
         },
-        transition,
         opacity,
         transitionOf(timing, ['opacity']),
       );
@@ -757,7 +756,6 @@ export function mountStoreCrate(
           label: '',
           behind: false,
         },
-        transition,
         opacity,
         transitionOf(boardPlace.timing, ['opacity']),
       );
@@ -1286,8 +1284,7 @@ export function mountStoreCrate(
       // Never write history here: the shell has already moved to the next page's entry.
       clearTimeout(recordTimer);
       clearTimeout(timer);
-      flying.forEach((animation) => animation.cancel());
-      flying = [];
+      land();
       finger.dispose();
       disposers.forEach((dispose) => dispose());
       if (state.mode.view === 'crate') leaveLayout();

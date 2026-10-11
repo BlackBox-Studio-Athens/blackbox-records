@@ -22,7 +22,7 @@ export function classifyStoreStockAvailability(
   if (!availability || (availability.status === 'available' && !availability.canBuy)) return 'unavailable';
   // No stock record yet means no copies: it reads as depleted with the default choice.
   if (!stock || stock.onlineQuantity <= 0) return stock?.zeroStockState ?? 'sold_out';
-  return availability.status === 'available' && availability.canBuy ? 'stocked' : 'unavailable';
+  return availability.status === 'available' ? 'stocked' : 'unavailable';
 }
 
 /** The expected month of a Coming Soon or Repressing item, until that month has passed in Europe/Athens. */

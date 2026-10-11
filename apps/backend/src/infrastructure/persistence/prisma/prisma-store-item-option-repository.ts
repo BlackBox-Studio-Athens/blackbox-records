@@ -169,11 +169,12 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
       : [];
     return records.map((record) => {
       const name = (record.productProjection as { name?: unknown } | null)?.name;
+      const itemStock = stock.find((item) => item.variantId === record.variantId);
       return {
         ...mapStoreItemOption(record),
         itemType: record.itemType,
-        quantity: stock.find((item) => item.variantId === record.variantId)?.quantity ?? null,
-        onlineQuantity: stock.find((item) => item.variantId === record.variantId)?.onlineQuantity ?? null,
+        quantity: itemStock?.quantity ?? null,
+        onlineQuantity: itemStock?.onlineQuantity ?? null,
         ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}),
       };
     });

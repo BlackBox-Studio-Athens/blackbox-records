@@ -174,7 +174,6 @@ describe('StripeCatalogGatewayClient', () => {
         prices: {
           create: pricesCreate,
           list: pricesList,
-          update: vi.fn(),
         },
         products: {
           create: productsCreate,
@@ -282,7 +281,6 @@ describe('StripeCatalogGatewayClient', () => {
           data: [],
           has_more: false,
         })),
-        update: vi.fn(),
       },
       products: {
         create: productsCreate,

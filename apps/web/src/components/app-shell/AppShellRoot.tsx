@@ -17,7 +17,6 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   rememberDocumentIslandServerMarkup,
-  scheduleIdleShellTask,
   type ShellPageSnapshot,
 } from '@/components/app-shell/navigation/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
@@ -470,8 +469,6 @@ export default function AppShellRoot({
   useLayoutEffect(() => (isShellDialogOpen ? inertShellBackground(document) : undefined), [isShellDialogOpen]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     let disconnect: (() => void) | undefined;
     let cancelled = false;
     setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
@@ -501,8 +498,6 @@ export default function AppShellRoot({
   useEffect(() => connectCopyButtons(document), []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') return;
     void import('./store-cart/store-cart-bridge')
       .then(({ warmStoreCartParser }) => warmStoreCartParser())
@@ -521,8 +516,6 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     return connectShellPortalTarget({
       activePathname: activeShellPathname,
       queryTarget: () => document.querySelector<HTMLElement>('[data-artists-roster-filters]'),
@@ -533,8 +526,6 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') {
       setDistroSearchContainer(null);
       return;
@@ -553,8 +544,6 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     return connectShellPortalTarget({
       activePathname: activeShellPathname,
       queryTarget: () => document.querySelector<HTMLElement>('[data-services-inquiry-form]'),
@@ -565,8 +554,6 @@ export default function AppShellRoot({
   }, [activeShellPathname]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     return connectHomepageHeroScrollProgress({
       activePathname: activeShellPathname,
       queryHeroElement: () => document.querySelector<HTMLElement>(HOMEPAGE_HERO_SELECTOR),
@@ -615,7 +602,7 @@ export default function AppShellRoot({
     clearStoreLoadingFeedback();
     clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
     if (kind !== 'store') return undefined;
-    if (parseShellSectionRoute(pathname)?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
+    void preloadStoreDistroSearch().catch(() => undefined);
 
     const activation = prepareStoreListingPriceActivation({
       pathname,
@@ -826,7 +813,7 @@ export default function AppShellRoot({
     // Island markup is recorded now, before interaction; the full snapshot waits for idle time. Leaving the page
     // earlier takes it after the transition veil has painted (openShellSectionNavigation).
     rememberDocumentIslandServerMarkup(document);
-    const cancelIdleSnapshot = scheduleIdleShellTask(() => {
+    const cancelIdleSnapshot = scheduleShellIdleTask(window, () => {
       if (!shellPageLoader.hasCachedSnapshot(renderedPagePathnameRef.current)) cacheDocumentSnapshot();
     });
     markCurrentHistoryEntryForShellSection(window.location.pathname);

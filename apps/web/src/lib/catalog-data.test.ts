@@ -533,31 +533,4 @@ describe('StoreItem projection contract', () => {
       );
     }
   });
-
-  it('keeps legacy release ids separate from canonical item-option slugs', async () => {
-    const [, externalRelease] = await listReleaseCatalog();
-
-    await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
-      slug: 'caregivers-vinyl',
-      sourceKind: 'release',
-    });
-    await expect(getStoreItemBySlug('caregivers')).resolves.toBeNull();
-  });
-
-  it('resolves native store paths for mapped releases instead of legacy merch links', async () => {
-    const [nativeRelease, externalRelease] = await listReleaseCatalog();
-
-    await expect(getStoreItemForRelease(expectReleaseEntry(nativeRelease))).resolves.toMatchObject({
-      slug: 'disintegration-black-vinyl-lp',
-      sourceId: 'disintegration',
-      storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-    });
-
-    await expect(getStoreItemForRelease(expectReleaseEntry(externalRelease))).resolves.toMatchObject({
-      slug: 'caregivers-vinyl',
-      sourceId: 'caregivers',
-      sourceKind: 'release',
-      storePath: '/blackbox-records/store/caregivers-vinyl/',
-    });
-  });
 });

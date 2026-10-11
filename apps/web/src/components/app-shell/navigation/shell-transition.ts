@@ -188,7 +188,6 @@ export function createShellSectionTransitionController({
 
   return {
     begin,
-    clearTimer,
     finish,
     reset,
   };

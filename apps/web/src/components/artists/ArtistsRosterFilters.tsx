@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 
 import { createArtistRosterSearcher } from './artist-roster-search';
@@ -24,9 +24,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
 
   const hasActiveFilters = searchQuery.trim().length > 0;
 
-  const visibleLabel = useMemo(() => {
-    return `${visibleCount} ${visibleCount === 1 ? 'artist' : 'artists'}`;
-  }, [visibleCount]);
+  const visibleLabel = `${visibleCount} ${visibleCount === 1 ? 'artist' : 'artists'}`;
 
   function applyFilters(nextSearchQuery: string, domItems: ArtistRosterDomItem[]) {
     const matchedElements = nextSearchQuery.trim()

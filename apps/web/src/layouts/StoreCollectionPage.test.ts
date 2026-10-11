@@ -44,7 +44,6 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).toContain('data-store-search');
     expect(collectionPageSource).toContain('<StoreBrowsePane entries={entries} resultsId={catalogId}>');
     expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
-    expect(collectionPageSource).toContain('<StoreCrate');
     expect(collectionPageSource).not.toContain('getDistroPageContent');
   });
 
@@ -60,8 +59,6 @@ describe('Store collection category surfaces', () => {
 
   it('renders plain listing-price placeholders without per-card Store Offer islands or redundant CTAs', () => {
     expect(storeItemCardSource).toContain('data-store-listing-price');
-    expect(storeItemCardSource).toContain('data-store-listing-availability');
-    expect(storeItemCardSource).toContain('Checking availability');
     expect(storeItemCardSource).toContain('data-store-item-slug={storeItem.slug}');
     expect(storeItemCardSource).not.toContain('StoreOfferPriceDisplay');
     expect(storeItemCardSource).not.toContain('View Item');

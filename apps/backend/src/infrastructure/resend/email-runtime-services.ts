@@ -1,6 +1,8 @@
+import { Resend } from 'resend';
+
 import { readEmailRuntimeConfig, type EmailProviderGateway, type EmailRuntimeConfig } from '../../application/email';
 import type { AppBindings } from '../../platform/env';
-import { createResendEmailGatewayFromConfig } from './resend-email-gateway';
+import { ResendEmailGateway } from './resend-email-gateway';
 
 export type EmailRuntimeServices = {
   config: EmailRuntimeConfig;
@@ -14,7 +16,7 @@ export function createEmailRuntimeServices(bindings: AppBindings): EmailRuntimeS
     config,
     provider: shouldUseLocalMockEmailProvider(config)
       ? createLocalMockEmailProviderGateway()
-      : createResendEmailGatewayFromConfig(config),
+      : new ResendEmailGateway(new Resend(config.apiKey)),
   };
 }
 

@@ -1,0 +1,72 @@
+# Store-cart implementation
+
+**What this change does:** Implements all three independently verified findings from module 7/29. Cart parsing and quantity changes perform less repeated work, and two duplicate tests are removed. Observable behavior, public interfaces, ordering, storage, money/CSP, markup and accessibility remain unchanged.
+
+## Identity and scope
+
+- Role: same fresh implementer `01a12644-b1b6-7843-ac1a-8b5854f749cb`, resumed after the parent log-access interruption; reviewer `01a12562-e610-7ad1-b5f8-838af0dfbce5` remains separate.
+- Checkout: existing `main` at `C:/Users/SVall/WebstormProjects/blackbox-records`. Opening HEAD `c97fb060c34575c4119c08b04999eedcd4714cf0`; resumed and closing HEAD `f7b019ca043e5f082c5b7aca67c4f0dbb3685ed0`. Other roles advanced HEAD without changing these owned inputs.
+- Owned baseline: all 17 files match the completed full-module review exactly, aggregate SHA-256 `a4340472ee5f0a6b4a3974f6e059a708f9dc4dbdd2cfa796037738d388fdf10c`. Full inspection is reused for these identical bytes; current edit points and callers were independently verified.
+- Final code fingerprint (unchanged from resume through completed checks): `857ff84392cc112c0cc08a675a59e02848ec5d8146e3a64631023ac7060ac745`. Selected connected/configuration set: 52 files, `831c09413d5198475a93d626da25dfeec915fc9ac32004473a61fa6de99147a6`, unchanged across opening, applied work and resume. These are explicitly selected input hashes, not a claim that every possible downstream input is covered.
+- Fingerprints hash ordinally sorted `repository-relative path<TAB>file SHA-256<LF>` records. Per-file identities and original owned bytes are retained in [machine evidence](../../../../.codex-artifacts/simplification/store-cart-implementation/).
+- Closed `project.json` retains six exports and only `ui-foundation` / `web-platform` dependencies. No nested ownership root, boundary, generated contract, tooling, content, provider or shared task was edited.
+- Complete received review and source identity: [reviews/store-cart.md](../reviews/store-cart.md); original `.codex-artifacts/simplification/07-store-cart-review.result.json`. Parent preserved interrupted control/actions/raw history under `parallel-high-07-store-cart-implement.interrupted-01.*`.
+
+## Accepted findings and proof
+
+| ID  | Change                                                                                                                  | Independent proof and retained behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Merge the snapshot transform return objects and remove duplicate fixed-price Money parsing and unused accessor imports. | Snapshot and Money use the same integer/nonnegative amount and trimmed three-character currency validators. The fixed/null issue and `z.NEVER` remain; custom amounts become null, currency uppercases once, unknown fields strip, default kind and optional preorder presence/order remain. `createMoney` and `formatMoney` still serve formatting. Money branding, CSP configuration, accessors and tests remain; `scenario-policy.ts` still consumes both accessors.                                                                                                              |
+| 2   | Require the private setter's state and remove only its intermediate normalization.                                      | Graphify and current CodeGraph/exact source identify exactly two private callers. Both first normalize state and pass it explicitly. Public defaults, quantity sanitization, missing/custom guards, decrement-to-removal, final normalization, fresh objects, duplicate-variant mapping, line ordering and primary projection remain. Current shell handlers and checkout fallback editing still call the public functions and persist their results.                                                                                                                                |
+| 3   | Delete exactly two subsumed tests.                                                                                      | `never promotes the legacy release id to the cart item slug` uses `addStoreCartItem(canonicalItem)` without any legacy identifier; retained `adds the canonical item option as a CartLine` asserts the same canonical slug, which also implies the removed inequality. `creates a filled drawer view with canonical checkout route and subtotal` uses the exact same input as retained `represents exactly one filled CartLine with subtotal and checkout action data`, which checks all three removed fields plus metadata and Remove copy. No distinct input or assertion is lost. |
+
+All remaining owned test files are retained. Empty/double-quantity drawer, rendered controls, quoted-total accessible name, forbidden fields, money/CSP, malformed storage, migration, preorder, country races and lifecycle coverage remain.
+
+The retained comparison [probe.json](../../../../.codex-artifacts/simplification/store-cart-implementation/probe.json) reports zero mismatches: 3,388 snapshot parses, 6,776 v1/v2 restorations, 1,728 increment/decrement operations and 864 writer call traces. Comparisons include JSON property order, amount/kind/currency/preorder boundaries, invalid data, duplicate/missing variants, stale custom quantities and fresh output identity. This pre-interruption in-memory TypeScript/Zod comparison is equivalence evidence, not official test/type/browser acceptance. It was reused at resume because covered bytes match; no new compiler loader is used for validation.
+
+## Rejected extensions
+
+- Keep restoration and writer normalization passes. `ßßß` becomes `SSSSSS` on first parse; restoration then rejects its length and drops the line, and writing removes both v2/v1 keys. The probe independently confirms these exact outcomes. Reducing restoration or serializing the writer's first normalized state would change persistence.
+- Keep exported Money accessors: the operational scenario-policy consumer needs them; no out-of-scope edit is needed for the accepted import cleanup.
+- Keep drawer fields and its non-enumerable `lines` descriptor: they belong to the exported result, including serialization behavior.
+- Keep country request racing/unmount protection, destination persistence/subscriptions, Undo timing/focus, `CSS.escape`, tooltip Escape and modal-lock lifecycle behavior. No equivalence proof supports deleting them; distinct lifecycle/accessibility tests remain.
+
+No reviewed finding is left unassessed. No product/design, performance timing, shipping-policy or unrelated behavior change is claimed.
+
+## Exact changes and reductions
+
+| File                                                          | Behavior-related net lines removed | Physical net lines removed |
+| ------------------------------------------------------------- | ---------------------------------: | -------------------------: |
+| `apps/web/src/components/store/cart/store-cart.ts`            |                      11 production |                         17 |
+| `apps/web/src/components/store/cart/store-cart.test.ts`       |                             7 test |                          7 |
+| `apps/web/src/components/store/cart/StoreCartDrawer.test.tsx` |                             8 test |                          8 |
+| **Total**                                                     |    **26: 11 production + 15 test** |                     **32** |
+
+Six physical production lines are wrapping-only normalization of the shorter setter signature/map and are excluded from reduction totals. Production Git delta is 6 additions / 23 deletions; tests are 0 additions / 15 deletions. **Deleted production files: 0. Deleted test files: 0.** No source abstraction or dependency was added. Required audit Markdown and ignored evidence/helpers are excluded.
+
+## Checks and acceptance
+
+Guarded `pnpm openspec:guard`, `pnpm openspec -- status --change simplify-main-site-modules --json` and `pnpm openspec -- instructions apply --change simplify-main-site-modules --json` passed. All apply context files were read; shared tasks were left to the verifier.
+
+Existing Graphify `explain setCartLineQuantityByVariant --budget 2500` returned all five relevant extracted relationships. CodeGraph supplied current Money/cart/public quantity and checkout caller source; exact reads filled its trimmed schema/test/import/JSX gaps. An initial Graphify session's completion could not be recovered after it closed; the successful narrow explain was repeated and its source checked. Neither graph was initialized, enriched or refreshed by this role.
+
+Pre-interruption focused commands exited 0. Final-source results are now complete:
+
+- `pnpm test store-cart`: exit 0; Nx reused its matching local cache, 1/1 tasks. The matching owned-suite result contains **144 passed tests, zero failures**. See [store-cart-test.log](../../../../.codex-artifacts/simplification/store-cart-implementation/store-cart-test.log) and the referenced `.codex-artifacts/validation/2026-10-10T14-55-17-659Z-59940-b1d2af/store-cart.json`.
+- `pnpm test apps/web/test/commerce/StorePurchaseFlow.test.ts`: first final-source attempt failed before tests started because an Nx project-json plugin worker exited during startup. The same command retried without source, configuration or environment changes and **passed**: `commerce-web-integration:test`, 1/1 successful task, executed without a cache hit, 30.9 seconds. Both [startup failure](../../../../.codex-artifacts/simplification/store-cart-implementation/purchase-flow-test.log) and [passing retry](../../../../.codex-artifacts/simplification/store-cart-implementation/purchase-flow-retry.log) are retained; the earlier `tests.json` deliberately records that failed attempt.
+- `node .codex-artifacts/simplification/store-cart-implementation/focused-checks.mjs`: exit 0. It leases one repository validation slot and runs the existing installed ESLint CLI on the three changed source/test files, then Prettier `--check` on those files. Both exited 0; [focused-checks.json](../../../../.codex-artifacts/simplification/store-cart-implementation/focused-checks.json) and adjacent logs retain results. The unrun bespoke compiler-API step was removed on recovery; no custom compiler loader is used for acceptance.
+- `pnpm exec prettier --check openspec/changes/simplify-main-site-modules/reviews/store-cart.md openspec/changes/simplify-main-site-modules/implementations/store-cart.md`: passed. Audit Markdown formatting preserves the full received content, identities and original raw JSON.
+- Scoped `git diff --check`: passed. [final.json](../../../../.codex-artifacts/simplification/store-cart-implementation/final.json) confirms all 17 owned and 52 selected connected hashes match the resumed tree after completed tests. No relevant source drift required another inspection.
+
+Slot admission respected the repository's three-slot policy. The focused runners waited behind the existing Actions rehearsal and already-queued affected validation; this role did not launch, interrupt or modify those shared operations. Cached owned tests were reused only after Nx matched current inputs. Ignored [final-results.json](../../../../.codex-artifacts/simplification/store-cart-implementation/final-results.json) ties the successful retry, earlier failure and final identities together.
+
+| Acceptance row                | Scope/result                                                                                                                                                                                  |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Commerce/cart/checkout        | Snapshot/persistence/quantity equivalence verified; 144 owned tests passed; the purchase-flow integration target passed on retry. No Worker authority, quote policy or provider code changes. |
+| Shell/player/routing          | Shell callers verified; markup, routing and player code untouched. Mounted checkout quantity updates and mixed-cart browser cases remain verifier-owned.                                      |
+| Boundaries/tooling            | Ownership unchanged. Focused changed-file ESLint/format passed; package-wide `web:typecheck`, shared architecture/global validation, strict OpenSpec and graph refresh remain verifier-owned. |
+| Staff/CMS/publication/release | Not applicable to this slice: no implementation or release operations in these areas.                                                                                                         |
+
+Required verifier browser selection: `pnpm test:e2e e2e/store-cart.spec.ts -g "mounted checkout follows drawer quantity changes before payment|mixed cart refinement"`. Shared Local/browser acceptance runs after source writers are idle. Local/probe success does not establish provider, hosted or release acceptance.
+
+**Current status:** scoped implementation, independent proof and required focused checks complete. Shared acceptance and task completion remain verifier-owned. No commit, push, deployment, provider mutation, API key, shared task update or shared graph write was performed.

@@ -142,14 +142,6 @@ describe('ItemAvailability adapter', () => {
     });
   });
 
-  it('keeps the static availability price as a non-authoritative placeholder', async () => {
-    const itemAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');
-
-    expect(itemAvailability?.price).toEqual({
-      display: 'Worker-confirmed at checkout',
-    });
-  });
-
   it('keeps static availability out of the structured cart price path', async () => {
     const aftermathsAvailability = await getPrimaryAvailabilityForStoreItem('aftermaths');
     const disintegrationAvailability = await getPrimaryAvailabilityForStoreItem('disintegration-black-vinyl-lp');

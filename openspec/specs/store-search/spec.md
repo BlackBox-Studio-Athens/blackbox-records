@@ -1,6 +1,7 @@
 # store-search Specification
 
 ## Purpose
+
 Let shoppers search the complete All Store shelf using the existing Distro search behavior while preserving catalog order, shell navigation, and pricing performance.
 
 ## Requirements

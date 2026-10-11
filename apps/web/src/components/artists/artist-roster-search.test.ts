@@ -2,19 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { loadExactFirstFuzzySearch } from '@/lib/exact-first-search';
 
-import { createArtistRosterSearcher, getArtistRosterExactMatches } from './artist-roster-search';
+import { createArtistRosterSearcher } from './artist-roster-search';
 
 const rosterItems = [{ title: 'Chronoboros' }, { title: 'Mass Culture' }, { title: 'Ouranopithecus' }];
 
 describe('artist roster search', () => {
   beforeAll(async () => {
     await loadExactFirstFuzzySearch();
-  });
-
-  it('returns only exact substring title matches before fuzzy fallback', () => {
-    const matches = getArtistRosterExactMatches(rosterItems, 'ch');
-
-    expect(matches.map((item) => item.title)).toEqual(['Chronoboros']);
   });
 
   it('searches against artist title only', () => {

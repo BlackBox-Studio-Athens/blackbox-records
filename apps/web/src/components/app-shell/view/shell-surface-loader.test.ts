@@ -51,7 +51,7 @@ describe('createShellSurfaceLoader', () => {
 });
 
 describe('scheduleShellIdleTask', () => {
-  it('uses requestIdleCallback with a deadline and cancels it', () => {
+  it.each([undefined, 1500])('uses requestIdleCallback with deadline %s and cancels it', (timeout) => {
     const task = vi.fn();
     const scheduler = {
       cancelIdleCallback: vi.fn(),
@@ -60,10 +60,10 @@ describe('scheduleShellIdleTask', () => {
       setTimeout: vi.fn(),
     };
 
-    const cancel = scheduleShellIdleTask(scheduler as never, task, 1500);
+    const cancel = scheduleShellIdleTask(scheduler as never, task, timeout);
     cancel();
 
-    expect(scheduler.requestIdleCallback).toHaveBeenCalledWith(task, { timeout: 1500 });
+    expect(scheduler.requestIdleCallback).toHaveBeenCalledWith(task, { timeout: timeout ?? 2000 });
     expect(scheduler.cancelIdleCallback).toHaveBeenCalledWith(7);
     expect(scheduler.setTimeout).not.toHaveBeenCalled();
   });

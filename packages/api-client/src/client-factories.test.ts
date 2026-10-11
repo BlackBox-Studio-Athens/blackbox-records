@@ -74,51 +74,19 @@ describe('api client fetchers', () => {
     });
   });
 
-  it('configures public API fetchers for no-store requests', () => {
+  it.each([
+    ['public', createPublicApiFetcher, 'http://127.0.0.1:8787'],
+    ['internal', createInternalApiFetcher, 'https://sandbox.example.workers.dev'],
+  ] as const)('configures %s API fetchers for no-store requests', (_name, createFetcher, baseUrl) => {
     const configure = vi.fn();
-    const path = vi.fn(() => ({
-      method: vi.fn(() => ({
-        create: vi.fn(),
-      })),
-    }));
-    const fetcherForSpy = vi.spyOn(Fetcher, 'for').mockReturnValue({
-      configure,
-      path,
-    } as never);
+    const fetcherForSpy = vi.spyOn(Fetcher, 'for').mockReturnValue({ configure } as never);
 
     try {
-      createPublicApiFetcher('http://127.0.0.1:8787');
+      createFetcher(baseUrl);
 
       expect(fetcherForSpy).toHaveBeenCalledOnce();
       expect(configure).toHaveBeenCalledWith({
-        baseUrl: 'http://127.0.0.1:8787',
-        init: {
-          cache: 'no-store',
-        },
-      });
-    } finally {
-      fetcherForSpy.mockRestore();
-    }
-  });
-
-  it('configures internal API fetchers for no-store requests', () => {
-    const configure = vi.fn();
-    const path = vi.fn(() => ({
-      method: vi.fn(() => ({
-        create: vi.fn(),
-      })),
-    }));
-    const fetcherForSpy = vi.spyOn(Fetcher, 'for').mockReturnValue({
-      configure,
-      path,
-    } as never);
-
-    try {
-      createInternalApiFetcher('https://sandbox.example.workers.dev');
-
-      expect(fetcherForSpy).toHaveBeenCalledOnce();
-      expect(configure).toHaveBeenCalledWith({
-        baseUrl: 'https://sandbox.example.workers.dev',
+        baseUrl,
         init: {
           cache: 'no-store',
         },

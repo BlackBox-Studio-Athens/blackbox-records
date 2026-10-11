@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { createProviderSafeTag } from './idempotency';
 import { sendTransactionalEmail } from './transactional-email';
-import { createBlackBoxEmailTemplate } from './templates';
+import { createBlackBoxEmailTemplate, escapeHtml } from './templates';
 import type { EmailProviderGateway } from './spi';
 import type { EmailMessageContent, EmailOperationResult, EmailRuntimeConfig, EmailTag } from './types';
 
@@ -170,13 +170,4 @@ export async function sendServicesInquiry(input: {
   }
 
   return result;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

@@ -482,6 +482,7 @@ The shell SHALL mark shared controls for the active editorial source as disabled
 - **THEN** the control reads Stop? and keeps its accessible name and position
 - **AND** the session continues
 - **AND** the control returns to Stop after three seconds without a second activation.
+
 #### Scenario: Stop is pressed twice
 
 - **WHEN** the shopper activates Stop? within the window

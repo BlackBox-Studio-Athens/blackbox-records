@@ -110,7 +110,6 @@ export class CatalogReconciler {
         : null;
     const productId = mapping?.stripeProductId ?? mappedPrice?.productId;
     const defaultPrice = productId ? await this.dependencies.stripeCatalog.retrieveDefaultPrice(productId) : null;
-    const candidates = defaultPrice ? [defaultPrice] : [];
     const issues: CatalogSyncIssue[] = [];
     const actions: CatalogSyncAction[] = [];
     const expectedPrice =
@@ -134,7 +133,8 @@ export class CatalogReconciler {
 
     if (
       !issues.some((issue) => issue.code === 'wrong_variant_identity') &&
-      candidates.some((price) => hasCatalogIdentityConflict(price, storeItem, this.dependencies.environment, lookupKey))
+      defaultPrice &&
+      hasCatalogIdentityConflict(defaultPrice, storeItem, this.dependencies.environment, lookupKey)
     ) {
       issues.push(
         createIssue(storeItem, 'wrong_variant_identity', `Stripe Price identity signals disagree for ${lookupKey}.`),
@@ -151,14 +151,14 @@ export class CatalogReconciler {
         expectedPrice,
         options.productProjection,
       );
-      const createContext = createMutationContext(
-        this.dependencies.environment,
-        storeItem.variantId,
-        'create_catalog_price',
-        createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null, null),
-        priceInput,
-        this.dependencies.creationMutationScope,
-      );
+      const createContext = createStripeCatalogMutationContext({
+        environment: this.dependencies.environment,
+        variantId: storeItem.variantId,
+        action: 'create_catalog_price',
+        identity: createCatalogPriceMutationIdentity(expectedPrice, options.productProjection ?? null),
+        requestShape: priceInput,
+        scope: this.dependencies.creationMutationScope,
+      });
       if (options.apply) {
         resolvedPrice = await this.dependencies.stripeCatalog.createCatalogPrice(priceInput, createContext);
         actions.push({ kind: 'create_catalog_price', ...createMutationEvidence(createContext, resolvedPrice) });
@@ -172,13 +172,7 @@ export class CatalogReconciler {
         createIssue(
           storeItem,
           'missing_price',
-          `No unambiguous active Stripe Price matches ${lookupKey}. ${describePriceCandidates(
-            candidates,
-            storeItem,
-            this.dependencies.environment,
-            lookupKey,
-            metadata,
-          )}`,
+          `No unambiguous active Stripe Price matches ${lookupKey}. Stripe returned 0 candidate Prices.`,
         ),
       );
     }
@@ -241,17 +235,17 @@ export class CatalogReconciler {
           );
 
           if (resolvedPrice.productId) {
-            const productContext = createMutationContext(
-              this.dependencies.environment,
-              storeItem.variantId,
-              'update_product_projection',
-              resolvedPrice.productId,
-              {
+            const productContext = createStripeCatalogMutationContext({
+              environment: this.dependencies.environment,
+              variantId: storeItem.variantId,
+              action: 'update_product_projection',
+              identity: resolvedPrice.productId,
+              requestShape: {
                 productId: resolvedPrice.productId,
                 productProjection: options.productProjection,
                 stripeMetadata: metadata,
               },
-            );
+            });
             actions.push({
               kind: 'update_product_projection',
               productId: resolvedPrice.productId,
@@ -339,29 +333,18 @@ export class CatalogReconciler {
     const results: CatalogSyncVariantResult[] = [];
 
     for (const storeItem of storeItems) {
-      results.push(await this.verifyCatalogStoreItem(storeItem, input));
+      const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
+      results.push(
+        await this.reconcileVariant(storeItem, {
+          apply: input.apply,
+          expectedPrice,
+          productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
+          now: input.now,
+        }),
+      );
     }
 
     return results;
-  }
-
-  private verifyCatalogStoreItem(
-    storeItem: StoreItemOptionRecord,
-    input: {
-      apply: boolean;
-      expectedPrices?: Map<string, StripeCatalogExpectedPrice>;
-      expectedProductProjections?: Map<string, StripeCatalogProductProjection>;
-      now?: Date;
-    },
-  ): Promise<CatalogSyncVariantResult> {
-    const expectedPrice = input.expectedPrices?.get(storeItem.variantId) ?? null;
-
-    return this.reconcileVariant(storeItem, {
-      apply: input.apply,
-      expectedPrice,
-      productProjection: input.expectedProductProjections?.get(storeItem.variantId) ?? null,
-      now: input.now,
-    });
   }
 
   private async applyActions(
@@ -492,40 +475,6 @@ function hasMetadata(candidate: Record<string, string>, expected: Record<string,
 
 function hasAnyMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
   return Object.keys(expected).some((key) => key in candidate);
-}
-
-function describePriceCandidates(
-  candidates: StripeCatalogPrice[],
-  storeItem: StoreItemOptionRecord,
-  environment: StripeCatalogEnvironment,
-  lookupKey: string,
-  metadata: Record<string, string>,
-): string {
-  if (candidates.length === 0) {
-    return 'Stripe returned 0 candidate Prices.';
-  }
-
-  const summaries = candidates
-    .slice(0, 10)
-    .map((price) =>
-      [
-        redactStripeObjectId(price.priceId),
-        `active=${price.active}`,
-        `productActive=${price.productActive}`,
-        `kind=${price.priceKind}`,
-        `amount=${price.amountMinor ?? 'unknown'}`,
-        `custom=${describeCustomUnitAmount(price.customUnitAmount)}`,
-        `currency=${price.currencyCode ?? 'unknown'}`,
-        `lookup=${price.lookupKey === lookupKey ? 'match' : price.lookupKey ? 'other' : 'missing'}`,
-        `priceMetadata=${hasMetadata(price.metadata, metadata) ? 'match' : 'missing'}`,
-        `productMetadata=${hasMetadata(price.productMetadata, metadata) ? 'match' : 'missing'}`,
-        `identity=${matchesCatalogIdentity(price, storeItem, environment, lookupKey) ? 'match' : 'missing'}`,
-      ].join(','),
-    );
-  const truncatedCount = Math.max(0, candidates.length - summaries.length);
-  const suffix = truncatedCount > 0 ? `; ${truncatedCount} more omitted` : '';
-
-  return `Stripe returned ${candidates.length} candidate Price(s): ${summaries.join(' | ')}${suffix}.`;
 }
 
 function normalizeExpectedPrice(expectedPrice: StripeCatalogExpectedPrice): StripeCatalogExpectedPrice {
@@ -662,24 +611,6 @@ function createCatalogPriceInput(
   };
 }
 
-function createMutationContext(
-  environment: StripeCatalogEnvironment,
-  variantId: string,
-  action: CatalogSyncAction['kind'],
-  identity = 'new',
-  requestShape: unknown,
-  scope?: string | null,
-): StripeCatalogMutationContext {
-  return createStripeCatalogMutationContext({
-    action,
-    environment,
-    identity,
-    requestShape,
-    scope,
-    variantId,
-  });
-}
-
 function mutationContextFromAction(
   action: Extract<
     CatalogSyncAction,
@@ -720,25 +651,14 @@ function applyProductMutationResponseEvidence(action: CatalogSyncAction, product
 function createCatalogPriceMutationIdentity(
   expectedPrice: StripeCatalogExpectedPrice,
   productProjection: StripeCatalogProductProjection | null,
-  repairIdentity: string | null = null,
 ): string {
-  const baseIdentity = expectedPrice.revision
+  return expectedPrice.revision
     ? `revision_${expectedPrice.revision}`
     : createStripeCatalogRequestShapeFingerprint({
         expectedPrice,
         currencyCode: expectedPrice.currencyCode.toUpperCase(),
         productProjection,
       });
-
-  return repairIdentity ? `${baseIdentity}:${repairIdentity}` : baseIdentity;
-}
-
-function describeCustomUnitAmount(amount: StripeCatalogPrice['customUnitAmount']): string {
-  return amount
-    ? `min=${amount.minimumAmountMinor ?? 'unknown'},preset=${amount.presetAmountMinor ?? 'unknown'},max=${
-        amount.maximumAmountMinor ?? 'unknown'
-      }`
-    : 'none';
 }
 
 function canApplyCatalogActions(issues: CatalogSyncIssue[]): boolean {

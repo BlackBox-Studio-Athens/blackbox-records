@@ -1,86 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 
 import { readCheckoutOrder, readRecentCheckoutOrders } from './';
-import type {
-  CheckoutOrderRecord,
-  CheckoutOrderTransitionInput,
-  CreatePendingCheckoutOrderInput,
-  OrderStateRepository,
-  OrderStatus,
-} from '../../../domain/commerce/repositories/spi';
-import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../../domain/commerce/repositories/spi';
-import {
-  checkoutSessionId,
-  paymentIntentId,
-  storeItemSlug,
-  variantId,
-} from '../../../../test/support/commerce-value-objects';
-
-class InMemoryOrderStateRepository implements OrderStateRepository {
-  public readonly records = new Map<string, CheckoutOrderRecord>();
-
-  public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
-    const createdAt = input.createdAt ?? new Date('2026-04-25T10:00:00.000Z');
-    const record: CheckoutOrderRecord = {
-      ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
-      checkoutSessionId: input.checkoutSessionId,
-      checkoutExpiresAt: input.checkoutExpiresAt ?? new Date(createdAt.getTime() + 30 * 60 * 1000),
-      createdAt,
-      id: `order_${this.records.size + 1}`,
-      needsReviewAt: null,
-      notPaidAt: null,
-      paidAt: null,
-      shippingLocker: input.shippingLocker,
-      status: 'pending_payment',
-      statusUpdatedAt: createdAt,
-      storeItemSlug: input.storeItemSlug,
-      stripePaymentIntentId: input.stripePaymentIntentId ?? null,
-      updatedAt: createdAt,
-      variantId: input.variantId,
-    };
-
-    this.records.set(input.checkoutSessionId, record);
-
-    return record;
-  }
-
-  public async findByCheckoutSessionId(checkoutSessionId: string): Promise<CheckoutOrderRecord | null> {
-    return this.records.get(checkoutSessionId) ?? null;
-  }
-
-  public async listRecent(input: { limit: number; status?: OrderStatus | null }): Promise<CheckoutOrderRecord[]> {
-    return [...this.records.values()]
-      .filter((record) => !input.status || record.status === input.status)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, input.limit);
-  }
-
-  public async saveTransition(
-    checkoutSessionId: string,
-    transition: CheckoutOrderTransitionInput,
-  ): Promise<CheckoutOrderRecord | null> {
-    const current = this.records.get(checkoutSessionId);
-
-    if (!current) {
-      return null;
-    }
-
-    const next: CheckoutOrderRecord = {
-      ...current,
-      needsReviewAt: transition.status === 'needs_review' ? transition.statusUpdatedAt : current.needsReviewAt,
-      notPaidAt: transition.status === 'not_paid' ? transition.statusUpdatedAt : current.notPaidAt,
-      paidAt: transition.status === 'paid' ? transition.statusUpdatedAt : current.paidAt,
-      status: transition.status,
-      statusUpdatedAt: transition.statusUpdatedAt,
-      stripePaymentIntentId: transition.stripePaymentIntentId ?? current.stripePaymentIntentId,
-      updatedAt: transition.statusUpdatedAt,
-    };
-
-    this.records.set(checkoutSessionId, next);
-
-    return next;
-  }
-}
+import type { CheckoutOrderRecord, OrderStateRepository } from '../../../domain/commerce/repositories/spi';
+import { currentPaidCheckoutOrder } from '../../../../test/fixtures/current-paid-checkout-order';
+import { checkoutSessionId, paymentIntentId } from '../../../../test/support/commerce-value-objects';
 
 describe('order readback use cases', () => {
   const shippingLocker = {
@@ -88,65 +11,62 @@ describe('order readback use cases', () => {
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
   };
-  const oldPaidCheckoutSessionId = checkoutSessionId('cs_old_paid');
-  const newReviewCheckoutSessionId = checkoutSessionId('cs_new_review');
-  let orders: InMemoryOrderStateRepository;
+  const paidOrder: CheckoutOrderRecord = {
+    ...currentPaidCheckoutOrder(),
+    checkoutSessionId: checkoutSessionId('cs_old_paid'),
+    createdAt: new Date('2026-04-25T10:00:00.000Z'),
+    shippingLocker,
+    stripePaymentIntentId: paymentIntentId('pi_test_paid'),
+  };
+  const reviewOrder: CheckoutOrderRecord = {
+    ...paidOrder,
+    checkoutSessionId: checkoutSessionId('cs_new_review'),
+    createdAt: new Date('2026-04-25T11:00:00.000Z'),
+    status: 'needs_review',
+    paidAt: null,
+    stripePaymentIntentId: null,
+  };
+  let orders: Mocked<OrderStateRepository>;
 
-  beforeEach(async () => {
-    orders = new InMemoryOrderStateRepository();
-    await orders.createPending({
-      checkoutSessionId: oldPaidCheckoutSessionId,
-      createdAt: new Date('2026-04-25T10:00:00.000Z'),
-      shippingLocker,
-      storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
-      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
-    });
-    await orders.saveTransition(oldPaidCheckoutSessionId, {
-      status: 'paid',
-      statusUpdatedAt: new Date('2026-04-25T10:05:00.000Z'),
-      stripePaymentIntentId: paymentIntentId('pi_test_paid'),
-    });
-    await orders.createPending({
-      checkoutSessionId: newReviewCheckoutSessionId,
-      createdAt: new Date('2026-04-25T11:00:00.000Z'),
-      shippingLocker,
-      storeItemSlug: storeItemSlug('caregivers-vinyl'),
-      variantId: variantId('variant_caregivers-vinyl_standard'),
-    });
-    await orders.saveTransition(newReviewCheckoutSessionId, {
-      status: 'needs_review',
-      statusUpdatedAt: new Date('2026-04-25T11:05:00.000Z'),
-    });
+  beforeEach(() => {
+    orders = {
+      createPending: vi.fn(),
+      findByCheckoutSessionId: vi.fn().mockResolvedValue(paidOrder),
+      listRecent: vi.fn(),
+      saveTransition: vi.fn(),
+    };
   });
 
   it('reads one checkout order by checkout session id', async () => {
-    await expect(readCheckoutOrder(orders, oldPaidCheckoutSessionId)).resolves.toMatchObject({
+    const result = await readCheckoutOrder(orders, 'cs_old_paid');
+    expect(result).toBe(paidOrder);
+    expect(result).toMatchObject({
       checkoutSessionId: 'cs_old_paid',
       shippingLocker,
       status: 'paid',
       stripePaymentIntentId: 'pi_test_paid',
     });
+    expect(orders.findByCheckoutSessionId).toHaveBeenCalledWith(paidOrder.checkoutSessionId);
   });
 
-  it('lists recent checkout orders by creation time', async () => {
-    await expect(readRecentCheckoutOrders(orders, { limit: 2 })).resolves.toMatchObject([
-      {
-        checkoutSessionId: 'cs_new_review',
-        status: 'needs_review',
-      },
-      {
-        checkoutSessionId: 'cs_old_paid',
-        status: 'paid',
-      },
+  it('forwards a recent read with omitted status and preserves repository order', async () => {
+    const records = [reviewOrder, paidOrder];
+    orders.listRecent.mockResolvedValue(records);
+    const result = await readRecentCheckoutOrders(orders, { limit: 2 });
+    expect(result).toBe(records);
+    expect(result).toMatchObject([
+      { checkoutSessionId: 'cs_new_review', status: 'needs_review' },
+      { checkoutSessionId: 'cs_old_paid', status: 'paid' },
     ]);
+    expect(orders.listRecent).toHaveBeenCalledWith({ limit: 2, status: null });
   });
 
-  it('filters recent checkout orders by status', async () => {
-    await expect(readRecentCheckoutOrders(orders, { limit: 10, status: 'needs_review' })).resolves.toMatchObject([
-      {
-        checkoutSessionId: 'cs_new_review',
-        status: 'needs_review',
-      },
-    ]);
+  it('forwards the selected status and returns the repository result', async () => {
+    const records = [reviewOrder];
+    orders.listRecent.mockResolvedValue(records);
+    const result = await readRecentCheckoutOrders(orders, { limit: 10, status: 'needs_review' });
+    expect(result).toBe(records);
+    expect(result).toMatchObject([{ checkoutSessionId: 'cs_new_review', status: 'needs_review' }]);
+    expect(orders.listRecent).toHaveBeenCalledWith({ limit: 10, status: 'needs_review' });
   });
 });

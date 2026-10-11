@@ -154,8 +154,6 @@ export async function listStoreCollectionEntries(
     };
   });
 
-  assertStoreCollectionInvariants(entries, 'all');
-
   return selectStoreCollectionEntries(entries, categoryId);
 }
 

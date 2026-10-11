@@ -8,7 +8,6 @@ import {
   deriveStripeCatalogChildMutationContext,
   type StripeCatalogEnvironment,
   type StripeCatalogGateway,
-  type StripeCatalogIdentityMetadata,
   type StripeCatalogMutationContext,
   type StripeCatalogExpectedPrice,
   type StripeCatalogPrice,
@@ -111,58 +110,12 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
   public async retrieveDefaultPrice(productId: string): Promise<StripeCatalogPrice | null> {
     return this.defaultPrices.get(productId) ?? null;
   }
-  public readonly archivePrice = vi.fn(async (priceId: string, _context?: StripeCatalogMutationContext) => {
-    const price = this.prices.get(priceId);
-
-    if (!price) {
-      throw new Error(`Missing price ${priceId}.`);
-    }
-
-    const archived = { ...price, active: false };
-    this.prices.set(priceId, archived);
-
-    return archived;
-  });
   public readonly prices = new Map<string, StripeCatalogPrice>();
-  public readonly products = new Map<
-    string,
-    {
-      active: boolean;
-      idempotentReplayed?: boolean | null;
-      metadata: Record<string, string>;
-      name: string | null;
-      productId: string;
-      requestId?: string | null;
-    }
-  >();
-  public readonly updatePriceLookupKey = vi.fn(
-    async (priceId: string, lookupKey: string, _context?: StripeCatalogMutationContext) => {
-      const price = this.prices.get(priceId);
-
-      if (!price) {
-        throw new Error(`Missing price ${priceId}.`);
-      }
-
-      const updated = { ...price, lookupKey };
-      this.prices.set(priceId, updated);
-
-      return updated;
-    },
-  );
-  public readonly updatePriceMetadata = vi.fn(
-    async (priceId: string, metadata: StripeCatalogIdentityMetadata, _context?: StripeCatalogMutationContext) => {
-      const price = this.prices.get(priceId);
-
-      if (!price) {
-        throw new Error(`Missing price ${priceId}.`);
-      }
-
-      const updated = { ...price, metadata, productMetadata: metadata };
-      this.prices.set(priceId, updated);
-
-      return updated;
-    },
-  );
+  public readonly updatePriceLookupKey = vi.fn();
+  public readonly updatePriceMetadata = vi.fn();
+  public readonly listPricesByLookupKey = vi.fn();
+  public readonly listPricesByMetadata = vi.fn();
+  public readonly listOwnedPrices = vi.fn();
   public readonly updateProductProjection = vi.fn(
     async (
       productId: string,
@@ -236,42 +189,6 @@ class InMemoryStripeCatalog implements StripeCatalogGateway {
       return price;
     },
   );
-
-  public async listPricesByLookupKey(lookupKey: string): Promise<StripeCatalogPrice[]> {
-    return [...this.prices.values()].filter((price) => price.lookupKey === lookupKey);
-  }
-
-  public async listPricesByMetadata(metadata: StripeCatalogIdentityMetadata): Promise<StripeCatalogPrice[]> {
-    return [...this.prices.values()].filter(
-      (price) => hasMetadata(price.metadata, metadata) || hasMetadata(price.productMetadata, metadata),
-    );
-  }
-
-  public async listOwnedPrices(_environment: StripeCatalogEnvironment): Promise<StripeCatalogPrice[]> {
-    return [...this.prices.values()].filter(
-      (price) =>
-        price.active &&
-        (price.lookupKey?.startsWith('blackbox:') ||
-          hasCatalogMetadataHint(price.metadata) ||
-          hasCatalogMetadataHint(price.productMetadata)),
-    );
-  }
-
-  public async listOwnedProducts(_environment: StripeCatalogEnvironment) {
-    const priceProducts = [...this.prices.values()]
-      .filter((price) => price.productActive && price.productId && hasCatalogMetadataHint(price.productMetadata))
-      .map((price) => ({
-        active: price.productActive,
-        metadata: price.productMetadata,
-        name: price.productName,
-        productId: price.productId!,
-      }));
-
-    return [
-      ...this.products.values().filter((product) => hasCatalogMetadataHint(product.metadata)),
-      ...priceProducts.filter((priceProduct) => !this.products.has(priceProduct.productId)),
-    ];
-  }
 
   public async retrievePrice(priceId: string): Promise<StripeCatalogPrice | null> {
     return this.prices.get(priceId) ?? null;
@@ -350,16 +267,6 @@ function createReconciler(
   });
 
   return { mappings, reconciler, snapshots, stripeCatalog };
-}
-
-function hasMetadata(candidate: Record<string, string>, expected: Record<string, string>): boolean {
-  return Object.entries(expected).every(([key, value]) => candidate[key] === value);
-}
-
-function hasCatalogMetadataHint(metadata: Record<string, string>): boolean {
-  return Boolean(
-    metadata.appEnv || metadata.sourceId || metadata.sourceKind || metadata.storeItemSlug || metadata.variantId,
-  );
 }
 
 describe('Stripe catalog identity helpers', () => {
@@ -519,8 +426,46 @@ describe('CatalogReconciler', () => {
     stripeCatalog.defaultPrices.delete(price.productId!);
     const result = await reconciler.reconcileVariant(storeItem, { apply: true, expectedPrice: fixedExpectedPrice() });
     expect(result.resolvedPrice).toBeNull();
-    expect(result.issues.some((issue) => issue.code === 'missing_price')).toBe(true);
+    expect(result.issues).toEqual([
+      {
+        code: 'missing_price',
+        detail: `No unambiguous active Stripe Price matches ${result.lookupKey}. Stripe returned 0 candidate Prices.`,
+        driftCategory: 'price_authority',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    ]);
+    expect(result.issueCount).toBe(1);
     expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+  });
+
+  it('plans bootstrap in a dry-run while reporting the missing Price without writes', async () => {
+    const { reconciler, stripeCatalog, mappings, snapshots } = createReconciler();
+    const result = await reconciler.reconcileVariant(storeItem, { apply: false, expectedPrice: fixedExpectedPrice() });
+    expect(result.actions).toEqual([
+      {
+        kind: 'create_catalog_price',
+        idempotencyKey: expect.any(String),
+        requestShapeFingerprint: expect.any(String),
+        requestId: null,
+        replayed: null,
+      },
+    ]);
+    expect(result.resolvedPrice).toBeNull();
+    expect(result.issues).toEqual([
+      {
+        code: 'missing_price',
+        detail: `No unambiguous active Stripe Price matches ${result.lookupKey}. Stripe returned 0 candidate Prices.`,
+        driftCategory: 'price_authority',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    ]);
+    expect(result.issueCount).toBe(1);
+    expect(stripeCatalog.createCatalogPrice).not.toHaveBeenCalled();
+    expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
+    expect(mappings.records.size).toBe(0);
+    expect(snapshots.records.size).toBe(0);
   });
 
   it('backfills a trusted Product binding without changing the selling amount', async () => {
@@ -578,5 +523,38 @@ describe('CatalogReconciler', () => {
     const result = await reconciler.verifyBuyableCatalog({ apply: false, expectedPrices: new Map() });
     expect(result.results).toHaveLength(2);
     expect(result.results.every((entry) => entry.issues.some((issue) => issue.code === 'missing_price'))).toBe(true);
+  });
+
+  it('waits for each listed item and forwards its expected inputs in repository order', async () => {
+    const { reconciler } = createReconciler({ storeItems: [storeItem, unavailableStoreItem] });
+    const expectedPrice = fixedExpectedPrice();
+    const productProjection: StripeCatalogProductProjection = {
+      description: 'Approved presentation',
+      imageUrls: [],
+      metadata: {},
+      name: 'Item',
+      taxCode: null,
+    };
+    const now = new Date('2026-10-10T00:00:00Z');
+    const firstResult = await reconciler.reconcileVariant(storeItem, { apply: false });
+    const pending = Promise.withResolvers<typeof firstResult>();
+    const reconcile = vi.spyOn(reconciler, 'reconcileVariant').mockImplementationOnce(() => pending.promise);
+    const run = reconciler.verifyBuyableCatalog({
+      apply: false,
+      now,
+      expectedPrices: new Map([[storeItem.variantId, expectedPrice]]),
+      expectedProductProjections: new Map([[storeItem.variantId, productProjection]]),
+    });
+    await vi.waitFor(() => expect(reconcile).toHaveBeenCalledTimes(1));
+    expect(reconcile).toHaveBeenNthCalledWith(1, storeItem, { apply: false, expectedPrice, productProjection, now });
+    pending.resolve(firstResult);
+    const result = await run;
+    expect(reconcile).toHaveBeenNthCalledWith(2, unavailableStoreItem, {
+      apply: false,
+      expectedPrice: null,
+      productProjection: null,
+      now,
+    });
+    expect(result.results.map((entry) => entry.storeItem)).toEqual([storeItem, unavailableStoreItem]);
   });
 });

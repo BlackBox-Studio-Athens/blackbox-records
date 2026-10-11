@@ -1,5 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
-import { inventoryQuerySchema } from '../../../application/commerce/stock';
+import { inventoryQuerySchema, type VariantStockHistoryEntry } from '../../../application/commerce/stock';
 import {
   athensToday,
   isPreorderOpen,
@@ -580,16 +580,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           variantId,
         });
 
-        return jsonNoStore(
-          context.json(
-            addHypermedia(
-              toStockDetailResponse(detail),
-              variantLinks(variantId),
-              variantActions(variantId, detail.stock.revision),
-            ),
-            200,
-          ),
-        );
+        return jsonNoStore(context.json(toStockDetailResponse(detail, variantId), 200));
       } catch (error) {
         const routeError = toInternalStockRouteError(services, error, {
           invalidRequestMessage: 'Invalid variant id.',
@@ -602,11 +593,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
 
         throw error;
@@ -633,16 +620,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         );
         const detail = await services.readVariantStock(variantId);
         logStockOutcome(logger, 'info', { operation: 'zero_stock_state', outcome: 'ok', variantId });
-        return jsonNoStore(
-          context.json(
-            addHypermedia(
-              toStockDetailResponse(detail),
-              variantLinks(variantId),
-              variantActions(variantId, detail.stock.revision),
-            ),
-            200,
-          ),
-        );
+        return jsonNoStore(context.json(toStockDetailResponse(detail, variantId), 200));
       } catch (error) {
         if (error instanceof services.errors.StockConflictError) {
           logStockOutcome(logger, 'warn', {
@@ -664,11 +642,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
             variantId,
           });
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
         throw error;
       }
@@ -694,16 +668,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         );
         const detail = await services.readVariantStock(variantId);
         logStockOutcome(logger, 'info', { operation: 'low_stock_notice', outcome: 'ok', variantId });
-        return jsonNoStore(
-          context.json(
-            addHypermedia(
-              toStockDetailResponse(detail),
-              variantLinks(variantId),
-              variantActions(variantId, detail.stock.revision),
-            ),
-            200,
-          ),
-        );
+        return jsonNoStore(context.json(toStockDetailResponse(detail, variantId), 200));
       } catch (error) {
         if (error instanceof services.errors.StockConflictError) {
           logStockOutcome(logger, 'warn', {
@@ -725,11 +690,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
             variantId,
           });
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
         throw error;
       }
@@ -754,16 +715,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         );
         const detail = await services.readVariantStock(variantId);
         logStockOutcome(logger, 'info', { operation: 'preorder', outcome: 'ok', variantId });
-        return jsonNoStore(
-          context.json(
-            addHypermedia(
-              toStockDetailResponse(detail),
-              variantLinks(variantId),
-              variantActions(variantId, detail.stock.revision),
-            ),
-            200,
-          ),
-        );
+        return jsonNoStore(context.json(toStockDetailResponse(detail, variantId), 200));
       } catch (error) {
         if (error instanceof services.errors.StockConflictError) {
           logStockOutcome(logger, 'warn', {
@@ -834,11 +786,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
 
         throw error;
@@ -921,11 +869,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
 
         throw error;
@@ -1013,11 +957,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
           });
 
-          return jsonError(context, {
-            code: routeError.code,
-            message: routeError.message,
-            status: routeError.status,
-          });
+          return jsonError(context, routeError);
         }
 
         throw error;
@@ -1026,39 +966,44 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
   });
 }
 
-function toStockDetailResponse(detail: {
-  availableOnlineQuantity?: number;
-  heldQuantity?: number;
-  availabilityAlertCount: number;
-  displayName?: string;
-  sourceId: string;
-  sourceKind: 'release' | 'distro';
-  stock: {
-    revision: number | null;
-    onlineQuantity: number;
-    quantity: number;
-    zeroStockState: ZeroStockState;
-    expectedMonth: string | null;
-    showLowStock: boolean;
-    preorder: StockPreorder | null;
-    updatedAt: Date | null;
-  };
-  storeItemSlug: string;
-  variantId: string;
-}) {
-  return {
-    ...(detail.availableOnlineQuantity === undefined
-      ? {}
-      : { availableOnlineQuantity: detail.availableOnlineQuantity }),
-    ...(detail.heldQuantity === undefined ? {} : { heldQuantity: detail.heldQuantity }),
-    availabilityAlertCount: detail.availabilityAlertCount,
-    ...(detail.displayName ? { displayName: detail.displayName } : {}),
-    sourceId: detail.sourceId,
-    sourceKind: detail.sourceKind,
-    stock: toStockStateResponse(detail.stock),
-    storeItemSlug: detail.storeItemSlug,
-    variantId: detail.variantId,
-  };
+function toStockDetailResponse(
+  detail: {
+    availableOnlineQuantity?: number;
+    heldQuantity?: number;
+    availabilityAlertCount: number;
+    displayName?: string;
+    sourceId: string;
+    sourceKind: 'release' | 'distro';
+    stock: {
+      revision: number | null;
+      onlineQuantity: number;
+      quantity: number;
+      zeroStockState: ZeroStockState;
+      expectedMonth: string | null;
+      showLowStock: boolean;
+      preorder: StockPreorder | null;
+      updatedAt: Date | null;
+    };
+    storeItemSlug: string;
+    variantId: string;
+  },
+  variantId: string,
+) {
+  return addHypermedia(
+    {
+      availableOnlineQuantity: detail.availableOnlineQuantity,
+      heldQuantity: detail.heldQuantity,
+      availabilityAlertCount: detail.availabilityAlertCount,
+      ...(detail.displayName ? { displayName: detail.displayName } : {}),
+      sourceId: detail.sourceId,
+      sourceKind: detail.sourceKind,
+      stock: toStockStateResponse(detail.stock),
+      storeItemSlug: detail.storeItemSlug,
+      variantId: detail.variantId,
+    },
+    variantLinks(variantId),
+    variantActions(variantId, detail.stock.revision),
+  );
 }
 
 function toVariantSummaryResponse<TVariant extends { variantId: string }>(variant: TVariant) {
@@ -1156,52 +1101,8 @@ function toStockStateResponse(stock: {
   };
 }
 
-function toHistoryEntryResponse(
-  entry:
-    | {
-        actorEmail: string;
-        id: string;
-        notes: string | null;
-        quantityDelta: number;
-        reason: string;
-        recordedAt: Date;
-        type: 'change';
-        variantId: string;
-      }
-    | {
-        actorEmail: string;
-        countedQuantity: number;
-        id: string;
-        notes: string | null;
-        onlineQuantity: number;
-        recordedAt: Date;
-        type: 'count';
-        variantId: string;
-      },
-) {
-  if (entry.type === 'change') {
-    return {
-      actorEmail: entry.actorEmail,
-      id: entry.id,
-      notes: entry.notes,
-      quantityDelta: entry.quantityDelta,
-      reason: entry.reason,
-      recordedAt: entry.recordedAt.toISOString(),
-      type: entry.type,
-      variantId: entry.variantId,
-    };
-  }
-
-  return {
-    actorEmail: entry.actorEmail,
-    countedQuantity: entry.countedQuantity,
-    id: entry.id,
-    notes: entry.notes,
-    onlineQuantity: entry.onlineQuantity,
-    recordedAt: entry.recordedAt.toISOString(),
-    type: entry.type,
-    variantId: entry.variantId,
-  };
+function toHistoryEntryResponse(entry: VariantStockHistoryEntry) {
+  return entry.type === 'change' ? toStockChangeEntryResponse(entry) : toStockCountEntryResponse(entry);
 }
 
 function toStockChangeEntryResponse(entry: {

@@ -25,6 +25,7 @@ const mockRecordStockChange = vi.fn();
 const mockRecordStockCount = vi.fn();
 const mockSetStockPreorder = vi.fn();
 const mockSetZeroStockState = vi.fn();
+const mockSetShowLowStock = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
 const StockConflictError = class StockConflictError extends Error {};
@@ -53,6 +54,7 @@ vi.mock('./stock/internal-stock-services', () => ({
       recordStockCount: mockRecordStockCount,
       setStockPreorder: mockSetStockPreorder,
       setZeroStockState: mockSetZeroStockState,
+      setShowLowStock: mockSetShowLowStock,
       searchVariants: mockSearchVariants,
       readInventory: mockReadInventory,
     };
@@ -247,6 +249,147 @@ describe('internal stock routes', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  const variantId = 'variant_test';
+  const stockPath = `/api/internal/variants/${variantId}/stock`;
+  const stockCountEntry = {
+    actorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+    countedQuantity: 4,
+    id: 'count_1',
+    notes: null,
+    onlineQuantity: 3,
+    recordedAt: '2026-04-24T12:05:00.000Z',
+    variantId,
+  };
+  const stockState = {
+    revision: 8,
+    onlineQuantity: 3,
+    quantity: 4,
+    zeroStockState: 'sold_out',
+    expectedMonth: null,
+    showLowStock: true,
+    preorder: null,
+    updatedAt: '2026-04-24T12:05:00.000Z',
+  };
+  const stockLinks = [
+    { href: stockPath, rel: 'self', type: 'application/json' },
+    { href: `${stockPath}/history`, rel: 'history', type: 'application/json' },
+    { href: `/api/internal/variants/${variantId}/price`, rel: 'price', type: 'application/json' },
+    { href: `/api/internal/variants/${variantId}/publication`, rel: 'publication', type: 'application/json' },
+  ];
+
+  it.each([0, 2])('returns %i projected stock history entries in reader order', async (length) => {
+    const entries = [
+      { ...stockCountEntry, type: 'count' },
+      {
+        actorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+        id: 'change_1',
+        notes: 'Packed for table',
+        quantityDelta: -1,
+        reason: 'show_sale',
+        recordedAt: '2026-04-24T12:00:00.000Z',
+        type: 'change',
+        variantId,
+      },
+    ].slice(0, length);
+    mockReadVariantStockHistory.mockResolvedValueOnce(
+      entries.map((entry) => ({ ...entry, recordedAt: new Date(entry.recordedAt), internalOnly: 'private' })),
+    );
+    const response = await createHttpApp().request(`http://127.0.0.1${stockPath}/history?limit=2`, {}, LOCAL_ENV);
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(mockReadVariantStockHistory).toHaveBeenCalledExactlyOnceWith(variantId, 2);
+    await expect(response.json()).resolves.toEqual({
+      entries,
+      variantId,
+      links: [
+        { href: `${stockPath}/history`, rel: 'self', type: 'application/json' },
+        { href: stockPath, rel: 'up', type: 'application/json' },
+      ],
+    });
+  });
+
+  it('returns the successful count entry and current stock without service-only fields', async () => {
+    mockRecordStockCount.mockResolvedValueOnce({
+      entry: { ...stockCountEntry, recordedAt: new Date(stockCountEntry.recordedAt), internalOnly: 'private' },
+      stock: { ...stockState, updatedAt: new Date(stockState.updatedAt), createdAt: new Date(), variantId },
+    });
+    const response = await createHttpApp().request(
+      `http://127.0.0.1${stockPath}/counts`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedRevision: 7, countedQuantity: 4, onlineQuantity: 3 }),
+      },
+      LOCAL_ENV,
+    );
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      entry: { ...stockCountEntry, type: 'count' },
+      stock: stockState,
+      variantId,
+      links: stockLinks,
+    });
+  });
+
+  it.each([undefined, 0])('returns fresh low-stock readback with optional quantities %s', async (quantity) => {
+    const showLowStock = quantity === 0;
+    const detail = {
+      availableOnlineQuantity: quantity,
+      heldQuantity: quantity,
+      availabilityAlertCount: 3,
+      displayName: 'Test record',
+      sourceId: 'test',
+      sourceKind: 'release',
+      stock: { ...stockState, showLowStock },
+      storeItemSlug: 'test',
+      variantId,
+    };
+    mockReadVariantStock.mockResolvedValueOnce({
+      ...detail,
+      stock: { ...detail.stock, updatedAt: new Date(stockState.updatedAt) },
+      itemType: 'vinyl',
+    });
+    const response = await createHttpApp().request(
+      `http://127.0.0.1${stockPath}/low-stock-notice`,
+      {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedRevision: 7, showLowStock }),
+      },
+      LOCAL_ENV,
+    );
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(mockSetShowLowStock).toHaveBeenCalledExactlyOnceWith({ expectedRevision: 7, showLowStock, variantId });
+    expect(mockReadVariantStock).toHaveBeenCalledExactlyOnceWith(variantId);
+    const body = await response.json();
+    expect(body).toEqual({
+      ...detail,
+      links: stockLinks,
+      actions: [
+        ['record-stock-change', 'recordStockChange', 'POST', 'changes'],
+        ['record-stock-count', 'recordStockCount', 'POST', 'counts'],
+        ['set-zero-stock-state', 'setZeroStockState', 'PATCH', 'zero-stock-state'],
+        ['set-show-low-stock', 'setShowLowStock', 'PATCH', 'low-stock-notice'],
+        ['set-stock-preorder', 'setStockPreorder', 'PATCH', 'preorder'],
+      ].map(([rel, operationRef, method, suffix], index) => ({
+        href: `${stockPath}/${suffix}`,
+        method,
+        operationRef,
+        parameters: {
+          ...(index ? { body: { expectedRevision: 8 } } : {}),
+          path: { variantId },
+        },
+        rel,
+        type: 'application/json',
+      })),
+    });
   });
 
   it.each([undefined, -1, 1.5, '0', {}, true])(

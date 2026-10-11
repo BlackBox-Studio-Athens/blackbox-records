@@ -823,9 +823,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           request = new Request(request, { headers: writeHeaders, body: JSON.stringify(payload) });
           if (request.method === 'POST' && !editorialWrite[2]) {
             payload = nativeDraftCreation(editorialWrite[1], payload);
-            const headers = new Headers(request.headers);
-            headers.delete('Content-Length');
-            request = new Request(request, { headers, body: JSON.stringify(payload) });
+            request = new Request(request, { body: JSON.stringify(payload) });
           }
           if (editorialWrite[1] === 'releases' && Object.hasOwn(payload.data as object, 'artist')) {
             const { withEmDashRuntime } = await import('emdash/middleware');
@@ -834,10 +832,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             );
             // Legacy columns remain writable until EmDash has migrated this field to a relation.
             if (field?.validation?.relation) {
-              const headers = new Headers(request.headers);
-              headers.delete('Content-Length');
               request = new Request(request, {
-                headers,
                 body: JSON.stringify(nativeEditorialWrite(editorialWrite[1], payload)),
               });
             }

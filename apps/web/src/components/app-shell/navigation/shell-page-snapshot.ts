@@ -110,24 +110,6 @@ export function rememberDocumentIslandServerMarkup(targetDocument: Document = do
   if (mainElement) rememberIslandServerMarkup(mainElement);
 }
 
-// Tuning knob: longest the mount snapshot waits for an idle period before it runs anyway.
-export const SHELL_IDLE_SNAPSHOT_TIMEOUT_MS = 2000;
-
-type IdleTaskScheduler = Pick<Window, 'clearTimeout' | 'setTimeout'> &
-  Partial<Pick<Window, 'cancelIdleCallback' | 'requestIdleCallback'>>;
-
-// Runs a task when the main thread is idle (Safari lacks requestIdleCallback, so it falls back to a short timer).
-// Returns a cancel function.
-export function scheduleIdleShellTask(task: () => void, scheduler: IdleTaskScheduler = window) {
-  if (typeof scheduler.requestIdleCallback === 'function') {
-    const handle = scheduler.requestIdleCallback(task, { timeout: SHELL_IDLE_SNAPSHOT_TIMEOUT_MS });
-    return () => scheduler.cancelIdleCallback?.(handle);
-  }
-
-  const handle = scheduler.setTimeout(task, 200);
-  return () => scheduler.clearTimeout(handle);
-}
-
 // Restores the server-rendered state of a snapshot's main element; `root` is a copy that no page listener touches.
 function sanitizeShellMainSnapshot(root: ParentNode) {
   // This country-gated island has empty server markup, even if it resolved before the shell remembered it.

@@ -23,14 +23,14 @@ export function createValidatedStoreItemProjection(
 ): CanonicalStoreItemProjection[] {
   if (candidates.length === 0) return [];
 
-  const candidatesBySource = new Map<string, StoreItemProjectionCandidate>();
+  const sourceKeys = new Set<string>();
 
   for (const candidate of candidates) {
     const sourceKey = createSourceKey(candidate.sourceKind, candidate.sourceId);
-    if (candidatesBySource.has(sourceKey)) {
+    if (sourceKeys.has(sourceKey)) {
       throw new Error(`Duplicate Store Item source tuple: ${sourceKey}.`);
     }
-    candidatesBySource.set(sourceKey, candidate);
+    sourceKeys.add(sourceKey);
   }
 
   assertNoUnresolvedCrossSourceDuplicates(candidates);
@@ -57,8 +57,7 @@ export function createValidatedStoreItemProjection(
     };
   });
 
-  assertUniqueProjectionField(projection, 'storeItemSlug');
-  assertUniqueProjectionField(projection, 'variantId');
+  assertUniqueStoreItemSlugs(projection);
 
   return projection;
 }
@@ -80,18 +79,15 @@ function assertNoUnresolvedCrossSourceDuplicates(candidates: readonly StoreItemP
   }
 }
 
-function assertUniqueProjectionField(
-  projection: readonly CanonicalStoreItemProjection[],
-  field: 'storeItemSlug' | 'variantId',
-): void {
+function assertUniqueStoreItemSlugs(projection: readonly CanonicalStoreItemProjection[]): void {
   const ownersByValue = new Map<string, string>();
 
   for (const entry of projection) {
-    const value = entry[field];
+    const value = entry.storeItemSlug;
     const owner = createSourceKey(entry.sourceKind, entry.sourceId);
     const existingOwner = ownersByValue.get(value);
     if (existingOwner) {
-      throw new Error(`Duplicate ${field} ${value}: ${existingOwner}, ${owner}.`);
+      throw new Error(`Duplicate storeItemSlug ${value}: ${existingOwner}, ${owner}.`);
     }
     ownersByValue.set(value, owner);
   }

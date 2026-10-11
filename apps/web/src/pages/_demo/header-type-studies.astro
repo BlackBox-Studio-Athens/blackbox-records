@@ -22,7 +22,6 @@ type FontCandidate = {
   id: string;
   name: string;
   fontFamily: string;
-  opticalScale: number;
   fileName?: string;
   directory?: SelfHostedFontDirectory;
 };
@@ -35,17 +34,13 @@ const faviconSvgUrl = createProjectRelativeUrl(siteBrandAssets.faviconSvg);
 const faviconPngUrl = createProjectRelativeUrl(siteBrandAssets.faviconPng96);
 const faviconIcoUrl = createProjectRelativeUrl(siteBrandAssets.faviconIco);
 const selfHostedFontDirectories = {
-  brand: {
-    directory: new URL('../../../public/assets/fonts/brand/', import.meta.url),
-  },
-  'type-studies': {
-    directory: new URL('./fonts/', import.meta.url),
-  },
+  brand: new URL('../../../public/assets/fonts/brand/', import.meta.url),
+  'type-studies': new URL('./fonts/', import.meta.url),
 };
 
 function hasSelfHostedFont(fileName: string, directory: SelfHostedFontDirectory = 'type-studies') {
   const fontDirectory = selfHostedFontDirectories[directory];
-  return existsSync(fileURLToPath(new URL(fileName, fontDirectory.directory)));
+  return existsSync(fileURLToPath(new URL(fileName, fontDirectory)));
 }
 
 const [artistProfiles, releaseCatalog, newsArticles, distroEntries] = await Promise.all([
@@ -67,19 +62,16 @@ const fontCandidates = [
     id: '01',
     name: 'Road Rage',
     fontFamily: 'Road Rage',
-    opticalScale: 1.08,
   },
   {
     id: '02',
     name: 'Changa',
     fontFamily: 'Changa',
-    opticalScale: 0.94,
   },
   {
     id: '03',
     name: 'Veneer',
     fontFamily: 'Veneer',
-    opticalScale: 1.02,
     directory: 'brand',
     fileName: 'veneer_regular.woff2',
   },
@@ -87,7 +79,6 @@ const fontCandidates = [
     id: '04',
     name: 'Druk Text Wide Medium',
     fontFamily: 'Druk Text Wide Medium',
-    opticalScale: 0.9,
     fileName: 'DrukTextWide-Medium-Trial.otf',
   },
 ] satisfies FontCandidate[];
@@ -97,12 +88,11 @@ const reviewedCandidates = fontCandidates.map((candidate) => ({
   isMissing: candidate.fileName ? !hasSelfHostedFont(candidate.fileName, candidate.directory) : false,
 }));
 
-const previewCandidates = reviewedCandidates.map(({ id, name, fontFamily, isMissing, opticalScale }) => ({
+const previewCandidates = reviewedCandidates.map(({ id, name, fontFamily, isMissing }) => ({
   fontFamily,
   id,
   isMissing,
   name,
-  opticalScale,
 }));
 const previewCandidateJson = JSON.stringify(previewCandidates);
 
@@ -307,7 +297,6 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
           fontFamily: 'Bebas Neue',
           id: 'baseline',
           name: 'Bebas Neue',
-          opticalScale: 1,
         };
 
         function createFontStack(fontFamily) {

@@ -1,6 +1,7 @@
 # public-controls Specification
 
 ## Purpose
+
 Shared behaviour of the public site's buttons, chips, icon controls and text actions, so every control reads as one family and stays usable by pointer, touch, keyboard and assistive technology.
 
 ## Requirements

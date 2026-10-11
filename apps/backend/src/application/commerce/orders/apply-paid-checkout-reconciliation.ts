@@ -140,16 +140,17 @@ export async function applyPaidCheckoutReconciliation(
       amountTotalMinor,
       checkoutSessionId,
       currencyCode,
-      lineItems: reconciledOrderLines.map((line) => ({
-        lineAmountMinor: line.lineAmountMinor!,
-        lineVatMinor:
-          finalizedLineItems.find((item) => item.stripePriceId === line.stripePriceId)?.lineVatMinor ?? null,
-        taxRatePercent:
-          finalizedLineItems.find((item) => item.stripePriceId === line.stripePriceId)?.taxRatePercent ?? null,
-        quantity: line.quantity,
-        unitAmountMinor: line.unitAmountMinor!,
-        variantId: line.variantId,
-      })),
+      lineItems: reconciledOrderLines.map((line) => {
+        const finalized = finalizedLineItems.find((item) => item.stripePriceId === line.stripePriceId);
+        return {
+          lineAmountMinor: line.lineAmountMinor!,
+          lineVatMinor: finalized?.lineVatMinor ?? null,
+          taxRatePercent: finalized?.taxRatePercent ?? null,
+          quantity: line.quantity,
+          unitAmountMinor: line.unitAmountMinor!,
+          variantId: line.variantId,
+        };
+      }),
       newsletterConsentAt: reconciliation.source.newsletterOptIn ? appliedAt : null,
       newsletterConsentCopyVersion,
       newsletterOptIn: reconciliation.source.newsletterOptIn,

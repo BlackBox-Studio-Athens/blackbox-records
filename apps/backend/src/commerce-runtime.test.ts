@@ -150,7 +150,6 @@ describe('free-tier commerce execution', () => {
 
   it('names alert items from published content when the combined Worker binds it', async () => {
     const env = { PRODUCT_ENVIRONMENT: 'UAT', MEDIA: { get: vi.fn() } } as unknown as AppBindings;
-    deliver.mockClear();
     await new CommerceRuntime({} as DurableObjectState, env).runPaidOrderDelivery(1234, env);
     expect(deliver).toHaveBeenCalledExactlyOnceWith(expect.any(Object), new Date(1234), {
       itemNames: expect.any(Function),

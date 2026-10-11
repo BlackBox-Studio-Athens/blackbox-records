@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { athensToday, isPreorderOpen } from '../../../domain/commerce';
 
 import {
   InvalidStockOperationError,
@@ -25,7 +24,6 @@ import type {
   StockRepository,
   StoreItemOptionRecord,
   StoreItemOptionRepository,
-  StoreItemSourceRef,
 } from '../../../domain/commerce/repositories/spi';
 import {
   stockChangeDelta,
@@ -37,35 +35,15 @@ import {
 class InMemoryStoreItemOptionRepository implements StoreItemOptionRepository {
   public constructor(private readonly storeItems: StoreItemOptionRecord[]) {}
 
-  public async findBySource(source: StoreItemSourceRef): Promise<StoreItemOptionRecord | null> {
-    return (
-      this.storeItems.find(
-        (storeItem) => storeItem.sourceKind === source.sourceKind && storeItem.sourceId === source.sourceId,
-      ) ?? null
-    );
-  }
+  public findBySource = vi.fn<StoreItemOptionRepository['findBySource']>();
 
-  public async findByStoreItemSlug(storeItemSlug: string): Promise<StoreItemOptionRecord | null> {
-    return this.storeItems.find((storeItem) => storeItem.storeItemSlug === storeItemSlug) ?? null;
-  }
+  public findByStoreItemSlug = vi.fn<StoreItemOptionRepository['findByStoreItemSlug']>();
 
   public async findByVariantId(variantId: string): Promise<StoreItemOptionRecord | null> {
     return this.storeItems.find((storeItem) => storeItem.variantId === variantId) ?? null;
   }
 
-  public async search(query: string | null, limit: number): Promise<StoreItemOptionRecord[]> {
-    const trimmedQuery = query?.trim().toLowerCase() ?? '';
-    const results =
-      trimmedQuery.length === 0
-        ? this.storeItems
-        : this.storeItems.filter((storeItem) =>
-            [storeItem.storeItemSlug, storeItem.sourceId, storeItem.variantId].some((value) =>
-              value.toLowerCase().includes(trimmedQuery),
-            ),
-          );
-
-    return results.slice(0, limit);
-  }
+  public search = vi.fn<StoreItemOptionRepository['search']>();
 }
 
 class InMemoryStockRepository implements StockRepository {
@@ -75,10 +53,7 @@ class InMemoryStockRepository implements StockRepository {
     return this.records.get(variantId) ?? null;
   }
 
-  public async listOpenPreorders(): Promise<StockRecord[]> {
-    const today = athensToday();
-    return [...this.records.values()].filter((stock) => stock.preorder && isPreorderOpen(stock.preorder, today));
-  }
+  public listOpenPreorders = vi.fn<StockRepository['listOpenPreorders']>();
 
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {
     const existing = this.records.get(variantId);
@@ -167,6 +142,7 @@ describe('commerce stock use cases', () => {
 
   beforeEach(() => {
     storeItems = new InMemoryStoreItemOptionRepository([storeItem]);
+    storeItems.search.mockResolvedValue([storeItem]);
     stock = new InMemoryStockRepository();
     stockChanges = new InMemoryStockChangeRepository();
     stockCounts = new InMemoryStockCountRepository();
@@ -199,6 +175,7 @@ describe('commerce stock use cases', () => {
 
   it('searches variants through the shared store item mapping seam', async () => {
     await expect(searchVariants(storeItems, 'disintegration', 20)).resolves.toEqual([storeItem]);
+    expect(storeItems.search).toHaveBeenCalledExactlyOnceWith('disintegration', 20);
   });
 
   it('returns zero stock when the variant exists but has no stock row yet', async () => {
@@ -594,6 +571,25 @@ describe('commerce stock use cases', () => {
         variantId: storeItem.variantId,
       }),
     ).rejects.toBeInstanceOf(InvalidStockOperationError);
+  });
+
+  it.each([
+    [-1, 0],
+    [1, -1],
+    [1, 2],
+  ])('rejects invalid recount %s/%s before writing', async (counted, online) => {
+    const write = vi.spyOn(operatorStock, 'recordCount');
+    await expect(
+      recordStockCount(storeItems, operatorStock, {
+        actorEmail: 'operator@blackboxrecords.example',
+        countedQuantity: counted,
+        expectedRevision: null,
+        notes: null,
+        onlineQuantity: online,
+        variantId: storeItem.variantId,
+      }),
+    ).rejects.toEqual(new InvalidStockOperationError('Online stock cannot exceed counted stock.'));
+    expect(write).not.toHaveBeenCalled();
   });
 
   it('records a stock count and resets total and online stock', async () => {

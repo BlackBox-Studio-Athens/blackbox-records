@@ -111,10 +111,10 @@ export function normalizeTelemetryPath(urlOrPath: string): string {
       /^\/api\/internal\/orders\/checkout-sessions\/[^/]+$/,
       '/api/internal/orders/checkout-sessions/:checkoutSessionId',
     )
-    .replace(/^\/api\/internal\/variants\/[^/]+\/stock\/history$/, '/api/internal/variants/:variantId/stock/history')
-    .replace(/^\/api\/internal\/variants\/[^/]+\/stock\/change$/, '/api/internal/variants/:variantId/stock/change')
-    .replace(/^\/api\/internal\/variants\/[^/]+\/stock\/count$/, '/api/internal/variants/:variantId/stock/count')
-    .replace(/^\/api\/internal\/variants\/[^/]+\/stock$/, '/api/internal/variants/:variantId/stock');
+    .replace(
+      /^\/api\/internal\/variants\/[^/]+\/stock(\/(?:history|change|count))?$/,
+      '/api/internal/variants/:variantId/stock$1',
+    );
 }
 
 export function requestObservabilityMiddleware(): MiddlewareHandler<AppEnv> {

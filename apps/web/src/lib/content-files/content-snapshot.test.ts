@@ -192,8 +192,34 @@ it('loads only checksum-bound content, maps stable references and rejects altere
         'local',
       ),
     ).toThrow('published source');
+    const releaseBinding = loaded.snapshot.storeItems![0]!;
     loaded.snapshot.storeItems = [];
     expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toBeNull();
+    expect(snapshotCollection(loaded, 'distro')[0]!.data.store_item).toBeNull();
+    delete loaded.snapshot.storeItems;
+    for (const collection of ['releases', 'distro'])
+      expect(snapshotCollection(loaded, collection)[0]!.data).not.toHaveProperty('store_item');
+    loaded.snapshot.records.find((record) => record.collection === 'distro')!.slug = 'stable-release';
+    loaded.snapshot.storeItems = [
+      releaseBinding,
+      { ...releaseBinding, storeItemSlug: 'later-store-slug', variantId: 'variant_later' },
+      {
+        ...releaseBinding,
+        sourceKind: 'distro',
+        storeItemSlug: 'distro-store-slug',
+        variantId: 'variant_distro',
+      },
+    ];
+    const bindings = [...loaded.snapshot.storeItems];
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toEqual({
+      storeItemSlug: 'original-store-slug',
+      variantId: 'variant_persisted',
+    });
+    expect(snapshotCollection(loaded, 'distro')[0]!.data.store_item).toEqual({
+      storeItemSlug: 'distro-store-slug',
+      variantId: 'variant_distro',
+    });
+    expect(loaded.snapshot.storeItems).toEqual(bindings);
     loaded.snapshot.records.push({
       collection: 'services',
       id: 'services',

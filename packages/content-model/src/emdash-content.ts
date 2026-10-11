@@ -4,6 +4,7 @@ import {
   createArtistsContentSchema,
   createReleasesContentSchema,
   createNewsContentSchema,
+  createDistroContentSchema,
   createHomeContentSchema,
   createAboutContentSchema,
   createServicesContentSchema,
@@ -13,7 +14,6 @@ import {
   settingsContentSchema,
   newsletterContentSchema,
 } from './schemas';
-import { createDistroContentSchema } from './distro-content-schema';
 import { purchaseInformationSchema } from './purchase-information-schema';
 import {
   textBlockSchema,
@@ -238,8 +238,7 @@ export function validateCmsContent(collection: CmsCollection, data: Record<strin
 // links, invalid types, or unsupported rich-text blocks. Publication uses the
 // complete schemas above, including their cross-field refinements.
 function draftSchema(schema: z.ZodType): z.ZodType {
-  if (schema === cmsBodySchema) return cmsBodySchema.optional().nullable();
-  if (schema === richTextSchema) return richTextSchema.optional().nullable();
+  if (schema === cmsBodySchema || schema === richTextSchema) return schema.optional().nullable();
   if (schema === proseSchema || schema === requiredProseSchema) return proseSchema.optional().nullable();
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable || schema instanceof z.ZodDefault)
     return draftSchema(schema.unwrap() as z.ZodType);

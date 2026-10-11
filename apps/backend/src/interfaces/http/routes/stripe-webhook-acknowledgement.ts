@@ -80,11 +80,10 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
     const productId = object.object === 'product' ? object.id : typeof parent === 'string' ? parent : parent?.id;
     const storeItem = productId ? await services.findStoreItemByStripeProductId(productId) : null;
     const identity = { storeItemSlug: storeItem?.storeItemSlug ?? null, variantId: storeItem?.variantId ?? null };
-    const catalogObjectIdentity = readCatalogObjectIdentity(event.catalogObject);
 
     const recordResult = await services.recordCatalogWebhookEvent({
-      catalogObjectId: catalogObjectIdentity.catalogObjectId,
-      catalogObjectKind: catalogObjectIdentity.catalogObjectKind,
+      catalogObjectId: object.id,
+      catalogObjectKind: object.object === 'price' ? 'price' : 'product',
       eventId: event.id,
       eventType: event.type,
       stripeCreatedAt: new Date(event.created * 1000),
@@ -249,15 +248,6 @@ export async function acknowledgeVerifiedStripeWebhookEvent(
 
   return {
     received: true,
-  };
-}
-
-function readCatalogObjectIdentity(
-  catalogObject: Extract<VerifiedStripeWebhookEvent, { catalogObject: unknown }>['catalogObject'],
-): Pick<RecordStripeCatalogWebhookEventInput, 'catalogObjectId' | 'catalogObjectKind'> {
-  return {
-    catalogObjectId: catalogObject.id,
-    catalogObjectKind: catalogObject.object === 'price' ? 'price' : 'product',
   };
 }
 

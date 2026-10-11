@@ -640,20 +640,15 @@ export class D1CatalogOperationRepository {
     ) {
       throw new Error('Catalog operation results cannot be replaced.');
     }
-    const completed = nextStep === 'completed';
     const row = await this.db
       .prepare(
-        `UPDATE "CatalogOperation" SET step = ?, results = ?, status = ?, updatedAt = ?,
-      claimToken = CASE WHEN ? THEN NULL ELSE claimToken END, leaseUntil = CASE WHEN ? THEN NULL ELSE leaseUntil END
+        `UPDATE "CatalogOperation" SET step = ?, results = ?, updatedAt = ?
       WHERE id = ? AND status = 'pending' AND step = ? AND claimToken = ? AND leaseUntil > ? RETURNING *`,
       )
       .bind(
         nextStep,
         JSON.stringify({ ...operation.results, ...additions }),
-        completed ? 'completed' : 'pending',
         now.toISOString(),
-        completed ? 1 : 0,
-        completed ? 1 : 0,
         operation.id,
         operation.step,
         operation.claimToken,

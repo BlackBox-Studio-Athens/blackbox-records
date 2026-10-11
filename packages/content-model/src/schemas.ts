@@ -5,6 +5,7 @@ import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './music';
 import {
   ABOUT_STAT_KEYS,
+  DISTRO_GROUP_VALUES,
   DISTRO_INTRO_FIELDS,
   isHttpsUrl,
   isInternalOrHttpsUrl,
@@ -133,6 +134,33 @@ export function createNewsContentSchema<TImage extends z.ZodType, TReference ext
     image: image(),
     image_alt: requiredAltText,
     section_label: z.string().optional(),
+  });
+}
+
+export function createDistroContentSchema<TImageSchema extends z.ZodType>(image: () => TImageSchema) {
+  return z.object({
+    title: requiredText,
+    group: z.enum(DISTRO_GROUP_VALUES),
+    artist_or_label: requiredText,
+    image: image(),
+    image_alt: requiredAltText,
+    gallery: z
+      .array(
+        z.object({
+          image: image(),
+          image_alt: requiredAltText,
+        }),
+      )
+      .optional(),
+    tracklist: tracklistSchema.nullish(),
+    summary: requiredText,
+    summary_rich: richTextSchema.nullish(),
+    bandcamp_embed_url: bandcampEmbedUrlSchema.optional(),
+    tidal_url: tidalUrlSchema.optional(),
+    eyebrow: z.string().optional(),
+    format: z.string().optional(),
+    release_date: z.coerce.date().optional(),
+    order: z.number().int().nonnegative(),
   });
 }
 

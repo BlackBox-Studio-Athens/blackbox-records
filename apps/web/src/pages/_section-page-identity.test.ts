@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 const css = source('../styles/global.css');
 const internalPageHero = source('../components/InternalPageHero.astro');
-const releasesPage = source('./releases/index.astro');
 const servicesPage = source('./services/index.astro');
 
 function cssRule(selector: string) {
@@ -28,9 +27,7 @@ describe('section page identity', () => {
     expect(internalPageHero).toContain('{resolvedSectionLabel}');
   });
 
-  it('keeps Releases accessible without an intro and Services on the shared title class', () => {
-    expect(releasesPage).toContain('<h1 class="sr-only">Releases</h1>');
-    expect(releasesPage).not.toContain('releases-page-intro');
+  it('keeps Services on the shared title class', () => {
     expect(servicesPage).toMatch(
       /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1 class="services-page-intro__title internal-page-hero__title">\s*\{servicesContent\.hero\.title\}\s*<\/h1>/,
     );

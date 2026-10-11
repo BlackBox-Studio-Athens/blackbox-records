@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cms, orders, fetchCommerce, cmsAsset, nativeRuntime } = vi.hoisted(() => ({
+const { cms, orders, cmsAsset, nativeRuntime } = vi.hoisted(() => ({
   cms: vi.fn(),
   orders: vi.fn(),
-  fetchCommerce: vi.fn(),
   cmsAsset: vi.fn(),
   nativeRuntime: { handleContentGet: vi.fn() },
 }));
@@ -21,7 +20,7 @@ vi.mock('emdash/middleware', () => ({
   runScheduledTasks: cms,
   withEmDashRuntime: (callback: (runtime: typeof nativeRuntime) => unknown) => callback(nativeRuntime),
 }));
-vi.mock('./index', () => ({ CommerceRuntime: class {}, default: { scheduled: orders, fetch: fetchCommerce } }));
+vi.mock('./index', () => ({ CommerceRuntime: class {}, default: { scheduled: orders } }));
 vi.mock('./cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(new Error('Unauthorized')) }));
 
 import worker, { CmsRuntime } from './cms-worker';
@@ -458,20 +457,19 @@ describe('EmDash checkpoint composition', () => {
     expect(bindings.CMS_RUNTIME.getByName).not.toHaveBeenCalled();
   });
 
-  it.each(['invoke', 'binding'])(
-    'runs paid-order delivery even when CMS %s fails, and reports the failure',
-    async (failurePoint) => {
-      const failure = new Error('CMS unavailable');
-      cms.mockReset();
-      orders.mockClear();
-      cms.mockRejectedValueOnce(failure);
-      orders.mockResolvedValueOnce(undefined);
+  it.each(['orders', 'cms', 'binding'] as const)(
+    'isolates scheduled %s failure from the other work and reports the failure',
+    async (failed) => {
+      const failure = new Error('Scheduled operation unavailable');
+      cms.mockReset().mockResolvedValue(undefined);
+      orders.mockReset().mockResolvedValue(undefined);
+      if (failed !== 'binding') ({ orders, cms })[failed].mockRejectedValueOnce(failure);
       const controller = { scheduledTime: 1234 } as ScheduledController;
       const bindings = {
         PRODUCT_ENVIRONMENT: 'LOCAL',
         CMS_RUNTIME: {
           getByName: () => {
-            if (failurePoint === 'binding') throw failure;
+            if (failed === 'binding') throw failure;
             return { runMaintenance: cms };
           },
         },
@@ -479,6 +477,7 @@ describe('EmDash checkpoint composition', () => {
 
       await expect(worker.scheduled(controller, bindings)).rejects.toMatchObject({ errors: [failure] });
       expect(orders).toHaveBeenCalledExactlyOnceWith(controller, bindings);
+      expect(cms).toHaveBeenCalledTimes(failed === 'binding' ? 0 : 1);
     },
   );
 
@@ -496,18 +495,5 @@ describe('EmDash checkpoint composition', () => {
       {} as ExecutionContext,
     );
     expect(response.status).toBe(403);
-  });
-
-  it.each(['orders', 'cms'] as const)('isolates scheduled %s failure from the other work', async (failed) => {
-    orders.mockReset().mockResolvedValue(undefined);
-    cms.mockReset().mockResolvedValue(undefined);
-    const failure = new Error('Scheduled operation unavailable');
-    ({ orders, cms })[failed].mockRejectedValueOnce(failure);
-    const bindings = {
-      CMS_RUNTIME: { getByName: () => ({ runMaintenance: cms }) },
-    } as unknown as Parameters<typeof worker.scheduled>[1];
-    await expect(worker.scheduled({} as ScheduledController, bindings)).rejects.toMatchObject({ errors: [failure] });
-    expect(orders).toHaveBeenCalledTimes(1);
-    expect(cms).toHaveBeenCalledTimes(1);
   });
 });

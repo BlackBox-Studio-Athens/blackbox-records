@@ -140,7 +140,20 @@ describe('ResendEmailGateway', () => {
     });
   });
 
-  it('maps provider errors to safe reasons without leaking raw diagnostics', async () => {
+  it.each([
+    [
+      'maps provider errors to safe reasons without leaking raw diagnostics',
+      'concurrent_idempotent_requests',
+      'idempotency_conflict_retryable',
+      true,
+    ],
+    [
+      'maps invalid idempotent requests as non-retryable config warnings',
+      'invalid_idempotent_request',
+      'idempotency_conflict_invalid',
+      false,
+    ],
+  ] as const)('%s', async (_title, name, reason, retryable) => {
     const gateway = new ResendEmailGateway({
       contacts: {
         create: vi.fn(),
@@ -149,7 +162,7 @@ describe('ResendEmailGateway', () => {
         update: vi.fn(),
       },
       emails: {
-        send: vi.fn(async () => failure('concurrent_idempotent_requests', 409)),
+        send: vi.fn(async () => failure(name, 409)),
       },
     } as never);
 
@@ -166,39 +179,8 @@ describe('ResendEmailGateway', () => {
       }),
     ).resolves.toEqual({
       ok: false,
-      reason: 'idempotency_conflict_retryable',
-      retryable: true,
-    });
-  });
-
-  it('maps invalid idempotent requests as non-retryable config warnings', async () => {
-    const gateway = new ResendEmailGateway({
-      contacts: {
-        create: vi.fn(),
-        segments: { add: vi.fn() },
-        topics: { update: vi.fn() },
-        update: vi.fn(),
-      },
-      emails: {
-        send: vi.fn(async () => failure('invalid_idempotent_request', 409)),
-      },
-    } as never);
-
-    await expect(
-      gateway.sendEmail({
-        from: 'orders@blackboxrecordsathens.com',
-        html: '<p>Paid</p>',
-        idempotencyKey: 'blackbox:uat:paid-order-shopper:cs_test_123',
-        replyTo: 'support@blackboxrecordsathens.com',
-        subject: 'Order paid',
-        tags: [],
-        text: 'Paid',
-        to: 'uat-sink@ambkime.resend.app',
-      }),
-    ).resolves.toEqual({
-      ok: false,
-      reason: 'idempotency_conflict_invalid',
-      retryable: false,
+      reason,
+      retryable,
     });
   });
 });

@@ -24,10 +24,10 @@ export default function PurchaseInformation({
   presentation?: 'checkout';
 }) {
   const termsHref = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`;
+  const deliverySummary =
+    information?.terms.delivery.summary ??
+    'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.';
   if (presentation === 'checkout') {
-    const deliverySummary =
-      information?.terms.delivery.summary ??
-      'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.';
     return (
       <div className="checkout-review__information" data-purchase-information>
         {import.meta.env.DEV && information && isPurchaseInformationDraft && (
@@ -49,12 +49,7 @@ export default function PurchaseInformation({
         <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
       )}
       {information && <Prose value={information.terms.dispatch.summary} />}
-      <Prose
-        value={
-          information?.terms.delivery.summary ??
-          'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.'
-        }
-      />
+      <Prose value={deliverySummary} />
       <div className="flex flex-wrap gap-x-5">
         <a className={linkClass} href={`${termsHref}#delivery`}>
           Delivery information

@@ -6,7 +6,6 @@ const DEFAULT_CHECKOUT_RETURN_ORIGINS = [
   'https://blackbox-records-web-uat.pages.dev',
 ];
 const CART_CHECKOUT_PATH = '/store/checkout/';
-const CART_CHECKOUT_RETURN_PATH = '/store/checkout/return/';
 
 export function createPublicCheckoutReturnUrl(
   headers: Headers,
@@ -14,35 +13,7 @@ export function createPublicCheckoutReturnUrl(
   storeItemSlug: string,
   configuredReturnOrigins?: string,
 ): string {
-  const allowedReturnTargets = readAllowedCheckoutReturnTargets(configuredReturnOrigins);
-  const referer = headers.get('referer');
-
-  if (referer) {
-    const refererUrl = parseUrl(referer);
-
-    if (refererUrl) {
-      const checkoutPath = refererUrl.pathname.endsWith('/') ? refererUrl.pathname : `${refererUrl.pathname}/`;
-
-      if (
-        hasAllowedOrigin(allowedReturnTargets, refererUrl.origin) &&
-        isAllowedCheckoutPath(checkoutPath, storeItemSlug)
-      ) {
-        const returnTarget = findAllowedReturnTarget(allowedReturnTargets, refererUrl.origin);
-        if (returnTarget) {
-          return `${readCheckoutBaseUrl(refererUrl, checkoutPath) ?? returnTarget.baseUrl}${CART_CHECKOUT_RETURN_PATH}?session_id={CHECKOUT_SESSION_ID}`;
-        }
-      }
-    }
-  }
-
-  const origin = headers.get('origin') ?? new URL(requestUrl).origin;
-  const returnTarget = findAllowedReturnTarget(allowedReturnTargets, origin);
-
-  if (!returnTarget) {
-    throw new CheckoutConfigurationError('Checkout return URL is not allowed.');
-  }
-
-  return `${returnTarget.baseUrl}${CART_CHECKOUT_RETURN_PATH}?session_id={CHECKOUT_SESSION_ID}`;
+  return `${createPublicCheckoutCancelUrl(headers, requestUrl, storeItemSlug, configuredReturnOrigins)}return/?session_id={CHECKOUT_SESSION_ID}`;
 }
 
 export function createPublicCheckoutCancelUrl(

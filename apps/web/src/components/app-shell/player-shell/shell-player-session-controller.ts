@@ -217,10 +217,6 @@ export function createShellPlayerSessionController({
 
     activePlayerSessionRef.current = nextSession;
     providerSelectionByReleaseIdRef.current.set(releaseId, provider.id);
-    setActivePlayerProviderId(provider.id);
-    setActivePlayerEmbedLayout(provider.embedLayout);
-    setActivePlayerTitle(releaseTitle);
-    setIsPlayerLoading(iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState !== 'loaded');
     updatePlayerUiFromSession(nextSession);
   }
 

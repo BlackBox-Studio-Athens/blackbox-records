@@ -1,6 +1,7 @@
 # store-item-information Specification
 
 ## Purpose
+
 Help record buyers understand an item's music, physical format, and tracklist alongside its purchase information using existing editorial sources.
 
 ## Requirements

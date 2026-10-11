@@ -21,7 +21,6 @@ export function reconcileMonetarySnapshot(
   if (
     !mode ||
     !isAcceptedDeliveryCategory(order.monetaryPolicyReference, order.acceptedParcelTier) ||
-    !order.monetaryPolicyReference ||
     !money ||
     session.orderId !== order.id ||
     session.checkoutSessionId !== order.checkoutSessionId ||

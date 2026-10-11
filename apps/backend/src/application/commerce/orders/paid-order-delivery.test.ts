@@ -116,6 +116,30 @@ describe('paid order delivery routing', () => {
     );
   });
 
+  it.each([
+    ['rate_limited', true, 'rate_limited'],
+    [undefined, false, 'unknown'],
+  ] as const)(
+    'preserves failed newsletter delivery reason %s and retryability',
+    async (reason, retryable, safeReason) => {
+      const provider: EmailProviderGateway = {
+        registerNewsletterContact: vi.fn().mockResolvedValue({ ok: false, reason, retryable }),
+        sendEmail: vi.fn(),
+      };
+      const result = await attemptPaidOrderDelivery({
+        config,
+        delivery: claimedDelivery('newsletter_registration'),
+        logger: { info: vi.fn(), warn: vi.fn() },
+        order: currentPaidCheckoutOrder(),
+        provider,
+      });
+
+      expect(result).toEqual({ kind: 'not_delivered', retryable, safeReason });
+      expect(provider.registerNewsletterContact).toHaveBeenCalledTimes(1);
+      expect(provider.sendEmail).not.toHaveBeenCalled();
+    },
+  );
+
   it('rejects a newsletter row without matching order consent before provider work', async () => {
     const provider: EmailProviderGateway = {
       registerNewsletterContact: vi.fn(),
