@@ -53,71 +53,59 @@ The system SHALL present announced physical editions with complete identifying e
 - **THEN** only the lead campaign image receives first-viewport priority
 - **AND** all other artwork uses responsive non-priority delivery
 
-### Requirement: Releases page presents distinct editorial tiers
-
-The system SHALL retain the current principal split and present eligible physical records there in label-preferred order, filling unavailable positions automatically from the next eligible records. Remaining open preorders SHALL precede available regular offers, then announced physical editions that cannot be ordered and other editorial entries. These internal ordering roles SHALL share the existing Our releases catalog rather than requiring separate small storefront sections.
-
-#### Scenario: All three roles are available
-
-- **GIVEN** Sidus and Afterwise are the selected buyable vinyl campaigns, Chronoboros has stocked vinyl, and Ouranopithecus has only a future physical edition
-- **WHEN** Releases renders
-- **THEN** the campaign tier presents Sidus then Afterwise
-- **AND** Chronoboros remains visible under Our releases with its buying path
-- **AND** Ouranopithecus follows in that same lower catalog with separate digital and future-vinyl messages
-
-#### Scenario: Visitor reads the page in source order
-
-- **WHEN** a visitor reads or tabs through Releases
-- **THEN** campaign content precedes other open preorders, stocked records, announced editions and the remaining catalog
-- **AND** record headings and visible physical states expose that order to assistive technology without unnecessary section labels
-
-#### Scenario: Wide viewport uses the selected asymmetric composition
-
-- **WHEN** two selected campaigns are available at a wide viewport
-- **THEN** both have complete identity and action information in the principal campaign area
-- **AND** the label-selected first entry owns the lead emphasis
-- **AND** lower tiers begin after that area without duplicate releases
-
 ### Requirement: Each release tier keeps role-appropriate emphasis
 
-The system SHALL emphasize the physical purchase path for buyable campaigns and stocked records while preserving independent listening and release-detail navigation. Announced or unavailable editions MUST use truthful text and editorial paths instead of asserted buying actions.
+The system SHALL emphasize the physical purchase path for buyable featured and remaining records while preserving independent listening and release-detail navigation. Featured rows SHALL present the date, title, artist, Listen, optional summary, formats, status, shipping, then the price with the edition action. Remaining catalog tiles SHALL present the same order without a summary. Announced or unavailable editions MUST use truthful text and editorial paths instead of asserted buying actions. Artwork on `/releases/` MUST stay steady while its links and controls keep accessible feedback.
 
 #### Scenario: Featured release renders
 
-- **WHEN** a confirmed buyable physical campaign is available
-- **THEN** its presentation retains linked artwork, title, artist, semantic digital context, format, optional summary and available actions
-- **AND** its physical edition action leads the action group, followed by independent Listen and release-detail access
-- **AND** Pre-order vinyl names an open vinyl preorder and Buy vinyl names a confirmed buyable regular offer
+- **WHEN** a confirmed buyable physical edition occupies a featured row
+- **THEN** its row retains linked artwork, semantic date, title, artist, Listen when a source exists, optional summary, formats, status badges and available actions in that order
+- **AND** its price and edition action share the last row, with Pre-order vinyl naming an open vinyl preorder and Buy vinyl a confirmed buyable regular offer
 - **AND** a passed exact preorder date alone does not produce a claim that physical copies arrived
 - **AND** the action reaches the existing canonical edition purchase path and authoritative offer check
-- **AND** controls remain square, visibly focused, usable and able to wrap
-- **AND** Listen retains its existing indicator and shell-player behavior
+- **AND** controls remain square, visibly focused, at least 44px tall and able to wrap
 
 #### Scenario: Selected upcoming release renders
 
 - **WHEN** an announced edition has no confirmed buyable offer
 - **THEN** its artwork, title, artist, digital context, optional summary and formats remain visible
-- **AND** it gains no asserted stock, fabricated preorder date or checkout action
+- **AND** it gains no asserted stock, price, fabricated preorder date or checkout action
 
 #### Scenario: Remaining catalog renders
 
-- **WHEN** older stocked physical records remain
-- **THEN** the lower tier preserves their artwork, date, title, artist, listening and detail behavior
-- **AND** it adds a visible canonical physical purchase path based on current offer state
+- **WHEN** remaining records render
+- **THEN** each tile preserves its contained artwork, date, title, artist, Listen, formats, status and current physical purchase path
+- **AND** Listen sits below the artist instead of over the artwork, without a scrim
 - **AND** it does not add search, filters, pagination, year grouping, a carousel or placeholder releases
 
 #### Scenario: Release artwork exposes one interaction language
 
-- **WHEN** linked artwork in any tier is used with a pointer or keyboard
-- **THEN** its existing restrained scale and timing remain consistent and clipped to its frame
-- **AND** reduced-motion preference removes nonessential artwork transforms and transitions
+- **WHEN** a pointer or keyboard user interacts with linked artwork in any tier
+- **THEN** every tier uses the same contained square frame
+- **AND** the artwork keeps its resting size without hover or focus zoom or transition, and stays within its frame
+- **AND** pointer hover outlines the frame while keyboard focus stays visible
+
+#### Scenario: Desktop catalog card remains steady
+
+- **WHEN** a visitor points at a remaining catalog tile on a desktop device with hover and a fine pointer
+- **THEN** the artwork frame and copy stay at rest
+- **AND** pointing at the tile does not change Listen's appearance or start its equalizer animation
+- **AND** keyboard focus remains visible on links and controls
+
+#### Scenario: Desktop listening feedback belongs to the control
+
+- **WHEN** a visitor hovers, focuses or activates Listen on the desktop Releases page
+- **THEN** the button retains its existing feedback and player-trigger behavior
+- **AND** the active source retains its disabled In player status
+- **AND** release detail overlays preserve the existing shell-owned player session
 
 #### Scenario: Tier labels and dividers support the hierarchy
 
-- **WHEN** multiple tiers render
+- **WHEN** featured rows and the remaining catalog render
 - **THEN** physical state labels remain subordinate to release titles
-- **AND** the existing Releases and Our releases identity fits the four-record catalog without Featured records or extra single-record section headings
-- **AND** continuous separators support the composition without disconnected repeated boxes
+- **AND** no visible Featured records, Latest, Upcoming or Our Releases label is added
+- **AND** hairline rules separate the featured rows and the remaining catalog without disconnected repeated boxes
 
 ### Requirement: Release tiers omit empty structure and reflow cleanly
 
@@ -159,30 +147,6 @@ The Releases page SHALL introduce the catalog with one compact `Catalog` eyebrow
 - **THEN** the route-local `Releases` heading retains the existing internal-page title transition identity
 - **AND** the heading remains the page's only level-one heading
 
-### Requirement: Releases page composes its tiers as one Evolved Split Showcase
-
-The Releases page SHALL closely retain its current continuous, rule-bounded BlackBox composition: dominant artwork-and-copy split, compact supporting column and normal square cards under Our releases. Document, reading and keyboard order MUST follow the principal order and then the offer-derived remaining catalog. A four-record catalog MUST NOT gain a Featured records heading or inflated storefront navigation.
-
-#### Scenario: Wide catalog uses the asymmetric showcase
-
-- **WHEN** two selected physical campaigns and lower tiers are available
-- **THEN** both campaigns occupy the principal region with complete identity, artwork and purchase facts
-- **AND** the first chosen campaign receives lead emphasis
-- **AND** lower tiers start after both campaigns and use the available showcase width
-- **AND** the second campaign is not relabeled Upcoming solely because of a digital date
-
-#### Scenario: Visual placement does not reorder content
-
-- **WHEN** a visitor reads or tabs through the wide showcase
-- **THEN** campaign order precedes the physical remainder and other catalog entries
-- **AND** CSS placement does not change that sequence
-
-#### Scenario: Missing tiers do not leave showcase scaffolding
-
-- **WHEN** a principal position or the remaining catalog has no eligible accepted entries
-- **THEN** its empty column, row, heading, separator and placeholder are omitted
-- **AND** existing content uses the available width without adding separate small state sections
-
 ### Requirement: Remaining releases keep normal catalog proportions
 
 Remaining releases SHALL keep square artwork and normal catalog proportions. A sparse collection MUST stay left aligned at its normal width without stretching, centering, duplicate entries or filler. Buyable records MUST retain a clear physical purchase path.
@@ -200,33 +164,33 @@ Remaining releases SHALL keep square artwork and normal catalog proportions. A s
 - **THEN** they follow normal responsive catalog proportions and their resolved role order
 - **AND** each accepted release appears once
 
-### Requirement: Evolved Split Showcase reflows without content loss
+### Requirement: Stacked twin rows reflow without content loss
 
-The showcase SHALL use intrinsic sizing for titles, physical facts, digital context, summaries and actions. Present tiers MUST stack in source order when their wide layout no longer fits. It MUST remain usable at 320 and 390 CSS pixels, with enlarged text or zoom, and under reduced motion.
+The featured rows and the remaining catalog SHALL use intrinsic sizing for titles, physical facts, digital context, summaries, prices and actions. Rows MUST stack cover then copy when their wide layout no longer fits. They MUST remain usable at 320 and 390 CSS pixels, with enlarged text or zoom, and under reduced motion.
 
 #### Scenario: Narrow viewport preserves the full catalog
 
 - **WHEN** the page is viewed at 320 or 390 CSS pixels
-- **THEN** its present tiers retain their source order
-- **AND** metadata, summaries, formats and actions remain visible and operable without horizontal page scrolling
+- **THEN** featured rows and the remaining catalog retain their source order
+- **AND** metadata, summaries, formats, prices and actions remain visible and operable without horizontal page scrolling
 
 #### Scenario: Enlarged text grows the composition
 
 - **WHEN** enlarged text or zoom wraps content
-- **THEN** regions grow intrinsically without overlap or clipping
+- **THEN** rows and tiles grow intrinsically without overlap or clipping
 
 #### Scenario: Preserved actions remain operable
 
-- **WHEN** a release exposes a physical action, Listen or View release
+- **WHEN** a release exposes a physical action, Listen or its title detail link
 - **THEN** their canonical purchase, player and detail behavior remains intact
-- **AND** their visible focus and usable targets persist when the group wraps
+- **AND** their visible focus and 44px targets persist when the group wraps
 
 #### Scenario: Image and motion contracts remain intact
 
 - **WHEN** artwork renders or reduced motion is requested
-- **THEN** only the lead campaign image has priority
+- **THEN** only the first featured image has priority
 - **AND** other artwork keeps responsive non-priority loading
-- **AND** nonessential artwork motion is suppressed under reduced motion
+- **AND** artwork stays at rest without transforms or transitions
 
 ### Requirement: Release details expose source-backed editorial data
 
@@ -256,31 +220,31 @@ The site SHALL present useful verified release context and complete structured c
 
 ### Requirement: Highlighted Release summaries use restrained editorial typography
 
-The Releases page SHALL keep highlighted campaign summaries on the existing mono font family with restrained role-appropriate scale, sentence casing, readable line height and wrapping. Other catalog and detail prose MUST remain on the body font.
+The Releases page SHALL present featured summaries on the body font family at 1rem with a 1.65 line height, sentence casing, a readable measure of about 36em and pretty wrapping. Remaining catalog tiles SHALL show no summary, and detail prose MUST remain on the body font.
 
 #### Scenario: Latest Release summary renders
 
-- **WHEN** the selected lead campaign supplies a summary
-- **THEN** its summary uses the existing mono family without uppercase transformation or label-style tracking
+- **WHEN** the first featured record supplies a summary
+- **THEN** its summary uses the body family without uppercase transformation or label-style tracking
 
 #### Scenario: Upcoming Release summary renders
 
-- **WHEN** the second selected campaign supplies a summary
-- **THEN** its summary uses the same restrained mono treatment at its appropriate supporting scale
+- **WHEN** the second featured record supplies a summary
+- **THEN** its summary uses the same body treatment and scale as the first
 
 #### Scenario: Highlighted summary is absent
 
-- **WHEN** a selected campaign supplies no summary
+- **WHEN** a featured record supplies no summary
 - **THEN** no empty summary surface or placeholder is rendered
 
 #### Scenario: Catalog cards and details render summaries
 
-- **WHEN** other catalog or detail prose renders
-- **THEN** it retains the body family
+- **WHEN** remaining catalog tiles or release details render
+- **THEN** tiles show no summary and detail prose retains the body family
 
 #### Scenario: Highlighted summaries reflow
 
-- **WHEN** highlighted summaries render at 320 or 390 CSS pixels
+- **WHEN** featured summaries render at 320 or 390 CSS pixels
 - **THEN** they wrap without overlap, clipping or horizontal page scrolling
 - **AND** titles, metadata, physical facts and actions retain their hierarchy
 
@@ -335,13 +299,13 @@ The system SHALL describe digital availability independently from physical offer
 
 ### Requirement: Release presentation transitions derive automatically from existing facts
 
-The system SHALL derive each record's visible physical state, purchase action and eligible placement from existing accepted editorial timing and the current authoritative public commerce presentation. Opening, closing, selling out and restocking SHALL update presentation on the normal offer read or refresh without a separate Releases-page edit. It SHALL reuse current preorder rules and SHALL NOT introduce a state-machine framework, scheduler or duplicated persisted commerce lifecycle. Label emphasis remains an optional editorial decision.
+The system SHALL derive each record's visible physical state and purchase action from accepted editorial timing and the current authoritative public commerce presentation. Opening, closing, selling out and restocking SHALL update badges and actions on the normal offer read without a separate editorial edit. Accepted editorial priority and native edition identity SHALL establish stable principal placement and remaining catalog order independently of offer readiness. The system SHALL reuse current preorder rules without a duplicated persisted commerce lifecycle, scheduler or state-machine framework.
 
 #### Scenario: Vinyl ordering opens
 
 - **WHEN** an announced physical edition gains a confirmed buyable preorder offer
-- **THEN** its action automatically becomes Pre-order vinyl with the current supplied estimate
-- **AND** its principal eligibility and remaining-card order are recomputed without manually changing its presentation state
+- **THEN** its action becomes Pre-order vinyl with the current supplied estimate
+- **AND** the release remains in its existing editorial position
 
 #### Scenario: Estimated month passes
 
@@ -357,34 +321,34 @@ The system SHALL derive each record's visible physical state, purchase action an
 
 #### Scenario: Staff records actual arrival
 
-- **WHEN** Staff uses the existing Copies arrived action and records the actual stock facts
+- **WHEN** Staff uses the existing Copies arrived action and records actual stock facts
 - **THEN** Releases reflects the resulting offer automatically without another page or editorial-state edit
 
 #### Scenario: Principal offer sells out
 
 - **WHEN** a principal record's current offer is sold out or paused
-- **THEN** its buying action is removed and the next eligible record fills its principal position automatically
-- **AND** all release identities remain accessible once
+- **THEN** its buying action is removed and its physical badge reflects that offer
+- **AND** its principal position stays fixed while release detail and listening remain accessible once
 
 #### Scenario: Unavailable record becomes buyable again
 
-- **WHEN** stock is replenished or buying is reopened and the current offer confirms eligibility
-- **THEN** the physical action and placement are recomputed using the retained editorial preference
+- **WHEN** stock is replenished or buying reopens and the current offer confirms eligibility
+- **THEN** the physical action is recomputed while the retained editorial position stays fixed
 
 #### Scenario: Confirmed digital release date is reached
 
 - **WHEN** accepted editorial timing establishes that a confirmed scheduled digital release is now available
-- **THEN** its supporting digital message advances automatically
-- **AND** physical availability and label preference remain independently derived
+- **THEN** its supporting digital message advances independently of physical availability
+- **AND** accepted label preference remains stable
 - **AND** no private draft is published automatically
 
 ### Requirement: Releases exposes explicit interaction targets
 
-Releases SHALL expose native release artwork/title and artist links, the existing canonical physical edition action, visible title detail access and independent shell listening controls. The artwork link SHALL serve pointer navigation without adding a duplicate keyboard stop; the title SHALL expose keyboard detail access. The principal action row MUST NOT repeat that detail link as another CTA. Summaries, dates, formats, status labels and unused container space MUST remain selectable inert content. Independent purchase and listening targets MUST NOT activate artwork or card hover feedback.
+Releases SHALL expose native release artwork/title and artist links, the existing canonical physical edition action, visible title detail access and independent shell listening controls. When a release has a native Store edition, its artwork SHALL link to that edition, the same destination as its edition action, and both SHALL derive from one value; otherwise the artwork links to the release detail. The artwork link SHALL serve pointer navigation without adding a duplicate keyboard stop; the title SHALL expose keyboard detail access. The edition action and Listen SHALL begin their accessible names with their visible labels and add the release. The action row MUST NOT repeat the detail link as another CTA. Summaries, dates, formats, prices, status labels and unused container space MUST remain selectable inert content. Listening targets MUST NOT activate artwork or card hover feedback.
 
 #### Scenario: Visitor reads or selects metadata
 
-- **WHEN** a visitor clicks or selects a summary, date, format, status label or unused card area
+- **WHEN** a visitor clicks or selects a summary, date, format, price, status label or unused card area
 - **THEN** the page remains in place without navigation or player intent
 - **AND** there is no stretched link covering that content
 
@@ -393,6 +357,20 @@ Releases SHALL expose native release artwork/title and artist links, the existin
 - **WHEN** a visitor activates artwork or the title, the artist credit, an edition action or Listen
 - **THEN** the intended release, artist, canonical edition or shell-player behavior runs independently
 - **AND** links expose their destinations, keyboard focus and usable targets without nested anchors
+- **AND** the edition action reads, for example, "Pre-order vinyl, LOTUS" and Listen "Listen, LOTUS by Sidus" to assistive technology, with In player replacing Listen while that source is active
+
+#### Scenario: Artwork and edition action act as one target
+
+- **WHEN** a release has a native Store edition and a visitor points at its artwork, or points at or keyboard-focuses its edition action
+- **THEN** both lead to the same canonical edition and show the same feedback: the action's own hover look
+- **AND** no decorative record is rendered behind the artwork
+- **AND** pointing at Listen leaves the artwork and the edition action at rest
+
+#### Scenario: Non-buyable edition action renders
+
+- **WHEN** a native edition has no buyable offer
+- **THEN** its action reads "Vinyl edition", "CD edition" or "Cassette edition" in uppercase mono between muted brackets that close in and brighten while engaged
+- **AND** the brackets are not part of its accessible name, and the artwork link is named after the release and its edition
 
 ### Requirement: Releases status labels use compact editorial hierarchy
 
@@ -407,13 +385,13 @@ Releases SHALL present inert status labels in compact uppercase editorial typogr
 
 ### Requirement: Ordinary buying actions share restrained purchase feedback
 
-Enabled ordinary Buy actions on Releases and Store SHALL give subtle hover, visible keyboard focus and pressed feedback without layout movement or JavaScript animation. Releases Buy vinyl SHALL keep the shared restrained primary feedback. The Store card Buy SHALL take the Listen chrome (dark face, hairline edge, the Listen hover highlight with a Store Blood hover edge) with the same stationary footprint, busy, disabled and reduced-motion behaviour. Disabled or loading controls MUST NOT receive active hover feedback. Existing preorder and Listen treatments MUST retain their independent meanings and reduced-motion support.
+Enabled ordinary Buy actions on Releases and Store SHALL give subtle hover, visible keyboard focus and pressed feedback without layout movement or JavaScript animation. A featured Releases Buy vinyl SHALL keep the shared restrained primary feedback. The Store card Buy and the remaining-catalog Releases Buy vinyl SHALL take the Listen chrome (dark face, hairline edge, the Listen hover highlight with a Store Blood hover edge) with the record mark, the same stationary footprint, and busy, disabled and reduced-motion behaviour. Disabled or loading controls MUST NOT receive active hover feedback. Existing preorder and Listen treatments MUST retain their independent meanings and reduced-motion support.
 
 #### Scenario: Visitor hovers Buy
 
 - **WHEN** a hover-capable pointer enters an enabled ordinary buying action
 - **THEN** its face and edge provide subtle local feedback
-- **AND** a Store card Buy's edge turns Store Blood with the Listen highlight, while Releases Buy vinyl keeps its restrained tonal feedback
+- **AND** a Store card Buy or remaining-catalog Releases Buy edge turns Store Blood with the Listen highlight, while a featured Releases Buy vinyl keeps its restrained tonal feedback
 - **AND** its footprint and surrounding artwork remain unchanged
 
 #### Scenario: Buying is disabled or loading
@@ -422,3 +400,212 @@ Enabled ordinary Buy actions on Releases and Store SHALL give subtle hover, visi
 - **THEN** its action remains unavailable and does not acquire enabled hover feedback
 - **AND** a Store card Buy keeps its resting Listen chrome
 - **AND** reduced-motion preference removes nonessential transition timing
+
+### Requirement: Release details display saved descriptions and tracks
+
+Release detail views SHALL display populated full descriptions and tracklists for both upcoming and released entries, independently of commerce availability. Full pages, overlays and private previews MUST render equivalent editorial content.
+
+#### Scenario: A release has populated editorial details
+
+- **GIVEN** an upcoming or released entry has a full description and tracklist
+- **WHEN** its full detail page, overlay or private preview renders
+- **THEN** the description preserves formatting and links, including retained Markdown content
+- **AND** tracks retain their authored order, side or disc headings, positions and optional durations
+- **AND** sections appear in hero, description, tracklist, singles/clips, credits and navigation order where populated
+
+#### Scenario: A release has no full description or tracks
+
+- **WHEN** a Release detail view renders without a populated full description or tracklist
+- **THEN** it omits the corresponding heading and section wrapper
+- **AND** an explicitly empty editorial description does not reveal retained Markdown content
+
+#### Scenario: Tracklist format differs from the Store offer
+
+- **GIVEN** a release has an authored tracklist and no matching purchasable format
+- **WHEN** its detail view renders
+- **THEN** the saved tracklist remains visible using its authored format
+
+#### Scenario: Details render on a narrow viewport
+
+- **WHEN** a release detail view renders at 390 CSS pixels wide
+- **THEN** description links and track titles wrap within the viewport
+- **AND** headings, ordering and optional durations remain readable without horizontal page scrolling
+
+#### Scenario: An unpublished description or tracklist is previewed
+
+- **WHEN** staff previews draft release details
+- **THEN** the private preview shows the selected description and tracks
+- **AND** public release details continue to show only accepted content until publication
+
+### Requirement: Featured Releases artwork keeps its intrinsic square geometry
+
+Featured artwork wrappers SHALL remain square and fit complete covers independently of adjacent copy height. They MUST NOT stretch into empty tall frames or crop away artwork at rest. Mobile SHALL retain native stacking and accessible controls.
+
+#### Scenario: Supporting copy is taller than the lead cover
+
+- **WHEN** a wide Releases row contains long copy or tall supporting content
+- **THEN** the lead artwork wrapper remains square with no empty lower frame
+- **AND** the whole cover remains visible
+
+#### Scenario: A shopper uses a narrow screen
+
+- **WHEN** Releases renders at 320px, 390px or 430px
+- **THEN** featured covers remain complete and square
+- **AND** copy and controls stack without horizontal overflow
+
+### Requirement: Announced physical editions retain a separate lifecycle
+
+The Releases catalog SHALL preserve an announced physical edition that cannot yet be ordered independently of the album's digital availability. An unavailable or missing offer SHALL NOT convert that announcement into a Sold out claim. Current confirmed buyable offers SHALL remain authoritative for purchasing.
+
+#### Scenario: Digital album is released before vinyl ordering opens
+
+- **GIVEN** Anarchotribal is Upcoming in the accepted release content, its digital date has passed and physical preorder is not enabled
+- **WHEN** Releases renders with a non-buyable or missing physical offer
+- **THEN** the record appears once with Digital out now and Vinyl coming later
+- **AND** it retains release details and available Listen without a Sold out badge or asserted preorder action.
+
+#### Scenario: Digital album is still unreleased before vinyl ordering opens
+
+- **GIVEN** an announced physical edition has no confirmed buyable offer and its digital album is unreleased
+- **WHEN** Releases renders
+- **THEN** the record appears once with Vinyl coming later and truthful scheduled or unknown digital context
+- **AND** it makes no Digital out now, Sold out or Pre-order claim from the physical announcement alone.
+
+#### Scenario: Several records occupy different lifecycle combinations
+
+- **GIVEN** records include announced vinyl, open preorders, regular buyable offers and genuinely unavailable editions
+- **WHEN** the catalog is grouped and ordered
+- **THEN** every record occupies one existing presentation role, with digital and physical facts kept distinct
+- **AND** empty tiers are omitted and repeated records or per-combination storefront sections are not introduced.
+
+### Requirement: Releases retains accessible identity without a visible introduction
+
+The Releases page SHALL retain one accessible level-one heading named Releases without displaying a Catalog / Releases introduction or reserving space for that introduction. The populated remaining catalog SHALL follow the featured records after a hairline rule, with a visually hidden level-two heading named More releases and no visible catalog heading.
+
+#### Scenario: Releases opens directly or through the shell
+
+- **WHEN** Releases opens directly or through persistent shell navigation at desktop or mobile width
+- **THEN** no visible Catalog / Releases introduction or blank header space appears
+- **AND** assistive technology can identify the Releases level-one heading
+- **AND** shell navigation retains its focus reset
+
+#### Scenario: Remaining catalog is populated
+
+- **WHEN** releases remain after the featured records
+- **THEN** a hairline rule separates them from the featured records and no visible Our Releases heading appears
+- **AND** assistive technology can identify the remaining catalog by its More releases heading
+- **AND** record order, purchase actions and listening behavior remain intact
+
+### Requirement: Vinyl visuals remain static
+
+The public site SHALL NOT render decorative sliding or rotating vinyl records or animate vinyl Buy icons. Release artwork SHALL remain complete without a record behind its sleeve. Vinyl Buy icons SHALL retain their existing appearance as stationary artwork. CD and cassette effects and Grid/Crate browsing SHALL retain their existing behavior.
+
+#### Scenario: Visitor engages vinyl artwork or an edition action
+
+- **WHEN** a visitor hovers or keyboard-focuses a vinyl release artwork link or edition action at any viewport or motion preference
+- **THEN** no decorative vinyl record is rendered or animated and no record-photo asset is requested
+- **AND** the edition action retains its existing wording, bracket styling and hover/focus feedback
+- **AND** native edition artwork and action keep their shared destination while Listen remains independent
+
+#### Scenario: Visitor engages a vinyl Buy icon
+
+- **WHEN** a visitor hovers, focuses or presses Buy for a vinyl item or another item using the vinyl mark
+- **THEN** the vinyl icon remains stationary with its existing appearance
+- **AND** buying and cart behavior remain unchanged
+
+### Requirement: Releases orders featured records and the remaining catalog editorially
+
+The system SHALL select up to two native physical editions for the featured rows in accepted editorial priority order, retaining catalog source order for ties. Remaining records SHALL share one remaining catalog in source order. Featured placement and record order MUST be identical in initial SSR, hydration, shell navigation and fresh offer resolution. Offer state SHALL determine truthful physical badges, prices and actions independently of these editorial roles.
+
+#### Scenario: All three roles are available
+
+- **GIVEN** Sidus and Afterwise have the first two accepted editorial priorities, Chronoboros has stocked vinyl, and Ouranopithecus has only a future physical edition
+- **WHEN** Releases renders
+- **THEN** the featured rows present Sidus then Afterwise
+- **AND** Chronoboros remains in the remaining catalog with its confirmed buying path
+- **AND** Ouranopithecus retains its catalog source position with separate digital and future-vinyl messages
+
+#### Scenario: Visitor reads the page in source order
+
+- **WHEN** a visitor reads or tabs through Releases
+- **THEN** accepted editorial priority precedes the remaining catalog in source order
+- **AND** headings and truthful physical states expose that sequence without visible section labels
+
+#### Scenario: Wide viewport stacks the featured records
+
+- **WHEN** two native physical editions occupy the featured rows at a wide viewport
+- **THEN** they render as two identical stacked rows with equal covers and complete identity and actions
+- **AND** the first editorial priority comes first and alone receives first-viewport image priority
+- **AND** the remaining catalog begins after both rows without duplicate releases
+
+#### Scenario: Visitor waits for current offers
+
+- **GIVEN** accepted editorial priorities select two native physical editions
+- **WHEN** Releases first renders and live offers are pending, ready or failed
+- **THEN** their featured roles and the remaining catalog order stay fixed
+- **AND** neutral edition links remain available until confirmed offers establish buying eligibility
+- **AND** every release appears once
+
+#### Scenario: An offer changes availability
+
+- **WHEN** a featured edition opens or closes ordering, sells out, or gains stock
+- **THEN** its current physical badge, price and action reflect the authoritative offer
+- **AND** its artwork, heading role and placement remain stable
+- **AND** digital availability remains independently derived from accepted timing
+
+### Requirement: Releases presents featured records as stacked twin rows
+
+The Releases page SHALL present its featured records as identical stacked rows, each pairing complete contained square artwork with its copy, followed by the remaining catalog as square tiles in the same cover frame. Both featured covers MUST have the same size at every width. Reading and keyboard order MUST follow the featured order and then the remaining catalog, without a Featured records heading or added storefront navigation.
+
+#### Scenario: Wide viewport renders twin rows
+
+- **WHEN** two featured records render at 1024 CSS pixels or wider
+- **THEN** each row places a 29rem square cover beside its top-aligned copy
+- **AND** the second row starts below the first after a hairline rule
+- **AND** both covers have the same size
+
+#### Scenario: Tablet splits each row in equal halves
+
+- **WHEN** Releases renders from 40rem up to 64rem
+- **THEN** each featured row splits into equal cover and copy halves with a 1.5rem gap
+- **AND** the remaining catalog uses two columns with the same gap, so its tiles match the featured covers
+
+#### Scenario: Phone stacks cover then copy
+
+- **WHEN** Releases renders below 40rem
+- **THEN** both featured records show a full-width cover followed by their copy
+- **AND** the remaining catalog uses one column at the same width
+
+#### Scenario: Visual placement does not reorder content
+
+- **WHEN** the page is read or navigated by keyboard
+- **THEN** the featured order precedes the remaining catalog
+- **AND** CSS placement and offer updates do not reorder it
+
+#### Scenario: Missing tiers do not leave scaffolding
+
+- **WHEN** only one featured record or no remaining catalog exists
+- **THEN** the empty row, heading and wrapper are absent from the visible page
+- **AND** present entries keep their normal geometry
+
+### Requirement: Releases shows the current price beside physical actions
+
+Releases SHALL show the current Store price of a release's native physical edition beside its edition action, using the listing read the page already makes and the Store card rule: the matching record's display price whenever that record's presentation is ready. A featured record with an open pre-order SHALL also link to the existing pre-order and delivery information page.
+
+#### Scenario: Offers resolve with prices
+
+- **WHEN** the listing read returns ready records for a featured pre-order and a stocked catalog edition
+- **THEN** each shows its display price in the UI display face beside its Pre-order vinyl or Buy vinyl action
+- **AND** the featured pre-order shows a Pre-order & delivery information link
+
+#### Scenario: Edition is not buyable
+
+- **WHEN** a ready record reads Coming Soon, Repressing, Sold Out, paused or an unrecognised state
+- **THEN** its price stands beside the neutral edition action under the existing badge rules
+- **AND** no pre-order information link appears
+
+#### Scenario: Offer read is pending or fails
+
+- **WHEN** offers are pending, the read fails, no ready record matches, or the release has no native edition
+- **THEN** no price and no pre-order information link are shown
+- **AND** the page makes no additional request for prices

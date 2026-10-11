@@ -22,7 +22,7 @@ Software promotion SHALL build and deploy the combined CMS Worker from the selec
 
 ### Requirement: Main publishes a UAT candidate only
 
-A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL NOT deploy PRD code or mutate live catalog state. The push run SHALL run the complete checks, the whole end-to-end suite and the staff previews in Chromium and Firefox in parallel with one content-free UAT build, and UAT deployment SHALL wait for the checks and the build. The end-to-end suite and the staff previews SHALL NOT delay UAT deployment, and a run in which any of them failed SHALL NOT be promotable. The UAT build SHALL hold no CMS credential and SHALL restore no CMS content or media. One deploy job SHALL check the Pages credential read-only before any migration, then migrate, deploy the Workers, deploy Pages, verify the deployed Worker and hosted release identity, and SHALL then run the read-only UAT static smoke. Worker identity SHALL be read from the backend Worker entry, not from a Durable Object. It SHALL NOT run provider smoke.
+A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL NOT deploy PRD code or mutate live catalog state. The push run SHALL run the complete checks, the whole end-to-end suite and the staff previews in Chromium and Firefox in parallel with one content-free UAT build, and UAT deployment SHALL wait for the checks and the build. The end-to-end suite and the staff previews SHALL NOT delay UAT deployment, and a run in which any of them failed SHALL NOT be promotable. The UAT build SHALL hold no CMS credential and SHALL restore no CMS content or media. One deploy job SHALL check the Pages credential read-only before any migration, then migrate, deploy the Workers, deploy Pages, verify the deployed Worker and hosted release identity, and SHALL then run the read-only UAT static smoke. Every Worker deployment SHALL restart running Durable Objects onto the new code immediately, and the Worker identity check SHALL require both the backend Worker entry and its store Durable Object to report the candidate. It SHALL NOT run provider smoke.
 
 #### Scenario: A small UI change reaches main
 
@@ -50,8 +50,9 @@ A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL
 #### Scenario: Pages follows the Workers without waiting for Durable Objects
 
 - **WHEN** the deploy job has deployed the renderer and backend Workers
-- **THEN** it deploys Pages next and only then verifies the Worker entry identity and the hosted release identity, within a two-minute budget
-- **AND** it does not wait for the commerce or CMS Durable Objects, whose code updates are eventually consistent, so backend API changes stay compatible with the previous release.
+- **THEN** running Durable Objects restart onto the new code at once, instead of when they next hibernate
+- **AND** the job deploys Pages next and only then verifies, within a two-minute budget, that the Worker entry, the store Durable Object and the hosted release report the candidate
+- **AND** a request in flight in an object at that moment fails only if it touches Durable Object storage.
 
 #### Scenario: A candidate fails UAT acceptance
 

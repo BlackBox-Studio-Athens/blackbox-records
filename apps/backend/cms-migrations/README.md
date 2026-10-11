@@ -36,7 +36,7 @@ Use `pnpm --filter @blackbox/backend test:cms-upgrade --source-history 1.1.0 --s
 
 Upstream now checks `_rev` again at the draft write. The core patch retains atomic revision-fenced deletion and maps a save racing with deletion to the editor's existing `409 CONFLICT` contract. Keep the compiled `test:emdash` regression passing before removing either protection. The admin patch still supplies the scoped thumbnail uploader and supported block controls; native video uploads are disabled because BlackBox's content/publication contract accepts images and approved video embeds.
 
-The official `upgrade-emdash@0.1.0 --dry-run --json` is useful for reviewing direct dependencies and release notes. Its apply mode also refreshes agent skills and does not rebase these patches. Use the workspace's exact pins, lockfile, build wrappers and migration commands for this project. See the [1.2.0 assessment](../../../openspec/changes/upgrade-emdash-1-2-0/release-assessment.md) and acceptance evidence before a later hosted rollout. This local upgrade does not authorize deployment or content publication.
+The official `upgrade-emdash@0.1.0 --dry-run --json` is useful for reviewing direct dependencies and release notes. Its apply mode also refreshes agent skills and does not rebase these patches. Use the workspace's exact pins, lockfile, build wrappers and migration commands for this project. See the [1.2.0 assessment](../../../openspec/changes/archive/2026-10-12-upgrade-emdash-1-2-0/release-assessment.md) and acceptance evidence before a later hosted rollout. This local upgrade does not authorize deployment or content publication.
 
 ## EmDash 1.0.1 upgrade
 

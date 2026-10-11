@@ -6,7 +6,7 @@ Specify persistent app-shell navigation, overlay routing, and music-player behav
 
 ### Requirement: Same-document shell navigation
 
-The system SHALL intercept exact top-level section and Store collection-category navigation through the persistent shell while preserving direct page loads and excluding Store Item and checkout documents.
+The system SHALL intercept exact top-level section, Store collection-category, Store Item detail and purchase-information navigation through the persistent shell while preserving direct page loads and excluding checkout documents.
 
 #### Scenario: Shopper switches sections
 
@@ -23,11 +23,32 @@ The system SHALL intercept exact top-level section and Store collection-category
 - **AND** each normalized pathname receives distinct history and same-session snapshot state
 - **AND** the persistent player and StoreCart bridge remain owned by the shell.
 
+#### Scenario: Shopper opens a Store Item while listening
+
+- **GIVEN** a player session is minimized
+- **WHEN** the shopper follows a link to `/store/<slug>/` from a Store card, a Release card or a detail overlay
+- **THEN** the route is handled as shell kind `store-item` and swaps `<main>` with the full Store Item page layout
+- **AND** the same player iframe stays connected and its purchase controls hydrate
+- **AND** Store collection behaviour keyed on kind `store` does not run on the item page.
+
+#### Scenario: Shopper opens purchase information while listening
+
+- **WHEN** the destination is `/terms/`, `/privacy/` or `/withdrawal/`
+- **THEN** the route is handled as shell kind `information`
+- **AND** the player session survives the navigation.
+
 #### Scenario: Shopper follows a Store Item or checkout link
 
-- **WHEN** the destination is a Store Item detail, cart checkout, checkout return, or item-scoped compatibility route
-- **THEN** the section matcher does not treat it as a Store collection route
+- **WHEN** the destination is a Store Item detail
+- **THEN** the shell handles it as kind `store-item`, never as a Store collection route
+- **WHEN** the destination is cart checkout, checkout return, or an item-scoped checkout route
+- **THEN** the section matcher does not treat it as a shell route
 - **AND** existing non-section navigation behavior remains authoritative.
+
+#### Scenario: Store Item slug does not exist
+
+- **WHEN** the shell fetches a `/store/<slug>/` document that is not found
+- **THEN** it falls back to native navigation.
 
 #### Scenario: Visitor reaches the legacy Distro path
 
@@ -37,7 +58,7 @@ The system SHALL intercept exact top-level section and Store collection-category
 
 ### Requirement: Detail overlays
 
-The system SHALL open artist, release, and news detail routes as overlays for shell-managed navigation while preserving full Astro pages for direct loads. An open overlay SHALL be a dialog named by its detail title, and the document title SHALL read `<detail title> | <site name>` while it is open. Closing an overlay without routing SHALL keep the list's scroll position and return focus to the card that opened it. A link inside an overlay to a document the shell does not handle SHALL navigate natively without adding a duplicate history entry.
+The system SHALL open artist, release, and news detail routes as overlays for shell-managed navigation while preserving full Astro pages for direct loads. An open overlay SHALL be a dialog named by its detail title, and the document title SHALL read `<detail title> | <site name>` while it is open. Closing an overlay without routing SHALL keep the list's scroll position and return focus to the card that opened it. A link inside an overlay to a document the shell does not handle SHALL navigate natively without adding a duplicate history entry. A delayed content-focus callback SHALL do nothing once its overlay scroll container is missing or disconnected.
 
 #### Scenario: Detail link opens in shell
 
@@ -53,6 +74,13 @@ The system SHALL open artist, release, and news detail routes as overlays for sh
 - **WHEN** they close it with Close, Escape, the backdrop or Back
 - **THEN** the list keeps its scroll position and focus returns to the card without scrolling
 - **AND** the previous document title is restored.
+
+#### Scenario: A delayed focus callback outlives its panel
+
+- **GIVEN** an overlay content-focus callback is scheduled for a later animation frame
+- **WHEN** its scroll container is missing or disconnected at execution
+- **THEN** the callback does not scroll the document or focus a stale close button
+- **AND** the background list retains its position and restored trigger focus.
 
 ### Requirement: Persistent player session
 
@@ -150,6 +178,13 @@ The system SHALL treat shell page and overlay fragment caches as same-session UI
 - **THEN** the cache is treated as static route markup for the current session
 - **AND** it remains separate from Cloudflare CDN/browser HTTP cache policy.
 
+#### Scenario: Live page snapshot starts no image requests
+
+- **GIVEN** the shell captures the current page for its same-session cache, on mount or before a section navigation
+- **WHEN** it copies and sanitizes the page's main content
+- **THEN** the copy lives in an inert document with no browsing context, so images it contains, including lazy ones, are not requested
+- **AND** the stored snapshot HTML is the same as before.
+
 ### Requirement: Shell caches are bypassable for future freshness needs
 
 The system SHALL provide or preserve a path to bypass or invalidate same-session shell caches when future actions require fresh route markup.
@@ -185,7 +220,7 @@ The system SHALL keep loading feedback consistent whether shell navigation uses 
 
 ### Requirement: Homepage hero scroll opacity is transition-free
 
-The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The existing coarse hero scrolled state SHALL crossfade the media layer between opacity `1` and `0.12` while an internal black veil crossfades between opacity `0` and `0.5` over the same 240 milliseconds without changing media visibility, while the scroll indicator retains its immediate transition-free state.
+The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The media layer SHALL fade from opacity `1` to `0.12` while an internal black veil fades from opacity `0` to `0.5`, both proportional to the root scroll position over the first `42vh`. Where the browser supports scroll-driven animations, a root scroll timeline drives both without JavaScript. Elsewhere, the same keyframes apply paused and the hero scroll synchronization seeks them to its scroll progress. Neither the media layer nor the veil declares a transition. The scroll indicator retains its immediate transition-free state.
 
 #### Scenario: Shopper scrolls through the homepage hero
 
@@ -197,26 +232,27 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 #### Scenario: Shopper crosses into later Home content
 
 - **GIVEN** the homepage hero is rendered in the persistent app shell
-- **AND** the browser does not request reduced motion
-- **WHEN** the existing coarse hero state changes to scrolled
-- **THEN** the media layer remains fixed and visible while its opacity transitions from its current value to `0.12` over 240 milliseconds using `cubic-bezier(0.22, 1, 0.36, 1)`
-- **AND** an absolute `#050505` veil inside that media layer transitions from its current value to opacity `0.5` using the identical duration and curve
+- **AND** the browser supports `animation-timeline` and does not request reduced motion
+- **WHEN** the shopper scrolls from the top of Home towards `42vh`
+- **THEN** the media layer opacity decreases linearly from `1` to `0.12` and the `#050505` veil inside it increases linearly from `0` to `0.5` along the root scroll timeline
+- **AND** the coarse scrolled class causes no step or transition in either value
+- **AND** scrolling back reverses the values along the same path
 - **AND** no second fixed element, filter, blur, blend mode, or additional image is introduced
-- **AND** the media layer does not become hidden after the transition
-- **AND** the hero shade leaves through normal document scrolling without sharing the crossfade
+- **AND** the media layer does not become hidden at either endpoint
+- **AND** the hero shade leaves through normal document scrolling without sharing the fade
 - **AND** later content stacks above the ghost on static dark surfaces of `rgb(13 13 13 / 76%)` for News, `rgb(20 20 20 / 78%)` for Artists, and `rgb(13 13 13 / 74%)` for Newsletter
 - **AND** the ghost remains visibly continuous through those section surfaces
 - **AND** cards retain opaque readable surfaces
 - **AND** the footer fully covers the ghost
-- **AND** the scroll indicator changes state without an opacity transition and its hidden child animation stops.
+- **AND** the scroll indicator changes state at the coarse threshold without an opacity transition and its hidden child animation stops.
 
 #### Scenario: Shopper returns above the threshold
 
-- **GIVEN** the Home media is crossfading or settled at the ghost endpoint
-- **WHEN** the existing coarse hero state changes to not scrolled
-- **THEN** the media remains fixed and visible
-- **AND** the same declared 240-millisecond duration and curve transition media opacity from the current value to `1` and veil opacity from the current value to `0`
-- **AND** an interrupted native CSS reversal remains bounded without a separate application animation state or timer.
+- **GIVEN** the browser does not support `animation-timeline` and does not request reduced motion
+- **WHEN** the shopper scrolls from the top of Home towards `42vh` and returns above the coarse threshold
+- **THEN** the media layer and the veil take the same values along the same linear path as on a root scroll timeline, updated on the hero scroll synchronization's animation frame
+- **AND** the coarse scrolled class causes no step or transition in either value
+- **AND** the media remains fixed and visible at both endpoints.
 
 #### Scenario: Scroll state changes only at the coarse threshold
 
@@ -224,19 +260,21 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 - **WHEN** repeated scroll events stay on the same side of the hero scrolled threshold
 - **THEN** the app shell does not mutate the hero class repeatedly
 - **AND** the app shell does not write `--homepage-hero-scroll-progress`, opacity, or any media style property on scroll
-- **AND** the Home hero opacity transition does not restart or cancel because of those same-side events.
+- **AND** it seeks the paused fade only where scroll-driven animations are unsupported, at most once per animation frame and only when the clamped scroll progress changes.
 
 #### Scenario: Shopper leaves and returns to Home
 
 - **WHEN** shell navigation leaves Home
 - **THEN** the Home hero DOM and ghost no longer render on the destination route
 - **AND** the route-scoped scroll synchronization disconnects
-- **AND** returning to Home recreates the opacity-`1` first-viewport composition without global backdrop state or a full document reload.
+- **AND** returning to Home recreates the opacity-`1` first-viewport composition without global backdrop state or a full document reload
+- **AND** the recreated hero's fade follows the scroll.
 
 #### Scenario: Reduced motion remains respected
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** the media reaches opacity `0.12` and the black veil reaches opacity `0.5` in the scrolled state without a transition
+- **THEN** no scroll-linked animation applies and the app shell seeks nothing
+- **AND** the media reaches opacity `0.12` and the black veil reaches opacity `0.5` in the scrolled state without a transition
 - **AND** the media reaches opacity `1` and the black veil reaches opacity `0` in the not-scrolled state without a transition
 - **AND** the media remains fixed and visible at both endpoints
 - **AND** nonessential Home animation remains disabled
@@ -244,7 +282,7 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 
 ### Requirement: Homepage hero render work is bounded
 
-The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content, and its existing media layer plus one internal solid-color veil MAY each perform one bounded opacity transition per coarse threshold-side change only while they cause no repeated hero-attributable paint, raster, decode, animation, or application work after the transition settles.
+The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content. Its media layer and one internal solid-color veil MAY change opacity only along the root scroll timeline or, where that is unsupported, through the hero scroll synchronization seeking the same paused keyframes. They SHALL cause no hero-attributable layout, image decode, or style-property write per scroll frame, and no hero-attributable paint, raster, or application work where a scroll timeline drives them.
 
 #### Scenario: Homepage hero is visible
 
@@ -256,18 +294,19 @@ The app shell SHALL preserve the homepage hero composition without continuous fu
 
 #### Scenario: Shopper passes the hero threshold
 
-- **WHEN** the existing coarse hero scroll state changes side
-- **THEN** only media opacity and the internal black-veil opacity perform one bounded 240-millisecond transition each
+- **WHEN** the shopper scrolls through the first `42vh` of Home
+- **THEN** only media opacity and the internal black-veil opacity change
 - **AND** media visibility, position, scale, filter, and background position remain unchanged
 - **AND** the hero shade leaves with its containing hero rather than remaining as a second fixed layer
-- **AND** first, repeat, and settled-scroll evidence shows no repeated hero-attributable paint, raster, image-decode, animation, or layer-invalidation work after the transition settles
+- **AND** where a scroll timeline drives the fade, scroll evidence shows no hero-attributable paint, raster, image-decode, or JavaScript style write per frame
+- **AND** where the fade is seeked, that seek is the only added per-frame application work, it runs only while the clamped progress changes within the first `42vh`, and frame pacing matches the coarse crossfade it replaces
 - **AND** application-attributable main-thread plus style, layout, and paint work remains within the existing performance budget
 - **AND** no application-attributable task or long animation frame of at least 50 milliseconds is introduced.
 
 #### Scenario: Reduced motion is requested
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** the selected opacity endpoint applies without a transition
+- **THEN** the selected opacity endpoint applies without a transition or scroll-linked animation
 - **AND** no fallback effect adds continuous filter, paint, raster, or compositor animation work.
 
 ### Requirement: Homepage hero scroll synchronization is route-scoped
@@ -444,50 +483,6 @@ The persistent shell MUST distinguish session identity from display title, suppo
 - **THEN** it uses the same session identity and existing reuse rules
 - **AND** it does not create a second simultaneous player.
 
-### Requirement: Matching listening actions identify the existing session
-
-The shell SHALL mark shared controls for the active editorial source as disabled amber In player status across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Status MUST NOT claim verified playback.
-
-#### Scenario: A session is minimized and its source appears elsewhere
-
-- **WHEN** shell navigation, cached restoration or detail rendering shows the active source
-- **THEN** its listening control displays In player and cannot open a second session
-- **AND** the floating player remains the place to reopen or stop the existing session.
-
-#### Scenario: A session is stopped or replaced
-
-- **WHEN** Stop ends the session or another source replaces it
-- **THEN** all previously matching controls return to their original enabled label
-- **AND** a cached page is synchronized with the current source when restored.
-
-#### Scenario: Store cards offer listening
-
-- **WHEN** a Store collection renders a record with a verified source
-- **THEN** its 112 × 44px listening action appears below artwork and before the title in Grid
-- **AND** source-less records retain row alignment without displaying an invented action.
-- **AND** Grid actions align with card text.
-
-#### Scenario: Coverflow listens from the plaque
-
-- **WHEN** Store Coverflow shows a front record with a verified source
-- **THEN** the title plaque's Listen end is that record's listening action, taking its source, provider data and current session state, and the card's own Listen leaves presentation
-- **AND** activating it opens the player for the front record, and closing the player returns focus to it
-- **AND** it displays In player while that source is the active session
-- **AND WHEN** the front record has no verified source, or the group leaves Coverflow
-- **THEN** the plaque shows the record identity without a Listen end.
-
-#### Scenario: Stop is pressed once
-
-- **WHEN** the shopper activates Stop in the floating player
-- **THEN** the control reads Stop? and keeps its accessible name and position
-- **AND** the session continues
-- **AND** the control returns to Stop after three seconds without a second activation.
-
-#### Scenario: Stop is pressed twice
-
-- **WHEN** the shopper activates Stop? within the window
-- **THEN** the session ends with the existing Stop semantics, including focus restoration and iframe removal.
-
 ### Requirement: Equalizer motion communicates a listening action without asserting playback
 
 Shared Listen controls and the persistent player's modal header and mini player SHALL use the selected decorative Fluid five equalizer. Motion SHALL be finite, preserve control position, and respect reduced-motion preferences. The equalizer MUST NOT assert that a third-party iframe is playing.
@@ -578,7 +573,7 @@ The app shell SHALL smooth scrolling only where it smooths something, SHALL run 
 - **WHEN** the device has a fine pointer with hover and smooth scrolling is kept on desktop
 - **THEN** one smooth-scroll instance owns the window, and nested scroll roots stay native unless a measured need is recorded
 - **AND** its animation-frame loop starts on wheel input, keyboard scrolling, or a programmatic smooth scroll and stops once every instance reports it is not scrolling
-- **AND** reduced motion, `data-lenis-prevent` panes, iframes, form controls, and horizontal Coverflow keep native scrolling.
+- **AND** reduced motion, `data-lenis-prevent` panes, iframes, form controls, and the Store Crate stage keep native scrolling.
 
 #### Scenario: Desktop smooth scrolling costs more than native scrolling
 
@@ -700,7 +695,7 @@ The public frontend SHALL route smooth document and first-party panel scrolling 
 
 #### Scenario: Reduced motion or a native-owned surface is active
 
-- **WHEN** the visitor prefers reduced motion or interacts with a form control, iframe, embedded player, or horizontal Coverflow
+- **WHEN** the visitor prefers reduced motion or interacts with a form control, iframe, embedded player, or the Store Crate stage
 - **THEN** the system honors immediate or native scrolling for that interaction
 - **AND** each runtime instance is removed or refreshed when its owned surface disconnects.
 
@@ -716,7 +711,7 @@ First-party coordinated public transitions SHALL use cancellable Motion animatio
 
 ### Requirement: Store browsing preserves orientation and truthful availability
 
-Store view controls SHALL stay mounted during Coverflow movement and filtering. Repeating a format selection SHALL preserve the active Coverflow item. Static cards MUST NOT claim current availability from build-time data; live Store Offer details remain authoritative.
+Store view controls SHALL stay mounted during Crate movement and filtering. Repeating a format selection SHALL preserve the Crate's item in hand. Static cards MUST NOT claim current availability from build-time data; live Store Offer details remain authoritative.
 
 #### Scenario: Visitor browses a product with several images
 
@@ -868,3 +863,392 @@ The Store and Artists search fields SHALL offer a search Enter key with autocorr
 
 - **WHEN** the shopper activates Clear filters
 - **THEN** focus moves to the live result count.
+
+### Requirement: Shell navigation reveals first-screen images
+
+The shell SHALL prepare and wait for the destination's first-screen images so shell-managed section navigation and detail overlays do not show images appearing after the content swap. First-screen images are those the destination marks `loading="eager"`. Waiting SHALL be bounded and SHALL NOT block navigation.
+
+#### Scenario: Fetched section snapshots preload eager images
+
+- **GIVEN** a shell section snapshot is fetched, on link intent or on activation
+- **WHEN** its HTML has been parsed
+- **THEN** the shell preloads that destination's eager images once, using their `sizes`, `srcset` and `src`, before the snapshot is inserted
+- **AND** lazy images are not preloaded
+- **AND** a cached snapshot starts no additional preload.
+
+#### Scenario: Overlay link intent preloads eager images only
+
+- **GIVEN** a detail overlay link
+- **WHEN** it receives hover or focus intent
+- **THEN** the shell preloads that destination's eager images using their `sizes`, `srcset` and `src`
+- **AND** lazy images are not preloaded
+- **AND** activating the link does not start an additional preload.
+
+#### Scenario: Section activation waits for decoded images
+
+- **GIVEN** a shopper activates a section link or restores a cached section page
+- **WHEN** the destination content is swapped in
+- **THEN** the page-enter transition is held until its eager images have decoded, or at most 300 ms
+- **AND** no wait is added when they are already decoded.
+
+#### Scenario: Overlay lead images load eagerly
+
+- **WHEN** a Release, Artist or News detail overlay renders its lead image
+- **THEN** the image is `loading="eager"` without `fetchpriority="high"`
+- **AND** direct full-page loads keep their priority lead image.
+
+#### Scenario: Reduced motion and image failure
+
+- **GIVEN** reduced motion is preferred, or an eager image fails to load or decode
+- **WHEN** navigation completes
+- **THEN** the wait never exceeds 300 ms
+- **AND** a failed image never blocks navigation, focus, scroll reset or the persistent player.
+
+### Requirement: Main navigation is one model on every surface
+
+The public site SHALL build one main navigation in which Home is structural and always first, followed by the main-menu sections editors choose.
+
+- The phone Menu SHALL list Home and every section.
+- The desktop header SHALL list the sections beside the logo, which links Home.
+- The header, the Menu and the footer sitemap SHALL render page links through one link model and one link style, so a destination keeps the same attributes, accent and current-page state wherever it appears.
+
+#### Scenario: Shopper opens the Menu on a phone
+
+- **WHEN** a shopper below the desktop breakpoint opens the Menu
+- **THEN** Home is the first link, followed by the main-menu sections in editorial order
+- **AND** Home appears exactly once
+- **AND** following Home uses same-document shell navigation and preserves the persistent player.
+
+#### Scenario: The current page is marked
+
+- **WHEN** a header, Menu or footer link targets the current page
+- **THEN** it carries `aria-current="page"` and the shared underline marker under its label
+- **AND** after same-document shell navigation, the header and footer links update without a reload.
+
+#### Scenario: Store and Services links are not current
+
+- **WHEN** a Store or Services link does not target the current page
+- **THEN** it uses the neutral link colour without a side stripe
+- **AND** it shifts to its route accent only on hover from a hover-capable pointer, keyboard focus or press.
+
+#### Scenario: Shopper uses the Menu button
+
+- **WHEN** the header renders below the desktop breakpoint
+- **THEN** the Menu button shows its icon with the visible label Menu, which is also its accessible name
+- **AND** it exposes `aria-haspopup="dialog"` and an `aria-expanded` value that matches the Menu
+- **AND** closing the Menu with Escape or Close returns focus to the button.
+
+#### Scenario: The layout reaches the desktop breakpoint
+
+- **WHEN** the viewport widens to the desktop breakpoint while the Menu is open
+- **THEN** the Menu closes, because only the phone layout offers it.
+
+#### Scenario: Shopper taps navigation on a small phone
+
+- **WHEN** the viewport is 320 to 390 CSS pixels wide
+- **THEN** every Menu link, the Menu Close control and every footer sitemap link is at least 44 CSS pixels tall
+- **AND** the footer sitemap wraps onto more lines instead of clipping a link
+- **AND** the page has no horizontal overflow.
+
+### Requirement: Back closes the open player
+
+While the player modal is open, the shell SHALL keep one history entry for it at the page's own URL, so the device or browser Back control closes the modal instead of navigating the page beneath it. Closing through Back SHALL use the modal's close semantics: an interacted session minimizes into the floating player and any other session stops. Toggling the player through history SHALL NOT route, scroll or re-render the page beneath it.
+
+#### Scenario: Listener presses Back while the player is open
+
+- **GIVEN** the player modal is open over a page
+- **WHEN** the listener presses the Android Back key, the Back gesture or the browser's Back
+- **THEN** the modal closes, minimizing a session the listener interacted with and stopping one they did not
+- **AND** the page beneath keeps its URL, content and scroll position
+- **AND** the next Back navigates as it would without the player.
+
+#### Scenario: Listener closes the player with its controls
+
+- **WHEN** the listener closes the modal with Close or Minimize, Escape or the backdrop
+- **THEN** the player's history entry is consumed
+- **AND** one Back then navigates, with no press that does nothing.
+
+#### Scenario: Player opened from a release overlay
+
+- **GIVEN** the listener opened the player from a release detail overlay
+- **WHEN** they press Back
+- **THEN** only the player closes and the overlay stays open at its URL
+- **AND** the next Back closes the overlay.
+
+#### Scenario: Listener goes Forward after Back closed the player
+
+- **GIVEN** Back minimized an interacted session
+- **WHEN** the listener presses Forward
+- **THEN** the player modal reopens with the same session
+- **AND** the page beneath is not routed again.
+
+### Requirement: Cached shell pages rehydrate their islands
+
+The system SHALL restore a cached shell page's framework islands with their server markup and hydration marker, so they hydrate again instead of returning inert or with markup from an earlier visit.
+
+#### Scenario: Shopper returns to a cached page with an island
+
+- **GIVEN** a shell section page holds a hydrated island, such as the newsletter form on Home or Who we are
+- **AND** the shopper typed into it and then navigated to another section
+- **WHEN** the shopper returns to the page from the shell cache
+- **THEN** the island shows its server-rendered state and hydrates again
+- **AND** submitting it runs the island's handler without a document navigation.
+
+### Requirement: Shell page entry keeps fixed layers viewport-fixed
+
+The shell page-enter transition SHALL NOT apply a transform, translate, scale, filter, perspective or other containing-block-creating property to the shell main element, during or after the transition.
+
+#### Scenario: Shopper navigates to Home through the shell
+
+- **GIVEN** a shopper is on another shell section
+- **WHEN** the shopper activates a link to Home and the page-enter transition runs
+- **THEN** the main element only fades its opacity
+- **AND** the fixed Home hero media layer stays sized to the viewport during and after the transition, as on a direct load.
+
+### Requirement: Mobile Releases preserve aligned readable actions
+
+The Releases page SHALL preserve its approved editorial hierarchy on small screens with consistent gutters, complete artwork, naturally wrapping metadata and usable touch controls, without disrupting shell-owned navigation or playback.
+
+#### Scenario: Narrow viewport
+
+- **WHEN** Releases renders from 320px through tablet widths
+- **THEN** artwork, identity, release state, price and actions align coherently without horizontal document overflow
+- **AND** long titles and metadata remain readable
+
+#### Scenario: Existing desktop and shell behavior
+
+- **WHEN** the viewport is desktop-sized or the shopper navigates through the persistent shell
+- **THEN** the approved desktop composition and existing listening, purchase and player continuity remain available
+
+### Requirement: Mobile footer links form a balanced navigation group
+
+The mobile footer SHALL align all sitemap links as an intentional group, including Delivery information, while preserving their logical order, accessible targets and native destinations.
+
+#### Scenario: Footer renders on a narrow screen
+
+- **WHEN** the footer renders at a phone width
+- **THEN** links use balanced columns and usable touch targets without horizontal overflow or an isolated delivery-information row.
+
+#### Scenario: Footer is used on desktop
+
+- **WHEN** a visitor follows a footer section link on desktop
+- **THEN** the existing composition, destination and persistent shell/player navigation remain usable.
+
+### Requirement: Staff footer text wraps naturally
+
+The footer SHALL render the Staff description as one paragraph without inserting sentence-dependent line breaks.
+
+#### Scenario: Staff saves a short description with several sentences
+
+- **WHEN** Staff saves `No borders. No genres. Just noise.`
+- **THEN** the footer keeps the sentences together whenever they fit and wraps only according to available width.
+
+### Requirement: Homepage motto cycles its last word with a waveform scrub
+
+The homepage hero SHALL cycle the last word of the Staff motto through Records, Art and Noise when the motto ends with one of them, starting from the written word in its casing and punctuation. A playhead SHALL scrub between words with random glitch tears and torn track-waveform fragments, confined to a span that moves from the old word's length to the new word's length and ending before the scrub's last third. The written word SHALL hold 1.5 s on entry, every later word 2.8 s, and each scrub SHALL take 1.4 s. Assistive technology SHALL read the written motto.
+
+#### Scenario: Visitor opens Home
+
+- **WHEN** Home renders the motto `No borders. No genres. Just records.`
+- **THEN** Records shows first and is the word announced to assistive technology
+- **AND** after its hold a playhead scrubs to Art, then Noise, then Records again without moving the preceding words or the line layout.
+
+#### Scenario: Staff writes a different motto
+
+- **WHEN** the motto's last word is not Records, Art or Noise
+- **THEN** the motto renders exactly as written with no animation.
+
+#### Scenario: Visitor prefers reduced motion or cannot see the hero
+
+- **WHEN** the visitor prefers reduced motion
+- **THEN** the written word stays and no playhead or tears appear
+- **AND** while the hero is off screen or the tab is hidden the cycle pauses and resumes its remaining hold afterwards.
+
+#### Scenario: Visitor returns to Home through the shell
+
+- **WHEN** the visitor leaves Home through shell navigation and returns
+- **THEN** the motto keeps cycling without a full page load.
+
+### Requirement: News is reachable from the main navigation
+
+The public main navigation SHALL include News directly before the final Who we are section on desktop and in the phone Menu, linking to `/news/`. It SHALL use the existing section-link appearance, current-page underline, keyboard focus and same-document routing. The footer navigation SHALL remain unchanged.
+
+#### Scenario: Visitor returns to News from another section
+
+- **GIVEN** a visitor is browsing another public section
+- **WHEN** they choose the News link in the desktop header or phone Menu
+- **THEN** the existing News listing opens without reloading the document
+- **AND** News becomes the current section, focus moves to the main content and the viewport returns to the top
+- **AND** the phone Menu closes after navigation
+
+#### Scenario: Visitor reads an article and returns to the listing
+
+- **GIVEN** the visitor reached News through the main navigation
+- **WHEN** they open a News article and close its detail overlay
+- **THEN** they return to the News listing with News still marked as the current section
+
+#### Scenario: News navigation preserves an existing player
+
+- **GIVEN** a visitor has interacted with and minimized the music player
+- **WHEN** they navigate to News and open and close an article
+- **THEN** the existing player iframe remains connected and the player can be reopened
+
+#### Scenario: Main navigation fits desktop and phone widths
+
+- **WHEN** the navigation is displayed at 320, 390, 1024 or 1440 px
+- **THEN** News precedes the final Who we are link without clipping or horizontal overflow
+- **AND** phone Menu links retain targets at least 44 px tall
+
+### Requirement: Home motto transitions preserve appearance with bounded work
+
+The Home motto SHALL keep its approved word timing, torn slices, waveform shards, and playhead while avoiding repeatable transition-attributable main-thread tasks of 50 milliseconds or longer in the declared 4× CPU mobile profile.
+
+#### Scenario: Visible Home motto changes word
+
+- **WHEN** the visible Home motto reaches a word transition with motion permitted
+- **THEN** the written word cycles with the existing hold and scrub timing, seven torn text slices, five waveform shards, random burst positions, and playhead reveal
+- **AND** repeated transitions introduce no motto-attributable task of at least 50 milliseconds in the declared mobile profile.
+
+#### Scenario: Font or viewport metrics change
+
+- **WHEN** the brand font finishes loading or the viewport changes size
+- **THEN** the next transition uses current word dimensions and color without a clipped or displaced waveform.
+
+#### Scenario: Motion is disabled or Home leaves view
+
+- **WHEN** reduced motion is requested, the document is hidden, or Home leaves view
+- **THEN** the motto preserves the existing pause, settle, and readable-word behavior.
+
+### Requirement: Shell prefetch follows deliberate pointer or keyboard intent
+
+The shell SHALL NOT fetch a destination document or overlay from a touch or pen hover/press gesture before activation. It SHALL preserve deliberate mouse-hover and keyboard-focus warming, subject to reduced-data preferences for speculative requests.
+
+#### Scenario: Touch or pen begins a swipe on a link
+
+- **WHEN** a touch or pen pointer enters or presses a shell or overlay link and the gesture is cancelled or turns into a swipe
+- **THEN** no destination document or overlay is fetched from that gesture, including focus generated by the press.
+
+#### Scenario: Touch or pen activates a link
+
+- **WHEN** a touch or pen tap activates a shell or overlay link
+- **THEN** the existing navigation loader fetches the destination and preserves shell focus, scroll, overlay, and player behavior.
+
+#### Scenario: Mouse hovers or keyboard focuses a link
+
+- **WHEN** a mouse deliberately dwells over a link or keyboard navigation focuses it
+- **THEN** the shell may warm the relevant destination or player origin before activation
+- **AND** speculative document requests respect reduced-data preferences.
+
+### Requirement: Every listening action identifies the existing session
+
+The shell SHALL mark shared controls for the active editorial source as disabled amber In player status across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Status MUST NOT claim verified playback.
+
+#### Scenario: A session is minimized and its source appears elsewhere
+
+- **WHEN** shell navigation, cached restoration or detail rendering shows the active source
+- **THEN** its listening control displays In player and cannot open a second session
+- **AND** the floating player remains the place to reopen or stop the existing session.
+
+#### Scenario: A session is stopped or replaced
+
+- **WHEN** Stop ends the session or another source replaces it
+- **THEN** all previously matching controls return to their original enabled label
+- **AND** a cached page is synchronized with the current source when restored.
+
+#### Scenario: Store cards offer listening
+
+- **WHEN** a Store collection renders a record with a verified source
+- **THEN** its 112 × 44px listening action appears below artwork and before the title in Grid
+- **AND** source-less records retain row alignment without displaying an invented action.
+- **AND** Grid actions align with card text.
+
+#### Scenario: The Store Crate's item in hand listens from its own card
+
+- **WHEN** the Store Crate holds an item with a verified source
+- **THEN** that item's own Store card offers its Listen action beside the bin, with its source, provider data and current session state
+- **AND** activating it opens the player for that item, and closing the player returns focus to it
+- **AND** it displays In player while that source is the active session.
+
+#### Scenario: Stop is pressed once
+
+- **WHEN** the shopper activates Stop in the floating player
+- **THEN** the control reads Stop? and keeps its accessible name and position
+- **AND** the session continues
+- **AND** the control returns to Stop after three seconds without a second activation.
+
+#### Scenario: Stop is pressed twice
+
+- **WHEN** the shopper activates Stop? within the window
+- **THEN** the session ends with the existing Stop semantics, including focus restoration and iframe removal.
+
+### Requirement: Homepage hero offers Store entry points
+
+The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` as its only action. The hero SHALL NOT render a See pre-orders link. The showcase SHALL hydrate at browser idle priority so the main page can load first. Browse the Store SHALL remain available in the initial HTML independently of the showcase. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
+
+#### Scenario: Visitor lands on Home with pre-orders open
+
+- **GIVEN** the Worker reports at least one stocked pre-order
+- **WHEN** the visitor opens Home
+- **THEN** the hero shows only Browse the Store under the motto
+- **AND** Browse the Store opens `/store/`
+- **AND** the pre-orders showcase remains available further down Home
+
+#### Scenario: Main page loads before the pre-order showcase is ready
+
+- **WHEN** Home has rendered and its deferred pre-order check is still pending
+- **THEN** the hero, motto and Browse the Store link remain available
+- **AND** no additional hero action appears when the showcase renders
+- **AND** the showcase loads automatically at browser idle priority without requiring scrolling or a click
+
+#### Scenario: Visitor lands on Home with no pre-orders open
+
+- **GIVEN** the Worker reports no stocked pre-orders
+- **WHEN** the visitor opens Home
+- **THEN** the hero shows Browse the Store
+- **AND** no See pre-orders link is shown
+
+#### Scenario: Visitor sees the hero without a Scroll label
+
+- **WHEN** the homepage hero renders
+- **THEN** no Scroll text is shown
+- **AND** the animated scroll line still hides without a transition once the hero is scrolled
+
+### Requirement: Compact hero Store action remains accessible
+
+Browse the Store SHALL use the approved compact outlined treatment on mobile and desktop: a 28 px drawn height, approximately 100 px width at the default text scale, 12 px type and a translucent black face. Touch devices SHALL retain a target at least 44 px high independently of the drawn frame. Keyboard focus SHALL remain visible.
+
+#### Scenario: Visitor opens Home on a phone
+
+- **WHEN** Home is displayed at 390 px or narrower, down to 280 px
+- **THEN** the motto and Store link share the logo's left edge
+- **AND** nothing overflows horizontally
+- **AND** the Store link keeps its 44 px touch target
+
+#### Scenario: Visitor taps outside the compact frame
+
+- **GIVEN** Home is displayed on a touch device
+- **WHEN** the visitor taps within the Store link's invisible 44 px target, just above or below its drawn frame
+- **THEN** the Store opens through the persistent shell
+
+#### Scenario: Visitor uses a keyboard on desktop
+
+- **WHEN** the visitor focuses Browse the Store with a keyboard
+- **THEN** the link has a visible focus outline
+- **AND** pressing Enter opens the Store through the persistent shell
+
+### Requirement: Bandcamp embeds use the house dark appearance
+
+The system SHALL render every valid Bandcamp embed with the house appearance, whatever appearance options the stored URL carries: `size=large`, `bgcol=0d0d0d`, `linkcol=f5f5f5`, `artwork=big`, `transparent=true`, and `tracklist=false` for a track. Only the album or track identity SHALL come from the stored URL.
+
+#### Scenario: Staff paste Bandcamp's default light embed
+
+- **GIVEN** a stored embed URL with `bgcol=ffffff` and `linkcol=0687f5`
+- **WHEN** the player provider is derived
+- **THEN** the embed URL uses the house appearance for the same album
+- **AND** content validation accepts the stored URL
+- **AND** the staff Bandcamp field stores the house URL for a newly pasted embed.
+
+#### Scenario: Embed carries an unknown option
+
+- **WHEN** a stored Bandcamp embed URL contains an option outside the supported set
+- **THEN** content validation rejects it and no provider is derived.

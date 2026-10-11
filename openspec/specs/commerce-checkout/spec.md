@@ -814,12 +814,12 @@ The system MUST verify current Stripe catalog state during public Store Offer re
 
 ### Requirement: Hosted Checkout expiry tolerates creation latency
 
-The system MUST calculate the requested expiry from current time plus 35 minutes immediately before the provider call, retain the provider-accepted expiry on the CheckoutOrder, and release held stock only after definitive non-creation or provider-confirmed terminal non-payable state.
+The system MUST request expiry 31 minutes after pending-order creation: Stripe's native 30-minute minimum plus a one-minute creation allowance. It MUST preserve this timestamp across retries, retain the provider-accepted expiry on the CheckoutOrder, and release held stock only after definitive non-creation or provider-confirmed terminal non-payable state. The browser cart SHALL reserve no stock.
 
 #### Scenario: Hold creation consumes time
 
-- **WHEN** time elapses between committing the pending hold and creating hosted Checkout
-- **THEN** the outgoing expiry is calculated after that delay with the five-minute margin above Stripe's minimum
+- **WHEN** hold creation and transport consume less than the one-minute allowance
+- **THEN** the persisted outgoing expiry still meets Stripe's 30-minute minimum
 - **AND** the accepted session expiry is recorded with its binding.
 
 #### Scenario: Provider rejects the requested expiry
@@ -830,16 +830,21 @@ The system MUST calculate the requested expiry from current time plus 35 minutes
 
 #### Scenario: SDK retries creation
 
-- **WHEN** the SDK retries the same create request
+- **WHEN** the same checkout creation is retried
 - **THEN** its order-derived idempotency key and every request parameter, including expiry, remain identical
-- **AND** recovery does not issue a new create request after the SDK attempt has ended.
+- **AND** retry does not extend the reservation or create a second Session for that order.
 
 #### Scenario: Provider outcome or binding is uncertain
 
 - **WHEN** a timeout, network failure, provider 5xx, missing usable URL, or binding failure leaves creation or payment eligibility uncertain
 - **THEN** the pending hold remains recoverable through the same order identity
-- **AND** retry does not create a second Session for that order
 - **AND** local time alone does not release the hold.
+
+#### Scenario: Stripe confirms unpaid expiry
+
+- **WHEN** the signed expiry webhook reconciles an expired unpaid Session
+- **THEN** the pending order becomes not paid and its copies become available without another shopper attempting checkout
+- **AND** duplicate or late events cannot release a paid or processing order.
 
 ### Requirement: Checkout creates app authority before provider authority
 
@@ -854,7 +859,7 @@ The system MUST create the complete pending CheckoutOrder hold before requesting
 #### Scenario: Hosted checkout is created
 
 - **WHEN** Stripe accepts the request
-- **THEN** the session uses the 35-minute target calculated immediately before the provider call
+- **THEN** the session uses the saved 31-minute deadline, including its one-minute creation allowance
 - **AND** the accepted expiry is retained on the bound pending order
 - **AND** private metadata carries only the app order identity needed for recovery.
 
@@ -1061,3 +1066,90 @@ The checkout order summary's quantity editor control SHALL read `Edit quantities
 - **WHEN** the checkout order summary is shown
 - **THEN** a visible `Edit quantities` control opens the quantity editor
 - **AND** its accessible name matches its visible text.
+
+### Requirement: Cart checkout fits one desktop screen
+
+The cart checkout page SHALL present its cost breakdown and the Stripe checkout action without scrolling on a 1440×900 desktop viewport for a one-line cart, and SHALL state each checkout fact once.
+
+#### Scenario: One-line cart on desktop
+
+- **GIVEN** a StoreCart with one priced line and a 1440×900 viewport
+- **WHEN** `/store/checkout/` finishes loading its delivery quote
+- **THEN** the total and the Continue to Stripe Checkout action are visible without scrolling
+- **AND** loading the delivery quote does not move the checkout action.
+
+#### Scenario: Checkout facts are not repeated
+
+- **WHEN** the checkout page renders
+- **THEN** the item list, Greece-only locker delivery information, card-detail reassurance and the cost breakdown each appear once per viewport layout.
+
+### Requirement: Cart actions remain reachable on small screens
+
+The storefront SHALL keep Checkout and Continue Shopping visible and operable within the cart drawer's available viewport while the cart heading, items and delivery information scroll independently above them.
+
+#### Scenario: Cart content exceeds the available height
+
+- **GIVEN** a small phone viewport or a cart with multiple items, long titles or lengthy delivery information
+- **WHEN** the shopper opens and scrolls the cart
+- **THEN** the cart content scrolls without moving the background Store page
+- **AND** Checkout and Continue Shopping remain visible and tappable
+- **AND** delivery loading, available and unavailable states remain readable within the scroll area.
+
+#### Scenario: Shopper continues shopping
+
+- **WHEN** the shopper chooses Continue Shopping
+- **THEN** the cart closes and focus returns to its opener
+- **AND** Store scrolling resumes so another product can be added
+- **AND** the existing cart lines, supported quantities and active player session remain intact.
+
+#### Scenario: Cart is empty
+
+- **WHEN** the cart contains no items
+- **THEN** its empty state can scroll when necessary
+- **AND** Continue Shopping remains visible and operable without a Checkout action.
+
+#### Scenario: Player is minimized during shopping
+
+- **GIVEN** an active minimized player session
+- **WHEN** the shopper opens the cart
+- **THEN** the player surface does not cover or intercept the cart actions
+- **AND** closing the cart preserves the existing player iframe and session.
+
+### Requirement: Ready Store Offers carry the opt-in copies-left count
+
+A ready Store Offer SHALL include an optional lowStockQuantity under the same rule as the listing projection, computed from effective stock after pending checkout holds. The count SHALL be presentation only and SHALL NOT change checkout eligibility.
+
+#### Scenario: Item page shows copies left
+
+- **WHEN** the item page reads a ready offer with lowStockQuantity N
+- **THEN** it shows Only N left above Add To Cart as a status, not a control
+- **AND** adding to the cart and checkout behave as for any ready offer.
+
+#### Scenario: Offer without a qualifying count
+
+- **WHEN** the notice is disabled or effective stock is outside 1–5
+- **THEN** the offer has no lowStockQuantity and the item page shows no notice.
+
+### Requirement: UAT test checkout reset is isolated and explicit
+
+A maintenance command SHALL target only the UAT commerce database and real Stripe test credentials. It MUST default to dry-run, require one variant, refuse more than 25 matching pending Sessions, reject environment/database/provider overrides and redact order/provider references. It MUST preserve stock quantities, order lines and history.
+
+#### Scenario: Operator ends an unpaid test checkout
+
+- **WHEN** the operator applies a reset and Stripe confirms the bound test Session is open and unpaid with matching order metadata
+- **THEN** the command expires the whole Session through Stripe before releasing the pending hold
+- **AND** only confirmed expired unpaid Sessions become not paid, including mixed carts
+- **AND** conditional status and payment guards preserve concurrent payment or review changes.
+
+#### Scenario: Payment or provider state cannot safely close
+
+- **WHEN** a Session is paid, processing, live, mismatched, unavailable or has an ambiguous expiration result
+- **THEN** the command preserves its hold by default
+- **AND** no local deadline alone establishes nonpayment.
+
+#### Scenario: Operator explicitly retires missing legacy UAT test references
+
+- **WHEN** the operator supplies both apply and retire-missing, Stripe returns resource missing for a test Session, the local deadline has passed and no local payment fact exists
+- **THEN** the order becomes needs review without inventing an unsupported reason and stops reserving UAT copies
+- **AND** payment correlation and history remain intact without asserting nonpayment or provider closure
+- **AND** this exception is unavailable for PRD, live references or current deadlines.

@@ -143,9 +143,31 @@ Listing price and availability SHALL consume the same single fresh request per c
 - **THEN** any stale availability label is removed and neutral unknown feedback is shown
 - **AND** no Sold Out state is inferred from missing data or a failed price read.
 
-### Requirement: Store cards offer Buy for stocked items
+### Requirement: Listing projection carries an opt-in copies-left count
 
-A Store collection card whose Store Item has a sellable variant SHALL offer a 44px Buy action in the Listen chrome with a leading record mark beside its listing price when the activation's listing projection reports a ready price and stocked availability. In every other state, and in Coverflow narrower than 40rem, the card SHALL show its price and status text without a Buy action. Buy SHALL be a sibling of the card's single Store Item link and SHALL NOT navigate, and the card title SHALL read as that link. Pressing Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
+The listing-price projection SHALL add an optional lowStockQuantity to a ready record only when staff enabled the item's copies-left notice, its availabilityState is stocked, and its effective stock is between 1 and 5. All other records SHALL carry no stock count.
+
+#### Scenario: A scarce item has the notice enabled
+
+- **GIVEN** an item's copies-left notice is enabled and its effective stock is 3
+- **WHEN** the listing projection is read
+- **THEN** its ready record reports availabilityState stocked and lowStockQuantity 3
+- **AND** the projection still uses one bulk query without provider reads or writes.
+
+#### Scenario: The count does not qualify
+
+- **WHEN** the notice is disabled, effective stock exceeds 5 or is 0, the item is not stocked, or its price is unavailable
+- **THEN** the record has no lowStockQuantity.
+
+#### Scenario: A Store card presents copies left
+
+- **WHEN** a stocked card's ready record carries lowStockQuantity N
+- **THEN** its status slot shows Only N left beside the price and Buy remains available
+- **AND** a stocked record without the count keeps the status slot hidden.
+
+### Requirement: Stocked Store cards offer Buy
+
+A Store collection card whose Store Item has a sellable variant SHALL offer a 44px Buy action with a leading record mark beside its listing price when the listing projection reports a ready price and stocked availability, and otherwise SHALL show its price and status without Buy. Buy SHALL sit beside the card's item link without navigating. Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
 
 #### Scenario: Stocked card shows Buy
 
@@ -153,7 +175,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 - **WHEN** the card's price row is presented
 - **THEN** Buy appears beside the price in the Listen chrome (dark face, hairline edge, Store Blood hover edge) with a leading record mark, unlike the outlined status text
 - **AND** the card keeps its height, because the price row reserves Buy's height
-- **AND** the active Coverflow card shows Buy in its visible purchase row at 40rem and wider.
+- **AND** the Store Crate's item in hand shows Buy in its visible purchase row at every width.
 
 #### Scenario: Pre-order card keeps its action
 
@@ -162,12 +184,12 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 - **THEN** its Pre-order action keeps the filled primary face and Sea green base line
 - **AND** it shows no record mark.
 
-#### Scenario: Phone Coverflow keeps its compact card
+#### Scenario: Phone Crate offers Buy for the item in hand
 
-- **GIVEN** a viewport narrower than 40rem in Coverflow
-- **WHEN** the active card shows its purchase row
-- **THEN** it shows the price and status without Buy
-- **AND** the cover keeps the size it had before Buy existed.
+- **GIVEN** a viewport narrower than 40rem with the Store Crate open
+- **WHEN** the stocked item in hand shows its purchase row below the bin
+- **THEN** it shows the price, status and Buy
+- **AND** Buy stays reachable without scrolling past the bin.
 
 #### Scenario: Shopper looks for the item page
 

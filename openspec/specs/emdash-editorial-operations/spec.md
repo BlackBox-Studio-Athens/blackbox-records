@@ -14,8 +14,8 @@ Artist creation SHALL wait for an edit before autosaving. An unselected image SH
 
 - **WHEN** an image upload succeeds inside the artist picker
 - **THEN** it is selected without a second click
-- **AND** the full image keeps its native aspect ratio, without manual cropping or loss of original bytes
-- **AND** dimensions guidance recommends at least 1200 px on the long edge, ideally 1800 px or more
+- **AND** the full image fits the 3:4 portrait frame, with any leftover space shown as a blurred copy of the photo, without manual cropping or loss of original bytes
+- **AND** dimensions guidance recommends 1800 × 2400 px with 1200 × 1600 px minimum
 - **AND** the description uses library metadata or the entry title, with optional accessibility editing.
 
 ### Requirement: Upcoming and released music share one Release identity
@@ -339,7 +339,7 @@ Acceptance SHALL cover rendering for every supported collection and public-versu
 
 ### Requirement: Content and media survive application replacement
 
-Editorial records and media SHALL live outside application bundles and Git commits. Complete private backup and restore evidence SHALL exist before the old writable CMS is retired.
+Editorial records and media SHALL live outside application bundles and Git commits. A CMS backup SHALL preserve one consistent D1 snapshot and every media object referenced by that snapshot, even when staff make concurrent content edits or upload media. Complete private backup and restore evidence SHALL exist before the old writable CMS is retired. Dependency upgrades SHALL preserve retained editorial state and scheduling instants through migration and repeated startup.
 
 #### Scenario: Worker is redeployed
 
@@ -353,11 +353,26 @@ Editorial records and media SHALL live outside application bundles and Git commi
 - **THEN** users, content, relations, required revisions, and referenced media are recoverable and reconciled
 - **AND** restoring editorial data cannot roll back paid orders, stock, or Stripe bindings.
 
+#### Scenario: Backup overlaps active editing
+
+- **WHEN** staff save content, upload media, or remove media while a private backup captures CMS data
+- **THEN** the backup records one consistent D1 state and contains every media object referenced by that state
+- **AND** ordinary edits and media additions do not invalidate the capture
+- **AND** a missing or changed referenced media object prevents publication of the recovery point.
+
 #### Scenario: Public media storage is inspected
 
 - **WHEN** an anonymous visitor requests media or a guessed backup path
 - **THEN** only intentionally public assets are accessible
 - **AND** database exports, unpublished media, credentials, and private backups are inaccessible.
+
+#### Scenario: Existing CMS state is upgraded
+
+- **WHEN** a dependency upgrade migrates an existing CMS and starts it twice
+- **THEN** private drafts, revision content, calendar dates, relations, media and the accepted publication remain intact
+- **AND** valid one-shot timestamps retain their original instant after normalization
+- **AND** configured sites are not seeded again and deleted seed content remains deleted
+- **AND** commerce prices, stock and orders remain unchanged.
 
 ### Requirement: Hosting cost and supported integration are acceptance gates
 
@@ -599,3 +614,130 @@ Release and Distro entries SHALL support optional structured, format-specific Tr
 - **WHEN** an editor changes between vinyl/cassette and CD
 - **THEN** existing entered tracks are retained in order and the editor can arrange the new side/disc groups
 - **AND** no source format is silently treated as an identical edition of another format.
+
+### Requirement: Staff members can discard a saved draft
+
+The staff workspace SHALL offer a separate, explicitly confirmed operation to
+discard persisted draft changes for any editable content record that has both
+a live revision and a draft revision. The operation SHALL use the current
+revision for optimistic concurrency, SHALL leave the live public content
+unchanged, and SHALL reload the editor to the resulting live content on
+success.
+
+#### Scenario: Member discards saved changes on a published record
+
+- **WHEN** a member opens a saved record with both a live revision and a
+  draft revision, chooses `Discard saved changes`, and confirms
+- **THEN** the server removes the current draft using the submitted revision
+- **AND** the public live content remains unchanged
+- **AND** the editor shows the live content with no pending draft changes.
+
+#### Scenario: Unsaved browser changes are still present
+
+- **WHEN** a record has saved draft changes and additional unsaved browser
+  edits
+- **THEN** the saved-draft discard action is unavailable until the unsaved
+  edits are discarded or saved
+- **AND** the existing unsaved-change confirmation remains the only action
+  that removes browser-local edits.
+
+#### Scenario: Record has no live draft pair
+
+- **WHEN** a record is new, has never been published, or has no current draft
+  revision
+- **THEN** the staff workspace does not offer the saved-draft discard action.
+
+#### Scenario: Saved draft revision is stale
+
+- **WHEN** the submitted revision no longer matches the server's current
+  revision
+- **THEN** the server rejects the operation without changing the record
+- **AND** the editor retains the member's text and reports a reload/conflict
+  action.
+
+### Requirement: News supports an optional native Artist reference
+
+Members SHALL be able to select, replace and remove an Artist in a News editor. Existing News without this field SHALL remain valid. Native saves, selected revisions, imports, preview and accepted snapshots SHALL preserve the selected Artist identity. Invalid supplied references SHALL be rejected, and publication or preview SHALL require the selected Artist in the accepted or explicitly reviewed content.
+
+#### Scenario: Member selects or removes an Artist
+
+- **WHEN** the member selects an existing Artist in News
+- **THEN** autosave preserves that native reference
+- **AND** removing it leaves valid general news without a genre tag
+- **AND** Release Artist selection remains required.
+
+#### Scenario: A selected News revision differs from its current draft
+
+- **WHEN** review, preview or publication reads a saved News revision
+- **THEN** its Artist comes from that selected revision's native relation snapshot
+- **AND** a newer draft's Artist or genre does not replace it.
+
+#### Scenario: Selected Artist has not been published
+
+- **WHEN** review or preview includes News linked to an Artist absent from the accepted snapshot
+- **THEN** the existing dependency flow asks for that Artist to be included in the same review
+- **AND** unresolved publication references never enter an accepted snapshot.
+
+#### Scenario: CMS already contains content
+
+- **WHEN** explicit catalog-schema preparation adds the optional News Artist reference
+- **THEN** existing News, drafts, revisions and accepted publication pointers remain intact
+- **AND** repeating preparation does not create a duplicate field or overwrite content.
+
+### Requirement: The editorial plugin stores price drafts
+
+The `blackbox-editorial` EmDash plugin SHALL store at most one price draft per catalog record in its private plugin KV, exposed through an authenticated plugin route that requires the staff content-edit permission and EmDash's CSRF header. Writes SHALL use the previous draft revision for compare-and-set. A price draft SHALL NOT be Price Authority, SHALL NOT contain provider identifiers, and SHALL NOT enter content publication snapshots.
+
+#### Scenario: Member saves a price draft
+
+- **WHEN** a member saves a valid EUR price draft for a release or distro record with the current draft revision
+- **THEN** the plugin stores it and returns its new revision
+- **AND** the live price and public content are unchanged.
+
+#### Scenario: Two members edit the same draft
+
+- **WHEN** a save carries a draft revision that is no longer current
+- **THEN** the route reports a conflict and keeps the stored draft.
+
+#### Scenario: Record is deleted
+
+- **WHEN** EmDash deletes a record that has a price draft
+- **THEN** the plugin removes that draft.
+
+### Requirement: Home is structural in the main menu
+
+The navigation content schema SHALL reject a Home (`/`) entry shown in the main menu, because the public site always lists Home first in the phone Menu and links it from the logo. A Home entry MAY appear in the footer. The staff editor SHALL name the main-menu checkbox for both surfaces it controls.
+
+#### Scenario: Staff adds Home to the main menu
+
+- **WHEN** a Home navigation entry is saved or published with Show in the main menu selected
+- **THEN** validation reports, beside that checkbox, that Home is always in the main menu
+- **AND** the public site keeps exactly one Home link in the Menu.
+
+#### Scenario: Staff edits a section entry
+
+- **WHEN** staff edit any other navigation entry
+- **THEN** the checkbox reads "Show in the main menu (top of the site and the phone Menu)"
+- **AND** selecting it lists the page at the top of the site on computers and in the phone Menu.
+
+### Requirement: Staff controls Artist activity
+
+The Artist editor SHALL provide an Active artist switch below Artist name, with Active or Inactive state text. New and legacy entries without activity SHALL display Active without a save on open. Activity SHALL use existing private autosave, revision recovery, preview and explicit publication. False activity SHALL survive native storage and publication.
+
+#### Scenario: Staff edits activity using a keyboard
+
+- **WHEN** a member focuses and toggles Active artist
+- **THEN** the control exposes its switch role, checked state and visible focus
+- **AND** the state text updates and the boolean joins the ordinary private draft without discarding other fields.
+
+#### Scenario: Staff reopens and publishes an inactive Artist
+
+- **WHEN** a saved inactive draft is reopened and its reviewed revision is published
+- **THEN** the switch remains Inactive and the accepted snapshot retains inactive activity
+- **AND** native 0 remains false while native 1 remains true.
+
+#### Scenario: Existing CMS schema is prepared again
+
+- **WHEN** the release prepares the optional Artist activity field repeatedly
+- **THEN** preparation is idempotent and retains all existing records and revisions
+- **AND** an existing incompatible field type stops preparation with an actionable error.

@@ -12,7 +12,7 @@ The system SHALL provide Search Store on `/store/` across all rendered Store Ite
 
 #### Scenario: A match is outside the current preview
 
-- **WHEN** the query matches an item beyond the visible coverflow preview
+- **WHEN** the query matches an item that is not on screen
 - **THEN** that item is included in the visible results
 - **AND** search is not limited to the currently focused or first group of cards.
 
@@ -68,7 +68,7 @@ Search SHALL expose a labeled search input, clear action, polite result count, a
 - **THEN** every All Store card returns in canonical order in the complete catalog presentation
 - **AND** stale hidden states, empty messages, and counts are removed or updated
 - **AND** activating Clear search returns focus to the search input before removing the clear control
-- **AND** existing explicit disclosure controls can return to preview where coverflow is eligible and supported.
+- **AND** Grid | Crate returns where the restored Grid holds an item with a bin.
 
 #### Scenario: Search has never been activated
 
@@ -83,7 +83,7 @@ The search enhancement MUST mount only for the active All or Distro search place
 
 - **WHEN** a searched route is left, cached, restored, or revisited through history
 - **THEN** query, filtered visibility, pending work, and result feedback do not leak into another activation
-- **AND** there is one active search control and at most one coverflow controller for the active searchable shelf, with ordinary-grid search usable when coverflow is unavailable.
+- **AND** there is one active search control and at most one Store Crate for the active searchable shelf, with ordinary-grid search usable when the Store Crate is unavailable.
 
 #### Scenario: Shopper opens another category
 

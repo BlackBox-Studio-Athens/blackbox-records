@@ -8,13 +8,25 @@ Let label members create sellable items and change their prices through one reli
 
 ### Requirement: Catalog editing builds on EmDash
 
-The label-focused staff interface SHALL use EmDash APIs for content, private drafts, revision conflicts, references and media, and reuse its Portable Text editor. Catalog details SHALL combine Details, Selling and Stock destinations without moving commerce or stock authority into EmDash. Creation SHALL guide Details → Price & starting stock → Review, with private editorial autosave and explicit confirmed selling setup. Editorial-only releases SHALL skip selling setup and retain an independent publication path.
+The label-focused staff interface SHALL use EmDash APIs for content, private drafts, revision conflicts, references and media, and reuse its Portable Text editor. Existing catalogue entries SHALL expose details, photos, price and stock editing on one page without requiring navigation to Selling or Stock. Commerce and stock authority SHALL remain outside EmDash. Creation SHALL guide Details → Price & starting stock → Review, with private editorial autosave and explicit confirmed selling setup. Editorial-only releases SHALL skip selling setup and retain an independent publication path. Existing deep links SHALL remain usable.
 
 #### Scenario: An occasional member resumes an unfinished release
 
 - **WHEN** a member returns to their saved release draft
 - **THEN** incomplete editorial details remain private and editable
 - **AND** no price or opening stock is created until the member explicitly confirms setup.
+
+#### Scenario: Update an existing catalogue item
+
+- **WHEN** a member edits an item's images and information
+- **THEN** they can change its price and stock on the same page using explicit actions
+- **AND** revision conflicts, uncertain outcomes, stock history and entered data retain existing protection.
+
+#### Scenario: Switch editing tasks without losing work
+
+- **WHEN** a member switches between Details & photos and Price & stock
+- **THEN** the selected item, ongoing uploads and unsaved inputs remain mounted and intact
+- **AND** price and stock are directly available beneath the item header without scrolling through editorial fields.
 
 ### Requirement: Member language and input are accessible to nontechnical musicians
 
@@ -92,7 +104,7 @@ Item Setup SHALL persist an operation identity, input fingerprint, progress, and
 
 ### Requirement: Staff changes prices through Stripe authority
 
-An authorized member SHALL change an item's price in the staff workspace through a server-validated operation that selects a replacement Stripe Product default Price. The browser and generic editorial fields SHALL NOT own selling price authority.
+An authorized member SHALL change an item's price in the staff workspace through a server-validated operation that selects a replacement Stripe Product default Price. The browser and generic editorial fields SHALL NOT own selling price authority. A typed price SHALL be held as an EmDash price draft until the member confirms it in the item's publish review.
 
 #### Scenario: Member changes a fixed price
 
@@ -100,6 +112,12 @@ An authorized member SHALL change an item's price in the staff workspace through
 - **THEN** the backend creates or reuses the intended replacement Price under the bound Product, selects it as default, and reconciles the Store Offer
 - **AND** no static build or backend deployment is required
 - **AND** prior Prices and historical order totals remain unchanged.
+
+#### Scenario: Member stages a price
+
+- **WHEN** the member types a new price
+- **THEN** it is saved as a draft marked not live, with the live price shown beside it
+- **AND** shoppers keep the live price until the member publishes.
 
 #### Scenario: Price operation times out
 
@@ -191,3 +209,151 @@ Live-price confirmation SHALL use direct action wording while retaining its exis
 - **WHEN** that price form requires live confirmation
 - **THEN** the checkbox reads Apply these pricing settings to the live shop beside proposed minimum, suggested, and maximum amounts
 - **AND** confirmation covers only the price operation, not publication or checkout launch.
+
+### Requirement: Item publishing is one action
+
+The item editor SHALL offer one Publish changes action on every item tab. It SHALL count saved editorial changes and the staged price draft, review them together, and publish them in one sequence. Stock operations SHALL remain immediate and SHALL NOT be counted or published by it.
+
+#### Scenario: Member changes the description and the price
+
+- **WHEN** a member edits the description and types a new price on the Price & stock tab
+- **THEN** the header shows two changes not live yet and Publish changes stays available on both tabs
+- **AND** leaving and returning to the item, on any device, keeps both changes.
+
+#### Scenario: Member publishes an item that is on sale
+
+- **WHEN** the member reviews and confirms Publish changes for an item on sale
+- **THEN** the price command runs first, then item publication applies the checkout presentation and publishes the website
+- **AND** each step reports its own result, and a failed step can be retried without repeating completed steps.
+
+#### Scenario: Member publishes only a price
+
+- **WHEN** only the price draft differs from the live item
+- **THEN** only the price command runs and no website publication is requested.
+
+#### Scenario: Member puts an item on sale for the first time
+
+- **WHEN** a withheld item with a price is reviewed
+- **THEN** the review offers an unchecked Put this item on sale in the shop option
+- **AND** the item becomes buyable only when the member ticks it and publishes.
+
+### Requirement: Existing catalog items support explicit initial pricing
+
+An authorized member SHALL set the first price on an eligible existing withheld variant using its verified EmDash source and reviewed saved revision. Initial pricing SHALL preserve item/source/variant identity, public slug, stock and ledger, reservations, orders, intentional pauses and publication state. It SHALL retain accepted input and recoverable progress before external writes, without invoking new-item creation or opening-stock initialization.
+
+#### Scenario: A stocked imported item receives its first price
+
+- **GIVEN** a retained withheld variant has stock 1 physical / 1 online, a ledger entry and safely absent price authority
+- **WHEN** the member confirms valid initial pricing for its saved source and supported physical type
+- **THEN** price authority is established on that same variant with inventory/history unchanged
+- **AND** it remains withheld until the separate existing activation operation.
+
+#### Scenario: Format or stock has not been recorded
+
+- **WHEN** an otherwise eligible retained item lacks runtime format or a stock record
+- **THEN** Distro/Merch uses its validated native group and an unset Release type offers the existing supported physical choices
+- **AND** a valid existing type is preserved
+- **AND** zero/missing stock does not prevent pricing or cause invented stock.
+
+#### Scenario: Preflight rejects a correctable request
+
+- **WHEN** a new request has invalid money, stale reviewed revisions, incomplete source details or missing required live confirmation
+- **THEN** it fails before provider writes or an unresolved operation is created
+- **AND** the member can correct and review the input.
+
+#### Scenario: A member resumes interrupted initial pricing
+
+- **WHEN** the initiating authorized member reopens Selling and explicitly resumes its retained operation
+- **THEN** the accepted input is available without relying on browser storage
+- **AND** recovery reuses the operation's verified Product/Price work, including after provider idempotency retention expires
+- **AND** it uses the accepted source revision/presentation even if a newer private draft exists
+- **AND** it neither publishes that draft nor creates duplicate provider objects.
+
+#### Scenario: A completed request is repeated
+
+- **WHEN** the same accepted request is repeated after completion, including after later revisions or publication
+- **THEN** it returns its completed receipt without repeating provider writes
+- **AND** a different actor or payload cannot reuse that operation identity.
+
+#### Scenario: Another request or stock movement overlaps
+
+- **WHEN** initial-price requests compete or stock changes while pricing runs
+- **THEN** only one unresolved catalog operation can perform setup
+- **AND** the competing request receives a conflict or existing safe status
+- **AND** the stock movement is preserved.
+
+### Requirement: Selling explains current readiness and recovery
+
+Selling SHALL show the applicable Set price, Change price or blocked-state action for the selected item. Missing details, unfinished operations and unsafe bindings SHALL have useful guidance. Reading Selling SHALL NOT mutate catalog, provider, inventory or publication state.
+
+#### Scenario: Content has no linked shop item
+
+- **WHEN** a fresh selected-record read confirms the content is unlinked
+- **THEN** Selling offers the existing guided setup
+- **AND** the existing server guard prevents duplicate setup.
+
+#### Scenario: A retained item is eligible for its first price
+
+- **WHEN** Selling finishes loading
+- **THEN** it displays No price set, a blank amount and Set price
+- **AND** missing setup is not represented only by a generic administrator error.
+
+#### Scenario: A configured item has an incomplete private draft
+
+- **WHEN** current price authority is valid but unrelated private editorial work is incomplete
+- **THEN** Change price remains usable
+- **AND** the draft does not replace current provider presentation.
+
+#### Scenario: Details or provider evidence block setup
+
+- **WHEN** required details are missing or a bound provider identity is missing, invalid, foreign or ambiguous
+- **THEN** Selling offers the applicable Details or administrator-review guidance
+- **AND** it does not infer safe setup from an empty/failed price read or automatically repair legacy bindings.
+
+#### Scenario: Another kind of catalog operation is pending
+
+- **WHEN** new-item setup, replacement pricing or publication is unfinished
+- **THEN** Selling retains that operation's existing recovery behavior
+- **AND** it does not send it through initial pricing or claim server-restored input that the older operation does not retain.
+
+#### Scenario: Access or provider service fails
+
+- **WHEN** authorization, configuration or provider availability prevents loading
+- **THEN** Selling shows the existing safe sign-in, retry or administrator guidance
+- **AND** it does not authorize price creation.
+
+### Requirement: The stock-to-selling journey preserves current state and member input
+
+The selected stock record SHALL provide a direct same-item Selling handoff. Selling SHALL load on entry or explicit refresh and refresh the affected summary/publication prerequisites after confirmed completion. While editing, it SHALL preserve entered money and the reviewed baseline until submission or deliberate reset. Existing editorial unsaved-change behavior SHALL be preserved. Submitted operations SHALL remain recoverable; this change does not require unsent price drafts to persist across navigation or reloads.
+
+#### Scenario: Member continues from recorded stock
+
+- **WHEN** a confirmed stock operation is followed by the Selling action
+- **THEN** the correct existing item opens without a new search or new-item form
+- **AND** returning to Stock shows current quantities.
+
+#### Scenario: Initial pricing completes
+
+- **WHEN** the server confirms completion
+- **THEN** Selling shows the confirmed price and refreshes the affected summary/publication prerequisites
+- **AND** it does not publish or activate the item
+- **AND** incomplete setup shows a prerequisite instead of an unrelated publication failure.
+
+#### Scenario: A price conflict or explicit refresh occurs while editing
+
+- **WHEN** submission finds a changed revision
+- **THEN** the entered amount remains visible with conflict guidance and an explicit Refresh/review action
+- **AND** the form does not silently adopt a newer revision
+- **AND** a refresh that discards unsaved values requires confirmation.
+
+#### Scenario: A late read or failed refresh follows navigation or success
+
+- **WHEN** a read completes for a previously selected item or fails after a confirmed mutation
+- **THEN** it cannot overwrite the current item or imply the mutation failed
+- **AND** a failed post-success read offers Refresh rather than another save.
+
+#### Scenario: Member uses a narrow screen or keyboard
+
+- **WHEN** Selling is used at 320 CSS pixels or entirely with a keyboard
+- **THEN** inputs and actions remain usable with labels, error associations, visible focus and announced feedback
+- **AND** existing 44-pixel primary touch targets are preserved.

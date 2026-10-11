@@ -159,9 +159,10 @@ The system SHALL apply image optimization by section and image role instead of u
 
 #### Scenario: Artist images are rendered
 
-- **WHEN** the Artists roster, artist detail lead media, or Home featured roster renders an artist image
-- **THEN** the image keeps its source aspect ratio inside a print slot sized from the source dimensions, with no fixed-ratio frame, fill bars, or text over the image
-- **AND** roster preview prints, roster row thumbnails, artist detail lead prints, and release thumbnails use separate width ladders that match their preview, tiny-thumbnail, large/detail, and tiny-thumbnail roles.
+- **WHEN** artist roster or Home featured cards render artist images
+- **THEN** they show the whole photo in the documented 3:4 frame with the card responsive width ladder, over a blurred copy of the same photo
+- **AND** the blurred copy uses one small source candidate with no high priority
+- **AND** artist detail lead images and release thumbnails use separate large/detail and tiny-thumbnail strategies.
 
 #### Scenario: News and services images are rendered
 
@@ -276,11 +277,12 @@ The system SHALL give About, Services, and Artists route-specific image discover
 
 #### Scenario: Artists direct route loads
 
-- **WHEN** the Artists roster enters the first viewport
-- **THEN** the first preview print has high fetch priority but is not requested on viewports where the preview panel is hidden, and only the leading visible row thumbnails are eager
-- **AND** at most one artist image, the expected LCP print for the active viewport, is high priority
-- **AND** later thumbnails and every other preview print remain lazy-loaded or undisplayed until needed
-- **AND** each rendered print keeps its source aspect ratio, subject, detail, and alt text with no material visual regression.
+- **WHEN** the Artists roster grid enters the first viewport
+- **THEN** only the expected visible leading portraits are eager
+- **AND** the expected LCP portrait is high priority
+- **AND** later portraits remain lazy-loaded
+- **AND** the selected 480w Ouranopithecus candidate is no more than 100 KiB after existing-pipeline source remediation or candidate tuning
+- **AND** its whole photo, subject placement, detail, and alt text have no material visual regression.
 
 #### Scenario: Secondary route image work is accepted
 
@@ -327,77 +329,6 @@ The system SHALL use matched existing artwork, verified artwork-fetcher output, 
 - **THEN** a generic format-appropriate fallback may be used
 - **AND** fallback is not used merely because lookup was skipped
 - **AND** known-missing fallback does not satisfy this change's physical CD photography requirement.
-
-### Requirement: Store Coverflow image slots match bounded cover geometry
-
-The system SHALL declare Store Coverflow preview image slots from the rendered Coverflow cover geometry instead of ordinary catalog-grid card widths. Initial Store HTML SHALL describe the default Grid slots even for Coverflow-eligible collections.
-
-#### Scenario: Eligible Coverflow preview renders
-
-- **WHEN** Store All, BlackBox Releases, populated Merch, or an eligible Store Distro group renders in Coverflow preview mode
-- **THEN** each positioned cover advertises a responsive slot matching the bounded mobile and desktop Coverflow cover size
-- **AND** the browser may select from the existing responsive width ladder without treating each cover as a full-width catalog card
-- **AND** below-positioned cards remain lazy and do not become image-preload work.
-
-#### Scenario: Complete catalog renders
-
-- **WHEN** a Store collection is in catalog mode, Coverflow is ineligible or unsupported, or JavaScript is unavailable
-- **THEN** ordinary Store and Distro card responsive sizes remain appropriate for the complete grid
-- **AND** every canonical card and Content Image remains present and operable without a duplicate card graph
-- **AND** changing views updates slot hints for that presentation without replacing cards or fetching a second catalogue.
-
-### Requirement: Store Coverflow gives initial priority only to the first visible cover
-
-Store image priority SHALL follow the default Grid with a fixed leading set of at most four eager images and at most one expected LCP image receiving high fetch priority. Coverflow eligibility alone MUST NOT select preview-only loading behavior.
-
-#### Scenario: Eligible Store Coverflow initially renders
-
-- **WHEN** a Coverflow-eligible Store category renders directly
-- **THEN** at most the first four cards use eager image loading, with at most one expected LCP image at high priority
-- **AND** the initial presentation is Grid and remaining cards stay lazy even when eligible for Coverflow.
-
-#### Scenario: Store Distro groups initially render
-
-- **WHEN** the Store Distro category initially renders
-- **THEN** its groups start in Grid and at most the first four cards of the first group use eager loading
-- **AND** at most one expected LCP image receives high priority
-- **AND** remaining cards and later groups stay lazy regardless of Coverflow eligibility.
-
-#### Scenario: Ordinary catalog initially renders
-
-- **WHEN** a collection is not Coverflow-eligible or enhancement is unavailable
-- **THEN** its initial Grid uses the same bounded leading-card eager-loading rule
-- **AND** remaining images stay lazy without competing high fetch priority
-- **AND** a narrow viewport does not require JavaScript to calculate an exact eager row; the fixed set may span multiple rows.
-
-#### Scenario: Shopper chooses Coverflow
-
-- **WHEN** Coverflow is explicitly activated after the initial Grid
-- **THEN** it reuses existing responsive images and native loading behavior
-- **AND** activation or subsequent movement does not create a runtime priority controller, preload every cover, or promote competing high-priority images.
-
-### Requirement: Home featured artist prints match News hover feedback
-
-Home featured roster print photos SHALL use the existing News image hover treatment inside their paper border while preserving native-aspect print framing, captions, links, and responsive delivery. On the Artists roster, the hover and focus print pile is the image feedback, so roster prints do not zoom. The decorative effect MUST respect reduced-motion preferences and MUST NOT require JavaScript.
-
-#### Scenario: Visitor hovers a Home featured artist
-
-- **WHEN** a hover-capable pointer enters a Home featured artist card with no reduced-motion preference
-- **THEN** the photo inside its print scales to 1.03 over 500 ms, matching News, clipped to the print's image window
-- **AND** leaving the card returns the photo smoothly to its original scale
-- **AND** the paper border, caption, and surrounding layout keep their positions apart from the existing print straighten-and-lift.
-
-#### Scenario: Artists roster prints render
-
-- **WHEN** roster preview prints or row thumbnails render
-- **THEN** their photos do not zoom on hover
-- **AND** hovering or focusing a row keeps driving the preview pile instead.
-
-#### Scenario: Visitor requests reduced motion
-
-- **WHEN** the visitor enables reduced motion and hovers a Home featured artist card
-- **THEN** its photo remains at its original scale without a transform transition
-- **AND** the card retains visible focus feedback and normal link activation.
 
 ### Requirement: Cart and checkout thumbnails use a bounded derivative
 
@@ -519,7 +450,7 @@ Hosted pages SHALL reference CMS image transformations on the images host direct
 
 ### Requirement: Distro cards preview one ordered secondary photo
 
-Distro-derived Store Items, including cassettes, SHALL use the first gallery image whose source differs from the primary as their alternate browse photo. This selection SHALL apply wherever the shared Store card appears, including All, Distro, populated Merch, Coverflow, expanded catalogs, and search results. Primary-image ownership for cart, checkout, metadata, and provider presentation SHALL remain unchanged.
+Distro-derived Store Items, including cassettes, SHALL use the first gallery image whose source differs from the primary as their alternate browse photo. This selection SHALL apply wherever the shared Store card appears, including All, Distro, populated Merch, the Store Crate's item in hand, expanded catalogs, and search results. Primary-image ownership for cart, checkout, metadata, and provider presentation SHALL remain unchanged.
 
 #### Scenario: Shopper hovers an eligible image
 
@@ -543,13 +474,13 @@ The preview SHALL preserve existing navigation, labels, and card geometry while 
 - **WHEN** the item link receives visible keyboard focus and its alternate is ready
 - **THEN** the same alternate appears with a stable link name and visible focus
 - **AND** no extra tab stop or duplicate image announcement is introduced
-- **AND** existing Coverflow focus activation and Enter behavior remain intact.
+- **AND** existing Store Crate focus and Enter behavior remain intact.
 
 #### Scenario: Shopper activates a card or uses touch
 
-- **WHEN** a shopper activates an ordinary card or the active Coverflow cover
+- **WHEN** a shopper activates an ordinary card or the Store Crate's item in hand
 - **THEN** its item link opens without an image-toggle tap
-- **AND** an inactive side-cover tap still selects that cover through the existing behavior
+- **AND** a tap on another sleeve in the Store Crate digs to it through the existing behavior
 - **AND** the photo effect adds no sticky touch-hover state or gesture interception
 - **AND** all gallery photos remain accessible by scrolling the item page.
 
@@ -557,7 +488,7 @@ The preview SHALL preserve existing navigation, labels, and card geometry while 
 
 - **WHEN** the alternate is displayed
 - **THEN** it is contained without stretching or clipping, and the primary does not show through letterboxing
-- **AND** labels, primary/CD framing, and outer Coverflow geometry remain intact
+- **AND** labels, primary/CD framing, and Store Crate sleeve geometry remain intact
 - **AND** reduced-motion preference disables the photo transition.
 
 ### Requirement: Alternate delivery uses existing media and keeps the primary fallback
@@ -601,7 +532,7 @@ Store Grid and filtered-result cards SHALL use stable square artwork frames that
 
 ### Requirement: Store listing cards use a two-width ladder
 
-Store listing card images SHALL offer 360 and 720 pixel candidates only, so phones, Coverflow and high-density desktops share the 720 pixel transform and fewer unique transformations are requested.
+Store listing card images SHALL offer 360 and 720 pixel candidates only, so phones, Store Crate sleeves and high-density desktops share the 720 pixel transform and fewer unique transformations are requested.
 
 #### Scenario: A Store listing renders
 
@@ -628,3 +559,139 @@ The Home pre-order showcase SHALL deliver covers with 360 and 720 pixel candidat
 - **WHEN** the showcase renders at 390 px wide on a high-density phone
 - **THEN** each cover loads a candidate no wider than 720 pixels
 - **AND** the band photo loads from the photo's responsive candidates instead of a single large source.
+
+### Requirement: Artist card images match News hover feedback
+
+Artist card photos SHALL use the existing News image hover treatment while preserving their 3:4 framing, whole-photo fitting, blurred fill, links, and responsive delivery. The decorative effect MUST respect reduced-motion preferences and MUST NOT require JavaScript.
+
+#### Scenario: Visitor hovers an Artist card
+
+- **WHEN** a hover-capable pointer enters an Artist card with no reduced-motion preference
+- **THEN** its photo scales to 1.03 over 500 ms, matching News, clipped to its frame
+- **AND** leaving the card returns the photo smoothly to its original scale
+- **AND** the blurred fill, card frame, and surrounding layout remain stationary.
+
+#### Scenario: Shared Artist cards render
+
+- **WHEN** Home featured or Artists roster cards render
+- **THEN** they offer the same image hover feedback
+- **AND** their photo fitting, frame, name placement, navigation, and image loading behavior remain unchanged.
+
+#### Scenario: Visitor requests reduced motion
+
+- **WHEN** the visitor enables reduced motion and hovers an Artist card
+- **THEN** its photo remains at its original scale without a transform transition
+- **AND** the card retains visible focus feedback and normal link activation.
+
+### Requirement: Staff thumbnail inventory and repair preserve originals
+
+The system SHALL provide a bounded inventory and backfill path for native staff media that distinguishes missing originals, unsupported storage keys, and missing or invalid private derivatives. It SHALL write derivatives separately and MUST NOT modify or delete originals.
+
+#### Scenario: A current media key is supported
+
+- **WHEN** a flat JPEG, PNG, or WebP key satisfies the native upload contract
+- **THEN** the client URL helper, authenticated thumbnail route, upload validator, and backfill accept the same key
+- **AND** the complete key is encoded as one path segment.
+
+#### Scenario: A derivative is missing or invalid
+
+- **WHEN** a listed native original has no valid derivative
+- **THEN** the bounded report identifies the derivative as missing or invalid and may prepare a separate PNG derivative at most 96 × 96 pixels and 40 KiB
+- **AND** the original object bytes and metadata are not written or deleted.
+
+#### Scenario: An explicitly selected original is absent
+
+- **WHEN** a requested source key is not present in R2
+- **THEN** the report identifies a missing original separately from an unsupported key or missing derivative.
+
+#### Scenario: A current EmDash media record has no stored original
+
+- **WHEN** the read-only media audit checks an image record against R2
+- **THEN** it reports a missing original separately from unsupported keys and missing or invalid thumbnails
+- **AND** the audit does not write or delete any R2 object or D1 row.
+
+#### Scenario: A new image is uploaded
+
+- **WHEN** the staff site uploads JPEG, PNG, or WebP media
+- **THEN** it submits a valid PNG thumbnail no larger than 96 × 96 pixels and 40 KiB
+- **AND** the CMS stores that derivative only after the native original upload succeeds
+- **AND** a derivative error does not undo, replace, or delete the original.
+
+#### Scenario: A staff thumbnail is requested without authorization
+
+- **WHEN** an unauthenticated request targets a staff thumbnail
+- **THEN** the CMS rejects it before reading the private derivative
+- **AND** successful and failed staff thumbnail responses remain `private, no-store`.
+
+### Requirement: Public CMS images use bounded transformations with original fallback
+
+The public renderer SHALL deliver Published Content Images in accepted runtime snapshots through Cloudflare Images URL transformations from the dedicated image hostname when a transformation applies, with the verified original as fallback. Originals remain in environment-owned R2 storage and remain the source of truth.
+
+#### Scenario: A public CMS image requests a responsive size
+
+- **GIVEN** a public request references an exact content-addressed media path in the current environment
+- **WHEN** its source origin is the current UAT or PRD Pages origin and its requested width is a positive number
+- **THEN** the renderer snaps that width up to the smallest ladder width (96 to 1800 pixels) not below it, or to 1800, and requests it with `format=auto` from `images.blackboxrecordsathens.com`
+- **AND** transformed responses have immutable caching and vary correctly by `Accept`.
+
+#### Scenario: A transformation fails or is unavailable
+
+- **WHEN** the transformation request errors, is rejected, or returns a non-image response
+- **THEN** the renderer returns the verified original image bytes from the environment's R2 snapshot.
+
+#### Scenario: A request targets private or non-CMS media
+
+- **WHEN** a request targets a staff draft, preview, arbitrary origin, or unapproved path, or has a missing or non-positive width
+- **THEN** it is not sent to the Images transformation host.
+
+#### Scenario: The Pages gateway forwards format negotiation only
+
+- **WHEN** the Pages gateway forwards a public GET or HEAD request to the renderer
+- **THEN** the forwarded request carries the shopper's `Accept` header and no other request header
+- **AND** cookies and authorization never reach the renderer or the Images transformation host.
+
+#### Scenario: A repository-owned image is rendered
+
+- **WHEN** an image is a static repository asset
+- **THEN** it keeps the existing Astro build and Pages delivery path.
+
+### Requirement: Store Crate sleeves reuse card image candidates
+
+Store Crate sleeves SHALL use the 360 and 720 pixel candidates their Store card already offers, with a slot size matching the rendered sleeve. Initial Store HTML SHALL describe the Grid slots only.
+
+#### Scenario: A bin is opened
+
+- **WHEN** the shopper opens a bin
+- **THEN** each sleeve within the drawn window takes a candidate from its card's existing set, and a cover already on screen reuses the image the card loaded
+- **AND** no new image width or transformation is requested and no sleeve receives high fetch priority.
+
+### Requirement: Store collections give initial priority only to the first visible cover
+
+Store image priority SHALL follow the default Grid with a fixed leading set of at most four eager images and at most one expected LCP image receiving high fetch priority. Store Crate availability alone MUST NOT select different loading behavior.
+
+#### Scenario: A Store collection initially renders
+
+- **WHEN** a Store collection with a bin renders directly
+- **THEN** the initial presentation is Grid, its leading cards follow the fixed eager set, and remaining cards stay lazy.
+
+### Requirement: Release media smoke verifies published originals
+
+The release `public_assets` smoke SHALL verify that representative published media returns successful image responses from the target site's original-media paths. It SHALL resolve trusted direct Images URLs to their same-environment source without requesting a transformation. The separately selected `image_transform` scenario SHALL continue to require a genuine bounded, immutable transformation and reject original fallback responses.
+
+#### Scenario: Images Free transformation allowance is exhausted
+
+- **GIVEN** hosted markup uses the configured direct Images host and a same-environment published media SHA
+- **WHEN** the software release runs its public-assets smoke
+- **THEN** the media check requests that published original under the target site
+- **AND** successful original availability remains verifiable without another transformation request.
+
+#### Scenario: An image URL names an untrusted source
+
+- **WHEN** the discovered media points outside the target site's origin or configured base path
+- **THEN** the media discovery fails rather than fetching a foreign original.
+
+#### Scenario: An operator explicitly tests transformation delivery
+
+- **WHEN** the `image_transform` scenario is selected
+- **THEN** it still requires a successful small AVIF or WebP transformation with immutable caching
+- **AND** an original fallback or quota error fails that scenario.

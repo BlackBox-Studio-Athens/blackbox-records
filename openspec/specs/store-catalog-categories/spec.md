@@ -124,7 +124,7 @@ Each discoverable Store category route SHALL render its canonical Store Items on
 - **THEN** canonical distro-sourced and release-sourced Store Items share one mixed-format ordered catalog
 - **AND** older BlackBox releases remain alphabetically discoverable
 - **AND** Clothes membership does not remove an item from Distro
-- **AND** search, optional format filtering, explicit-choice Coverflow and complete no-JavaScript access remain available.
+- **AND** search, optional format filtering, the explicit-choice Store Crate and complete no-JavaScript access remain available.
 
 #### Scenario: Merch category is empty
 
@@ -272,7 +272,7 @@ The Store SHALL present compact category orientation and browse controls with on
 
 - **WHEN** JavaScript is unavailable
 - **THEN** the category identity, complete collection total, category links, format links, and full catalogue remain available
-- **AND** inert search, artist-selection, and Coverflow controls are not presented.
+- **AND** inert search, artist-selection, and Store Crate controls are not presented.
 
 #### Scenario: All opens at the reviewed desktop or mobile size
 
@@ -281,94 +281,9 @@ The Store SHALL present compact category orientation and browse controls with on
 - **AND** the layout retains category navigation, search, policy links, and any configured UAT review marker
 - **AND** it does not achieve this through text clipping, reduced readable type, undersized controls, or eager loading of every offstage image.
 
-### Requirement: All Store provides one complete bounded Coverflow
-
-Every flat Store collection route rendered through `StoreCollectionPage` SHALL optionally enhance its complete canonical collection into one bounded Store Coverflow only after explicit visitor selection when it contains more than six canonical Store Items, without changing collection authority, order, identity, availability authority, or full-catalog access. This includes All, BlackBox Releases, populated Merch, and future non-Distro flat categories; Distro remains grouped under its own grouped-category contract.
-
-#### Scenario: All collection is eligible
-
-- **WHEN** `/store/` contains more than six canonical Store Items, platform support is available, no text or artist filter is active, and the visitor chooses Coverflow
-- **THEN** one Coverflow enters `preview` mode with every All Store Item reachable in the existing deterministic All order
-- **AND** the previously selected Store Item starts active, or the first canonical item when no prior selection exists
-- **AND** at most six existing `StoreItemCard` nodes receive stage positions while every other card leaves presentation, focus order, and the accessibility tree
-- **AND** the preview exposes the source-derived total, current position, remaining count, active Store Item identity, continuation ratio, Previous, Next, and `Grid`
-- **AND** the Store Item availability badge is absent from every positioned preview cover so artwork and active identity remain the preview focus.
-
-#### Scenario: Flat collection categories share one eligibility rule
-
-- **WHEN** All, BlackBox Releases, populated Merch, or a future non-Distro flat category rendered through `StoreCollectionPage` contains more than six canonical Store Items, platform support is available, no text or artist filter is active, and the visitor chooses Coverflow
-- **THEN** the same shared Store Coverflow controller and lifecycle enters `preview` mode in that category's existing deterministic order
-- **AND** no per-category controller branch, duplicate card graph, alternate collection query, or second Store Item projection is introduced
-- **AND WHEN** the flat collection contains six or fewer canonical Store Items
-- **THEN** it remains the complete ordinary grid with no Coverflow controls.
-
-#### Scenario: Visitor traverses All
-
-- **WHEN** the visitor uses Previous, Next, a positioned side cover, focus, a qualifying touch swipe, handled wheel input, or focus-scoped Left Arrow or Right Arrow input
-- **THEN** the active item changes within the same complete canonical All sequence and wraps at both ends
-- **AND** sustained wheel or repeated arrow input can continue through more than one item under the shared Store Coverflow interaction contract
-- **AND** no curated subset, random order, duplicate six-card window, or second Store Item projection is used.
-
-#### Scenario: Every flat category shares the interaction contract
-
-- **WHEN** a visitor traverses an eligible flat Store category
-- **THEN** wheel cadence, focus-scoped Left Arrow and Right Arrow behavior, hover/focus cue, disclosure behavior, reduced-motion contract, progressive fallback, and cleanup match every other Store Coverflow
-- **AND** editorial Releases and Store Item detail routes remain outside Coverflow.
-
-#### Scenario: Visitor opens the complete All catalog
-
-- **WHEN** the visitor activates `Grid`
-- **THEN** the same server-rendered All `StoreItemCard` nodes appear exactly once in their existing catalog order
-- **AND** each card's existing availability presentation is restored unchanged from its canonical Store collection data
-- **AND** the selected Store Item receives focus and remains identifiable
-- **AND** the view controls remain ordered `Grid`, `Coverflow`, with Grid selected
-- **AND WHEN** the visitor activates `Coverflow`
-- **THEN** the selected Store Item returns as the active cover and preview availability badges are hidden again.
-
-#### Scenario: All enhancement is unavailable
-
-- **WHEN** All contains six or fewer items, JavaScript is disabled, required 3D CSS support is unavailable, or controller mounting fails
-- **THEN** every canonical All Store Item remains visible exactly once as an ordinary Store listing card with its existing availability presentation
-- **AND** no nonfunctional Coverflow controls or alternate collection order appears.
-
-#### Scenario: All route enters through the app shell
-
-- **WHEN** the persistent app shell loads or restores `/store/`
-- **THEN** the All controller mounts against the swapped canonical card nodes for that shell pathname
-- **AND** cached runtime state has been sanitized to the deterministic complete initial Grid
-- **AND** ordinary card availability is visible until the visitor explicitly chooses Coverflow
-- **AND** All retains its existing Store-wide search and gains artist selection without Distro-local format grouping or a second visibility owner.
-
-#### Scenario: Flat category app-shell activation is generic
-
-- **WHEN** the app shell loads or restores an eligible flat Store category
-- **THEN** the shared controller mounts once after Store HTML application has supplied the canonical card nodes, without waiting for transition-veil closure or listing prices
-- **AND** the active category receives one controller mount and no category-specific state engine.
-
-#### Scenario: All Store performance remains catalog-owned
-
-- **WHEN** any flat Store Coverflow enhances, changes its active item, or applies the preview-only availability treatment
-- **THEN** it reuses the existing Store listing-price projection, card images, canonical links, availability data, and lazy-loading behavior
-- **AND** it adds no backend request, per-item price request, commerce projection, content entry, duplicate card node, or eager load for every offstage image.
-
-#### Scenario: A Store collection first renders
-
-- **WHEN** a flat Store collection loads directly, becomes active through the shell, or is restored
-- **THEN** its complete canonical Grid is visible before and after enhancement
-- **AND** functional view controls appear in Grid then Coverflow order only when eligible and ready
-- **AND** applying a text or artist filter uses Grid; clearing it does not automatically restore Coverflow.
-
-#### Scenario: All search reveals matching cards
-
-- **WHEN** a nonempty query activates All Store search
-- **THEN** matching canonical cards appear in their original order through the shared search-results behavior
-- **AND** preview controls do not hide results or move focus out of the search input
-- **AND WHEN** the shopper clears that query
-- **THEN** the complete catalog is restored with the existing availability presentation and explicit Show Coverflow behavior where supported.
-
 ### Requirement: Store listing cards use Veneer titles and quiet credits
 
-Store listing cards SHALL present the source item title in Veneer and its existing artist or label credit beneath it entirely in Inter, including the preceding “by ”. This treatment SHALL apply across All, BlackBox Releases, Distro and populated Merch while preserving existing sizes, navigation, purchase facts and Coverflow visibility.
+Store listing cards SHALL present the source item title in Veneer and its existing artist or label credit beneath it entirely in Inter, including the preceding “by ”. This treatment SHALL apply across All, BlackBox Releases, Distro and populated Merch while preserving existing sizes, navigation, purchase facts and Store Crate visibility.
 
 #### Scenario: A Store listing title and credit render
 
@@ -393,7 +308,7 @@ Store listing cards SHALL present the source item title in Veneer and its existi
 
 - **WHEN** a visitor views cards at 320px, 390px, desktop width or 200% zoom
 - **THEN** long titles and credits wrap without truncation or horizontal page overflow
-- **AND** artwork, format labels, prices, Buy and Listen actions, and Coverflow visibility retain their existing behavior
+- **AND** artwork, format labels, prices, Buy and Listen actions, and Store Crate visibility retain their existing behavior
 - **AND** Store item pages, cart, checkout and order confirmation retain their existing typography.
 
 ### Requirement: Store cards expose whole-item navigation and unobstructed availability
@@ -500,7 +415,7 @@ The All Store collection at `/store/` SHALL order every canonical item by its di
 
 #### Scenario: Browsing preserves the alphabetical sequence
 
-- **WHEN** a shopper switches Grid and Coverflow, applies artist or text filters, or clears filters in All
+- **WHEN** a shopper switches Grid and Crate, applies artist or text filters, or clears filters in All
 - **THEN** the retained canonical cards preserve the alphabetical sequence
 - **AND** clearing filters restores the complete sequence without changing item identity or counts.
 
@@ -522,3 +437,23 @@ Below 64rem a Store collection page SHALL omit its Top link and the empty artist
 
 - **WHEN** `/store/` loads at 390 × 844
 - **THEN** the first Store card's artwork starts inside the first viewport.
+
+### Requirement: BlackBox release membership excludes Distro
+
+Release-sourced canonical Store Items MUST belong to BlackBox Releases and All and MUST NOT belong to Distro. This presentation rule MUST preserve source, slug, price, stock and checkout identity.
+
+#### Scenario: Disintegration is classified
+
+- **WHEN** the release-sourced Disintegration Store Item is projected
+- **THEN** All and BlackBox Releases include the same canonical item once
+- **AND** Distro excludes it.
+
+#### Scenario: Another BlackBox release is classified
+
+- **WHEN** any release-sourced canonical Store Item is projected
+- **THEN** the same separation applies without a title-specific exclusion.
+
+#### Scenario: Distro merchandise is classified
+
+- **WHEN** a distro-sourced Clothes item is projected
+- **THEN** it remains in Distro, Merch and All through its existing identity.

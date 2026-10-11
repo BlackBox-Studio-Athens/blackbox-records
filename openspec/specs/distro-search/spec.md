@@ -32,7 +32,7 @@ Store categories SHALL provide local search over their server-rendered canonical
 
 - **WHEN** Clear filters is activated
 - **THEN** the query, artist, and format selections return to their defaults and the complete Grid is restored
-- **AND** no automatic Coverflow activation occurs.
+- **AND** no automatic Store Crate activation occurs.
 
 ### Requirement: Distro filtering preserves document structure
 

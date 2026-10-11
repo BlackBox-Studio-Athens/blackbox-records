@@ -2,97 +2,51 @@
 
 ## Purpose
 
-Define how the Artists roster, artist detail lead media, and Home featured roster present artist identity and imagery, so that any artist image a label member uploads renders evenly without fixed frames, fill bars, or text over photos.
+Define how the Artists roster, artist detail lead media, and Home featured roster present artist identity and imagery, so that every artist photo shows whole in a uniform 3:4 frame over a blurred copy of itself, with names below the photo and no black bars or text over photos.
 
 ## Requirements
 
-### Requirement: Artist images render as native-aspect prints
+### Requirement: Artist photos are uniform without a scrim
 
-Every artist image on the Artists roster, artist detail lead media, and Home featured roster SHALL render as a photo print: the image at its source aspect ratio inside an off-white border, followed by a caption strip carrying the roster number and artist name. The system SHALL NOT crop artist images to a fixed ratio, pad them with fill colour, or place text or gradients over the image.
+Artist cards on the Artists roster and the Home featured roster SHALL show each artist photo whole inside a uniform 3:4 frame. Space the photo leaves in the frame SHALL show a blurred, darkened copy of the same photo instead of a solid fill. The genre and name SHALL render below the photo, and no gradient or other scrim SHALL cover the photo. The artist detail lead image SHALL use the same blurred fill inside its own frame.
 
 #### Scenario: Square light artwork renders
 
 - **WHEN** an artist image is square with a light background, such as the Chronoboros logo
-- **THEN** the print shows the whole image at 1:1 inside its border
-- **AND** no dark bar, band, or gradient appears above, below, or beside the image
+- **THEN** its card frame matches the size of every other artist card
+- **AND** the whole image is visible, with a blurred copy of it filling the space above and below
+- **AND** no black bar, band, or gradient appears near the artist name
 
 #### Scenario: Landscape and portrait photos render
 
 - **WHEN** an artist image is landscape or portrait
-- **THEN** its print keeps the source aspect ratio within the slot's maximum width and height
-- **AND** the artist name, genre, and other text render outside the image
+- **THEN** the whole photo is visible inside the same 3:4 frame, with the blurred copy filling any remaining space
+- **AND** the genre and name render below the frame on the card background
 
-#### Scenario: Print keeps layout stable
+#### Scenario: Blurred fill stays decorative
 
-- **WHEN** a print renders before its image bytes arrive
-- **THEN** its slot already reserves the final width and height from the source dimensions
-- **AND** loading the image causes no layout shift
+- **WHEN** a card or the artist detail frame renders the blurred fill
+- **THEN** the fill image has empty alt text, is hidden from assistive technology, has no high fetch priority, and ignores pointer input
+- **AND** only the main photo carries the artist's alt text and responsive width ladder
 
-### Requirement: Artists roster renders as a crate index
+### Requirement: Artist rosters prioritize published activity
 
-The Artists route SHALL render the roster as a server-rendered list of rows. Each row SHALL show the artist's roster number (or letter marker when grouped), name, genre, country, and release count, and SHALL provide a link to the artist. The page SHALL keep the shared internal page hero with the `Roster` / `Artists` pair.
+Home and Artists SHALL order active Artists before inactive Artists, alphabetically by name within each group. Missing or null activity SHALL mean active. Home SHALL show the first three ordered profiles. Inactive profiles and their releases SHALL remain accessible.
 
-#### Scenario: Roster renders directly or through the shell
+#### Scenario: Active Sidus precedes inactive Chronoboros
 
-- **WHEN** the Artists route renders on direct load or shell-managed navigation
-- **THEN** every artist appears as a list row in name order with a working link to the artist
-- **AND** the rows are usable before any client script loads
+- **WHEN** Afterwise, Ouranopithecus and Sidus are active and Chronoboros is inactive
+- **THEN** Artists shows Afterwise, Ouranopithecus, Sidus, Chronoboros
+- **AND** Home shows Afterwise, Ouranopithecus and Sidus.
 
-### Requirement: Wide viewports preview the active artist as a print pile
+#### Scenario: A roster has one activity group or no profiles
 
-On wide viewports, the roster SHALL show a sticky preview panel beside the list. Hovering or focusing a row SHALL make that artist the active preview: its print is placed on top of a pile that keeps the two most recently previewed artists underneath, and the panel shows the artist's genre, country, bio excerpt, release count, latest release, and actions to open the artist and listen. The first artist SHALL be the server-rendered default preview.
+- **WHEN** all profiles have the same activity or the collection is empty
+- **THEN** profiles retain alphabetical order or the roster remains empty
+- **AND** Home shows at most three profiles without removing inactive profiles from eligibility.
 
-#### Scenario: Visitor hovers or focuses rows
+#### Scenario: Private activity changes are not public
 
-- **WHEN** a visitor hovers a row or moves keyboard focus onto it
-- **THEN** the active row is marked with a heavier rule
-- **AND** that artist's print becomes the top print of the pile, and the previous active artist's print moves underneath
-- **AND** the pile never shows more than three prints
-
-#### Scenario: Preview script is unavailable
-
-- **WHEN** the preview script has not loaded or fails
-- **THEN** the panel still shows the first artist's print and details
-- **AND** every row link still works
-
-#### Scenario: Only the top print is announced
-
-- **WHEN** assistive technology reads the preview panel
-- **THEN** only the top print's image exposes alternative text
-- **AND** the prints underneath are hidden from assistive technology
-
-### Requirement: Narrow viewports disclose prints inline
-
-On narrow viewports, each roster row SHALL show a small tilted print thumbnail and SHALL act as a native disclosure that reveals the artist's full print, release count, latest release, and a link to the artist. The disclosure SHALL work without client script.
-
-#### Scenario: Visitor opens a row on a phone
-
-- **WHEN** a visitor activates a roster row on a narrow viewport
-- **THEN** the row expands to show the full print and the latest release with a link to the artist
-- **AND** the row exposes its expanded state to assistive technology
-- **AND** activating it again collapses it
-
-### Requirement: Print motion respects reduced motion
-
-Print tilt SHALL be a static visual treatment. Any motion that places a print on the pile or reveals a disclosed print SHALL be brief and SHALL be removed when the visitor prefers reduced motion.
-
-#### Scenario: Visitor prefers reduced motion
-
-- **WHEN** the visitor's system requests reduced motion
-- **THEN** prints change without animated movement
-- **AND** all roster content and actions remain available
-
-### Requirement: Artist detail and Home roster use prints
-
-The artist detail lead media and each Home featured roster entry SHALL present the artist image as a native-aspect print, with the genre and artist name rendered outside the image.
-
-#### Scenario: Artist detail loads
-
-- **WHEN** an artist detail page or overlay renders its lead image
-- **THEN** the image appears as a print at its source aspect ratio without a fixed frame or fill bars
-
-#### Scenario: Home featured roster renders
-
-- **WHEN** the Home page renders its featured roster
-- **THEN** each entry shows the artist print with the genre and name below it
-- **AND** no gradient overlays the image
+- **WHEN** staff change an Artist's activity in a private draft
+- **THEN** the accepted public order remains unchanged until that revision is published
+- **AND** private listing preview can show the selected draft's ordering.

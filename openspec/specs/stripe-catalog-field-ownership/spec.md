@@ -98,7 +98,7 @@ The system MUST use the bound Stripe Product's valid default Price as selling Pr
 
 ### Requirement: Staff and Dashboard commands change Stripe Price Authority
 
-Selling-price changes SHALL use an explicit authorized staff command or deliberate Stripe Dashboard operation. Generic editorial saves and software/content publication SHALL NOT create or replace Price Authority.
+Selling-price changes SHALL use an explicit authorized staff command or deliberate Stripe Dashboard operation. Generic editorial saves and software/content publication SHALL NOT create or replace Price Authority. Initial pricing SHALL be available during new-item setup and for an eligible retained withheld variant with safely absent Price Authority. Missing projections, a nullable provider read or recorded stock SHALL NOT alone authorize provider creation or replacement. Existing environment and operation-specific live confirmation controls SHALL apply.
 
 #### Scenario: Member changes price in the workspace
 
@@ -122,6 +122,19 @@ Selling-price changes SHALL use an explicit authorized staff command or delibera
 - **WHEN** Item Setup has no existing trusted Price and the member confirms its reviewed initial price
 - **THEN** the setup command can initialize Price Authority once in that Product Environment
 - **AND** a live batch migration remains separately confirmed and fixtures remain Local/UAT only.
+
+#### Scenario: A retained variant receives initial pricing
+
+- **WHEN** a member explicitly confirms the exact initial price for an eligible withheld variant
+- **THEN** the bounded operation establishes or recovers that variant's environment-owned Product and intended default Price
+- **AND** its runtime linkage and verified price projection are recorded without changing inventory, order history, pauses or editorial/publication state
+- **AND** the confirmation does not authorize catalog batches, item activation or shopper launch.
+
+#### Scenario: Initial-price preflight finds existing or ambiguous authority
+
+- **WHEN** provider inspection finds an existing valid default, a deleted/inactive/foreign Product, an invalid default, a legacy Price-only binding or a Product not safely attributable to the retained operation
+- **THEN** it refuses duplicate creation or implicit Product adoption
+- **AND** current valid authority is preserved and the selected item is directed to the existing price-change/reconciliation path or a bounded binding review.
 
 ### Requirement: Unified workspace routes actions to their authority
 

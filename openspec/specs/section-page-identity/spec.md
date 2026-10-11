@@ -8,24 +8,26 @@ TBD - created by archiving change standardize-section-page-titles. Update Purpos
 
 ### Requirement: Primary section titles use one responsive typography contract
 
-The site SHALL render the level-one page titles for Artists, Releases, every Store Category, Services, and About with the same display font, responsive font size, line height, letter spacing, and balanced wrapping already used by the shared internal page hero. At the same viewport and root font settings, those computed title properties MUST match. Route-specific intro styles MUST NOT override that shared typography contract.
+The site SHALL render the visible level-one page titles for Artists, every Store Category, Services, and About with the shared internal page hero's display font, responsive size, line height, letter spacing and balanced wrapping. Their computed properties MUST match at the same viewport and root font settings; route-specific intro styles MUST NOT override them. Releases SHALL instead retain one visually hidden accessible level-one heading without a visible introduction.
 
 #### Scenario: Primary sections render at a wide viewport
 
 - **WHEN** Artists, Releases, Store, Services, and About render at the same supported wide viewport
-- **THEN** their level-one page titles expose matching computed title typography
-- **AND** the Releases showcase intro and Services intro surface retain their route-specific composition.
+- **THEN** the visible level-one page titles expose matching computed title typography
+- **AND** Services retains its route-specific intro composition
+- **AND** Releases retains its accessible heading without a visible introduction.
 
 #### Scenario: Primary sections render at a narrow viewport
 
 - **WHEN** the five primary sections render at 390 or 320 CSS pixels wide
-- **THEN** their level-one titles resolve through the same responsive title scale
-- **AND** each title wraps within the viewport without horizontal page scrolling.
+- **THEN** their visible level-one titles resolve through the same responsive title scale and wrap without horizontal page scrolling
+- **AND** the visually hidden Releases heading occupies no introductory layout space.
 
 #### Scenario: App shell swaps a primary section
 
 - **WHEN** the persistent app shell swaps any primary section into the current document
-- **THEN** the swapped level-one title uses the same typography as its direct-load document
+- **THEN** visible level-one titles use the same typography as their direct-load documents
+- **AND** Releases retains the same visually hidden heading as its direct-load document
 - **AND** the destination retains one level-one heading.
 
 ### Requirement: Shared page heroes omit repeated supporting labels
@@ -52,7 +54,7 @@ The shared internal page hero MUST normalize its supporting label and title by t
 
 ### Requirement: Primary section identities use distinct canonical copy
 
-The five primary section surfaces and Store Category pages SHALL use distinct supporting-label and level-one-title copy. Their canonical pairs MUST be `Roster` / `Artists`, `Catalog` / `Releases`, `Store` / the active Store Category, `What We Do` / `Services`, and `About` / `The Label`.
+The visible primary section identities SHALL use distinct supporting-label and level-one-title pairs: `Roster` / `Artists`, `Store` / the active Store Category, `What We Do` / `Services`, and `About` / `The Label`. Releases SHALL retain its canonical metadata title and one visually hidden accessible Releases level-one heading without a visible Catalog supporting label or Releases page title.
 
 #### Scenario: Visitor opens the base Store route
 
@@ -72,25 +74,31 @@ The five primary section surfaces and Store Category pages SHALL use distinct su
 - **WHEN** `/services/` renders directly or through the persistent app shell
 - **THEN** its supporting label is `What We Do`
 - **AND** its level-one heading is `Services`
-- **AND** its patterned intro, explanatory copy, and inquiry action remain present.
+- **AND** its intro, explanatory copy, and inquiry action remain present.
 
 #### Scenario: Visitor opens another primary section
 
-- **WHEN** Artists, Releases, or About renders directly or through the persistent app shell
-- **THEN** its supporting-label and level-one-title pair is respectively `Roster` / `Artists`, `Catalog` / `Releases`, or `About` / `The Label`
+- **WHEN** Artists or About renders directly or through the persistent app shell
+- **THEN** its supporting-label and level-one-title pair is respectively `Roster` / `Artists` or `About` / `The Label`
 - **AND** the pair does not repeat the same normalized text.
+
+#### Scenario: Visitor opens Releases
+
+- **WHEN** Releases renders directly or through the persistent app shell
+- **THEN** it retains one accessible visually hidden Releases level-one heading and its canonical browser metadata title
+- **AND** no visible Catalog / Releases introduction appears.
 
 ### Requirement: Custom primary-section headers have regression protection
 
-The repository SHALL keep focused automated coverage for every primary-section header that bypasses the shared internal page hero. The coverage MUST verify that each custom header uses the shared title typography and that its normalized supporting label differs from its level-one title.
+The repository SHALL keep focused automated coverage for every primary-section identity that bypasses the shared internal page hero. Visible custom headers MUST use the shared title typography and distinct normalized supporting-label and title copy. The Releases identity coverage MUST instead protect its single visually hidden accessible heading and absence of the visible introductory header.
 
 #### Scenario: Custom Releases or Services identity regresses
 
-- **WHEN** a change makes the Releases or Services custom header repeat its normalized supporting label as its level-one title or reintroduces a route-specific title scale
+- **WHEN** a change restores the visible Releases introduction, removes its accessible heading, or makes the Services custom header repeat its normalized label as its title or own a route-specific title scale
 - **THEN** the focused unit contract fails before build acceptance.
 
 #### Scenario: A new custom primary-section header is introduced
 
 - **WHEN** a primary section stops using the shared internal page hero or adds another custom header path
 - **THEN** that custom path is added to the focused identity contract
-- **AND** the contract verifies distinct copy and shared title typography.
+- **AND** the contract verifies distinct copy and shared title typography for visible headers, with the explicit visually hidden Releases exception.

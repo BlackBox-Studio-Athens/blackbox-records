@@ -47,8 +47,14 @@ The system MUST expose only valid public links sourced from existing repo conten
 
 - **WHEN** the page resolves its Instagram and inquiry email values
 - **THEN** it filters empty, placeholder, and `#` values
-- **AND** it emits only valid `https:` and `mailto:` anchors
-- **AND** the build fails if no real Instagram URL or inquiry email remains.
+- **AND** it emits only valid `https:` Instagram and `mailto:` anchors
+- **AND** a hosted site build omits a missing or invalid action and logs a build warning instead of failing.
+
+#### Scenario: Holding artifact is checked before publication
+
+- **WHEN** the holding artifact check runs on the built holding document
+- **THEN** it fails if the Instagram action or the email action is missing
+- **AND** a holding artifact without both actions is not published.
 
 #### Scenario: Interactive elements are inspected
 

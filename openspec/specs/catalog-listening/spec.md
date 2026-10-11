@@ -85,7 +85,7 @@ Editors SHALL be able to supply the same optional Bandcamp embed and Tidal sourc
 
 ### Requirement: Listen is a separate accessible action
 
-Listen SHALL open the existing single-session player without navigating to the item's purchase page. It SHALL be keyboard reachable and usable on narrow touch layouts while preserving ordinary item links and existing coverflow gestures.
+Listen SHALL open the existing single-session player without navigating to the item's purchase page. It SHALL be keyboard reachable and usable on narrow touch layouts while preserving ordinary item links and existing Store Crate gestures.
 
 #### Scenario: Visitor activates Listen
 
@@ -95,10 +95,10 @@ Listen SHALL open the existing single-session player without navigating to the i
 
 #### Scenario: Visitor navigates or drags a card
 
-- **WHEN** the visitor follows the item link or completes a coverflow drag
+- **WHEN** the visitor follows the item link or completes a Store Crate drag
 - **THEN** the existing navigation or gesture completes
 - **AND** it does not accidentally start a player
-- **AND** hidden coverflow cards do not expose extra keyboard stops.
+- **AND** cards hidden by the Store Crate do not expose extra keyboard stops.
 
 #### Scenario: Both providers are available
 

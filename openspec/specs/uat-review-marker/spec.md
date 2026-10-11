@@ -6,91 +6,93 @@ Define the persistent, UAT-only Review Site Marker that identifies review pages 
 
 ### Requirement: Review Site Marker communicates review and payment status
 
-The system SHALL identify every shopper-facing UAT page with exact visible header text `TEST SITE` and `Test payments only`.
+The system SHALL identify public and Staff UAT pages with `UAT · TESTING ONLY` and `Data here is separate and does not transfer to or from the production site.`
 
 #### Scenario: Reviewer opens a UAT shopper page
 
-- **WHEN** a reviewer opens a shopper-facing page in UAT
-- **THEN** the persistent header shows a solid `TEST SITE` label followed by `Test payments only` directly beneath the BlackBox wordmark
-- **AND** the complete marker is visible without requiring interaction.
+- **WHEN** a public or Staff UAT document renders
+- **THEN** the banner reads `UAT · TESTING ONLY` and `Data here is separate and does not transfer to or from the production site.`
+- **AND** its `Open production site` link opens `https://blackbox-records-web.pages.dev/` for public or `https://staff.blackboxrecordsathens.com/` for Staff in a new tab
+- **AND** its browser title starts with `[UAT] `.
 
 #### Scenario: Reviewer considers payment behavior
 
-- **WHEN** the marker is present on a store or checkout page
-- **THEN** its wording communicates that payment activity is for testing
-- **AND** the marker does not claim that checkout is available or replace Worker and Stripe controls.
+- **WHEN** the marker appears on store or checkout pages
+- **THEN** it identifies testing without claiming checkout availability or replacing Worker and provider controls.
 
 ### Requirement: Review Site Marker uses layered test-site cues
 
-The system MUST reinforce UAT identity in the browser tab and at the final checkout action without changing public metadata or checkout authority.
+The system MUST prefix public and Staff UAT browser titles with `[UAT] ` while preserving public metadata and checkout authority.
 
 #### Scenario: Reviewer distinguishes browser tabs
 
-- **WHEN** a UAT shopper document is built
-- **THEN** its HTML document title starts with `[TEST] `
-- **AND** canonical, Open Graph, Twitter, and structured metadata keep their normal values.
+- **WHEN** a public or Staff UAT document renders
+- **THEN** its title starts with `[UAT] ` and public canonical, Open Graph, Twitter, and structured metadata retain their normal values.
 
 #### Scenario: Reviewer reaches the final checkout action
 
 - **WHEN** a UAT checkout page renders the final Stripe action
-- **THEN** the nearby static warning reads `Test checkout. No real payment will be taken.`
-- **AND** the warning does not use an alert role, live region, or browser-owned checkout decision.
+- **THEN** the static warning remains `Test checkout. No real payment will be taken.`
+- **AND** Worker feature gates and provider configuration retain payment authority.
 
 ### Requirement: Review Site Marker persists with the app shell
 
-The system MUST render one marker inside the persistent header boundary so shell-managed content changes cannot remove or duplicate it.
+The system MUST render one non-dismissible banner above navigation in each UAT shell, outside swapped content and scrolling Staff workspaces.
 
 #### Scenario: Reviewer changes sections
 
-- **WHEN** a reviewer uses header, footer, or mobile navigation for a shell-managed section change
-- **THEN** the marker remains visible in the fixed header throughout and after navigation
-- **AND** it is not inserted into the swapped `<main>` content.
+- **WHEN** the user scrolls or changes sections at desktop or 320px mobile width
+- **THEN** exactly one non-dismissible banner remains above the header, with readable wrapping and no overlapping controls
+- **AND** keyboard users can follow the production link with a visible focus indicator
+- **AND** public navigation and player continuity remain intact.
 
 #### Scenario: Reviewer uses layered interface states
 
-- **WHEN** a reviewer opens or closes a detail overlay, mobile navigation sheet, cart drawer, or player state
-- **THEN** exactly one marker remains associated with the header
-- **AND** the marker does not block, move, or control the layered interface.
+- **WHEN** a user opens navigation, cart, detail overlays, or the player
+- **THEN** one banner remains in the persistent header boundary and does not cover controls.
 
 #### Scenario: Reviewer opens a route directly
 
-- **WHEN** a shopper-facing UAT route loads as a full document
-- **THEN** the server-built header includes the same marker before client interaction.
+- **WHEN** a UAT route loads directly
+- **THEN** its server-rendered document contains the same banner before client interaction.
 
 ### Requirement: Review Site Marker remains calm and responsive
 
-The system SHALL style the marker as a compact, high-contrast identity row within the existing BlackBox header rather than as an alert or promotion.
+The system SHALL show a full-width yellow banner with dark readable text, natural wrapping, and sufficient header space without clipping at 320px width or 200% page zoom.
 
 #### Scenario: Marker renders at desktop width
 
-- **WHEN** the header renders at a desktop viewport
-- **THEN** the marker is left-aligned beneath the wordmark with a solid off-white `TEST SITE` label, near-black label text, and adjacent high-contrast payment text
-- **AND** it has no banner, rounded pill, shadow, icon, animation, or route accent.
+- **WHEN** the UAT header renders at desktop width
+- **THEN** a full-width yellow banner with dark text and an underlined production link appears above navigation.
 
 #### Scenario: Marker renders at narrow mobile width
 
-- **WHEN** the CSS viewport is 320px wide at default text sizing
-- **THEN** the full phrase remains legible without horizontal overflow, clipping, collision, or control overlap
-- **AND** the implementation does not increase the 80px header height, hide words, use an acronym, or require a tooltip.
+- **WHEN** the viewport narrows or text grows
+- **THEN** the complete notice and production link wrap without horizontal overflow
+- **AND** the header and public mobile menu account for the banner's actual height.
 
 #### Scenario: Marker is viewed with browser page zoom
 
-- **WHEN** browser page zoom is 200% and the resulting CSS viewport remains at least 320px wide
-- **THEN** the complete marker and all header controls remain visible without overlap or loss of content
-- **AND** this check is evaluated separately from the default-text 320px mobile case.
+- **WHEN** browser zoom is 200% and the resulting CSS viewport remains at least 320px wide
+- **THEN** all banner text and its link remain readable without clipping or overlap.
 
 ### Requirement: Review Site Marker is static and accessible
 
-The system MUST communicate the review state through readable text rather than color, motion, or interaction.
+The system MUST communicate UAT identity through readable text with AA contrast, a keyboard-accessible production link, and no dismissal, animation, or live announcement.
 
 #### Scenario: Assistive technology reads the marker
 
-- **WHEN** the header is exposed to assistive technology
-- **THEN** the marker has a readable text alternative that communicates `Test site. Test payments only.`
-- **AND** its visible text meets WCAG AA contrast against the header.
+- **WHEN** the banner is exposed to assistive technology
+- **THEN** its testing identity, separate-data explanation, and production link are available as readable text.
 
 #### Scenario: Reviewer navigates by keyboard or requests reduced motion
 
-- **WHEN** a reviewer navigates by keyboard or uses `prefers-reduced-motion: reduce`
-- **THEN** the marker introduces no focus stop, live announcement, dismissal, hover dependency, or motion
-- **AND** it remains visible as stable page context.
+- **WHEN** the production link receives keyboard focus
+- **THEN** its focus outline is visible
+- **AND** activating it opens the corresponding production root in a new tab, preserving the current UAT work.
+- **AND** the banner has no animation, dismissal, or live announcement.
+
+#### Scenario: A user opens a non-UAT build
+
+- **WHEN** Local or PRD renders
+- **THEN** neither the UAT banner nor `[UAT]` title prefix is rendered.

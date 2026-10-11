@@ -78,26 +78,24 @@ The system SHALL use canonical environment terminology across specs, docs, workf
 
 ### Requirement: Review Site Marker is the canonical status-cue term
 
-The system SHALL use `Review Site Marker` as the maintainer-facing term for the layered UAT status cues and `TEST SITE`, `Test payments only`, and `Test checkout. No real payment will be taken.` as their exact public copy.
+The system SHALL retain `Review Site Marker` as the maintainer term for UAT status cues. The visible banner MAY be called the UAT banner. Its exact English copy SHALL be `UAT · TESTING ONLY`, `Data here is separate and does not transfer to or from the production site.`, and `Open production site`.
 
 #### Scenario: Maintainer artifact names the cue
 
-- **WHEN** specs, tasks, docs, tests, validation output, or handoff notes refer to the cue
-- **THEN** they use `Review Site Marker` for the combined header, browser-title, and checkout cues
-- **AND** they do not call it a UAT banner, environment badge, test-mode switch, staging ribbon, or launch-status alert.
+- **WHEN** a maintainer artifact names the combined cues
+- **THEN** it uses Review Site Marker; UAT banner is also permitted for the visible banner.
 
 #### Scenario: Public marker is rendered
 
-- **WHEN** the marker appears in the shopper-facing header
-- **THEN** the header uses the exact words `TEST SITE` and `Test payments only`
-- **AND** the final checkout cue uses `Test checkout. No real payment will be taken.`
-- **AND** it does not expose `UAT`, Local, PRD, Cloudflare, GitHub Pages, Worker, Stripe, sandbox, production, or other platform vocabulary.
+- **WHEN** a public or Staff UAT page renders
+- **THEN** its banner uses the exact English copy and the browser title starts with `[UAT] `
+- **AND** public checkout retains `Test checkout. No real payment will be taken.`
+- **AND** UAT remains a Product Environment, not a payment authority or a data-transfer operation.
 
 #### Scenario: Environment terminology is discussed
 
-- **WHEN** maintainers describe why the marker appears
-- **THEN** UAT remains the Product Environment and Review Site Marker remains a visible cue within it
-- **AND** `Test site` is not treated as a fourth Product Environment or a substitute for UAT.
+- **WHEN** maintainers explain the banner
+- **THEN** Local, UAT, and PRD remain the three Product Environments and the marker is a visible UAT cue.
 
 ### Requirement: PRD Holding Page is the canonical temporary-surface term
 
@@ -409,3 +407,14 @@ The system SHALL use `Pre-order` for a Store Item variant sold before its copies
 - **WHEN** a paid order contains a line from an open pre-order
 - **THEN** it is `Awaiting Stock`, a derived state
 - **AND** it is not an order status and does not replace paid, fulfilment or notification states.
+
+### Requirement: Store Crate terms are canonical
+
+The system SHALL use `Store Crate`, shown to shoppers as Crate, for the per-format browsing view of a Store collection, and SHALL keep it distinct from the Artists roster's crate index.
+
+#### Scenario: Crate parts are named
+
+- **WHEN** specs, code, tests, docs or UI copy describe the Store Crate
+- **THEN** `bin` names one format's place in it: the `crate` for Vinyl 12-inch, the `CD bin` for CDs and the `tape rack` for Tapes
+- **AND** `sleeve` names one item standing in a flip bin, `pile` the sleeves flipped forward, `back board` the end of a flip bin, and `item in hand` the item the shopper is looking at
+- **AND** `Coverflow` no longer names any Store browsing view.

@@ -52,6 +52,6 @@ The conservative emitted-profile ceiling is 53 transformations per distinct medi
 
 ## Incidents
 
-Incident evidence: [UAT editorial import](../openspec/changes/replace-sveltia-with-emdash-operations/uat-editorial-import-evidence.md). Cloudflare reported the account's daily KV PUT allowance exhausted on 2026-09-13. Redundant Astro sessions were a verified contributor; the retained evidence does not attribute every account write.
+Incident evidence: [UAT editorial import](../openspec/changes/archive/2026-10-12-replace-sveltia-with-emdash-operations/uat-editorial-import-evidence.md). Cloudflare reported the account's daily KV PUT allowance exhausted on 2026-09-13. Redundant Astro sessions were a verified contributor; the retained evidence does not attribute every account write.
 
 Recovery was verified on 2026-09-14 at 01:01 UTC. Account-wide KV analytics reported no operations for the new UTC day before a bounded probe. One uniquely named diagnostic key in the existing M1 UAT session namespace was written with a 60-second expiry and read back successfully (HTTP 200 for both; exact value match). This used one PUT and one GET, with no retry, namespace creation, binding change, or plan upgrade. Evidence: `.codex-artifacts/emdash-m1/kv-reset-verification.log`. Analytics can lag; this is proof of restored access, not an exact remaining-quota guarantee. Keep the no-KV CMS guards and preflight budgeting rule in force.

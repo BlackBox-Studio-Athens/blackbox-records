@@ -16,7 +16,7 @@ For each change record the date, affected task, before/after screenshot, rationa
 
 ## Record-label workspace — accepted 2026-09-17, implementation under verification
 
-This decision supersedes the Content landing dashboard, persistent staging queue, manual refresh controls, separate Items navigation, and closed-by-default desktop preview described in the historical research below. The accepted implementation plan is tracked in [the change checklist](../openspec/changes/redesign-staff-workspace/tasks.md). Do not treat old research screenshots as evidence for the redesign.
+This decision supersedes the Content landing dashboard, persistent staging queue, manual refresh controls, separate Items navigation, and closed-by-default desktop preview described in the historical research below. The accepted implementation plan is tracked in [the change checklist](../openspec/changes/archive/2026-09-22-redesign-staff-workspace/tasks.md). Do not treat old research screenshots as evidence for the redesign.
 
 Use one dark workspace: **Overview**; **Catalog** (Artists, Releases, Distro & merch); **Website** (Pages, News, Navigation & footer, Label details); **Images**; **Stock**; **Orders**. The root and logo open Overview. Existing content and variant links remain supported. Navigation describes members' work, while editorial, price, stock and publication authorities remain separate.
 
@@ -118,7 +118,7 @@ Effort is relative: Small uses existing data and components; Medium changes a mu
 
 Review Content, Images, Items, Stock and Orders at 390, 768, 1280 and 1600 px. Exercise keyboard navigation, focus return, touch targets, reduced motion, contrast, empty/loading/error states, and unsaved-change protection. Check cross-workspace terminology before adding a new component.
 
-Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/improve-content-workspace-previews/validation.md) and the [publication status refresh validation](../openspec/changes/publication-status-and-backoffice-refresh/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
+Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/archive/2026-10-12-improve-content-workspace-previews/validation.md) and the [publication status refresh validation](../openspec/changes/archive/2026-09-22-publication-status-and-backoffice-refresh/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
 
 ## Second research round — 2026-09-16
 

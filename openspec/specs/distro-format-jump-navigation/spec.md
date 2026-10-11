@@ -23,8 +23,13 @@ Distro SHALL derive one Browse Distro formats navigation from the selected items
 
 #### Scenario: Visitor opens Browse formats on a narrow viewport
 
-- **WHEN** Distro renders on a phone
-- **THEN** existing wrapping format links remain visible outside the Artist disclosure, with complete labels, counts, keyboard focus and no horizontal scrolling.
+- **WHEN** the viewport is narrower than `64rem`
+- **THEN** `All formats` plus every populated format entry and count are visible as wrapping chips without opening a disclosure
+- **AND** the current selection is exposed by the selected chip face, which has an ink border and a check mark, and by `aria-current`
+- **AND** the chips wrap onto further rows when text size, zoom, or available width requires it
+- **AND** no format requires horizontal scrolling, a hidden scrollbar, a clipped-edge inference, a swipe hint, or a custom carousel control
+- **AND** the artist filter is a visible `Artists` chip in the Store toolbar that shows how many artists are ticked and opens the Artists sheet, with no native select or disclosure
+- **AND** every format chip, the `Artists` chip and `Top` remain at least 44 CSS pixels high with visible focus.
 
 #### Scenario: Navigation link targets a group
 
@@ -81,13 +86,14 @@ Format navigation SHALL remain ordinary fragment links without JavaScript and co
 #### Scenario: Shell snapshot is cached and restored
 
 - **WHEN** the shell caches or restores Distro
-- **THEN** existing sanitation removes transient selection and visibility state
+- **THEN** existing sanitation removes transient selection and visibility state, ticked artists, the artist find query, pinned artist options and an open Artists sheet
 - **AND** reconnection applies a valid current fragment or All formats, with usable focus even for zero matches.
 
 #### Scenario: Visitor uses the keyboard
 
 - **WHEN** a visitor tabs through format links and activates one with Enter
 - **THEN** native link semantics, visible focus and current selection remain available without a custom menu or roving tabindex.
+- **AND** the `Artists` chip opens the Artists sheet.
 
 ### Requirement: All Store exposes Distro format discovery
 
@@ -112,3 +118,39 @@ All Store SHALL retain its compact Distro format ledger, using the same names, c
 
 - **WHEN** an All Store format link is followed without JavaScript
 - **THEN** its fragment reaches the complete mixed Distro catalog.
+
+### Requirement: Store artist filter accepts several artists
+
+Store All and Store Distro SHALL offer one artist filter built from the catalog's artist or label credits, in which a shopper may tick any number of artists. No ticked artist SHALL mean every artist. Results SHALL include an item when its credit matches any ticked artist and it also matches the active text, format and Pre-orders filters. The filter SHALL be server-rendered in its final box, disabled until the Store search enhancement is ready.
+
+#### Scenario: Shopper ticks several artists on a wide viewport
+
+- **WHEN** the viewport is at least `64rem` wide and the shopper ticks two artists in the `Artists` pane
+- **THEN** each artist is a labelled native checkbox showing the artist and its item count, with no `All artists` choice
+- **AND** the results and result count show only items credited to either ticked artist, in their existing order
+- **AND** the ticked artists appear in their alphabetical order in a `Selected · 2` group above the scrolling list, with a `Clear` button that unticks only artists
+- **AND** a checkbox that moves between the group and the list keeps keyboard focus
+- **AND** unticking an artist returns it to its alphabetical position in the list.
+
+#### Scenario: Shopper finds an artist
+
+- **WHEN** the shopper types into `Find an artist`
+- **THEN** only unticked artists whose normalized name contains the normalized text stay in the list
+- **AND** ticked artists remain visible in the `Selected` group
+- **AND** `No artist matches.` appears when no unticked artist matches
+- **AND** the find text does not filter results.
+
+#### Scenario: Shopper filters artists on a narrow viewport
+
+- **WHEN** the viewport is narrower than `64rem`
+- **THEN** the Store toolbar shows a 44px `Artists` chip, with `· N` and an ink edge while N artists are ticked, beside the Pre-orders chip and Clear filters
+- **AND** at 375 CSS pixels and wider, the `Artists` chip, the Pre-orders chip and Clear filters share one row, and they wrap onto further rows only when text size, zoom or width requires it
+- **AND** activating `Artists` opens a modal bottom sheet labelled `Artists` holding the same checkbox list, find box and `Selected` group, while the page behind does not scroll
+- **AND** the sheet's `Show N items` button names the current result count, and it, `Close` and Escape close the sheet and return focus to the `Artists` chip
+- **AND** an open sheet closes when the viewport reaches `64rem`.
+
+#### Scenario: Shopper clears filters
+
+- **WHEN** any of text, artist or Pre-orders filtering is active
+- **THEN** a `Clear filters` text button appears in the toolbar in bold 16px Inter with a 2px underline and a leading × mark, at least 44px high
+- **AND** activating it clears the query, every ticked artist, the Pre-orders filter and the format selection, and focuses the search box.

@@ -124,20 +124,18 @@ The system SHALL keep frontend site/base URL behavior explicit and stable across
 
 ### Requirement: Hosted UAT verifies Review Site Marker presence
 
-The system SHALL include marker presence in hosted UAT static acceptance rather than relying only on workflow source inspection.
+The system SHALL verify the current English Review Site Marker in hosted public UAT acceptance.
 
 #### Scenario: UAT public-route smoke runs
 
-- **WHEN** the existing UAT Static Smoke `public_routes` scenario probes representative shopper routes
-- **THEN** every probed HTML page must contain the exact header cue and `[TEST] ` title prefix
-- **AND** probed checkout HTML must contain the exact final-action warning
-- **AND** any missing cue fails the scenario and its recorded evidence.
+- **WHEN** the public route smoke probes a shopper page
+- **THEN** missing banner wording, `Open production site`, or `[UAT] ` title prefix fails acceptance
+- **AND** checkout probes also require the existing final-action payment warning.
 
 #### Scenario: UAT interface is manually accepted
 
-- **WHEN** Browser Use validates the deployed UAT artifact at mobile and desktop sizes
-- **THEN** it checks direct loads, title prefix, checkout warning placement, shell navigation persistence, header control clearance, and coexistence with mobile navigation, cart, player, and overlay states
-- **AND** it records no cue-caused overflow, layout shift, console error, or inaccessible text.
+- **WHEN** the deployed artifact is checked at mobile and desktop sizes
+- **THEN** checks cover banner visibility, wrapping, production link, navigation persistence, and coexistence with player and overlay controls on public and Staff surfaces.
 
 ### Requirement: Astro Upgrades Preserve Static Deployment Boundaries
 
@@ -484,13 +482,13 @@ The system SHALL serve the renderer's client assets and public gateway with sepa
 
 ### Requirement: UAT-only builds own Review Site Marker visibility
 
-The system MUST compile the Review Site Marker through an explicit UAT-only build flag with absence as the safe default.
+The system MUST compile the Review Site Marker through explicit UAT-only build flags with absence as the safe default: `SHOW_REVIEW_SITE_MARKER=true` for the public UAT build and `PUBLIC_STAFF_ENVIRONMENT=uat` for Staff.
 
 #### Scenario: Cloudflare Pages UAT artifact is built
 
-- **WHEN** the UAT public build runs
-- **THEN** it sets `SHOW_REVIEW_SITE_MARKER=true`
-- **AND** generated shopper-facing documents contain the exact header words `UAT · TESTING ONLY` plus the `[UAT] ` HTML-title prefix
+- **WHEN** the public and Staff UAT builds run
+- **THEN** the public build sets `SHOW_REVIEW_SITE_MARKER=true` and Staff uses `PUBLIC_STAFF_ENVIRONMENT=uat`
+- **AND** generated shopper-facing and Staff documents contain the exact header words `UAT · TESTING ONLY`, a link to the corresponding production home and the `[UAT] ` HTML-title prefix
 - **AND** generated checkout documents contain `Test checkout. No real payment will be taken.` beside the final payment action.
 
 #### Scenario: Local or PRD artifact is built

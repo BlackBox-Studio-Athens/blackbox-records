@@ -1918,3 +1918,89 @@ The system SHALL validate the deployed Cloudflare Pages UAT site with the canoni
 - **THEN** they reject Worker deployment or D1 migration commands in provider smoke
 - **AND** they reject a standalone UAT Worker deployment workflow
 - **AND** they require the canonical release workflow to retain the UAT Worker deployment step.
+
+### Requirement: Agent instructions route only project-specific context
+
+The repository AGENTS.md SHALL remain at most 120 lines and route tasks to maintained Blackbox-specific guidance. It SHALL inherit global agent policy without duplicating tool, graph, browser, style or approval workflows. OpenSpec SHALL remain the sole repository planning and task-state workflow.
+
+#### Scenario: An agent starts a backend task
+
+- **WHEN** the task concerns backend behavior
+- **THEN** the entry point identifies backend and module-boundary references without requiring unrelated frontend startup reads.
+
+### Requirement: Maintained agent guidance is checked mechanically
+
+The guidance checker SHALL validate local Markdown link targets and root pnpm script names in AGENTS.md, docs/agent-workflow.md and docs/agent-reference.md without executing the documented commands or crawling linked documents. Missing documents, invalid package metadata and broken references SHALL fail with actionable diagnostics. Local completion and full CI checks SHALL run this check.
+
+#### Scenario: A documented root script is renamed
+
+- **WHEN** maintained guidance still names the removed script
+- **THEN** guidance validation fails and identifies the document and correction needed.
+
+#### Scenario: Guidance contains a broken relative link
+
+- **WHEN** a local link target does not exist
+- **THEN** guidance validation fails without fetching external URLs.
+
+### Requirement: Boundary policy changes receive local boundary validation
+
+Local validation SHALL treat the OpenSpec module-boundary manifest as executable configuration, and SHALL select check:boundaries for changes to that manifest or its enforcement configuration and scripts. Ordinary OpenSpec prose SHALL remain eligible for documentation-only validation.
+
+#### Scenario: Only the module-boundary manifest changes
+
+- **WHEN** the changed file is openspec/specs/module-boundaries/module-boundaries.manifest.json
+- **THEN** local validation includes check:boundaries and repository contract coverage instead of formatting alone.
+
+### Requirement: Task acceptance links observed behavior to source evidence
+
+Each substantive change SHALL retain its acceptance criteria, decisions, remaining work and validation evidence in its existing OpenSpec change. Validation evidence SHALL identify the source SHA and fingerprint, Product Environment, checks and outcomes, failures or unobserved behavior, and artifact locations. Shell/player, CMS/publication, commerce/stock and release tasks SHALL use their existing domain acceptance checks. A local passed summary SHALL NOT establish browser, provider or release acceptance on its own.
+
+#### Scenario: Tooling changes need no product browser acceptance
+
+- **WHEN** a change affects only repository tooling and guidance
+- **THEN** the completion record explains why product browser checks do not apply and records focused and final local validation separately.
+
+#### Scenario: A browser or provider check has not run
+
+- **WHEN** required behavior has not been observed
+- **THEN** the record identifies it as unverified rather than inferring success from a unit or formatting result.
+
+### Requirement: Local Durable Object storage fits the Windows path limit
+
+Local Worker names SHALL keep every Local Durable Object storage file, including its SQLite `-wal` and `-shm` files, below 256 characters for checkout paths of up to 104 characters. On Windows, a Local Worker launcher SHALL refuse to start a Worker whose Durable Object storage path would reach 256 characters. Hosted Worker names SHALL NOT change for Local storage reasons.
+
+#### Scenario: Maintainer runs pnpm dev from a worktree
+
+- **GIVEN** a Windows checkout path of up to 104 characters, such as a Claude Code worktree
+- **WHEN** the maintainer runs `pnpm dev`
+- **THEN** Worker commerce reads, staff CMS requests and public pages succeed.
+
+#### Scenario: Checkout path is too long
+
+- **GIVEN** a Windows checkout where a Local Durable Object storage path would reach 256 characters
+- **WHEN** a Local Worker launcher starts
+- **THEN** it stops before starting the Worker
+- **AND** it names the Durable Object class, the required path length and how many characters shorter the checkout path must be.
+
+### Requirement: Optional manual Actions rehearsal is documented
+
+The project SHALL document how a maintainer can use the official act executable on demand against the existing release workflow, with an explicit Docker endpoint, Ubuntu image, job and matrix selection. Ordinary local development commands SHALL remain unchanged. This capability SHALL require no custom project runner or workflow modification.
+
+#### Scenario: A maintainer prepares a future rehearsal
+
+- **WHEN** the maintainer consults the local Actions guidance
+- **THEN** it supplies installation prerequisites, native list/dry-run/execution examples and supported validation/browser selections.
+
+### Requirement: Manual rehearsal limits are explicit
+
+The guidance SHALL retain the existing maintainer-grant policy and explain stock act's resource, timeout, browser and artifact compatibility limitations. Local rehearsal SHALL NOT establish hosted release acceptance.
+
+#### Scenario: A maintainer considers local evidence
+
+- **WHEN** a workflow is rehearsed locally
+- **THEN** the guidance identifies where to keep logs and distinguishes the observed local result from GitHub release acceptance.
+
+#### Scenario: The pinned artifact action is incompatible
+
+- **WHEN** the tested act baseline rejects the pinned upload action's protocol
+- **THEN** the limitation is documented without changing the hosted action or introducing a custom compatibility implementation.

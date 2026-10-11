@@ -155,9 +155,9 @@ The system SHALL balance initial rendering and first traversal on Store All and 
 
 #### Scenario: Store preserves prepared catalog layout
 
-- **WHEN** an enhanced Store collection shows a Coverflow preview
-- **THEN** non-preview cards may remain invisibly laid out in their canonical grids at catalog width
-- **AND** only positioned preview cards are visible and keyboard-accessible in that preview
+- **WHEN** a Store collection shows the Store Crate
+- **THEN** cards other than the item in hand leave presentation and skip rendering
+- **AND** only the item in hand and the bin controls are visible and keyboard-accessible
 - **AND** catalog, search, reduced-motion, and enhancement-disabled views retain complete content without estimated-height corridors
 - **AND** Store listing and Distro card titles may use the existing UI display font while page/group headings retain the brand font and original font assets remain unchanged
 - **AND** self-hosted UI font delivery prevents an unbounded late font replacement.
@@ -207,7 +207,7 @@ The system SHALL balance initial rendering and first traversal on Store All and 
 
 ### Requirement: Critical font delivery is bounded and glyph-safe
 
-The system MUST deliver the existing Veneer brand font without modifying its bytes and without a late font-driven layout task.
+The system MUST deliver the Veneer brand font without a late font-driven layout task. Its bytes MUST stay unmodified unless the owner has confirmed that modification is permitted; then only the owner-approved derivative may ship.
 
 #### Scenario: Brand font can be legally subset
 
@@ -226,11 +226,20 @@ The system MUST deliver the existing Veneer brand font without modifying its byt
 
 #### Scenario: Font modification rights remain unavailable
 
-- **GIVEN** the repository contains no license that permits modification or subsetting
+- **GIVEN** neither a license in the repository nor a recorded owner confirmation permits modification
 - **WHEN** the main-site font path is prepared
-- **THEN** `veneer_regular.woff2` remains byte-for-byte identical to the existing 312,816-byte source
+- **THEN** `veneer_regular.woff2` remains byte-for-byte identical to the original 312,816-byte source
 - **AND** no subset, conversion, glyph removal, outline extraction, or generated font derivative is produced
 - **AND** an automated SHA-256 parity check covers every retained copy of the asset.
+
+#### Scenario: Owner-approved outline simplification
+
+- **GIVEN** the owner confirmed on 2026-10-02 that modifying Veneer is permitted
+- **WHEN** the main-site font path is prepared
+- **THEN** every retained copy of `veneer_regular.woff2` is the output of `apps/web/scripts/simplify-veneer.py` applied to the original source with SHA-256 `f02b74cb53a1640c6cbfc9a2aa5f5ce0609fa358231a9b30b93c1e0072622939`
+- **AND** the generator refuses any other source and fails when the glyph order, cmap, advance widths or GPOS, GSUB, GDEF, name, OS/2, post, gasp or cvt tables differ from the original
+- **AND** no glyph is removed, so the original character coverage remains
+- **AND** an automated SHA-256 parity check covers every retained copy of the derivative.
 
 #### Scenario: Main site requests Veneer
 
@@ -456,28 +465,6 @@ The system SHALL keep a settled public page free of recurring animation-frame ca
 - **THEN** wheel input remains native and constructs no public Lenis instance
 - **AND** the existing scroll API uses browser smooth scrolling for in-page intent, immediate resets for navigation, and shell body state for modal locking.
 
-### Requirement: Repeated state changes restyle bounded element sets
-
-The system SHALL keep the style recalculation caused by a repeated user-driven state change bounded by the elements that state actually affects, independent of document size.
-
-#### Scenario: A class changes on the document element
-
-- **WHEN** any class is added to or removed from `<html>` on `/store/distro/`
-- **THEN** the resulting style recalculation touches a small constant number of elements rather than the whole document
-- **AND** the stylesheet contains no third-party rules that descend from a document-element class and no `[class*=…]` attribute-substring selectors in shared UI primitives.
-
-#### Scenario: Shopper steps through Coverflow
-
-- **WHEN** the shopper activates Next or Previous in a Store Coverflow preview
-- **THEN** the style recalculation touches only the rail and the positioned and newly positioned cards, not the whole group
-- **AND** an inherited custom property that changes per step is set on its only reader.
-
-#### Scenario: Shopper types the first search keystroke
-
-- **WHEN** the first keystroke switches a Store collection from catalog to search results
-- **THEN** image `sizes` are not rewritten on every card
-- **AND** the artist picker commits once per keystroke.
-
 ### Requirement: Store collection chrome does not shift the catalog
 
 The system SHALL render Store collection toolbar, view controls, and the mobile artist picker in their final boxes before hydration, so enhancement does not move the cards.
@@ -562,12 +549,86 @@ The Home pre-order showcase SHALL load its validators and candidate data in para
 - **WHEN** Home loads while no pre-order is buyable
 - **THEN** no showcase validator or Zod chunk is requested.
 
-### Requirement: Positioned Coverflow cards opt out of paint skipping
+### Requirement: Standard public builds enforce the eager JavaScript budget
 
-Store listing cards SHALL keep native paint skipping, but cards positioned by an enhanced Coverflow SHALL use `content-visibility: visible` at every width, so the front card's price and purchase row is never clipped.
+The standard public web build SHALL run the existing route-specific eager JavaScript checker against its freshly built output and retain the current budgets.
 
-#### Scenario: Desktop Coverflow shows its front card
+#### Scenario: Home remains within its eager budget
 
-- **WHEN** an enhanced Coverflow renders at 1280 or 1440 px wide
-- **THEN** the front card's price and Buy control are painted and clickable
-- **AND** non-positioned listing cards still use `content-visibility: auto`.
+- **WHEN** `build:web` completes the Astro build and route-isolation check
+- **THEN** it runs the default `performance:bundles` check against that build
+- **AND** Home's first-party eager JavaScript graph is no more than 98,304 Brotli bytes, as explicitly approved for the 2026-09-26 dependency upgrade.
+
+#### Scenario: A route exceeds its eager budget
+
+- **WHEN** the fresh public output exceeds an existing route budget
+- **THEN** the standard `build:web` command exits nonzero with the route-specific checker diagnostic
+- **AND** the budget is not raised to turn the result into a pass.
+
+### Requirement: Public prose preserves safe links and rich formatting without eager schema initialization
+
+The public browser renderer SHALL preserve supported prose formatting and SHALL create anchors only for values accepted by the same safe-link policy used by content-model validation. CMS and content trust boundaries SHALL continue to validate prose with the existing Zod schemas. The eager Home graph SHALL not load those schemas solely to render public prose.
+
+#### Scenario: Valid and invalid prose links render
+
+- **WHEN** public rich prose contains a safe link, an unsafe URL, or a non-string link value
+- **THEN** a safe URL renders as a link with the existing target and rel behavior
+- **AND** unsafe or non-string values render their text without an anchor
+- **AND** the CMS/content validation schema continues to reject invalid values.
+
+#### Scenario: Public prose uses supported formatting
+
+- **WHEN** public rich prose contains emphasis, lists, aligned blocks, or grouped quotations
+- **THEN** the renderer preserves that formatting and its legacy plain-text fallback
+- **AND** absent native prose and an explicitly empty rich-text value retain their existing precedence.
+
+### Requirement: Home mobile input evidence covers first use and content state
+
+The runtime harness SHALL use actual mobile/touch browser behavior for mobile-load profiles and SHALL report Home early input separately from settled first and repeat scrolling for populated and empty preorder showcases.
+
+#### Scenario: Mobile Home is opened and used immediately
+
+- **WHEN** the declared mobile profile opens Home with a cleared cache and dispatches swipes and taps before settlement
+- **THEN** the evidence records viewport, DPR, CPU, network, content fixture, release identity, request activity, gesture timing, and long tasks
+- **AND** tap responsiveness is reported separately from continuous scrolling.
+- **AND** a first `scroll` event is labeled as an event observation, not as the first visible frame.
+
+#### Scenario: Local swipe and Menu diagnostics distinguish browser activation
+
+- **WHEN** a declared local Home diagnostic performs a direct Menu tap or taps after a touch swipe
+- **THEN** its evidence retains touch, pointer, scroll, frame, and browser-dispatched click timestamps alongside Menu state and the actual touch-end-to-tap interval
+- **AND** a missing browser `click` is distinguished from a dispatched click that the shell did not handle.
+
+#### Scenario: Populated and empty showcases are compared
+
+- **WHEN** Home is measured with populated and empty preorder states
+- **THEN** each state is identified in the output and comparable before/after runs use the same state and input cadence
+- **AND** valid slow runs and unrelated scheduling delays remain visible rather than being dropped.
+
+#### Scenario: Android Messenger acceptance is evaluated
+
+- **WHEN** a physical Android phone is available for release validation
+- **THEN** the same release is checked in Messenger and Chrome with device, Android, browser/app versions, and observed swipe/tap behavior recorded
+- **AND** emulation alone does not close the reported Messenger delay.
+
+### Requirement: Repeated state changes restyle only bounded element sets
+
+The system SHALL keep the style recalculation caused by a repeated user-driven state change bounded by the elements that state actually affects, independent of document size.
+
+#### Scenario: A class changes on the document element
+
+- **WHEN** any class is added to or removed from `<html>` on `/store/distro/`
+- **THEN** the resulting style recalculation touches a small constant number of elements rather than the whole document
+- **AND** the stylesheet contains no third-party rules that descend from a document-element class and no `[class*=…]` attribute-substring selectors in shared UI primitives.
+
+#### Scenario: Shopper flips through the Store Crate
+
+- **WHEN** a sleeve turns or follows a drag in the Store Crate
+- **THEN** style writes touch only sleeves within the drawn window around the hand, never the whole bin or catalog
+- **AND** an inherited custom property that changes per step is set on its only reader.
+
+#### Scenario: Shopper types the first search keystroke
+
+- **WHEN** the first keystroke switches a Store collection from catalog to search results
+- **THEN** image `sizes` are not rewritten on every card
+- **AND** the artist picker commits once per keystroke.
