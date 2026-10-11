@@ -2,24 +2,22 @@
 
 ## Context
 
-Strix 1.7.0 and Docker Desktop are installed in Ubuntu WSL2. Subscription authentication works; an earlier fixture run was interrupted by an OpenAI cybersecurity safeguard. The existing Windows site on port 4321 must remain running. See proposal.md for scope.
+The earlier plan (Strix with a GPT model in WSL2 Docker) was dropped. The owner requires free open-source tools with no LLM features, limited to the PRD public surface, tested Locally, optimized for speed and cost. See proposal.md for scope.
 
 ## Goals / Non-Goals
 
-Use the approved one-hour priority window after preparation. Preserve user services, databases and source. Deliver reproducible findings or an honest blocked/partial report; neither interruption nor zero findings establishes security. No hosted validation or remediation is authorized here.
+Produce reproducible findings with severity, location, evidence and a minimal fix, plus an honest coverage record. Zero findings in an area does not establish security. Source fixes, deployment and hosted testing beyond a few header reads are excluded.
 
 ## Decisions
 
-- Capture SHA, Git status and per-file hashes before copying tracked source; include current file bytes. Exclude secrets, Git internals and existing runtime state. Use separate pristine analysis and disposable runtime copies.
-- Run the canonical mock stack in its own Docker network namespace to retain ports 4321/8787 without conflicting with the owner's Windows site. Adapt only copy-local launcher resource bookkeeping and local transport exposure. Record every adaptation.
-- Enforce outbound restrictions in assessment-owned containers before testing. The model controller retains subscription connectivity; the sandbox and app have only loopback and specifically required local service access. Verify both local access and blocked external HTTPS before starting.
-- Use a dedicated Strix config with `chatgpt/gpt-6.1-sol`, reasoning `high`, dedupe reasoning `high`, telemetry disabled, standard mode, full source scope and 30 turns per agent. No API-key or endpoint fallback.
-- Supervise aggregate elapsed time and provider refusal independently of per-agent turn limits. Aim for 10 minutes mapping, 35 minutes testing and 15 minutes validation/reporting. Stop affected work immediately on refusal, quota exhaustion or external traffic; preserve artifacts rather than resume automatically.
-- Validate findings independently, redact sensitive evidence, and distinguish mock/development behavior from production-relevant application risk.
+- Static tools: gitleaks (full history, redacted), `pnpm audit --prod` and OSV-Scanner on `pnpm-lock.yaml` (triaged for runtime reachability with `pnpm why`), zizmor on `.github/workflows`, Semgrep CE (`p/javascript`, `p/typescript`, `p/owasp-top-ten`, metrics off) on `apps/web/src` and `apps/backend/src` excluding generated code and tests.
+- Dynamic tools run only against the normal Local stack (`pnpm dev`, official Stripe mock, Resend no-network mock). Schemathesis uses the Worker's own public OpenAPI document with a small example budget. A Node script covers webhook signatures, internal-route rejection, checkout tampering, input validation, abuse caps and CORS.
+- The Local operator bypass is loopback-only by design. Hosted-equivalent `/api/internal/*` rejection is verified from code and the existing Access JWT tests, not from Local responses.
+- Hosted traffic is limited to four read-only GETs for headers (PRD Pages home and `/store/`, the custom domain, PRD Worker `/api/store/capabilities`), in line with the Free-tier rule.
+- OWASP ZAP was skipped: it needs a large download and would mostly repeat the header finding already confirmed by the hosted GETs.
 
 ## Risks / Trade-offs
 
-- Provider safeguards may block the real assessment → stop agents and report blocked coverage without switching models or evading safeguards.
-- One hour limits completeness → prioritize impact and record tested, partial, blocked and excluded areas.
-- Container transport and local authentication differ from hosted behavior → record adaptations and limit conclusions accordingly.
-- Mock providers cannot prove real Stripe or email-provider security → assess application contracts locally and retain provider acceptance gaps.
+- Local mocks cannot prove Stripe or Resend behavior; provider-side rejections (for example oversized addresses) remain unverified.
+- No Local item is Coming Soon or pay-what-you-want and in stock, so alert-cap and mixed-cart behavior relies on code and unit tests plus the sold-out rejection path.
+- Edge controls configured only in the Cloudflare dashboard (WAF or rate-limiting rules) are invisible to this assessment.

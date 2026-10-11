@@ -1,18 +1,26 @@
 # Tasks
 
-## 1. Prepare
+## 1. Static checks
 
-- [ ] 1.1 Record source identity, original services and sanitized copy manifest; verify original source and state are preserved.
-- [ ] 1.2 Start a fresh disposable canonical mock stack and verify public pages, commerce fixtures and sandbox browser/API connectivity.
-- [ ] 1.3 Enforce and verify local traffic boundaries; record successful local requests and blocked external requests.
+- [x] 1.1 Scan full Git history with gitleaks (redacted) and a targeted pattern pass for Resend, webhook and live Stripe keys; triage every hit.
+- [x] 1.2 Run `pnpm audit --prod` and OSV-Scanner on `pnpm-lock.yaml`; trace flagged packages with `pnpm why` and record runtime reachability.
+- [x] 1.3 Run zizmor on `.github/workflows`.
+- [x] 1.4 Run Semgrep CE on `apps/web/src` and `apps/backend/src` (generated code and tests excluded); triage results within scope.
 
-## 2. Assess
+## 2. Local dynamic checks
 
-- [ ] 2.1 Verify subscription-backed GPT-6.1 Sol high configuration and run the supervised priority assessment; preserve duration, usage and any stop reason.
-- [ ] 2.2 Independently reproduce promising findings and document concrete evidence or why each candidate remains unconfirmed.
+- [x] 2.1 Start the normal Local stack only when free and confirm the Worker and site answer.
+- [x] 2.2 Run Schemathesis against the Local Worker's public OpenAPI with a small example budget; reproduce each failure.
+- [x] 2.3 Run scripted checks: webhook signatures, `/api/internal/*` rejection, checkout tampering and idempotency, newsletter/alert/inquiry/withdrawal validation and abuse caps, CORS, simple-request CSRF.
+- [x] 2.4 Verify hosted-equivalent `/api/internal/*` rejection from code and the focused Access JWT test.
+- [ ] 2.5 OWASP ZAP baseline (skipped: large download, would repeat the header finding).
 
-## 3. Handoff
+## 3. Hosted read-only
 
-- [ ] 3.1 Deliver prioritized findings, coverage matrix, Strix artifacts and source-bound evidence; distinguish any interrupted assessment.
-- [ ] 3.2 Verify the local report viewer, document exact rerun/shutdown commands, stop assessment-owned services and confirm original services survive.
-- [ ] 3.3 Validate the OpenSpec change and final documentation tree, linking validation evidence.
+- [x] 3.1 Read response headers with four GETs: PRD Pages home and `/store/`, the custom domain, PRD Worker `/api/store/capabilities`.
+
+## 4. Handoff
+
+- [x] 4.1 Rewrite proposal, design and findings for the free-tool scope; record ranked findings, coverage, tool versions and rerun commands.
+- [x] 4.2 Stop the Local stack this assessment started and confirm with `pnpm local:status`.
+- [x] 4.3 Validate the change with `pnpm openspec -- validate assess-local-public-commerce-security --type change --strict`.

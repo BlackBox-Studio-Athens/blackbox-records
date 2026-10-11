@@ -2,13 +2,14 @@
 
 ## Why
 
-Assess exploitable shopper-facing and commerce risks before considering production security verification. The owner approved a one-hour, local-only Strix assessment using the existing ChatGPT subscription and GPT-6.1 Sol at high reasoning.
+Find exploitable risks on the surface the PRD public site exposes before production commerce opens. The owner replaced the planned Strix/GPT assessment with free, open-source, non-LLM tools and asked for a fast, cheap pass.
 
 ## What Changes
 
-- Prepare a disposable source-bound Local mock stack and enforce local assessment traffic.
-- Run a supervised Strix priority assessment, validate findings, and retain evidence and explicit coverage gaps.
-- Deliver a prioritized report and reproducible operating commands without changing application code.
+- Scan secrets in Git history, dependencies, GitHub Actions and public source with free tools.
+- Test the public and commerce APIs on the Local stack with schema-driven fuzzing and scripted abuse checks.
+- Read security headers from PRD with a handful of read-only GETs.
+- Record ranked, reproduced findings, coverage gaps and rerun commands. No source fixes.
 
 ## Capabilities
 
@@ -18,8 +19,10 @@ None. This is an assessment and evidence change; `skip_specs: true` applies.
 
 ### Modified Capabilities
 
-None. Findings do not silently change intended behavior or authorize fixes.
+None. Findings do not change intended behavior or authorize fixes.
 
 ## Impact
 
-The assessment covers public pages, public APIs, checkout, order and stock authority, webhook integrity, public inputs and anonymous rejection at protected commerce boundaries. Staff/CMS testing, hosted traffic, real payments, real email delivery, deployment and source fixes are excluded. Runtime files live in a disposable directory outside the repository; retained artifacts live under `.codex-artifacts/security/`.
+In scope: public pages, public/commerce APIs (checkout, listing and offer reads, delivery quote, newsletter, Notify me availability alerts, Services inquiry, withdrawal form), Stripe webhook integrity and anonymous rejection at `/api/internal/*`. Secrets in Git history stay in scope because the repository is public.
+
+Out of scope: staff/CMS and dev-only tooling (unless they leak a secret), hosted crawling, fuzzing or scanning, real payments and real email delivery. Retained raw output lives under `.codex-artifacts/security/2026-10-12/`.
