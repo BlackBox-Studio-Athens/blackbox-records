@@ -7,6 +7,6 @@
 
 ## 2. Release
 
-- [ ] 2.1 Record evidence, pass strict OpenSpec, final `pnpm validate` and `pnpm build:web`, then commit the prepared release tree on main.
-- [ ] 2.2 Close the captured UAT checkout test window, push main and obtain a fully successful UAT workflow including browser and hosted smoke gates.
-- [ ] 2.3 Promote that accepted candidate to PRD, verify both release identities and preserved accepted content/PRD controls, and restore UAT's original checkout state.
+- [x] 2.1 Record evidence, pass strict OpenSpec, final `pnpm validate` and `pnpm build:web`, then commit the prepared release tree on main.
+- [x] 2.2 Close the captured UAT checkout test window, push main and obtain a fully successful UAT workflow including browser and hosted smoke gates.
+- [x] 2.3 Promote that accepted candidate to PRD, verify both release identities and preserved accepted content/PRD controls, and restore UAT's original checkout state.
