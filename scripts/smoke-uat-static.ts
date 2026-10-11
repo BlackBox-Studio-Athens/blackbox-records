@@ -912,7 +912,7 @@ async function checkTextAsset(
   };
 }
 
-async function checkNotFoundDocument(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
+export async function checkNotFoundDocument(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
   const path = '/smoke-missing-page/';
   const url = createRouteUrl(options.siteUrl, path);
   const response = await fetchSmokeResponse(url, options.timeoutMs, { Accept: 'text/html' });
@@ -925,6 +925,7 @@ async function checkNotFoundDocument(options: UatStaticSmokeOptions): Promise<Ua
   return {
     bodyTextSnippet: null,
     contentType,
+    expectedStatus: 404,
     issues,
     kind: 'page',
     path,

@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildUatStaticSmokeEvidence,
+  checkNotFoundDocument,
   checkReviewSiteMarker,
   discoverRepresentativeCandidates,
   discoverRepresentativePaths,
@@ -14,6 +15,27 @@ import {
 } from '../../../../scripts/smoke-uat-static';
 
 describe('UAT static smoke', () => {
+  it.each([
+    { status: 404, body: '<meta name="viewport" content="width=device-width">', issues: 0 },
+    { status: 200, body: '<meta name="viewport" content="width=device-width">', issues: 1 },
+    { status: 404, body: 'Not found', issues: 1 },
+  ])(
+    'keeps the expected missing-page status explicit for $status with $issues issues',
+    async ({ status, body, issues }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(new Response(body, { status, headers: { 'content-type': 'text/html' } })),
+      );
+      try {
+        const check = await checkNotFoundDocument(parseUatStaticSmokeArgs(['--site-url', 'https://example.test/']));
+        expect(check.status).toBe(status);
+        expect(check.expectedStatus).toBe(404);
+        expect(check.issues).toHaveLength(issues);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
   it('selects public checks and rejects obsolete CMS scenarios', () => {
     expect(resolveSelectedUatStaticSmokeScenarios('all').map((s) => s.name)).toEqual([
       'public_assets',

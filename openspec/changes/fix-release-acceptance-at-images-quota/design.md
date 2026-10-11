@@ -8,6 +8,7 @@ Push run 38111063778 passed repository checks, all four main browser shards, bot
 2. The release smoke's `public_assets` scenario verifies media availability. Resolve a trusted direct Images URL to its exact same-environment `/media/content/<sha>` original. Preserve the existing same-origin/base-path checks and reject external sources. Keep `image_transform` separate: it must still require a real small, immutable transformation and reject fallback originals.
 3. Prove browser fallback under controlled image failures locally; do not probe the exhausted hosted transformation endpoint to establish that behavior.
 4. Preserve software-release gates. Commit source before pushing, run complete CI and hosted smoke, and dispatch PRD only after the UAT push succeeds. Temporarily close UAT checkout for verification, then restore its captured original state. Preserve PRD checkout and each accepted content pointer.
+5. Run 38115266785 exposed a separate missing-page probe defect: the document correctly returns HTTP 404 and has no issues, but its check omitted `expectedStatus`, so scenario aggregation defaulted to HTTP 200. Carry the explicit expected HTTP 404 in that check, preserving actual status and all HTML/body assertions. Soft 404s and invalid documents must still fail.
 
 ## Risks and Validation
 
