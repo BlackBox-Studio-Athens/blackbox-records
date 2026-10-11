@@ -82,6 +82,17 @@ for (const [route] of publicSmokeRoutes(localRepresentativePaths)) {
             .flatMap((target) => {
               const box = target.getBoundingClientRect();
               if (box.width <= 1 || box.height <= 1 || inlineInText(target)) return [];
+              // A native checkbox's associated label is also its clickable target in every browser.
+              if (target instanceof HTMLInputElement && ['checkbox', 'radio'].includes(target.type)) {
+                const labels = [...(target.labels ?? [])];
+                if (
+                  labels.some((label) => {
+                    const area = label.getBoundingClientRect();
+                    return area.width >= minimum && area.height >= minimum;
+                  })
+                )
+                  return [];
+              }
               // An absolutely positioned ::before or ::after halo widens the hit area beyond the box.
               const [width, height] = ['::before', '::after'].reduce(
                 ([w, h], pseudo) => {

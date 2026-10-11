@@ -83,12 +83,15 @@ async function openCheckout(page: Page) {
   return page.locator('[data-checkout-offer-status]');
 }
 
-/** From Deliver to Greece, Tab passes the newsletter opt-in and its privacy link before it reaches Pay. */
+/** Pending purchase information is absent from the production fixture, including its privacy link. */
 async function tabThroughNewsletterOptIn(page: Page, review: Locator) {
   await page.keyboard.press('Tab');
   await expect(review.getByRole('checkbox')).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(review.getByRole('link', { name: 'Privacy information', exact: true })).toBeFocused();
+  const privacy = review.getByRole('link', { name: 'Privacy information', exact: true });
+  if (await privacy.count()) {
+    await page.keyboard.press('Tab');
+    await expect(privacy).toBeFocused();
+  }
   await page.keyboard.press('Tab');
 }
 
@@ -251,7 +254,7 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
   await expect(review.getByRole('button', { name: 'Deliver to Greece', exact: true })).toBeFocused();
   await tabThroughNewsletterOptIn(page, review);
   await expect(pay).toBeFocused();
-  await pay.scrollIntoViewIfNeeded();
+  await pay.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
   await expect(pay).toBeInViewport({ ratio: 1 });
   await expectNoHorizontalOverflow(page);
 });

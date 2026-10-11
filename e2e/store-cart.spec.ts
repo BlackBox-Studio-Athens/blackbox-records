@@ -30,7 +30,7 @@ async function scrollIntoSettledView(locator: Locator) {
   await expect
     .poll(async () => {
       const top = await locator.evaluate((element) => {
-        element.scrollIntoView({ block: 'center' });
+        element.scrollIntoView({ block: 'center', behavior: 'instant' });
         return element.getBoundingClientRect().top;
       });
       const settled = Math.abs(top - previousTop) < 1;
@@ -266,7 +266,9 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await expect(buy).toBeVisible();
   await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(3);
 
-  await press(page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first(), hasTouch);
+  const listen = page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first();
+  await scrollIntoSettledView(listen);
+  await press(listen, hasTouch);
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
@@ -327,7 +329,7 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
     }
     await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(previousScroll);
     await expect(buy).toHaveText('Buy', { timeout: 6000 });
-    await buy.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await scrollIntoSettledView(buy);
     if (hasTouch) await buy.tap();
     else await buy.click();
     quantity++;

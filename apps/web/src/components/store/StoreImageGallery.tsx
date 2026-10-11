@@ -170,7 +170,10 @@ export default function StoreImageGallery({
             <img
               src={storeGalleryThumbnailSource(item).src}
               srcSet={storeGalleryThumbnailSource(item).srcSet}
-              sizes="72px"
+              sizes={createImageSizes(item, [
+                { media: '(min-width: 768px)', width: '62px', frameAspectRatio: 1 },
+                { width: '46px', frameAspectRatio: 1 },
+              ])}
               alt=""
               width={item.width}
               height={item.height}

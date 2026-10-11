@@ -69,8 +69,11 @@ describe('Store image gallery', () => {
 
   it('sizes a portrait cover by its painted width inside the square gallery', () => {
     const portrait = { ...images[0]!, width: 800, height: 1000 };
-    const [main] = imageTags(renderToStaticMarkup(<StoreImageGallery title="Portrait" images={[portrait]} />));
+    const [main, thumbnail] = imageTags(
+      renderToStaticMarkup(<StoreImageGallery title="Portrait" images={[portrait]} />),
+    );
     expect(main).toContain('sizes="(min-width: 768px) calc(26rem * 0.8), calc((100vw - 32px) * 0.8)"');
+    expect(thumbnail).toContain('sizes="(min-width: 768px) calc(62px * 0.8), calc(46px * 0.8)"');
   });
 
   it('keeps the 72px thumbnail ladder bounded to 144 and 216 pixels', () => {
