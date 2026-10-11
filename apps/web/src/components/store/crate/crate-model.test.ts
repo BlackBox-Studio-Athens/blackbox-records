@@ -85,6 +85,17 @@ describe('crate bins', () => {
 describe('opening the Crate', () => {
   const cat = catalogOf(items, everyBin, false);
 
+  it('opens at the records when no format is chosen, from the first record at or below the Grid', () => {
+    // Adolf (cd) is the top card on screen: the first record at or below it is Allochiria.
+    expect(itemInHand(run(cat, [open([0])]), cat, 'vinyl')).toBe(1);
+    // From Band in the pit (tape) the next record down is Kokomo.
+    const state = run(cat, [open([2])]);
+    expect(state.mode).toMatchObject({ view: 'crate', focus: { at: 'vinyl' } });
+    expect(itemInHand(state, cat, 'vinyl')).toBe(3);
+    // A chosen format still opens its own bin.
+    expect(run(cat, [open([0], CDS)]).mode).toMatchObject({ view: 'crate', focus: { at: 'cd' } });
+  });
+
   it('opens the bin of the first card on screen and puts earlier items on the pile', () => {
     const state = run(cat, [open([3, 4, 5])]);
     expect(state.mode).toMatchObject({ view: 'crate', focus: { at: 'vinyl', motion: { kind: 'arriving' } } });
@@ -92,7 +103,7 @@ describe('opening the Crate', () => {
   });
 
   it('returns to the item in hand after a round trip through the Grid', () => {
-    const inRack = run(cat, [open([4]), { type: 'settled' }]);
+    const inRack = run(cat, [open([4], TAPES), { type: 'settled' }]);
     expect(inRack.hands.tape).toEqual({ on: 'tape', index: 1 });
     const back = run(cat, [{ type: 'closeCrate' }], inRack);
     expect(back.mode).toEqual({ view: 'grid', held: 4 });
@@ -103,8 +114,8 @@ describe('opening the Crate', () => {
   });
 
   it('forgets the held card once it scrolls away', () => {
-    const back = run(cat, [open([4]), { type: 'closeCrate' }]);
-    expect(run(cat, [open([0, 1])], back).mode).toMatchObject({ focus: { at: 'cd' } });
+    const back = run(cat, [open([4], TAPES), { type: 'closeCrate' }]);
+    expect(run(cat, [open([0, 1], CDS)], back).mode).toMatchObject({ focus: { at: 'cd' } });
   });
 
   it('skips cards without a bin, then looks further down and finally up', () => {
@@ -220,14 +231,14 @@ describe('a flip bin', () => {
   it('teaches the pull once a flip bin has landed', () => {
     const arriving = run(cat, [open([1])]);
     expect(landed(arriving, reduce(arriving, { type: 'settled' }, cat))).toBe(true);
-    const rack = run(cat, [open([2])]);
+    const rack = run(cat, [open([2], TAPES)]);
     expect(landed(rack, reduce(rack, { type: 'settled' }, cat))).toBe(false);
   });
 });
 
 describe('the tape rack', () => {
   const cat = catalogOf(items, everyBin, false);
-  const inRack = run(cat, [open([2]), { type: 'settled' }]);
+  const inRack = run(cat, [open([2], TAPES), { type: 'settled' }]);
 
   it('ignores flip-only intents', () => {
     for (const intent of [{ type: 'lift' }, { type: 'lean', lean: 'front' }, { type: 'drop' }] as Intent[]) {

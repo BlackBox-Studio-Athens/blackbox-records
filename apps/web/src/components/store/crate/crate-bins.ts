@@ -25,6 +25,22 @@ export function binOfFormatGroup(group: string): Bin | null {
   return BIN_OF_GROUP.get(group) ?? null;
 }
 
+// Store photos made by the artwork fetcher's mockup renderer put the cover, or the CD's jewel case, at a fixed place
+// on a textured background. A sleeve shows only that part: left, top, width and height in pixels of the photo.
+const MOCKUP_ART = new Map<string, readonly [number, number, number, number]>([
+  ['3544x3543', [562, 610, 2420, 2420]],
+  ['2800x2100', [938, 603, 1102, 990]],
+]);
+
+/** Where a sleeve's artwork sits in a Store photo, as "left top width height" fractions, or undefined for the
+ * whole photo. */
+export function artBoxOf(width: number, height: number): string | undefined {
+  const box = MOCKUP_ART.get(`${width}x${height}`);
+  if (!box) return undefined;
+  const [left, top, w, h] = box;
+  return [left / width, top / height, w / width, h / height].map((share) => share.toFixed(4)).join(' ');
+}
+
 /** The bins a collection opens, in counter order, with how many of its Store Items stand in each. */
 export function openBinsOf(groups: Iterable<string>): { bin: Bin; count: number }[] {
   const counts = new Map<Bin, number>();

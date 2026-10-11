@@ -75,18 +75,20 @@ test.describe('Store Crate on desktop', () => {
   });
 
   for (const width of [1280, 1440]) {
-    test(`Distro opens the bin of the first card on screen with its own card beside it at ${width}px`, async ({
+    test(`Distro with all formats opens the records at the first one with its own card beside it at ${width}px`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await stockEverything(page, 'store/distro/');
       await page.goto('store/distro/');
       await waitForShell(page);
-      const first = page.locator('.store-item-card--listing').first();
+      const first = page.locator('.store-item-card--listing[data-store-crate-bin="vinyl"]').first();
       const firstTitle = (await first.locator('h2').innerText()).trim();
       const crate = await openCrate(page);
 
-      // The first card on screen is the item in hand, shown as its own Store card with price and Buy.
+      // The first record is the item in hand, shown as its own Store card with price and Buy.
+      await expect(crate.stage).toHaveAttribute('data-mechanic', 'flip');
+      await expect(crate.counter).toContainText('/ 52');
       await expect(crate.hand.locator('h2')).toHaveText(firstTitle);
       await expect(crate.hand.locator('.store-item-card__price')).toContainText('€28.00');
       await expect(crate.hand.locator('[data-store-card-buy]')).toBeVisible();

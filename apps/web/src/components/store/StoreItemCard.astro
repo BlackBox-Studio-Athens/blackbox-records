@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
-import { binOfFormatGroup } from '@/components/store/crate/crate-bins';
+import { artBoxOf, binOfFormatGroup } from '@/components/store/crate/crate-bins';
 import {
   createStoreDistroGroupHeadingId,
   getStoreDistroFormatGroup,
@@ -45,6 +45,9 @@ const widths = [360, 720];
   }
   data-store-crate-bin={binOfFormatGroup(formatGroup) ?? undefined}
   data-store-crate-slug={storeItem.slug}
+  data-store-crate-art={
+    typeof storeItem.image === 'object' ? artBoxOf(storeItem.image.width, storeItem.image.height) : undefined
+  }
 >
   <Card className="store-item-card__surface flex flex-1 flex-col rounded-none border-border bg-card shadow-none">
     <div class="store-item-card__image-frame">

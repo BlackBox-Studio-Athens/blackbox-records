@@ -630,12 +630,28 @@ export function mountStoreCrate(
     const source = cardImageOf(piece.id);
     if (!source) return;
     img.dataset.loaded = '';
-    if (source.complete && source.currentSrc) {
+    // A mockup photo is enlarged so its cover fills the sleeve, and clipped to the cover.
+    const box = cards[piece.id]?.dataset.storeCrateArt?.split(' ').map(Number);
+    if (box?.length === 4) {
+      const [left, top, w, h] = box as [number, number, number, number];
+      Object.assign(img.style, {
+        position: 'absolute',
+        left: `${(-100 * left) / w}%`,
+        top: `${(-100 * top) / h}%`,
+        width: `${100 / w}%`,
+        height: `${100 / h}%`,
+        maxWidth: 'none',
+        objectFit: 'fill',
+        clipPath: `inset(${100 * top}% ${100 * (1 - left - w)}% ${100 * (1 - top - h)}% ${100 * left}%)`,
+      });
+    }
+    // A cropped mockup shows only part of the photo, so it asks the srcset for a larger copy than the card's.
+    if (source.complete && source.currentSrc && box?.length !== 4) {
       img.src = source.currentSrc;
       return;
     }
     if (source.srcset) {
-      img.sizes = px(Math.ceil(width * scale));
+      img.sizes = px(Math.ceil((width * scale) / (box?.length === 4 ? box[2]! : 1)));
       img.srcset = source.srcset;
     }
     img.src = source.getAttribute('src') ?? '';
@@ -777,18 +793,16 @@ export function mountStoreCrate(
   function renderRail(bin: Bin, current: string) {
     if (railBin !== bin) {
       railBin = bin;
-      const letters: string[] = [];
-      for (const id of cat.shelves[bin]) {
-        const letter = dividerOf(cat.items[id]!.artist);
-        if (!letters.includes(letter)) letters.push(letter);
-      }
+      // The whole alphabet, as a record shop's dividers; letters with no artist in this bin stay dimmed.
+      const present = new Set(cat.shelves[bin].map((id) => dividerOf(cat.items[id]!.artist)));
       rail!.replaceChildren(
-        ...letters.map((letter) => {
+        ...[...ALPHABET, '#'].map((letter) => {
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'store-crate-letter';
           button.dataset.letter = letter;
           button.textContent = letter;
+          button.disabled = !present.has(letter);
           button.setAttribute('aria-label', `Artists under ${letter}`);
           return button;
         }),
@@ -890,7 +904,8 @@ export function mountStoreCrate(
     });
     // The panel sits in the page's flow, so redrawing it lays out the whole page. While digging within a bin it
     // follows once the hand pauses; the frame that turns a sleeve then only moves layers on the compositor.
-    clearTimeout(panelTimer);
+    // Only a moved hand reschedules it: a hover lean renders too and must not cancel a pending redraw.
+    if (moved) clearTimeout(panelTimer);
     if (walked) renderPanel();
     else if (moved) panelTimer = window.setTimeout(renderPanel, PANEL_DELAY_MS);
     // On Distro the format selection always equals the bin, so its format links highlight where you stand.
@@ -1057,7 +1072,19 @@ export function mountStoreCrate(
       const rect = from.get(piece.id!);
       const d = k - slot;
       if (rect) {
-        const start = transformOf(flightPose(local(rect), view.rest), view.geometry);
+        // A cropped mockup flies from where its cover sits in the card's photo.
+        const art = cards[piece.id!]?.dataset.storeCrateArt?.split(' ').map(Number);
+        const card = local(rect);
+        const cover =
+          art?.length === 4
+            ? {
+                left: card.left + art[0]! * card.width,
+                top: card.top + art[1]! * card.height,
+                width: art[2]! * card.width,
+                height: art[3]! * card.height,
+              }
+            : card;
+        const start = transformOf(flightPose(cover, view.rest), view.geometry);
         animations.push(
           piece.el.animate([{ transform: start }, { transform: piece.written.transform }], {
             duration: 520,

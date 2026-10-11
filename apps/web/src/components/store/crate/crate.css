@@ -382,18 +382,24 @@
   display: none;
 }
 
+/* All 27 dividers fit beside a desktop bin; a phone scrolls them sideways. */
 .store-crate-letter {
-  flex: 1 0 2.75rem;
+  flex: 1 0 1.75rem;
   min-height: 2.75rem;
   border: 0;
   padding: 0;
   color: var(--muted-foreground);
   background: none;
   font-family: var(--font-display-ui);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: color 200ms var(--crate-ease);
+}
+
+.store-crate-letter:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .store-crate-letter[aria-current='true'] {
@@ -442,6 +448,10 @@
   gap: 1rem;
 }
 
+.store-crate-end[hidden] {
+  display: none;
+}
+
 .store-crate-end h3 {
   margin: 0;
   font-family: var(--font-display-brand);
@@ -469,7 +479,7 @@
     background: var(--control-face-selected);
   }
 
-  .store-crate-letter:hover,
+  .store-crate-letter:enabled:hover,
   .store-crate-restart:hover {
     color: var(--foreground);
   }

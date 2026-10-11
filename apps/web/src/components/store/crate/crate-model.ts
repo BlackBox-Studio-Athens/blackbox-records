@@ -169,18 +169,18 @@ export function crateTarget(
   grid: readonly ItemId[],
   onScreen: readonly ItemId[],
   cat: Catalog,
+  /** Prefer this bin; the item you brought back from the Crate still wins while it is on screen. */
+  prefer?: Bin,
 ): ItemId | null {
   if (held !== null && onScreen.includes(held) && hasBin(cat, held)) return held;
-  const shown = onScreen.find((id) => hasBin(cat, id));
+  const fits = (id: ItemId) => hasBin(cat, id) && (!prefer || cat.items[id]!.bin === prefer);
+  const shown = onScreen.find(fits);
   if (shown !== undefined) return shown;
   const top = onScreen.length > 0 ? Math.max(0, grid.indexOf(onScreen[0]!)) : 0;
-  const after = grid.slice(top).find((id) => hasBin(cat, id));
+  const after = grid.slice(top).find(fits);
   if (after !== undefined) return after;
-  const before = grid
-    .slice(0, top)
-    .reverse()
-    .find((id) => hasBin(cat, id));
-  return before ?? null;
+  const before = grid.slice(0, top).reverse().find(fits);
+  return before ?? (prefer ? crateTarget(null, grid, onScreen, cat) : null);
 }
 
 /** The item in hand: the sleeve or tape the hand is on, or the last sleeve when the hand is at the back board. */
@@ -312,7 +312,9 @@ function rackReduce(hand: RackHand, motion: RackMotion, intent: Intent, count: n
 
 function openCrate(state: State, cat: Catalog, intent: Extract<Intent, { type: 'openCrate' }>): State {
   const held = state.mode.view === 'grid' ? state.mode.held : null;
-  const id = crateTarget(held, intent.grid, intent.onScreen, cat);
+  // With no format chosen the Crate opens at the records, unless the Grid is on the item you brought back.
+  const records = intent.format === 'all' && cat.bins.includes('vinyl');
+  const id = crateTarget(held, intent.grid, intent.onScreen, cat, records ? 'vinyl' : undefined);
   const bin = id === null ? null : cat.items[id]?.bin;
   if (id === null || !bin) return state;
   const shelf = cat.shelves[bin];
