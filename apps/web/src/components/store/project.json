@@ -25,6 +25,7 @@
       "status": "closed",
       "exports": [
         "./StoreBrowsePane.astro",
+        "./StoreBuyIcon.tsx",
         "./StoreCategoryNavigation.astro",
         "./StoreCrate.astro",
         "./StoreDistroCatalog.astro",

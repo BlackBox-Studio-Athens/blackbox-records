@@ -3,11 +3,13 @@ import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
+import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
 import { neutralReleasePresentation, physicalBadgeState, RELEASE_DETAIL_LINK_CLASS } from './release-presentation';
 import { createArtistDetailPath, createReleaseDetailPath, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import {
@@ -25,7 +27,6 @@ interface Props {
   commerceLink?: ReleaseCommerceLink | null | undefined;
   imagePriority?: boolean;
   role?: 'lead' | 'supporting' | 'catalog';
-  singleColumn?: boolean;
 }
 
 const {
@@ -36,7 +37,6 @@ const {
   commerceLink,
   imagePriority = false,
   role = 'catalog',
-  singleColumn = false,
 } = Astro.props;
 const artistName = resolveReleaseArtistDisplayName(release, artist);
 const releaseCardTitle = `${release.data.title} — ${artistName}`;
@@ -45,8 +45,6 @@ const bandcampProvider = embeddedPlayerData?.providers.find((provider) => provid
 const tidalProvider = embeddedPlayerData?.providers.find((provider) => provider.id === 'tidal');
 const isReleaseShowcase = variant === 'releases';
 const isPrincipal = isReleaseShowcase && role !== 'catalog';
-const featureClass = role === 'lead' ? 'releases-latest-feature' : 'releases-latest-feature__upcoming';
-const featurePartPrefix = role === 'lead' ? 'releases-latest-feature__' : 'releases-latest-feature__upcoming-';
 const HeadingTag = isPrincipal ? 'h2' : 'h3';
 const ArtworkTag = isReleaseShowcase ? 'a' : 'div';
 const isFramedArtwork = variant === 'framed-artwork' || isReleaseShowcase;
@@ -58,43 +56,24 @@ const releaseCardImageWidths = isArtistDiscography
     ? [320, 480, 720, 1080, 1440, 1800]
     : [320, 480, 640, 800, 960];
 // Releases slots follow global.css: the page frame (PAGE_MAX_WIDTH less 2rem gutters from 64rem, 1.5rem from 40rem,
-// 1rem below), a 12-track 2rem-gap grid sharing the lead (8 tracks) and supporting (4 tracks) row, 1px artwork frames,
-// and the 1.026 resting scale on desktop catalog artwork.
-const frameWidth = `(${PAGE_MAX_WIDTH} - 4rem)`;
-const fluidFrameWidth = '(100vw - 4rem)';
-const leadWidth = (frame: string) => (singleColumn ? frame : `((${frame} - 22rem) * 2 / 3 + 14rem)`);
-// Cover track share of the lead's two columns: 1.15fr / 1fr beside a supporting release, else 0.95fr (0.9fr below 80rem).
-const leadCoverShare = singleColumn
-  ? { wide: '0.95 / 1.95', narrow: '0.9 / 1.9' }
-  : { wide: '1.15 / 2.15', narrow: '1.15 / 2.15' };
+// 1rem below), featured covers of 29rem from 64rem or half the frame less a 1.5rem gap from 40rem, catalog columns
+// with 1.5rem gaps, and 1px frames. Every cover is contained in a square frame.
 const releaseCardImageSizes = isPrincipal
-  ? role === 'lead'
-    ? createImageSizes(release.data.cover_image, [
-        { media: '(min-width: 80rem)', width: `(${leadWidth(frameWidth)} - 2.5rem) * ${leadCoverShare.wide} - 2px` },
-        {
-          media: `(min-width: ${PAGE_MAX_WIDTH})`,
-          width: `(${leadWidth(frameWidth)} - 1.5rem) * ${leadCoverShare.narrow} - 2px`,
-        },
-        {
-          media: '(min-width: 64rem)',
-          width: `(${leadWidth(fluidFrameWidth)} - 1.5rem) * ${leadCoverShare.narrow} - 2px`,
-        },
-        { media: '(min-width: 40rem)', width: '(100vw - 4.5rem) * 0.9 / 1.9 - 2px' },
-        { width: '100vw - 2rem - 2px' },
-      ])
-    : createImageSizes(release.data.cover_image, [
-        { media: '(min-width: 64rem)', width: '15rem - 2px' },
-        { media: '(min-width: 40rem)', width: '14rem - 2px' },
-        { width: '6.5rem - 2px' },
-      ])
+  ? createImageSizes(release.data.cover_image, [
+      { media: '(min-width: 64rem)', width: '29rem - 2px', frameAspectRatio: 1 },
+      { media: '(min-width: 40rem)', width: '(100vw - 4.5rem) / 2 - 2px', frameAspectRatio: 1 },
+      { width: '100vw - 2rem - 2px', frameAspectRatio: 1 },
+    ])
   : isReleaseShowcase
     ? createImageSizes(release.data.cover_image, [
-        { media: '(min-width: 80rem)', width: `((${frameWidth} - 2.5rem) / 3 - 2px) * 1.026` },
-        { media: `(min-width: ${PAGE_MAX_WIDTH})`, width: `((${frameWidth} - 1.25rem) / 2 - 2px) * 1.026` },
-        { media: '(min-width: 64rem)', width: `((${fluidFrameWidth} - 1.25rem) / 2 - 2px) * 1.026` },
-        { media: '(min-width: 48rem)', width: '(100vw - 4.25rem) / 2 - 2px' },
-        { media: '(min-width: 40rem)', width: '100vw - 3rem - 2px' },
-        { width: '100vw - 2rem - 2px' },
+        {
+          media: `(min-width: ${PAGE_MAX_WIDTH})`,
+          width: `(${PAGE_MAX_WIDTH} - 7rem) / 3 - 2px`,
+          frameAspectRatio: 1,
+        },
+        { media: '(min-width: 64rem)', width: '(100vw - 7rem) / 3 - 2px', frameAspectRatio: 1 },
+        { media: '(min-width: 40rem)', width: '(100vw - 4.5rem) / 2 - 2px', frameAspectRatio: 1 },
+        { width: '100vw - 2rem - 2px', frameAspectRatio: 1 },
       ])
     : isFramedArtwork
       ? '(min-width: 87rem) calc(((87rem - 9.5rem) / 3 - 2px) * 1.026), (min-width: 80rem) calc(((100vw - 9.5rem) / 3 - 2px) * 1.026), (min-width: 64rem) calc(((100vw - 8.25rem) / 2 - 2px) * 1.026), (min-width: 60rem) calc(((100vw - 7.25rem) / 2 - 2px) * 1.026), (min-width: 48rem) calc(((95vw - 4.25rem) / 2 - 2px) * 1.026), (min-width: 40rem) calc((95vw - 3rem - 2px) * 1.026), calc((100vw - 4rem - 2px) * 1.026)'
@@ -110,6 +89,8 @@ const neutralPhysicalState = physicalBadgeState(neutralPresentation);
 // A native edition's Store path is the one destination the artwork and the edition action share, together with
 // their hover and focus feedback; without one the artwork keeps the release detail link and nothing is shared.
 const editionHref = isReleaseShowcase && commerceLink?.isNativeStoreLink ? commerceLink.href : undefined;
+// Catalog Buy carries the Store card's record mark for its format; it shows only while the action reads Buy.
+const buyIconFormatGroup = physicalFormat === 'cd' ? 'CDs' : physicalFormat === 'cassette' ? 'Tapes' : 'Vinyl 12-inch';
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -125,13 +106,14 @@ const dataAttributes = embeddedPlayerData
 <div
   class={
     isPrincipal
-      ? featureClass
+      ? 'releases-feature'
       : isReleaseShowcase
         ? 'block h-full'
         : 'release-card-link prose-link-card group block h-full'
   }
   data-release-id={isReleaseShowcase ? release.id : undefined}
   data-release-role={isReleaseShowcase ? role : undefined}
+  data-release-name={isReleaseShowcase ? release.data.title : undefined}
   data-release-priority={isReleaseShowcase ? release.data.releases_priority : undefined}
   data-release-date={isReleaseShowcase ? releaseDateMachineValue : undefined}
   data-release-store-slug={isReleaseShowcase ? storeSlug : undefined}
@@ -156,10 +138,10 @@ const dataAttributes = embeddedPlayerData
   >
     <div
       class={
-        isPrincipal
-          ? `release-card-image-shell ${featurePartPrefix}artwork-link`
+        isReleaseShowcase
+          ? 'release-card-image-shell releases-cover'
           : usesFramedArtworkLayout
-            ? `release-card-image-shell release-card-image-shell--framed${isReleaseShowcase ? ' relative' : ''}`
+            ? 'release-card-image-shell release-card-image-shell--framed'
             : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'
       }
     >
@@ -170,10 +152,10 @@ const dataAttributes = embeddedPlayerData
         data-release-artwork={isReleaseShowcase ? true : undefined}
         data-astro-prefetch={isReleaseShowcase ? true : undefined}
         class={
-          isPrincipal
+          isReleaseShowcase
             ? 'release-card-image-frame release-card-artwork-link block'
             : usesFramedArtworkLayout
-              ? `release-card-image-frame release-card-image-frame--framed${isReleaseShowcase ? ' release-card-artwork-link block' : ''}`
+              ? 'release-card-image-frame release-card-image-frame--framed'
               : 'relative h-full w-full overflow-hidden'
         }
       >
@@ -181,8 +163,8 @@ const dataAttributes = embeddedPlayerData
           src={release.data.cover_image}
           alt={release.data.cover_image_alt || release.data.title}
           class={
-            isPrincipal
-              ? `release-card-artwork w-full ${featurePartPrefix}artwork`
+            isReleaseShowcase
+              ? 'release-card-artwork releases-cover__image'
               : usesFramedArtworkLayout
                 ? 'release-card-artwork release-card-artwork--framed h-full w-full object-cover'
                 : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'
@@ -194,11 +176,9 @@ const dataAttributes = embeddedPlayerData
           loading={imageLoading}
           priority={isReleaseShowcase && imagePriority}
         />
-        <div
-          data-release-artwork-scrim={isReleaseShowcase ? true : undefined}
-          class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"
-          hidden={isPrincipal}
-        ></div>
+        {!isReleaseShowcase && (
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
+        )}
         {!isReleaseShowcase && (
           <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
             {embeddedPlayerData && (
@@ -210,43 +190,18 @@ const dataAttributes = embeddedPlayerData
           </div>
         )}
       </ArtworkTag>
-      {isReleaseShowcase && !isPrincipal && (
-        <div class="release-card-meta-row pointer-events-none absolute inset-x-0 bottom-0 px-2.5 py-3">
-          {embeddedPlayerData && (
-            <MusicStreamingServiceListenTrigger
-              class="pointer-events-auto"
-              embeddedPlayerData={embeddedPlayerData}
-              includePlayerData={false}
-            />
-          )}
-        </div>
-      )}
     </div>
     <CardContent
       className={
         isPrincipal
-          ? `release-card-copy p-0 ${featurePartPrefix}copy`
-          : usesFramedArtworkLayout
-            ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
-            : 'release-card-copy space-y-2 p-5'
+          ? 'release-card-copy releases-feature__copy p-0'
+          : isReleaseShowcase
+            ? 'release-card-copy releases-tile__copy p-0'
+            : usesFramedArtworkLayout
+              ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
+              : 'release-card-copy space-y-2 p-5'
       }
     >
-      {isReleaseShowcase && (
-        <div class="flex flex-wrap gap-2" data-release-badges>
-          {neutralPresentation.badges.map((badge, index) => (
-            <span
-              class="store-item-card__release-status"
-              data-availability-state={
-                neutralPhysicalState && index === neutralPresentation.badges.length - 1
-                  ? neutralPhysicalState
-                  : undefined
-              }
-            >
-              {badge}
-            </span>
-          ))}
-        </div>
-      )}
       <p class="release-card-year-text">
         {releaseDateMachineValue ? (
           <time datetime={releaseDateMachineValue}>{releaseDate}</time>
@@ -255,7 +210,7 @@ const dataAttributes = embeddedPlayerData
         )}
       </p>
       <HeadingTag
-        class={`brand-card-title text-foreground${isPrincipal ? ` ${featurePartPrefix}title` : ''}`}
+        class={`brand-card-title text-foreground${isPrincipal ? ' releases-feature__title' : ''}`}
         data-release-title={isReleaseShowcase ? true : undefined}
       >
         {isReleaseShowcase ? (
@@ -288,24 +243,53 @@ const dataAttributes = embeddedPlayerData
       )}
       {isReleaseShowcase && (
         <>
-          {release.data.formats?.length && (
-            <p class="releases-latest-feature__upcoming-formats">{release.data.formats.join(' / ')}</p>
+          {embeddedPlayerData && (
+            <MusicStreamingServiceListenTrigger
+              embeddedPlayerData={embeddedPlayerData}
+              includePlayerData={false}
+              context={`${release.data.title} by ${artistName}`}
+            />
           )}
           {release.data.summary && (
             <div
               data-release-summary
               hidden={!isPrincipal}
-              class={isPrincipal ? `${featurePartPrefix}summary` : undefined}
+              class={isPrincipal ? 'releases-feature__summary' : undefined}
             >
               <Prose value={release.data.summary} rich={release.data.summary_rich} />
             </div>
           )}
+          {release.data.formats?.length && <p class="release-card-formats">{release.data.formats.join(' / ')}</p>}
+          <div class="flex flex-wrap gap-2" data-release-badges>
+            {neutralPresentation.badges.map((badge, index) => (
+              <span
+                class="store-item-card__release-status"
+                data-availability-state={
+                  neutralPhysicalState && index === neutralPresentation.badges.length - 1
+                    ? neutralPhysicalState
+                    : undefined
+                }
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
           <p class="text-sm text-muted-foreground" data-release-shipping hidden></p>
-          <div class="releases-latest-feature__actions" data-release-actions>
+          <div class="release-card-actions" data-release-actions>
             {editionHref ? (
-              <a class={RELEASE_DETAIL_LINK_CLASS} href={editionHref} data-astro-prefetch data-release-purchase>
-                {neutralPresentation.action}
-              </a>
+              <>
+                <p class="release-card-price" data-release-price hidden></p>
+                <a
+                  class={RELEASE_DETAIL_LINK_CLASS}
+                  href={editionHref}
+                  aria-label={`${neutralPresentation.action}, ${release.data.title}`}
+                  data-astro-prefetch
+                  data-release-purchase
+                >
+                  {!isPrincipal && <StoreBuyIcon formatGroup={buyIconFormatGroup} />}
+                  <span data-release-purchase-label>{neutralPresentation.action}</span>
+                </a>
+              </>
             ) : (
               commerceLink && (
                 <a
@@ -319,10 +303,18 @@ const dataAttributes = embeddedPlayerData
                 </a>
               )
             )}
-            {isPrincipal && embeddedPlayerData && (
-              <MusicStreamingServiceListenTrigger embeddedPlayerData={embeddedPlayerData} includePlayerData={false} />
-            )}
           </div>
+          {isPrincipal && editionHref && (
+            <a
+              class="releases-feature__terms"
+              href={createProjectRelativeUrl('/terms/')}
+              data-astro-prefetch
+              data-release-terms
+              inert
+            >
+              Pre-order &amp; delivery information
+            </a>
+          )}
         </>
       )}
     </CardContent>

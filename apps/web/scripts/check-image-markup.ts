@@ -532,8 +532,8 @@ export const srcsetSlotChecks: SrcsetSlotCheck[] = [
   {
     route: 'releases/index.html',
     className: 'release-card-artwork',
-    // SSR lead: square, unscaled artwork with the same slot before and after live offers arrive.
-    slot: byViewport([354, 358], [357, 361]),
+    // SSR lead: square, contained artwork with the same slot before and after live offers arrive (a 29rem desktop cover).
+    slot: byViewport([354, 358], [460, 464]),
   },
   {
     route: 'releases/*/index.html',

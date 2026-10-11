@@ -23,10 +23,7 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
   <h1 class="sr-only">Releases</h1>
   {releaseCatalogEntries.length > 0 && (
     <div id="releases-merchandising" class="layout-container releases-page-showcase-container">
-      <div
-        class:list={['releases-page-layout', { 'releases-page-layout--single-column': principal.length < 2 }]}
-        data-release-layout
-      >
+      <div class="releases-page-layout" data-release-layout>
         {principal.map(({ release, commerceLink }, index) => (
           <ReleaseCard
             release={release}
@@ -36,7 +33,6 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
             imagePriority={index === 0}
             variant="releases"
             role={index === 0 ? 'lead' : 'supporting'}
-            singleColumn={principal.length < 2}
           />
         ))}
         <section
@@ -45,10 +41,10 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
           data-release-catalog
           hidden={remainder.length === 0}
         >
-          <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
-            Our Releases
+          <h2 id="releases-catalog-heading" class="sr-only">
+            More releases
           </h2>
-          <div class="releases-catalog-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3" data-release-grid>
+          <div class="releases-catalog-grid grid sm:grid-cols-2 lg:grid-cols-3" data-release-grid>
             {remainder.map(({ release, commerceLink }) => (
               <ReleaseCard
                 release={release}

@@ -113,7 +113,8 @@ test('Store card Buy takes the Listen chrome and Releases Buy vinyl keeps restra
 
   await page.goto('releases/');
   await waitForShell(page);
-  const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: 'Buy vinyl', exact: true });
+  // Releases action names add the release after the visible label.
+  const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: /^Buy vinyl, / });
   await expect(releaseBuy).toHaveClass(/purchase-action/);
   await releaseBuy.scrollIntoViewIfNeeded();
   await page.mouse.move(0, 0);

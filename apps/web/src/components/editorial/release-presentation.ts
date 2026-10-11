@@ -15,7 +15,7 @@ export type ReleasePresentationEntry = {
   releaseDate?: string | undefined;
   edition: ReleaseEdition;
 };
-export type ReleasePresentation = { badges: ReleaseBadge[] } & (
+export type ReleasePresentation = { badges: ReleaseBadge[]; price: string } & (
   | { state: 'preorder'; action: `Pre-order ${string}`; shipping: string; preorder: NonNullable<Listing['preorder']> }
   | { state: 'available'; action: `Buy ${string}`; shipping: '' }
   | {
@@ -45,7 +45,7 @@ export function neutralReleasePresentation(
       ? [futureDigitalBadge(entry.releaseDate)]
       : [];
   if (entry.edition.kind === 'none')
-    return { state: 'editorial', badges: digitalBadges, action: 'View edition', shipping: '' };
+    return { state: 'editorial', badges: digitalBadges, action: 'View edition', shipping: '', price: '' };
   const action = `${MEDIUM[entry.edition.format]} edition` as const;
   // An announced edition has no Store Item and no offer to read.
   if (entry.edition.kind === 'announced')
@@ -54,9 +54,10 @@ export function neutralReleasePresentation(
       badges: [...digitalBadges, `${MEDIUM[entry.edition.format]} Coming Soon`],
       action,
       shipping: '',
+      price: '',
     };
-  // No physical badge until the offer arrives.
-  return { state: 'unknown', badges: digitalBadges, action, shipping: '' };
+  // No physical badge and no price until the offer arrives.
+  return { state: 'unknown', badges: digitalBadges, action, shipping: '', price: '' };
 }
 
 export function releasePresentation(
@@ -66,6 +67,8 @@ export function releasePresentation(
 ): ReleasePresentation {
   const neutral = neutralReleasePresentation(entry, today);
   if (entry.edition.kind !== 'native' || record?.storeItemSlug !== entry.edition.storeSlug) return neutral;
+  // The Store card rule: a ready record shows its price whatever its availability, a paused one included.
+  const price = record.presentationState === 'ready' ? record.displayPrice : '';
   const medium = MEDIUM[entry.edition.format];
   const state: unknown = record.availabilityState;
   if (state === 'stocked' && record.presentationState === 'ready') {
@@ -85,22 +88,26 @@ export function releasePresentation(
           !isReleaseOutNow(entry.releaseDate ? new Date(entry.releaseDate) : undefined, today)
             ? `Expected to ship ${shipEstimateText(record.preorder.shipEstimate)}`
             : '',
+        price,
       };
     return {
       state: 'available',
       badges: [...neutral.badges, `${medium} available`],
       action: `Buy ${formatLabel}`,
       shipping: '',
+      price,
     };
   }
   const label = availabilityLabel(state);
   // Unavailable and unrecognised states keep the neutral detail path with no physical badge.
-  if (!label || (state !== 'coming_soon' && state !== 'repressing' && state !== 'sold_out')) return neutral;
+  if (!label || (state !== 'coming_soon' && state !== 'repressing' && state !== 'sold_out'))
+    return { ...neutral, price };
   return {
     ...neutral,
     state,
     badges: [...neutral.badges, `${medium} ${label}`],
     shipping: isNotifiable(state) ? expectedMonthText(record.expectedMonth) : '',
+    price,
   };
 }
 
@@ -157,12 +164,25 @@ export function renderReleasePresentation(
   );
   const action = card.querySelector<HTMLAnchorElement>('[data-release-purchase]');
   if (action && entry.edition.kind === 'native') {
-    action.textContent = presentation.action;
+    // The label has its own span so label writes keep a catalog card's record mark.
+    (action.querySelector?.<HTMLElement>('[data-release-purchase-label]') ?? action).textContent = presentation.action;
     action.className = actionClassName ?? RELEASE_DETAIL_LINK_CLASS;
+    // The accessible name starts with the visible label and adds the release, so repeated actions stay distinct.
+    const releaseName = card.dataset.releaseName;
+    if (releaseName) action.setAttribute('aria-label', `${presentation.action}, ${releaseName}`);
   }
   const shipping = card.querySelector<HTMLElement>('[data-release-shipping]')!;
   shipping.textContent = presentation.shipping;
   shipping.hidden = !presentation.shipping;
+  const price = card.querySelector<HTMLElement>('[data-release-price]');
+  if (price) {
+    price.textContent = presentation.price;
+    price.hidden = !presentation.price;
+  }
+  // Only an open pre-order links to the pre-order and delivery terms. The line keeps its space while inert, so the
+  // rows below do not move when offers arrive.
+  const terms = card.querySelector<HTMLElement>('[data-release-terms]');
+  if (terms) terms.inert = presentation.state !== 'preorder';
 }
 
 export function sanitizeReleaseCatalogPresentation(root: ParentNode) {

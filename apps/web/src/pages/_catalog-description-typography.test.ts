@@ -25,28 +25,26 @@ function readClassRule(className: string) {
 }
 
 describe('Catalog description typography', () => {
-  it('uses the mono family only for bounded editorial descriptions', () => {
+  it('keeps editorial descriptions, featured Release summaries included, on the body family', () => {
     const distroGroupCopy = readClassRule('distro-group-section__copy');
-    const latestReleaseSummary = readClassRule('releases-latest-feature__summary');
-    const upcomingReleaseSummary = readClassRule('releases-latest-feature__upcoming-summary');
+    // Both featured Releases share one summary rule; the design system keeps mono for small metadata.
+    const featuredReleaseSummary = readClassRule('releases-feature__summary');
 
     expect.soft(distroGroupCopy).toContain('font-family: var(--font-sans);');
     expect(distroGroupCopy).toContain('font-size: 0.875rem;');
     expect(distroGroupCopy).toContain('line-height: 1.5;');
 
-    expect.soft(latestReleaseSummary).toContain('font-family: var(--font-mono);');
-    expect(latestReleaseSummary).toContain('font-size: 1rem;');
-    expect(latestReleaseSummary).toContain('line-height: 1.65;');
+    expect.soft(featuredReleaseSummary).toContain('font-family: var(--font-sans);');
+    expect(featuredReleaseSummary).toContain('font-size: 1rem;');
+    expect(featuredReleaseSummary).toContain('line-height: 1.65;');
+    expect(featuredReleaseSummary).toContain('max-width: 36em;');
 
-    expect.soft(upcomingReleaseSummary).toContain('font-family: var(--font-mono);');
-    expect(upcomingReleaseSummary).toContain('font-size: 0.9rem;');
-    expect(upcomingReleaseSummary).toContain('line-height: 1.55;');
-
-    for (const rule of [distroGroupCopy, latestReleaseSummary, upcomingReleaseSummary]) {
+    for (const rule of [distroGroupCopy, featuredReleaseSummary]) {
       expect(rule).not.toContain('letter-spacing:');
       expect(rule).not.toContain('text-transform:');
     }
 
+    expect(css).not.toMatch(/releases-latest-feature__(?:upcoming-)?summary/);
     expect(readClassRule('release-card-summary-text')).not.toContain('font-family:');
   });
 

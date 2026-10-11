@@ -252,10 +252,14 @@ describe('shell page snapshots', () => {
             this.children = children;
           },
         };
+        const price = { textContent: actionName === 'Pre-order vinyl' ? '€28.00' : '€25.00', hidden: false };
+        const terms = { inert: actionName !== 'Pre-order vinyl' };
         const fields = {
           '[data-release-purchase]': purchase,
           '[data-release-shipping]': shipping,
           '[data-release-badges]': badges,
+          '[data-release-price]': price,
+          '[data-release-terms]': terms,
         };
         const card = {
           dataset: {
@@ -269,7 +273,7 @@ describe('shell page snapshots', () => {
           ownerDocument: { createElement: () => ({ textContent: '', className: '' }) },
           querySelector: (selector: string) => fields[selector as keyof typeof fields] ?? null,
         };
-        return { card, purchase, shipping, badges };
+        return { card, purchase, shipping, badges, price, terms };
       };
       const live = makeCard();
       const cloned = makeCard();
@@ -285,6 +289,8 @@ describe('shell page snapshots', () => {
                 purchase: model.purchase,
                 shipping: model.shipping,
                 badges: model.badges.children,
+                price: model.price,
+                terms: model.terms,
                 role: model.card.dataset.releaseRole,
               }),
             },
@@ -310,9 +316,13 @@ describe('shell page snapshots', () => {
       // Before the offer is read again the card carries only its digital badge.
       expect(fragmentHtml(snapshot?.mainContent)).toContain('Digital out now');
       expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(
-        /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available|unconfirmed/,
+        /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available|unconfirmed|€/,
       );
       expect(cloned.shipping).toEqual({ textContent: '', hidden: true });
+      // Prices and the pre-order terms wait for the fresh offer read, like the actions they sit beside.
+      expect(cloned.price).toEqual({ textContent: '', hidden: true });
+      expect(cloned.terms.inert).toBe(true);
+      expect(live.price.hidden).toBe(false);
       expect(cloned.purchase.className).toBe('release-detail-link');
       expect(cloned.card.dataset.releaseRole).toBe('lead');
       expect(snapshot?.mainClassName).toBe('releases-page-layout');

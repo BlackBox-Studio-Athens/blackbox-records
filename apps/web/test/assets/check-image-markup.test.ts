@@ -91,7 +91,11 @@ describe('check-image-markup', () => {
   });
 
   it('validates stable Releases lead artwork before live offers arrive', () => {
-    const card = (attributes: string, sizes = '(min-width: 87rem) 27.5rem, 22.25rem') =>
+    // The lead's twin-row slot: a 29rem desktop cover, halves from 40rem, the phone frame below.
+    const card = (
+      attributes: string,
+      sizes = '(min-width: 64rem) calc(29rem - 2px), (min-width: 40rem) calc((100vw - 4.5rem) / 2 - 2px), calc(100vw - 2rem - 2px)',
+    ) =>
       `<img class="release-card-artwork" srcset="/r-320.webp 320w, /r-480.webp 480w, /r-720.webp 720w, /r-1080.webp 1080w" sizes="${sizes}" decoding="async" ${attributes}>`;
     const checks = routeChecks.filter(({ route }) => route === 'releases/index.html');
     const slots = srcsetSlotChecks.filter(({ route }) => route === 'releases/index.html');

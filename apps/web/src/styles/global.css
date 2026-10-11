@@ -1992,200 +1992,6 @@ body {
     border-top: 0;
   }
 
-  .releases-latest-feature {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-    align-items: start;
-    padding-block: clamp(1.5rem, 3vw, 2rem);
-  }
-
-  .releases-latest-feature__artwork-link {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid #2b2b2b;
-    background: #111111;
-    color: inherit;
-  }
-
-  .releases-latest-feature__artwork {
-    display: block;
-    aspect-ratio: 1 / 1;
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    transform: scale(1.026);
-    transform-origin: center center;
-    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .releases-latest-feature__copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-  }
-
-  .releases-latest-feature__label {
-    width: fit-content;
-    margin: 0;
-    background: rgba(245, 245, 245, 0.08);
-    padding: 0.38rem 0.5rem 0.32rem;
-    color: rgba(245, 245, 245, 0.92);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .releases-latest-feature__meta,
-  .releases-latest-feature__upcoming-meta,
-  .releases-latest-feature__upcoming-formats {
-    margin: 0;
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    line-height: 1.2;
-    text-transform: uppercase;
-  }
-
-  .releases-latest-feature__artwork-link:focus-visible .releases-latest-feature__artwork,
-  .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
-    transform: scale(1.048);
-  }
-
-  @media (hover: hover) {
-    .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
-    .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork {
-      transform: scale(1.048);
-    }
-  }
-
-  .releases-latest-feature__title {
-    width: fit-content;
-    margin-top: 0.5rem;
-    color: var(--foreground);
-    font-family: var(--font-display-brand);
-    font-size: clamp(2.65rem, 12vw, 4.85rem);
-    line-height: 0.94;
-    letter-spacing: 0.025em;
-    overflow-wrap: anywhere;
-    text-transform: uppercase;
-  }
-
-  .releases-latest-feature__heading,
-  .releases-latest-feature__upcoming-heading {
-    margin: 0;
-  }
-
-  .releases-latest-feature__title:focus-visible {
-    color: rgba(245, 245, 245, 0.84);
-    text-decoration: none;
-  }
-
-  @media (hover: hover) {
-    .releases-latest-feature__title:hover {
-      color: rgba(245, 245, 245, 0.84);
-      text-decoration: none;
-    }
-  }
-
-  .releases-latest-feature__summary {
-    max-width: 58ch;
-    margin: 1rem 0 0;
-    color: rgba(214, 214, 214, 0.86);
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    line-height: 1.65;
-  }
-
-  .releases-latest-feature__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.7rem;
-    align-items: center;
-    margin-top: 1.2rem;
-  }
-
-  .releases-latest-feature__upcoming {
-    display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-    gap: 1rem;
-    align-items: start;
-    border-top: 1px solid #2b2b2b;
-    padding-block: clamp(1.5rem, 3vw, 2rem);
-  }
-
-  .releases-latest-feature__upcoming-artwork-link {
-    display: block;
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid #2b2b2b;
-    background: #111111;
-    color: inherit;
-  }
-
-  .releases-latest-feature__upcoming-artwork {
-    display: block;
-    aspect-ratio: 1 / 1;
-    width: 100%;
-    height: auto;
-    object-fit: cover;
-    transform: scale(1.026);
-    transform-origin: center center;
-    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .releases-latest-feature__upcoming-copy {
-    min-width: 0;
-  }
-
-  .releases-latest-feature__upcoming-title {
-    display: inline-block;
-    margin-top: 0.45rem;
-    color: #f2efea;
-    font-family: var(--font-display-brand);
-    font-size: clamp(1.9rem, 8vw, 2.55rem);
-    line-height: 0.98;
-    letter-spacing: 0.035em;
-    overflow-wrap: anywhere;
-    text-decoration: none;
-    text-transform: uppercase;
-  }
-
-  .releases-latest-feature__upcoming-title:focus-visible {
-    color: rgba(245, 245, 245, 0.84);
-    text-decoration: none;
-  }
-
-  @media (hover: hover) {
-    .releases-latest-feature__upcoming-title:hover {
-      color: rgba(245, 245, 245, 0.84);
-      text-decoration: none;
-    }
-  }
-
-  .releases-latest-feature__upcoming-meta {
-    margin-top: 0.45rem;
-    color: rgba(245, 245, 245, 0.66);
-  }
-
-  .releases-latest-feature__upcoming-summary {
-    margin: 0.75rem 0 0;
-    color: rgba(214, 214, 214, 0.82);
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 1.55;
-  }
-
-  .releases-latest-feature__upcoming-formats {
-    margin-top: 0.65rem;
-    color: rgba(245, 245, 245, 0.66);
-  }
-
   .releases-catalog-section {
     min-width: 0;
     border-top: 1px solid #2b2b2b;
@@ -2194,16 +2000,6 @@ body {
 
   .releases-catalog-grid > * {
     min-width: 0;
-  }
-
-  .releases-catalog-section__heading {
-    margin: 0 0 clamp(1.1rem, 2.5vw, 1.65rem);
-    color: var(--foreground);
-    font-family: var(--font-display-brand);
-    font-size: clamp(1.9rem, 4vw, 2.65rem);
-    line-height: 0.96;
-    letter-spacing: 0.035em;
-    text-transform: uppercase;
   }
 
   .release-card-tile--framed {
@@ -3486,31 +3282,6 @@ body.is-app-shell-overlay-open {
     opacity: 0;
     transform: translateY(8px);
   }
-
-  .releases-page-layout
-    :is(.releases-latest-feature__artwork-link, .releases-latest-feature__upcoming-artwork-link, .release-card-link)
-    :is(.releases-latest-feature__artwork, .releases-latest-feature__upcoming-artwork, .release-card-artwork--framed) {
-    transition: none;
-
-    @media (prefers-reduced-motion: no-preference) {
-      transform: scale(1.026);
-    }
-  }
-
-  .releases-page-layout .release-card-link:hover:not(:focus-within) .release-card-image-frame--framed {
-    border-color: rgba(245, 245, 245, 0.82);
-    box-shadow: none;
-  }
-
-  .releases-page-layout .release-card-link .release-card-view-release-desktop-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-
-  .releases-page-layout .music-listen-trigger:not(:hover, :focus-visible, :active) .music-equalizer__bar {
-    animation: none;
-  }
 }
 
 @media (max-width: 48rem) {
@@ -3863,9 +3634,7 @@ body.is-app-shell-overlay-open {
   }
 
   .music-listen-trigger,
-  .release-card-artwork--framed,
-  .releases-latest-feature__artwork,
-  .releases-latest-feature__upcoming-artwork {
+  .release-card-artwork--framed {
     transition: none;
     animation: none;
     transform: none;
@@ -3873,11 +3642,7 @@ body.is-app-shell-overlay-open {
   }
 
   .release-card-link:hover .release-card-artwork--framed,
-  .release-card-link:focus-within .release-card-artwork--framed,
-  .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
-  .releases-latest-feature__artwork-link:focus-visible .releases-latest-feature__artwork,
-  .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork,
-  .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
+  .release-card-link:focus-within .release-card-artwork--framed {
     transform: none;
   }
 
@@ -4107,21 +3872,6 @@ body.is-app-shell-overlay-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .releases-latest-feature {
-    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 1fr);
-    gap: 1.5rem;
-    padding-block: 1.25rem;
-  }
-
-  .releases-latest-feature__artwork-link {
-    width: 100%;
-  }
-
-  .releases-latest-feature__upcoming {
-    grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr);
-    gap: 1.5rem;
-  }
-
   .music-streaming-service-embedded-player-mini-player {
     left: auto;
     right: 1rem;
@@ -4208,44 +3958,6 @@ body.is-app-shell-overlay-open {
 }
 
 @media (min-width: 64rem) {
-  /* Lead and supporting share the first row; each top-aligns, so neither stretches the other's copy. */
-  .releases-page-layout {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    column-gap: 2rem;
-  }
-
-  .releases-latest-feature {
-    grid-column: 1 / span 8;
-    grid-row: 1;
-  }
-
-  /* The lead cover stays the largest artwork on the page. */
-  .releases-page-layout:not(.releases-page-layout--single-column) .releases-latest-feature {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  }
-
-  .releases-latest-feature__upcoming {
-    grid-column: 9 / span 4;
-    grid-row: 1;
-    grid-template-columns: minmax(0, 15rem);
-    border-top: 0;
-    padding-top: 0;
-  }
-
-  .releases-latest-feature__upcoming-summary {
-    display: none;
-  }
-
-  .releases-catalog-section {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .releases-page-layout--single-column > * {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-
   .artist-detail-hero {
     grid-template-columns: minmax(24rem, 1.08fr) minmax(24rem, 0.92fr);
     align-items: center;
@@ -4307,16 +4019,6 @@ body.is-app-shell-overlay-open {
 
   .artist-video-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .releases-latest-feature {
-    grid-template-columns: minmax(18rem, 0.95fr) minmax(0, 1fr);
-    gap: clamp(1.5rem, 3vw, 2.5rem);
-    padding-block: 1.5rem;
-  }
-
-  .releases-latest-feature__actions {
-    justify-content: flex-start;
   }
 
   .artist-previous-release-list {
@@ -5256,6 +4958,26 @@ body.is-app-shell-overlay-open {
     background-color: var(--preorder-accent);
     color: var(--foreground);
   }
+
+  /* A catalog card's Buy wears the Store card Buy chrome, so its engaged look is that chrome's hover. */
+  #releases-merchandising
+    &[data-release-role='catalog']
+    .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
+    color: rgb(245, 245, 245);
+    border-color: var(--store-accent-hover);
+    background:
+      radial-gradient(
+        circle at 18% 50%,
+        rgba(245, 245, 245, 0.16),
+        rgba(245, 245, 245, 0.07) 46%,
+        rgba(245, 245, 245, 0) 100%
+      ),
+      rgba(245, 245, 245, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(245, 245, 245, 0.12),
+      0 0 1.05rem rgba(245, 245, 245, 0.12),
+      inset 0 0 0 1px rgba(245, 245, 245, 0.05);
+  }
 }
 
 /* Ready ordinary Buy controls share restrained feedback across Releases and Store. */
@@ -5293,8 +5015,10 @@ body.is-app-shell-overlay-open {
 }
 
 /* Store card Buy borrows the Listen chrome with a Store Blood hover edge (openspec/changes/add-store-card-buy).
-   Busy and disabled read as rest. Pre-order keeps the filled primary face and shows no record mark. */
-.store-item-card--listing [data-store-card-buy].purchase-action {
+   Busy and disabled read as rest. Pre-order keeps the filled primary face and shows no record mark. A Releases catalog
+   card's Buy shares the chrome (openspec/changes/stack-releases-twin-features). */
+.store-item-card--listing [data-store-card-buy].purchase-action,
+#releases-merchandising [data-release-role='catalog'] [data-release-purchase].purchase-action {
   color: rgba(245, 245, 245, 0.9);
   border-color: rgba(245, 245, 245, 0.48);
   background: linear-gradient(180deg, rgba(245, 245, 245, 0.035), rgba(245, 245, 245, 0.005)), rgba(9, 9, 9, 0.94);
@@ -5302,7 +5026,10 @@ body.is-app-shell-overlay-open {
 }
 
 .store-item-card--listing
-  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible {
+  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible,
+#releases-merchandising
+  [data-release-role='catalog']
+  [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible {
   color: rgb(245, 245, 245);
   border-color: var(--store-accent-hover);
   background:
@@ -5322,7 +5049,10 @@ body.is-app-shell-overlay-open {
 
 @media (hover: hover) {
   .store-item-card--listing
-    [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover {
+    [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover,
+  #releases-merchandising
+    [data-release-role='catalog']
+    [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover {
     color: rgb(245, 245, 245);
     border-color: var(--store-accent-hover);
     background:
@@ -5342,7 +5072,10 @@ body.is-app-shell-overlay-open {
 }
 
 .store-item-card--listing
-  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active {
+  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active,
+#releases-merchandising
+  [data-release-role='catalog']
+  [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active {
   border-color: var(--store-accent-active);
   color: rgba(245, 245, 245, 0.9);
 }
@@ -7742,13 +7475,122 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Releases must retain these rules when reached through the persistent shell. */
+/* Releases must retain these rules when reached through the persistent shell. Featured records are stacked twin rows:
+   the cover above the copy on phones, equal halves from 40rem and a 29rem cover from 64rem. Catalog tiles share the
+   cover frame and the 1.5rem column gap, so from 40rem to 64rem they match the featured covers. */
+#releases-merchandising .releases-feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  border-top: 1px solid #2b2b2b;
+  padding-block: 1.5rem;
+}
+#releases-merchandising .releases-page-layout > :first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+#releases-merchandising .releases-cover {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #2b2b2b;
+  background: #111111;
+}
+#releases-merchandising .release-card-artwork-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+}
+/* Every cover stays whole and at rest; pointer hover outlines the frame instead. */
+#releases-merchandising .releases-cover__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: none;
+}
+#releases-merchandising .release-card-artwork-link:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -2px;
+}
+#releases-merchandising .release-card-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 1rem;
+}
+#releases-merchandising .releases-feature__copy {
+  container-type: inline-size;
+}
+#releases-merchandising .release-card-copy > .brand-card-title {
+  max-width: 100%;
+  margin: 0.5rem 0 0;
+}
+#releases-merchandising .releases-feature__title {
+  font-size: clamp(2.35rem, 16cqi, 4.15rem);
+  line-height: 0.94;
+  letter-spacing: 0.025em;
+}
+#releases-merchandising .release-card-title-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--foreground) 45%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.12em;
+}
+#releases-merchandising .release-card-title-link:focus-visible {
+  color: var(--foreground);
+  text-decoration-color: var(--foreground);
+  outline: 2px solid var(--foreground);
+  outline-offset: 4px;
+}
+#releases-merchandising .release-card-artist-text {
+  margin-top: 0.375rem;
+  color: rgba(214, 214, 214, 0.78);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0.03em;
+}
+#releases-merchandising .releases-feature__copy .release-card-artist-text {
+  margin-top: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  letter-spacing: 0.01em;
+}
+#releases-merchandising .release-card-copy > .music-listen-trigger {
+  margin-top: 0.75rem;
+}
+#releases-merchandising .releases-feature__copy > .music-listen-trigger {
+  margin-top: 1rem;
+}
+#releases-merchandising .releases-feature__summary {
+  max-width: 36em;
+  margin-top: 1.5rem;
+  color: rgba(214, 214, 214, 0.86);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+#releases-merchandising .release-card-formats {
+  margin: 1rem 0 0;
+  color: rgba(245, 245, 245, 0.66);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+#releases-merchandising .releases-feature__copy .release-card-formats {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+}
 #releases-merchandising [data-release-badges] {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.5rem;
-  margin: 0 0 0.5rem;
+  margin: 0.75rem 0 0;
 }
 #releases-merchandising [data-release-badges]:empty {
   display: none;
@@ -7783,44 +7625,59 @@ body.is-app-shell-overlay-open {
   background-color: var(--preorder-accent-surface);
   color: var(--preorder-accent-active);
 }
-#releases-merchandising .release-card-artwork-link {
-  display: block;
-  color: inherit;
+#releases-merchandising [data-release-shipping] {
+  margin-top: 0.5rem;
 }
-#releases-merchandising :is(.releases-latest-feature__artwork-link, .releases-latest-feature__upcoming-artwork-link) {
-  align-self: start;
-  aspect-ratio: 1;
+/* The price and the edition action share the last row; the price arrives with the offer read. */
+#releases-merchandising .release-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
 }
-#releases-merchandising :is(.releases-latest-feature__artwork, .releases-latest-feature__upcoming-artwork) {
-  height: 100%;
-  object-fit: contain;
+#releases-merchandising .releases-feature__copy .release-card-actions {
+  column-gap: 1rem;
 }
-#releases-merchandising
-  [data-release-role]:not([data-release-role='catalog'])
-  .release-card-artwork-link
-  .release-card-artwork {
-  transform: none;
-}
-#releases-merchandising .release-card-artwork-link .release-card-artwork {
-  transform: scale(1.026);
-  transition: none;
-}
-#releases-merchandising .release-card-title-link {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in oklch, var(--foreground) 45%, transparent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.12em;
-}
-#releases-merchandising .release-card-title-link:focus-visible {
+#releases-merchandising .release-card-price {
+  margin: 0;
   color: var(--foreground);
-  text-decoration-color: var(--foreground);
-  outline: 2px solid var(--foreground);
-  outline-offset: 4px;
+  font: 400 1.5rem/1.2 var(--font-display-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-#releases-merchandising .release-card-artwork-link:focus-visible {
+#releases-merchandising .releases-feature__copy .release-card-price {
+  min-width: 5.5rem;
+  font-size: 2.375rem;
+}
+/* Catalog Buy wears the Store card Buy chrome and record mark; the mark shows only while the action reads Buy. */
+#releases-merchandising [data-release-role='catalog'] [data-release-purchase].purchase-action {
+  gap: 0.375rem;
+  padding-inline: 0.875rem;
+}
+#releases-merchandising [data-release-purchase]:not(.purchase-action) .store-buy-icon {
+  display: none;
+}
+#releases-merchandising .releases-feature__terms {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.25rem;
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+/* Reserved until a pre-order is confirmed, so offers arriving never push the next row down. */
+#releases-merchandising .releases-feature__terms[inert] {
+  visibility: hidden;
+}
+#releases-merchandising .releases-feature__terms:focus-visible {
+  color: var(--foreground);
   outline: 2px solid var(--foreground);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 @media (hover: hover) {
   #releases-merchandising .release-card-artwork-link:hover:not(:focus-visible) {
@@ -7831,61 +7688,26 @@ body.is-app-shell-overlay-open {
     color: var(--foreground);
     text-decoration-color: var(--foreground);
   }
-}
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  #releases-merchandising .release-card-artwork-link .release-card-artwork {
-    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  #releases-merchandising .release-card-artwork-link:is(:hover, :focus-visible) .release-card-artwork {
-    transform: scale(1.048);
+  #releases-merchandising .releases-feature__terms:hover {
+    color: var(--foreground);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  #releases-merchandising .release-card-artwork-link .release-card-artwork {
-    transform: none;
-  }
+#releases-merchandising .releases-catalog-section {
+  padding-top: 2.5rem;
 }
-#releases-merchandising .releases-latest-feature__copy {
-  container-type: inline-size;
-}
-#releases-merchandising .releases-latest-feature__title {
-  font-size: clamp(2.35rem, 16cqi, 4.85rem);
-}
-#releases-merchandising .releases-latest-feature__upcoming-copy {
-  container-type: inline-size;
-}
-#releases-merchandising .releases-latest-feature__upcoming-title {
-  font-size: min(15cqi, clamp(1.9rem, 8vw, 2.55rem));
-  text-wrap: balance;
-}
-#releases-merchandising .releases-page-layout > :first-child {
-  padding-top: 0;
+#releases-merchandising .releases-catalog-grid {
+  gap: 2rem 1.5rem;
 }
 @media (width < 40rem) {
-  /* Phones read the supporting release as a list row: thumb, identity, action. The summary waits for the detail page.
-     The row wraps the copy below the thumb when enlarged text leaves it less than 10rem. */
-  #releases-merchandising .releases-latest-feature__upcoming {
-    display: flex;
-    flex-wrap: wrap;
+  /* Phones give a featured action the full width under its price; catalog actions fill the row beside it. */
+  #releases-merchandising .releases-feature__copy [data-release-purchase]:not(.release-detail-link) {
+    flex: 1 1 100%;
   }
-  #releases-merchandising .releases-latest-feature__upcoming-artwork-link {
-    flex: 0 0 6.5rem;
-  }
-  #releases-merchandising .releases-latest-feature__upcoming-copy {
-    flex: 1 1 10rem;
-  }
-  #releases-merchandising .releases-latest-feature__upcoming-summary {
-    display: none;
+  #releases-merchandising .releases-tile__copy [data-release-purchase]:not(.release-detail-link) {
+    flex: 1 1 auto;
   }
 }
 @media (width < 64rem) {
-  #releases-merchandising .releases-catalog-grid {
-    row-gap: 2rem;
-  }
-  #releases-merchandising .release-card-artwork-link .release-card-artwork {
-    object-fit: contain;
-    transform: none;
-  }
   #releases-merchandising :is(.release-card-title-link, .release-card-artist-link) {
     display: inline-flex;
     align-items: center;
@@ -7893,20 +7715,33 @@ body.is-app-shell-overlay-open {
     min-height: 2.75rem;
     overflow-wrap: anywhere;
   }
-  #releases-merchandising [data-release-actions] {
-    align-items: stretch;
+  /* The artist link's 44px row already spaces Listen. */
+  #releases-merchandising .release-card-copy > .music-listen-trigger {
+    margin-top: 0.25rem;
   }
-  #releases-merchandising [data-release-purchase] {
-    flex: 1 1 10rem;
-    min-width: 0;
-    min-height: 2.75rem;
-    white-space: normal;
-    text-align: center;
+}
+@media (width >= 40rem) {
+  #releases-merchandising .releases-feature {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+    padding-block: 2rem;
   }
-  #releases-merchandising [data-release-actions] .music-listen-trigger {
-    flex: 0 0 auto;
+  #releases-merchandising .releases-feature__copy {
+    padding-top: 0;
   }
-  #releases-merchandising .releases-latest-feature__upcoming-title {
-    font-size: min(17cqi, clamp(1.9rem, 8vw, 2.55rem));
+  #releases-merchandising .releases-catalog-section {
+    padding-top: 3rem;
+  }
+}
+@media (width >= 64rem) {
+  #releases-merchandising .releases-feature {
+    grid-template-columns: 29rem minmax(0, 1fr);
+    column-gap: 2.5rem;
+  }
+  #releases-merchandising .releases-catalog-section {
+    padding-top: 4rem;
+  }
+  #releases-merchandising .releases-catalog-grid {
+    row-gap: 2.5rem;
   }
 }

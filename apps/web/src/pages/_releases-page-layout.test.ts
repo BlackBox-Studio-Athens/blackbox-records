@@ -42,8 +42,15 @@ describe('Releases page layout', () => {
     expect(page.match(/<ReleaseCatalogPresentation\b/g)).toHaveLength(1);
     expect(page).toContain('variant="releases"');
     expect(page).toContain('data-release-grid');
-    expect(page).toContain('Our Releases');
     expect(page).not.toContain('Featured records');
+  });
+
+  it('names the remaining catalog only for assistive technology', () => {
+    const page = readFileSync(releasesPagePath, 'utf8');
+    expect(page).toMatch(/<h2 id="releases-catalog-heading" class="sr-only">\s*More releases\s*<\/h2>/);
+    expect(page).toContain('aria-labelledby="releases-catalog-heading"');
+    expect(page).not.toContain('Our Releases');
+    expect(page.match(/<h2\b/g)).toHaveLength(1);
   });
 
   it('uses native artwork and title links without stretching over metadata or repeating the detail action', () => {
@@ -57,26 +64,60 @@ describe('Releases page layout', () => {
       /<a class="release-card-title-link" href=\{detailPath\} data-release-detail data-astro-prefetch>/,
     );
     expect(card.match(/data-release-detail\b/g)).toHaveLength(1);
-    expect(card).toMatch(
-      /<\/ArtworkTag>\s*\{isReleaseShowcase && !isPrincipal && \(\s*<div class="release-card-meta-row pointer-events-none/s,
-    );
-    expect(card).toContain('class="pointer-events-auto"');
   });
 
-  it('shares the page frame and sets lead and supporting side by side with top-aligned copy', () => {
+  it('places Listen below the artist in every card, with nothing over Releases artwork', () => {
+    const card = readFileSync(releaseCardPath, 'utf8');
+    // Releases artwork carries no scrim or Listen overlay; the other variants keep theirs.
+    expect(card).not.toContain('data-release-artwork-scrim');
+    expect(card).not.toMatch(/isReleaseShowcase && !isPrincipal && \(\s*<div class="release-card-meta-row/s);
+    expect(card).toMatch(/\{!isReleaseShowcase && \(\s*<div class="release-card-meta-row/s);
+    expect(card).toMatch(
+      /release-card-artist-link[\s\S]*?\{isReleaseShowcase && \(\s*<>\s*\{embeddedPlayerData && \(\s*<MusicStreamingServiceListenTrigger[\s\S]*?context=\{`\$\{release\.data\.title\} by \$\{artistName\}`\}/,
+    );
+  });
+
+  it('stacks the featured records as twin rows whose covers match at every width', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
+    const card = readFileSync(releaseCardPath, 'utf8');
     const css = readFileSync(globalCssPath, 'utf8');
 
     expect(page).toContain('class="layout-container releases-page-showcase-container"');
+    expect(page).toContain('<div class="releases-page-layout" data-release-layout>');
+    expect(page).not.toContain('singleColumn');
     expect(css).not.toMatch(/\.releases-page-showcase-container[^{]*{[^}]*(?:max-width|padding-inline)\s*:/s);
-    expect(css).toMatch(
-      /@media \(min-width: 64rem\)[\s\S]*?\.releases-page-layout\s*{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/,
+    // Lead and supporting share one block; only the lead image keeps first-viewport priority.
+    expect(card).toMatch(/isPrincipal\s*\?\s*'releases-feature'\s*:/);
+    expect(card).not.toMatch(/featureClass|featurePartPrefix|releases-latest-feature|singleColumn/);
+    expect(css).not.toMatch(
+      /releases-latest-feature|releases-page-layout--single-column|repeat\(12, minmax\(0, 1fr\)\)/,
     );
-    expect(css).toMatch(/\.releases-latest-feature\s*{[^}]*grid-column:\s*1 \/ span 8/s);
-    expect(css).toMatch(/\.releases-latest-feature__upcoming\s*{[^}]*grid-column:\s*9 \/ span 4/s);
-    expect(css).toMatch(/\.releases-catalog-section\s*{[^}]*grid-column:\s*1 \/ -1/s);
-    expect(css).toMatch(/\.releases-page-layout--single-column > \*\s*{[^}]*grid-column:\s*1 \/ -1/s);
-    expect(css).not.toMatch(/\.releases-latest-feature__copy\s*{[^}]*justify-content:\s*center/s);
+    expect(css).toMatch(
+      /#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);[^}]*border-top:\s*1px solid #2b2b2b/s,
+    );
+    expect(css).toMatch(
+      /@media \(width >= 40rem\)\s*{\s*#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*column-gap:\s*1\.5rem/s,
+    );
+    expect(css).toMatch(
+      /@media \(width >= 64rem\)\s*{\s*#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*29rem minmax\(0, 1fr\)/s,
+    );
+    // The catalog shares the featured gap, so from 40rem its tiles equal the featured halves.
+    expect(page).toContain('class="releases-catalog-grid grid sm:grid-cols-2 lg:grid-cols-3"');
+    expect(css).toMatch(/#releases-merchandising \.releases-catalog-grid\s*{[^}]*gap:\s*2rem 1\.5rem/s);
+    expect(css).toMatch(
+      /#releases-merchandising \.releases-cover__image\s*{[^}]*object-fit:\s*contain;[^}]*transform:\s*none/s,
+    );
+  });
+
+  it('shows the price and pre-order terms only after the offer read', () => {
+    const card = readFileSync(releaseCardPath, 'utf8');
+    expect(card).toContain('<p class="release-card-price" data-release-price hidden></p>');
+    expect(card).toMatch(
+      /\{isPrincipal && editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert/s,
+    );
+    expect(card).toContain('<span data-release-purchase-label>{neutralPresentation.action}</span>');
+    expect(card).toContain('aria-label={`${neutralPresentation.action}, ${release.data.title}`}');
+    expect(card).toMatch(/\{!isPrincipal && <StoreBuyIcon formatGroup=\{buyIconFormatGroup\} \/>\}/);
   });
 
   it('links each release artist name to the artist page', () => {
@@ -94,7 +135,7 @@ describe('Releases page layout', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
     const css = readFileSync(globalCssPath, 'utf8');
 
-    expect(page).toMatch(/class="releases-catalog-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3"/);
+    expect(page).toMatch(/class="releases-catalog-grid grid sm:grid-cols-2 lg:grid-cols-3"/);
     expect(css).toMatch(/\.releases-page-layout\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*gap:\s*0/s);
     expect(css).toMatch(/\.releases-page-layout > \*\s*{[^}]*min-width:\s*0/s);
     expect(css).not.toMatch(/\.releases-(?:page-layout|latest-feature|catalog-section)[^{]*{[^}]*\border\s*:/s);

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { selectReleaseMerchandisingEntries } from './ReleaseCatalogPresentation';
-import { releasePresentation, type ReleasePresentationEntry } from './release-presentation';
+import {
+  neutralReleasePresentation,
+  releasePresentation,
+  renderReleasePresentation,
+  type ReleasePresentationEntry,
+} from './release-presentation';
 type Listing = NonNullable<Parameters<typeof releasePresentation>[1]>;
 
 const today = new Date('2026-10-05T12:00:00Z');
@@ -249,4 +254,76 @@ describe('Releases physical merchandising', () => {
       ).toContain(`${medium} Sold Out`);
     },
   );
+  it('shows the Store card price for any ready record and none without one', () => {
+    const lotus = entries[0]!;
+    const offer = (availabilityState: Listing['availabilityState']) => ({
+      ...record('lotus-vinyl'),
+      availabilityState,
+    });
+    expect(releasePresentation(lotus, records[0], today)).toMatchObject({ state: 'preorder', price: '€28.00' });
+    expect(releasePresentation(lotus, record('lotus-vinyl'), today)).toMatchObject({
+      state: 'available',
+      price: '€28.00',
+    });
+    for (const state of ['coming_soon', 'repressing', 'sold_out'] as const)
+      expect(releasePresentation(lotus, offer(state), today)).toMatchObject({ state, price: '€28.00' });
+    // A paused offer reads like the Store card: the price alone, with only the digital badge.
+    expect(releasePresentation(lotus, offer('unavailable'), today)).toMatchObject({
+      state: 'unknown',
+      badges: ['Out 16 October 2026'],
+      price: '€28.00',
+    });
+    for (const missing of [
+      undefined,
+      { ...record('lotus-vinyl'), presentationState: 'unavailable' } as Listing,
+      record('another-vinyl'),
+    ])
+      expect(releasePresentation(lotus, missing, today).price).toBe('');
+    expect(releasePresentation(entries[3]!, undefined, today).price).toBe('');
+    expect(neutralReleasePresentation(lotus, today).price).toBe('');
+  });
+  it('writes the label, accessible name, price and pre-order terms without dropping the record mark', () => {
+    const label = { textContent: 'Vinyl edition' };
+    const attributes = new Map<string, string>();
+    const action = {
+      className: 'release-detail-link',
+      textContent: 'record mark and label',
+      querySelector: (selector: string) => (selector === '[data-release-purchase-label]' ? label : null),
+      setAttribute: (name: string, value: string) => attributes.set(name, value),
+    };
+    const price = { textContent: '', hidden: true };
+    const terms = { inert: true };
+    const fields: Record<string, unknown> = {
+      '[data-release-purchase]': action,
+      '[data-release-price]': price,
+      '[data-release-terms]': terms,
+      '[data-release-shipping]': { textContent: '', hidden: true },
+      '[data-release-badges]': { replaceChildren: () => {} },
+    };
+    const card = {
+      dataset: { releaseName: 'LOTUS' },
+      ownerDocument: { createElement: () => ({ textContent: '', className: '', dataset: {} }) },
+      querySelector: (selector: string) => fields[selector] ?? null,
+    } as unknown as HTMLElement;
+    const lotus = entries[0]!;
+
+    renderReleasePresentation(card, lotus, releasePresentation(lotus, records[0], today), 'preorder-action');
+    expect(label.textContent).toBe('Pre-order vinyl');
+    expect(action.textContent).toBe('record mark and label');
+    expect(action.className).toBe('preorder-action');
+    expect(attributes.get('aria-label')).toBe('Pre-order vinyl, LOTUS');
+    expect(price).toEqual({ textContent: '€28.00', hidden: false });
+    expect(terms.inert).toBe(false);
+
+    renderReleasePresentation(card, lotus, releasePresentation(lotus, record('lotus-vinyl'), today), 'purchase-action');
+    expect(attributes.get('aria-label')).toBe('Buy vinyl, LOTUS');
+    expect(terms.inert).toBe(true);
+
+    renderReleasePresentation(card, lotus, neutralReleasePresentation(lotus, today));
+    expect(label.textContent).toBe('Vinyl edition');
+    expect(action.className).toBe('release-detail-link');
+    expect(attributes.get('aria-label')).toBe('Vinyl edition, LOTUS');
+    expect(price).toEqual({ textContent: '', hidden: true });
+    expect(terms.inert).toBe(true);
+  });
 });

@@ -69,10 +69,10 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
     'Pre-order vinyl',
   );
   expect(await roles()).toEqual(serverRoles);
-  for (const width of [2120, 1440, 1024, 320, 390, 430]) {
+  for (const width of [2120, 1440, 1024, 768, 320, 390, 430]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.evaluate(() => document.fonts.ready);
-    const artwork = await page.locator('[data-release-role]:not([data-release-role="catalog"])').evaluateAll((cards) =>
+    const artwork = await page.locator('[data-release-role]').evaluateAll((cards) =>
       cards.map((card) => {
         const frame = card.querySelector('.release-card-image-shell')!.getBoundingClientRect();
         const image = card.querySelector('img')!;
@@ -89,6 +89,8 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
       expect(image.fit).toBe('contain');
       expect(image.transform).toBe('none');
     }
+    // The two featured records are twins: their covers match at every width.
+    expect(Math.abs(artwork[0]!.width - artwork[1]!.width)).toBeLessThan(1);
     await expectNoHorizontalOverflow(page);
     if (width === 2120 || width < 768)
       await page
@@ -160,8 +162,13 @@ for (const [label, releaseDate, digitalStatus] of [
     await expect(details).toHaveText('Vinyl edition');
     await expect(details).toHaveClass('release-detail-link');
     await expect(details).toHaveCSS('text-transform', 'uppercase');
+    await expect(details).toHaveAccessibleName('Vinyl edition, Anarchotribal');
+    // A Coming Soon offer shows the Store card's price beside the edition link, without pre-order terms.
+    await expect(announced.locator('[data-release-price]')).toHaveText('€28.00');
+    await expect(announced.locator('[data-release-terms]')).toHaveAttribute('inert', '');
     await expect(page.locator('[data-release-id]')).toHaveCount(3);
-    await expect(page.getByRole('heading', { name: 'Our Releases', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'More releases', exact: true })).toHaveCount(1);
+    await expect(page.getByText('Our Releases', { exact: true })).toHaveCount(0);
     await expect(announced.locator('.preorder-action, .purchase-action')).toHaveCount(0);
 
     if (label === 'released') {
@@ -191,9 +198,10 @@ for (const [label, releaseDate, digitalStatus] of [
     );
     await page.goBack();
     await failedRead;
-    // Without an offer there is no physical badge; the digital badge stays.
+    // Without an offer there is no physical badge and no price; the digital badge stays.
     await expect(announced.locator('[data-release-badges]')).toHaveText(digitalStatus);
     await expect(announced.locator('[data-release-purchase]')).toHaveText('Vinyl edition');
+    await expect(announced.locator('[data-release-price]')).toBeHidden();
     expect(await sentinelIntact(page)).toBe(true);
 
     failed = false;
@@ -226,6 +234,8 @@ for (const width of [320, 360, 390, 430, 768]) {
     await expect(page.locator('[data-release-role="supporting"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
     const contentWidth = await page.evaluate(() => document.documentElement.getBoundingClientRect().width);
+    await expect(page.locator('[data-release-role="lead"] [data-release-price]')).toHaveText('€28.00');
+    const gutter = width < 640 ? 16 : 24;
     const measurements = await page.locator('[data-release-role]').evaluateAll((cards) =>
       cards.map((card) => {
         const artwork = card.querySelector('.release-card-image-shell')!.getBoundingClientRect();
@@ -236,7 +246,8 @@ for (const width of [320, 360, 390, 430, 768]) {
           artwork: { x: artwork.x, y: artwork.y, width: artwork.width, right: artwork.right, bottom: artwork.bottom },
           copy: { x: copy.x, y: copy.y },
           transform: getComputedStyle(image).transform,
-          actions: [...card.querySelectorAll('[data-release-actions] > *, .music-listen-trigger')].map((action) => {
+          // Controls only: the price beside them is inert text.
+          actions: [...card.querySelectorAll('[data-release-actions] a, .music-listen-trigger')].map((action) => {
             const rect = action.getBoundingClientRect();
             return { x: rect.x, right: rect.right, height: rect.height };
           }),
@@ -246,48 +257,52 @@ for (const width of [320, 360, 390, 430, 768]) {
     for (const card of measurements) {
       expect(card.transform).toBe('none');
       for (const action of card.actions) {
-        expect(action.x).toBeGreaterThanOrEqual(16);
+        expect(action.x).toBeGreaterThanOrEqual(gutter);
         // Firefox rounds separate DOMRects differently; allow less than a hundredth of a CSS pixel.
-        expect(action.right).toBeLessThanOrEqual(contentWidth - 16 + 0.01);
+        expect(action.right).toBeLessThanOrEqual(contentWidth - gutter + 0.01);
         expect(action.height).toBeGreaterThanOrEqual(44);
       }
+      expect(card.artwork.x).toBe(gutter);
       if (width < 640) {
-        expect(card.artwork.x).toBe(16);
-        if (card.role === 'supporting') {
-          // Phones read the supporting release as a list row: a 6.5rem cover beside its identity and actions.
-          expect(card.artwork.width).toBe(104);
-          expect(card.copy.x).toBe(card.artwork.right + 16);
-          expect(card.copy.y).toBe(card.artwork.y);
-        } else {
-          expect(card.artwork.width).toBe(contentWidth - 32);
-          expect(card.copy.x).toBe(16);
-          expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
-        }
+        // Phones stack every release the same way: a full-width cover, then its copy.
+        expect(card.artwork.width).toBe(contentWidth - 32);
+        expect(card.copy.x).toBe(16);
+        expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+      } else if (card.role !== 'catalog') {
+        // From 40rem each featured row splits into equal halves with a 1.5rem gap.
+        expect(card.copy.x).toBeCloseTo(card.artwork.right + 24, 1);
+        expect(card.copy.y).toBeCloseTo(card.artwork.y, 1);
       }
     }
+    // Catalog tiles match the featured covers on phones and tablets.
+    const [lead, , catalog] = measurements;
+    expect(Math.abs(catalog!.artwork.width - lead!.artwork.width)).toBeLessThan(1);
     await expectNoHorizontalOverflow(page);
   });
 }
 
 for (const width of [1024, 1440]) {
-  test(`Releases top-aligns the lead and supporting release in one row at ${width}px`, async ({ page }) => {
+  test(`Releases stacks the featured records as twin rows at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('releases/');
     await waitForShell(page);
     await page.evaluate(() => document.fonts.ready);
-    const [lead, supporting] = await page
-      .locator('[data-release-role="lead"], [data-release-role="supporting"]')
-      .evaluateAll((cards) =>
-        cards.map((card) => ({
-          artwork: card.querySelector('.release-card-image-shell')!.getBoundingClientRect().toJSON(),
-          copy: card.querySelector('.release-card-copy')!.getBoundingClientRect().toJSON(),
-        })),
-      );
-    // Copy starts at the cover's top edge instead of centring in a row stretched by its neighbour.
-    expect(Math.abs(lead!.copy.top - lead!.artwork.top)).toBeLessThan(1);
-    expect(Math.abs(supporting!.artwork.top - lead!.artwork.top)).toBeLessThan(1);
-    expect(supporting!.artwork.left).toBeGreaterThan(lead!.copy.right);
-    expect(supporting!.artwork.width).toBeLessThan(lead!.artwork.width);
+    const [lead, supporting, catalog] = await page.locator('[data-release-role]').evaluateAll((cards) =>
+      cards.map((card) => ({
+        artwork: card.querySelector('.release-card-image-shell')!.getBoundingClientRect().toJSON(),
+        copy: card.querySelector('.release-card-copy')!.getBoundingClientRect().toJSON(),
+      })),
+    );
+    for (const row of [lead!, supporting!]) {
+      // A 29rem cover beside top-aligned copy.
+      expect(row.artwork.width).toBeCloseTo(464, 0);
+      expect(Math.abs(row.copy.top - row.artwork.top)).toBeLessThan(1);
+      expect(row.copy.left).toBeCloseTo(row.artwork.right + 40, 0);
+    }
+    expect(supporting!.artwork.left).toBeCloseTo(lead!.artwork.left, 1);
+    expect(supporting!.artwork.top).toBeGreaterThan(lead!.artwork.bottom);
+    expect(catalog!.artwork.top).toBeGreaterThan(supporting!.artwork.bottom);
+    expect(catalog!.artwork.width).toBeLessThan(lead!.artwork.width);
   });
 }
 
@@ -313,9 +328,12 @@ for (const width of [390, 1280]) {
     await expect(status).toHaveCSS('font-family', /Geist Mono/);
     await expect(status).toHaveCSS('text-transform', 'uppercase');
     await expect(status).toHaveCSS('border-width', '0px');
+    // Status sits with the buying facts: after the formats, before the price and action.
     const badges = await lead.locator('[data-release-badges]').boundingBox();
-    const date = await lead.locator('.release-card-year-text').boundingBox();
-    expect(date!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
+    const formats = await lead.locator('.release-card-formats').boundingBox();
+    const actions = await lead.locator('[data-release-actions]').boundingBox();
+    expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
+    expect(actions!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
     expect(await sentinelIntact(page)).toBe(true);
     await expectNoHorizontalOverflow(page);
   });
@@ -349,21 +367,36 @@ for (const width of [320, 390, 1280]) {
         .evaluateAll((cards) => cards.map((card) => card.getAttribute('data-release-id'))),
     ).toEqual(['disintegration', 'anarchotribal', 'caregivers']);
     expect(offerReads).toBe(1);
-    await expect(lead.getByRole('link', { name: 'Pre-order vinyl', exact: true })).toHaveClass(/preorder-action/);
+    const preorderAction = lead.getByRole('link', { name: 'Pre-order vinyl, Disintegration', exact: true });
+    await expect(preorderAction).toHaveClass(/preorder-action/);
+    await expect(preorderAction).toHaveText('Pre-order vinyl');
     await expect(lead.locator('.preorder-badge')).toHaveText('Pre-order · ships around October 2026');
     await expect(lead.locator('[data-release-badges]')).toContainText('Digital out now');
+    // The price and the pre-order terms come from the same offer read, beside the action.
+    await expect(lead.locator('[data-release-price]')).toHaveText('€28.00');
+    await expect(lead.locator('[data-release-price]')).toHaveCSS('font-family', /Bebas Neue/);
+    await expect(lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true })).toBeVisible();
     const status = lead.locator('[data-release-badges] .store-item-card__release-status');
     await expect(status).toHaveCSS('font-family', /Geist Mono/);
     await expect(status).toHaveCSS('font-weight', '700');
     await expect(status).toHaveCSS('text-transform', 'uppercase');
     await expect(status).toHaveCSS('border-width', '0px');
-    const [badges, date] = await Promise.all([
+    const [badges, formats] = await Promise.all([
       lead.locator('[data-release-badges]').boundingBox(),
-      lead.locator('.release-card-year-text').boundingBox(),
+      lead.locator('.release-card-formats').boundingBox(),
     ]);
-    expect(date!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
+    expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
+    // Catalog Buy wears the Store card chrome and record mark, so the featured Pre-order stays the filled primary.
+    const catalogBuy = page
+      .locator('[data-release-role="catalog"]')
+      .getByRole('link', { name: 'Buy vinyl, Caregivers', exact: true });
+    await expect(catalogBuy).toHaveClass(/purchase-action/);
+    await expect(catalogBuy).toHaveCSS('border-top-color', 'rgba(245, 245, 245, 0.48)');
+    await expect(catalogBuy.locator('.store-buy-icon')).toBeVisible();
+    await expect(page.locator('[data-release-role="catalog"] [data-release-price]')).toHaveText('€28.00');
     await expect(page.getByText('Featured records', { exact: true })).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Our Releases', exact: true })).toBeVisible();
+    await expect(page.getByText('Our Releases', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'More releases', exact: true })).toHaveCount(1);
     await page.evaluate(() => document.fonts.ready);
     expect(
       await page
@@ -389,7 +422,7 @@ for (const width of [320, 390, 1280]) {
         ),
       ),
     });
-    const button = lead.getByRole('link', { name: 'Pre-order vinyl', exact: true });
+    const button = preorderAction;
     // Firefox snaps fractional grid tracks; allow less than a hundredth of a CSS pixel.
     expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44 - 0.01);
     await page.mouse.move(0, 0);
@@ -467,6 +500,7 @@ test('Releases changes buying actions while retaining placement on a fresh offer
   await expect(page.locator('[data-release-id]')).toHaveCount(3);
   await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText('Vinyl edition');
   await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+  await expect(page.locator('[data-release-price]:visible')).toHaveCount(0);
 });
 
 test('Releases keeps native destinations distinct from inert copy and status', async ({ page }) => {
@@ -497,8 +531,9 @@ test('Releases keeps native destinations distinct from inert copy and status', a
       for (const selector of [
         '[data-release-summary]',
         '.release-card-year-text',
-        '.releases-latest-feature__upcoming-formats',
+        '.release-card-formats',
         '[data-release-badges]',
+        '[data-release-price]',
       ]) {
         const copy = card.locator(selector);
         if (await copy.isVisible()) {
@@ -516,8 +551,9 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   const artwork = lead.locator('.release-card-artwork-link');
   const title = lead.locator('.release-card-title-link[data-release-detail]');
   const artist = lead.getByRole('link', { name: 'Afterwise', exact: true });
-  const purchase = lead.getByRole('link', { name: 'Pre-order vinyl', exact: true });
-  const listen = lead.getByRole('button', { name: 'Listen', exact: true });
+  // Names start with the visible label and add the release, so repeated actions stay distinct.
+  const purchase = lead.getByRole('link', { name: 'Pre-order vinyl, Disintegration', exact: true });
+  const listen = lead.getByRole('button', { name: /^Listen ?, Disintegration by Afterwise$/ });
   const image = artwork.locator('img');
   await page.mouse.move(0, 0);
   await image.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
@@ -544,7 +580,8 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await expect(title).toHaveAccessibleName(/disintegration/i);
   await expect(lead.locator('[data-release-actions]').getByRole('link')).toHaveCount(1);
   await title.focus();
-  for (const control of [title, artist, purchase, listen]) {
+  // Listen sits with the identity, before the description and the buying facts.
+  for (const control of [title, artist, listen, purchase]) {
     await expect(control).toBeFocused();
     expect(await control.evaluate((element) => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThan(0);
     await page.keyboard.press('Tab');
@@ -569,7 +606,7 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await plantSentinel(page);
   await listen.click();
   await expect(page.getByRole('dialog', { name: 'Music player' })).toBeVisible();
-  await expect(lead.getByRole('button', { name: 'In player', exact: true })).toBeDisabled();
+  await expect(lead.getByRole('button', { name: /^In player ?, Disintegration by Afterwise$/ })).toBeDisabled();
   expect(await sentinelIntact(page)).toBe(true);
 });
 
@@ -645,6 +682,8 @@ for (const result of ['unavailable', 'failed'] as const) {
     if (result === 'failed') await expect(badges).not.toContainText('Vinyl');
     else await expect(badges.locator('[data-availability-state="sold_out"]')).toHaveText('Vinyl Sold Out');
     await expect(page.locator('.purchase-action, .preorder-action, .preorder-badge')).toHaveCount(0);
+    await expect(page.locator('[data-release-terms]:not([inert])')).toHaveCount(0);
+    if (result === 'failed') await expect(page.locator('[data-release-price]:visible')).toHaveCount(0);
     expect(await sentinelIntact(page)).toBe(true);
   });
 }
