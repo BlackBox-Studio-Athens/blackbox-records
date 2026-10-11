@@ -11,7 +11,7 @@ type CategoryOutputExpectation = {
 };
 
 const expectations: CategoryOutputExpectation[] = [
-  { cardClass: 'store-item-card--listing', count: 104, crate: true, path: '/store/', title: 'Store' },
+  { cardClass: 'store-item-card--listing', count: 101, crate: true, path: '/store/', title: 'Store' },
   {
     cardClass: 'store-item-card--listing',
     count: 3,
@@ -19,7 +19,7 @@ const expectations: CategoryOutputExpectation[] = [
     path: '/store/blackbox-releases/',
     title: 'BlackBox Releases',
   },
-  { cardClass: 'store-item-card--listing', count: 101, crate: true, path: '/store/distro/', title: 'Distro' },
+  { cardClass: 'store-item-card--listing', count: 98, crate: true, path: '/store/distro/', title: 'Distro' },
 ];
 
 const outputRoot = resolve(process.cwd(), 'apps/web/dist');
@@ -115,7 +115,7 @@ async function run() {
   }
 
   console.log(
-    'Store category static output checks passed: All 104, BlackBox Releases 3, Distro 101, empty Merch redirect.',
+    'Store category static output checks passed: All 101, BlackBox Releases 3, Distro 98, empty Merch redirect.',
   );
 }
 

@@ -84,7 +84,7 @@
 
 ## 7. Scripts, end-to-end checks and docs
 
-- [ ] 7.1 Update `scripts/check-store-category-output.ts`: the switch is disabled on the server, there is no Crate state, and Merch has no controls. Verify `pnpm store:categories:check`.
+- [x] 7.1 Update `scripts/check-store-category-output.ts`: the switch is disabled on the server, there is no Crate state, and Merch has no controls. Verify `pnpm store:categories:check`.
 - [x] 7.2 Update the performance script:
   - In `scripts/measure-runtime-performance.ts`, make `prepareTraversal` a Grid no-op, delete the disclosure run and its traversal flags, and add `crate-wheel` and `crate-touch` profiles on Distro.
   - In `scripts/runtime-performance-helpers.ts`, delete `assertTraversalSetup` and its test.

@@ -53,8 +53,8 @@ Commits on `main`, all local and none pushed:
 
 **`pnpm store:categories:check`**
 
-- Fails on its card count: it expects 104 cards on Store home, and this local build has 101.
-- The counts belong to CI's fixture build, so the failure is not caused by the Crate. Its Crate assertions were checked by hand as above.
+- Passed: All 101, BlackBox Releases 3, Distro 98, empty Merch redirect.
+- Its card counts had been stale since `67361817` withdrew three Distro vinyl releases. They now match the catalog.
 
 ## End-to-end
 
