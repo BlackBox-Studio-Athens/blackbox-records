@@ -113,6 +113,14 @@ Measured with `pnpm preview` serving the build, using `crate-wheel` and `crate-t
 
 **What remains in a wheel flip.** Each flip lays out the whole document, 1,256 objects, because the item in hand, the counter, the rail and the status all change in normal flow. Size containment on the panel was tried and reverted: the counter and rail text still made the document the layout root. **The task's "no long task of 50 ms or more at 4× CPU" is not met.** Unthrottled, there are no long tasks.
 
+**Lighter flips.** These trade some fidelity for speed:
+
+- Within a bin, the panel (item in hand, counter, rail, status) now follows 180 ms after the hand pauses, so a run of flips redraws it once.
+- Fewer sleeves are drawn behind the hand: desktop vinyl 3 (was 4), desktop CD 4 (was 6), phone CD 3 (was 5).
+- Opening and walking between bins still redraw the panel at once.
+
+Result: a frame that turns a sleeve no longer lays out the page. One wheel CPU profile at 4× CPU, 24 notches 160 ms apart, recorded no long tasks. `e2e/store-crate.spec.ts` passed 11, with 1 skip as designed. The full `crate-wheel` profiles were not rerun.
+
 **Before/after comparison** (`3334e16a` against `061eb087`, both production builds served by `astro preview`, routes `store` and `store/distro`). Medians are in `.codex-artifacts/runtime-performance/crate-compare/summary.txt`.
 
 | Profile                          | Before                 | After                  |
@@ -131,6 +139,6 @@ Measured with `pnpm preview` serving the build, using `crate-wheel` and `crate-t
 ## Remaining gaps
 
 - **Tape rack:** dormant, because Distro has 4 tapes. It is covered by unit tests only, with no browser check.
-- **Wheel stress at 4× CPU:** long tasks over 50 ms, from a whole-document layout and paint per flip. A follow-up would take the counter, rail and status out of normal flow, or give them fixed-size containment, along with the panel.
+- **Wheel stress at 4× CPU:** the deferred panel removed the long tasks in one profile. The three-run `crate-wheel` profile has not been repeated since that change.
 - **Not established:** UAT and PRD behaviour, real-device touch feel, Safari trackpad wheel and Back history limits.
 - **Workflow:** `simplify-main-site-modules` sections 9 and 12 should run after this change. `replace-sveltia-with-emdash-operations` keeps an outdated Coverflow scenario in its module-boundaries delta.

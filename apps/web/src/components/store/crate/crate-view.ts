@@ -123,7 +123,7 @@ const DESKTOP: StageLayout = {
       lift: 24,
       pileLift: 5,
       dim: 0.15,
-      peek: 4,
+      peek: 3,
       dragScale: 200,
       fall: 0.16,
       tempo: 1,
@@ -149,7 +149,7 @@ const DESKTOP: StageLayout = {
       lift: 20,
       pileLift: 5,
       dim: 0.12,
-      peek: 6,
+      peek: 4,
       dragScale: 180,
       fall: 0.16,
       tempo: 0.85,
@@ -227,7 +227,7 @@ const PHONE: StageLayout = {
       lift: 16,
       pileLift: 0,
       dim: 0.13,
-      peek: 5,
+      peek: 3,
       dragScale: 150,
       fall: 0.2,
       tempo: 0.85,
@@ -293,6 +293,8 @@ type BinView = {
 };
 
 const px = (n: number) => `${n}px`;
+/** Longer than a wheel notch's repeat gap, so a run of flips redraws the panel once. */
+const PANEL_DELAY_MS = 180;
 
 /**
  * Rewrites an element's text in place. Replacing its text node is a child-list change, which makes Chromium re-check
@@ -361,6 +363,7 @@ export function mountStoreCrate(
   let built = new Map<Bin, BinView>();
   let space: HTMLElement | null = null;
   let timer = 0;
+  let panelTimer = 0;
   let flying: Animation[] = [];
   let taught = false;
   let railBin: Bin | null = null;
@@ -885,7 +888,11 @@ export function mountStoreCrate(
       }
       if (focused || walked) renderBin(view, focused);
     });
-    if (moved) renderPanel();
+    // The panel sits in the page's flow, so redrawing it lays out the whole page. While digging within a bin it
+    // follows once the hand pauses; the frame that turns a sleeve then only moves layers on the compositor.
+    clearTimeout(panelTimer);
+    if (walked) renderPanel();
+    else if (moved) panelTimer = window.setTimeout(renderPanel, PANEL_DELAY_MS);
     // On Distro the format selection always equals the bin, so its format links highlight where you stand.
     if (walked && host.filterable) {
       const binFormat = cat.items[cat.shelves[at][0]!]!.formatKey;
@@ -1284,6 +1291,7 @@ export function mountStoreCrate(
       // Never write history here: the shell has already moved to the next page's entry.
       clearTimeout(recordTimer);
       clearTimeout(timer);
+      clearTimeout(panelTimer);
       land();
       finger.dispose();
       disposers.forEach((dispose) => dispose());
