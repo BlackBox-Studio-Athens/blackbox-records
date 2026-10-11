@@ -11,8 +11,8 @@ bio: >-
 profile_links:
   - label: Bandcamp
     url: https://afterwise.bandcamp.com/
-  - label: Tidal
-    url: https://tidal.com/artist/75705460/u
+  - label: Instagram
+    url: https://www.instagram.com/afterwise.athens/
 videos:
   - title: Equilibrium - Live at Fuzz Club Athens
     youtube_video_id: Cl7rWCTGEqY

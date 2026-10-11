@@ -13,6 +13,6 @@ bio: >
 profile_links:
   - label: Bandcamp
     url: https://ouranopithecus.bandcamp.com/
-  - label: Tidal
-    url: https://tidal.com/artist/79935313
+  - label: Instagram
+    url: https://www.instagram.com/ouranopithecus/
 ---
