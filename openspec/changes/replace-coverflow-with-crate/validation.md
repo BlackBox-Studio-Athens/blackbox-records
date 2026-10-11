@@ -16,10 +16,11 @@ Commits on `main`, all local and none pushed:
 | `dd43467c` | e2e coverage; sticky bar; a press during a flight lands it |
 | `b536f73a` | Flip restyle fix; Crate performance profiles               |
 | `c97fb060` | Docs                                                       |
+| `061eb087` | Each sleeve image is assigned once                         |
 
 `f7b019ca` adds the logo export, its ESLint ignore and the `eqeqeq` fix.
 
-**Final `pnpm validate`:** passed, `mode: local`, on a clean tree at `76d9acfa`. The before and after fingerprints match (`e3b0c442…`, 0 changed files). Summary: `.codex-artifacts/validation/2026-10-11T02-28-45-946Z-40648-af2d7a/summary.json`. Nx flagged `web-pages:test` as flaky on this run, and it passed. Two earlier runs failed only on `cms-runtime:test` workerd timeouts while other sessions loaded the machine. This change does not touch that module.
+**Final `pnpm validate`:** passed, `mode: local`, at `061eb087`, with this note as the only uncommitted file. The before and after fingerprints match (`6cd1714c…`, 1 changed file). Summary: `.codex-artifacts/validation/2026-10-11T03-16-03-829Z-2756-ad73fd/summary.json`. An earlier pass on a clean tree at `76d9acfa` is at `2026-10-11T02-28-45-946Z-40648-af2d7a/`. Two earlier runs failed only on `cms-runtime:test` workerd timeouts while other sessions loaded the machine. This change does not touch that module.
 
 ## Acceptance rows
 
@@ -104,11 +105,32 @@ Measured with `pnpm preview` serving the build, using `crate-wheel` and `crate-t
 
 **Evidence:** `.codex-artifacts/runtime-performance/crate-contain/`, with the earlier runs in `crate-settext/` and `crate-<sha>/`.
 
-**Not run:** the before/after `desktop-load`, `mobile-load`, `wide-scroll` and `mobile-scroll` comparison. It needs a baseline build of the pre-change commit, and a separate worktree requires the user's request. LCP, CLS and scroll on the Grid are therefore not compared.
+**Sleeve image fix (`061eb087`).** A CPU profile showed `load()` re-pointing every drawn sleeve's image on every render. It marked a sleeve with an empty `data-loaded` and then tested that for truthiness. Eight wheel flips made about 600 `src`/`srcset`/`sizes` assignments; they now make 24.
+
+- `crate-wheel` at 4× CPU, 3 runs (`crate-loadguard/`): frame p95 33 ms in runs 1 and 2, against 50–83 ms before the fix.
+- Run 3 (p95 100 ms, longest task 246 ms) ran while other sessions loaded the machine.
+- Long tasks still reach 85–141 ms in the clean runs.
+
+**What remains in a wheel flip.** Each flip lays out the whole document, 1,256 objects, because the item in hand, the counter, the rail and the status all change in normal flow. Size containment on the panel was tried and reverted: the counter and rail text still made the document the layout root. **The task's "no long task of 50 ms or more at 4× CPU" is not met.** Unthrottled, there are no long tasks.
+
+**Before/after comparison** (`3334e16a` against `061eb087`, both production builds served by `astro preview`, routes `store` and `store/distro`). Medians are in `.codex-artifacts/runtime-performance/crate-compare/summary.txt`.
+
+| Profile                          | Before                 | After                  |
+| -------------------------------- | ---------------------- | ---------------------- |
+| `desktop-load` LCP, Store/Distro | 244 / 256 ms           | 244 / 252 ms           |
+| `desktop-load` CLS               | 0.0001                 | 0.0000                 |
+| `mobile-load` LCP, Store/Distro  | 1748 / 1680 ms         | 1616 / 1672 ms         |
+| Transfer, desktop Store/Distro   | 754 / 732 KB           | 751 / 729 KB           |
+| `wide-scroll` frame p95          | Store 17, Distro 33 ms | Store 34, Distro 17 ms |
+| `mobile-scroll` frame p95        | 17 ms on both          | 17 ms on both          |
+
+- Store `wide-scroll` was repeated twice per arm (`recheck-1/`, `recheck-2/`). The median frame p95 was 17 ms for both, first pass and repeat. Each arm had one outlier run, so the single slower first sample was noise.
+- Load is unchanged or slightly better. Scrolling the Grid shows no regression within this machine's noise.
+- Other sessions shared the machine during every run, so differences under about 30 ms of frame time are not meaningful.
 
 ## Remaining gaps
 
 - **Tape rack:** dormant, because Distro has 4 tapes. It is covered by unit tests only, with no browser check.
-- **Wheel stress at 4× CPU:** long tasks over 50 ms. Possible follow-ups are coalescing rapid notches into one thumb, and fewer transition restarts per flip.
+- **Wheel stress at 4× CPU:** long tasks over 50 ms, from a whole-document layout and paint per flip. A follow-up would take the counter, rail and status out of normal flow, or give them fixed-size containment, along with the panel.
 - **Not established:** UAT and PRD behaviour, real-device touch feel, Safari trackpad wheel and Back history limits.
 - **Workflow:** `simplify-main-site-modules` sections 9 and 12 should run after this change. `replace-sveltia-with-emdash-operations` keeps an outdated Coverflow scenario in its module-boundaries delta.
