@@ -22,3 +22,9 @@
 - [x] 4.2 Edit ALONE's photographed package using GPT Image, removing the background lettering; record the source, prompt and output hash.
 - [x] 4.3 Refresh Free-tier usage, publish each exact image-only review through the existing item flow, and retain former primary photos first in the galleries.
 - [x] 4.4 Verify both loaded listing images and detail galleries, all five ETHOS photo hashes and live publication receipts; update evidence without rerunning repository validation, as instructed by the user.
+
+## 5. User-added The Vagina Lips cassette background
+
+- [x] 5.1 Inspect the current PRD photograph and draft, and prepare a background-only image edit using the BlackBox mockup background as reference.
+- [x] 5.2 Publish the exact image-only PRD review, retaining the original photograph first in the gallery and preserving all other fields.
+- [x] 5.3 Verify the live primary and gallery, record evidence, validate the retained source changes and commit locally.

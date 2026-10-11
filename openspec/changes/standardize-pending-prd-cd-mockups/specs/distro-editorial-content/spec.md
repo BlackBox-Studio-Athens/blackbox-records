@@ -2,9 +2,7 @@
 
 ### Requirement: Approved primary artwork mockups retain real product evidence
 
-An explicitly approved Distro CD artwork mockup SHALL use the established uniform Store presentation, identify itself as a mockup in alt text, and retain accepted photographs of the stocked physical edition in its gallery. A mockup SHALL NOT count as physical-product photographic evidence.
-
-The same retention and publication rules SHALL apply to an approved vinyl-cover mockup. An explicitly requested photo cleanup SHALL preserve the photographed package's recognizable artwork and physical treatment, remove the requested background distractions, and retain its original photograph as gallery evidence.
+An approved Distro CD or vinyl mockup SHALL use the established Store presentation, identify itself in alt text, retain accepted physical-edition photographs in its gallery, and SHALL NOT count as photographic evidence. A requested photo cleanup SHALL preserve recognizable artwork and physical packaging, remove the requested background distractions, and retain the original photograph in its gallery.
 
 #### Scenario: All official vinyl product photos are requested
 

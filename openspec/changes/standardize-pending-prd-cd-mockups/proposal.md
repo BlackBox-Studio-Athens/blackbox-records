@@ -11,6 +11,7 @@ Twelve user-supplied pending images identify PRD CD entries whose primary produc
 - Publish only reviewed image placements and alt text in PRD; retain the previous primary photograph first in each gallery and preserve existing gallery order.
 - Record source hashes, PRD media identities, publication receipts, quota evidence and a per-file result ledger.
 - Include the user-added Misty Route ETHOS vinyl mockup and all five official Bandcamp vinyl photographs, reusing matching PRD media. Edit Anima Triste ALONE with GPT Image to isolate its photographed CD packaging and remove the background lettering.
+- Include the user-added The Vagina Lips cassette background cleanup, retaining the photographed red cassette and its original photograph in the gallery, with separately reviewed PRD publication.
 
 ## Capabilities
 

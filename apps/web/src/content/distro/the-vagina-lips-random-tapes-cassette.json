@@ -3,8 +3,14 @@
   "title": "Random Tapes",
   "group": "Tapes",
   "artist_or_label": "The Vagina lips",
-  "image": "cassette-tape.jpg",
-  "image_alt": "Generic cassette fallback image for Random Tapes",
+  "image": "the-vagina-lips-random-tapes-cassette-mockup.png",
+  "image_alt": "The Vagina Lips red cassette in its clear case on a dark textured mockup background",
+  "gallery": [
+    {
+      "image": "the-vagina-lips-random-tapes-cassette-original.jpg",
+      "image_alt": "Random Tapes"
+    }
+  ],
   "summary": "Cassette collection from Thessaloniki post-punk, shoegaze, and dream-pop project The Vagina Lips.",
   "eyebrow": "Distro",
   "format": "Cassette",
