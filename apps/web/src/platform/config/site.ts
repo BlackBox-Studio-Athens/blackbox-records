@@ -3,12 +3,15 @@ import { base as astroBasePath, site as astroSiteUrl } from 'astro:config/client
 export const siteConfig = {
   title: 'Blackbox Records',
   description: 'Helping artists release/share/tour their music. Dreaming about a planet full of art.',
-  socialImage: '/assets/images/brand/logo.png',
+  // One 1200 × 630 card for every shared link: the badge sits in the centre 630 px square, so wide previews and
+  // square crops (WhatsApp, Telegram) both keep the whole logo.
+  socialImage: '/assets/images/brand/share-card.jpg',
   socialImageAlt: 'Blackbox Records logo',
+  socialImageWidth: 1200,
+  socialImageHeight: 630,
 } as const;
 
 export const siteBrandAssets = {
-  badgeLogo: '/assets/images/brand/logo.png',
   wordmarkLogo: '/assets/images/brand/logo-horizontal.png',
   faviconSvg: '/favicon.svg',
   faviconPng96: '/favicon-96x96.png',

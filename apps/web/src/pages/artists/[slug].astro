@@ -17,11 +17,6 @@ if (!artist) return new Response(null, { status: 404 }); // null body: Astro ren
 const artistName = artist.data.title || 'Artist';
 ---
 
-<SiteLayout
-  pageTitle={artistName}
-  pageDescription={artist.data.bio}
-  image={artist.data.image}
-  imageAlt={artist.data.image_alt || artistName}
->
+<SiteLayout pageTitle={artistName} pageDescription={artist.data.bio}>
   <ArtistDetailContent artist={artist} />
 </SiteLayout>

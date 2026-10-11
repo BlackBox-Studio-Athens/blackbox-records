@@ -1,5 +1,5 @@
 ---
-import { createProjectRelativeUrl, siteBrandAssets } from '@/platform/config/site';
+import { createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/platform/config/site';
 import InstagramIcon from '@/components/icons/InstagramIcon.astro';
 import { getServicesContent, getSocialItems } from '@/lib/site-data';
 import { Mail } from 'lucide-react';
@@ -8,9 +8,9 @@ const pageTitle = 'BlackBox Records | Site Coming Online';
 const pageDescription = 'BlackBox Records is active. The full site is coming online soon.';
 const pageUrl = 'https://blackboxrecordsathens.com/';
 // The logo renders at 72-120 CSS px, so a 240 px lossless WebP (20 KB) replaces the 1024 px PNG (101 KB) on the page;
-// og:image keeps the PNG for link unfurls.
+// og:image uses the shared 1200 × 630 brand card.
 const logoUrl = createProjectRelativeUrl('/assets/images/brand/logo-240.webp');
-const socialImageUrl = new URL(siteBrandAssets.badgeLogo, pageUrl).toString();
+const socialImageUrl = new URL(siteConfig.socialImage, pageUrl).toString();
 const veneerCssUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer.css');
 const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
 
@@ -51,6 +51,9 @@ if (!inquiryEmail) console.warn('PRD Holding Page: no valid inquiry email in the
     <meta property="og:type" content="website" />
     <meta property="og:url" content={pageUrl} />
     <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content={String(siteConfig.socialImageWidth)} />
+    <meta property="og:image:height" content={String(siteConfig.socialImageHeight)} />
     <meta property="og:image:alt" content="BlackBox Records logo" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />

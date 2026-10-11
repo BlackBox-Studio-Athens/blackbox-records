@@ -9,7 +9,7 @@ const canonicalUrl = 'https://blackboxrecordsathens.com/';
 const canonicalOrigin = new URL(canonicalUrl).origin;
 const referencedFiles = new Set<string>();
 const allowedImageFiles = new Set([
-  'assets/images/brand/logo.png',
+  'assets/images/brand/share-card.jpg',
   'assets/images/brand/logo-240.webp',
   'favicon-96x96.png',
   'favicon.ico',
@@ -20,7 +20,7 @@ const requiredFiles = new Set([
   '_headers',
   'assets/fonts/brand/veneer.css',
   'assets/fonts/brand/veneer_regular.woff2',
-  'assets/images/brand/logo.png',
+  'assets/images/brand/share-card.jpg',
   'assets/images/brand/logo-240.webp',
   'favicon-96x96.png',
   'favicon.ico',

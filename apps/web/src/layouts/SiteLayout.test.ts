@@ -25,13 +25,12 @@ describe('SiteLayout purchase information', () => {
 });
 
 describe('SiteLayout social image', () => {
-  it('publishes a Content Image as a 1200 px JPEG resolved against the site origin, not the original upload', () => {
-    expect(source).toContain("import { getImage } from 'astro:assets';");
-    expect(source).toContain(
-      "await getImage({ src: metadataImageRaw, width: Math.min(metadataImageRaw.width, 1200), format: 'jpg' })",
-    );
-    expect(source).toContain('Astro.site ?? Astro.url');
-    expect(source).not.toContain('metadataImageRaw.src');
+  it('shares the one 1200 × 630 brand card with its size on every page', () => {
+    expect(source).toContain('const metadataImage = createAbsoluteSiteUrl(siteConfig.socialImage);');
+    expect(source).not.toContain('getImage');
+    expect(source).toContain('<meta property="og:image:type" content="image/jpeg" />');
+    expect(source).toContain('<meta property="og:image:width" content={String(siteConfig.socialImageWidth)} />');
+    expect(source).toContain('<meta property="og:image:height" content={String(siteConfig.socialImageHeight)} />');
   });
 });
 

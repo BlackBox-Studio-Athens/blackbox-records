@@ -26,8 +26,6 @@ const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
 <SiteLayout
   pageTitle={release.data.title}
   pageDescription={release.data.summary || `${release.data.title} by ${artistName}`}
-  coverImage={release.data.cover_image}
-  coverImageAlt={release.data.cover_image_alt || release.data.title}
 >
   <ReleaseDetailContent release={release} />
 </SiteLayout>
