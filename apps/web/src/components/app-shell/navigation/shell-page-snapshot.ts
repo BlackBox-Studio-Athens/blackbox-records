@@ -14,8 +14,13 @@ export type ShellPageSnapshot = {
   mainContent: DocumentFragment;
   pageDescription: string;
   pathname: string;
+  // The page's own stylesheets. Astro links page-specific CSS (such as the Store Crate's) only on the pages that use
+  // it, so a page reached through the shell must add them itself. The dev server inlines each file instead.
+  stylesheets?: readonly PageStylesheet[];
   title: string;
 };
+
+type PageStylesheet = { readonly href: string } | { readonly devId: string; readonly css: string };
 
 type ShellPageSnapshotCache = {
   cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
@@ -223,6 +228,33 @@ function createShellPageSnapshot(
   };
 }
 
+/** Links any of a fetched page's stylesheets the document lacks. The shell never removes one, so a cached return
+ * finds them still linked. */
+export function adoptShellPageStylesheets(
+  stylesheets: readonly PageStylesheet[] = [],
+  targetDocument: Document = document,
+) {
+  const present = new Set(
+    [...targetDocument.querySelectorAll<HTMLElement>('link[rel="stylesheet"], style[data-vite-dev-id]')].map(
+      (element) => (element instanceof HTMLLinkElement ? element.href : element.dataset.viteDevId),
+    ),
+  );
+  for (const stylesheet of stylesheets) {
+    if ('href' in stylesheet) {
+      if (present.has(stylesheet.href)) continue;
+      const link = targetDocument.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = stylesheet.href;
+      targetDocument.head.append(link);
+    } else if (!present.has(stylesheet.devId)) {
+      const style = targetDocument.createElement('style');
+      style.dataset.viteDevId = stylesheet.devId;
+      style.textContent = stylesheet.css;
+      targetDocument.head.append(style);
+    }
+  }
+}
+
 // Snapshot of the page the shell renders. Live main stays untouched: the snapshot holds a sanitized clone.
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
@@ -262,9 +294,16 @@ export function readParsedShellPageSnapshot(
 
   matchLiveFragmentParsing(mainElement);
   const snapshot = createShellPageSnapshot(parsedDocument, mainElement, mainElement, href, currentHref);
+  const stylesheets = [
+    ...parsedDocument.head.querySelectorAll<HTMLElement>('link[rel="stylesheet"][href], style[data-vite-dev-id]'),
+  ].map((element): PageStylesheet =>
+    element.localName === 'link'
+      ? { href: new URL(element.getAttribute('href')!, snapshot.href).toString() }
+      : { devId: element.getAttribute('data-vite-dev-id')!, css: element.textContent ?? '' },
+  );
   // The fragment keeps its owner document alive; release the rest of the fetched page.
   parsedDocument.replaceChildren();
-  return snapshot;
+  return { ...snapshot, stylesheets };
 }
 
 export function cacheDocumentShellPageSnapshot({

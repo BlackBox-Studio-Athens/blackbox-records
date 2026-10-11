@@ -2,7 +2,7 @@ import { normalizeAppPathname, parseShellSectionRoute } from '@/components/app-s
 import { previewUrl } from '@/platform/lib/private-preview';
 
 import { type EagerImageSource, preloadEagerImageElements, preloadImageSources } from './shell-first-screen-images';
-import { readParsedShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
+import { adoptShellPageStylesheets, readParsedShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
 import type { ShellPrefetchOptions } from './shell-prefetch-intent';
 
 type ShellPageSnapshotResponse = Pick<Response, 'ok' | 'text' | 'url'>;
@@ -90,6 +90,7 @@ export function createShellPageSnapshotLoader({
         }
 
         cache.set(normalizedPathname, pageSnapshot);
+        if (typeof document !== 'undefined') adoptShellPageStylesheets(pageSnapshot.stylesheets);
         // Queue eager image requests now: an inserted <img> only requests after the insertion task's layout,
         // which can take seconds on a phone for brand-font text.
         // A speculative prefetch warms only the first image; the rest wait until the page is opened.

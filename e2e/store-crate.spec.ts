@@ -1,6 +1,6 @@
 import type { Locator, Page } from 'playwright/test';
 
-import { expect, expectNoHorizontalOverflow, test, waitForShell } from './fixtures';
+import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 /** Every listed Store Item priced and stocked, so the item in hand shows its price and Buy. */
 async function stockEverything(page: Page, route: string) {
@@ -59,6 +59,20 @@ async function wheelWithoutPageScroll(page: Page, deltaX: number, deltaY: number
 
 test.describe('Store Crate on desktop', () => {
   test.skip(({ hasTouch }) => hasTouch, 'Desktop Crate cases run in the desktop projects.');
+
+  // The Crate's CSS is linked only on Store pages, so a Store page reached through the shell must link it itself.
+  test('is styled when Distro is reached through the shell from a page without Store CSS', async ({ page }) => {
+    await page.goto('releases/');
+    await waitForShell(page);
+    await plantSentinel(page);
+    await page.locator('header').getByRole('link', { name: 'Store', exact: true }).first().click();
+    await page.getByRole('link', { name: 'Distro', exact: true }).first().click();
+    await expect(page).toHaveURL(/\/store\/distro\/$/);
+    expect(await sentinelIntact(page)).toBe(true);
+    await expect(page.locator('.store-crate-bar')).toHaveCSS('position', 'sticky');
+    const crate = await openCrate(page);
+    await expect(crate.stage).toHaveCSS('overflow', 'hidden');
+  });
 
   for (const width of [1280, 1440]) {
     test(`Distro opens the bin of the first card on screen with its own card beside it at ${width}px`, async ({

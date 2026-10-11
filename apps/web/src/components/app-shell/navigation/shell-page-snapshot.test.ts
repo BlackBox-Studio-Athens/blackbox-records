@@ -762,8 +762,18 @@ describe('shell page snapshots', () => {
       },
     };
     const canonical = { href: 'https://example.test/blackbox-records/store/' };
+    const stylesheet = { localName: 'link', getAttribute: () => '/blackbox-records/_astro/StoreCollectionPage.css' };
+    const devStyle = {
+      localName: 'style',
+      getAttribute: () => '/src/components/store/crate/crate.css',
+      textContent: '.store-crate {}',
+    };
     const parsedDocument = {
       createElement: forbidden('create elements'),
+      head: {
+        querySelectorAll: (selector: string) =>
+          selector === 'link[rel="stylesheet"][href], style[data-vite-dev-id]' ? [stylesheet, devStyle] : [],
+      },
       importNode: forbidden('clone main'),
       querySelector(selector: string) {
         if (selector === 'main[data-app-shell-main]') return main;
@@ -784,6 +794,11 @@ describe('shell page snapshots', () => {
       canonicalHref: 'https://example.test/blackbox-records/store/',
       mainClassName: 'store-page',
       pathname: '/store/',
+      // Page-only CSS, such as the Store Crate's, which a page reached through the shell must link itself.
+      stylesheets: [
+        { href: 'https://example.test/blackbox-records/_astro/StoreCollectionPage.css' },
+        { devId: '/src/components/store/crate/crate.css', css: '.store-crate {}' },
+      ],
       title: 'Store | BlackBox',
     });
     expect(snapshot?.mainContent).toBe(fragment);
@@ -820,6 +835,7 @@ describe('shell page snapshots', () => {
       },
     };
     const parsedDocument = {
+      head: { querySelectorAll: () => [] },
       querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
       replaceChildren: vi.fn(),
       title: 'Home',
