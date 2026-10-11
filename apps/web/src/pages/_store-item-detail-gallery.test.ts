@@ -127,7 +127,6 @@ describe('Store Item listening context contract', () => {
     expect(source).toContain("storeItem.sourceKind === 'release' && !sourceRelease");
     expect(source).toContain('throw new Error(`Missing Release source entry');
     expect(source).toContain('resolveArtistProfileForRelease(sourceRelease)');
-    expect(source).toContain('resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)');
     expect(source).toContain('const embeddedPlayerData = storeItem.embeddedPlayerData;');
     expect(source).not.toContain('buildEmbeddedPlayerData(');
     expect(source).not.toContain("getEntry('releases', storeItem.title)");
@@ -135,10 +134,10 @@ describe('Store Item listening context contract', () => {
 
   it('keeps provider and editorial actions independently conditional', () => {
     const purchaseActions = /<StoreItemPurchaseActions\b[\s\S]*?\/>/.exec(source)?.[0];
-    expect(source).toContain('(embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl)');
+    expect(source).toContain('(embeddedPlayerData || sourceReleaseUrl)');
     expect(source).toContain('embeddedPlayerData && (');
     expect(source).toContain('sourceReleaseUrl && (');
-    expect(source).toContain('sourceReleaseArtistUrl && (');
+    expect(source).toContain('sourceReleaseArtistUrl ? (');
     expect(purchaseActions).toBeDefined();
     expect(purchaseActions).toContain('client:load');
     expect(purchaseActions).toContain('cartItem={cartItem}');
@@ -151,5 +150,18 @@ describe('Store Item listening context contract', () => {
     );
     expect(source).not.toContain('embeddedPlayerData={cartItem}');
     expect(source).not.toContain("getEntry('artists', storeItem.sourceId)");
+  });
+
+  it('links the existing artist credit once and retains plain credits without a verified profile', () => {
+    const credit = /<p class="text-sm uppercase tracking-\[0\.13em\] text-muted-foreground">([\s\S]*?)<\/p>/.exec(
+      source,
+    )?.[1];
+    expect(credit).toBeDefined();
+    expect(credit).toContain('sourceReleaseArtistUrl ? (');
+    expect(credit).toContain('href={sourceReleaseArtistUrl}');
+    expect(credit).toContain('{storeItem.subtitle}');
+    expect(credit).toMatch(/\)\s*:\s*\(\s*storeItem\.subtitle\s*\)/);
+    expect(source.match(/href=\{sourceReleaseArtistUrl\}/g)).toHaveLength(1);
+    expect(source).not.toContain('sourceReleaseArtistName');
   });
 });

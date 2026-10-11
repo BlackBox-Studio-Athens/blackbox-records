@@ -44,6 +44,13 @@ The system SHALL link a release-backed Store Item to its actual source release a
 - **THEN** its release link and available artist link target the actual base-aware editorial routes
 - **AND** normal internal activation uses existing overlay behavior while direct and new-tab loads remain valid pages.
 
+#### Scenario: Artist credit appears once in the item identity
+
+- **WHEN** a release-backed Store Item has a resolved artist profile
+- **THEN** the existing artist credit beneath the item title links to that profile
+- **AND** the listening and release action row does not repeat the artist name
+- **AND** an item without a verified profile keeps its existing credit as plain text.
+
 #### Scenario: An optional relation is absent
 
 - **WHEN** an artist relation is unavailable or a Distro item has no explicit editorial relation

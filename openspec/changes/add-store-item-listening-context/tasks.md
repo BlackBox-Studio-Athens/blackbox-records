@@ -14,3 +14,7 @@
 - [x] 3.1 Run `pnpm validate` and the relevant Local publication/preview checks from `docs/content-publication.md` and `docs/content-workspace.md`; confirm item links resolve under Local `/blackbox-records/` and hosted UAT/PRD `/`, with Store Item/checkout routes outside section-route classification.
 - [x] 3.2 Use native Browser Use on desktop/mobile and with reduced motion to verify Listen near item identity before long copy, restrained editorial links, Add to Cart priority, release/artist overlays, keyboard focus, player failure/dismissal, and independent purchase actions; include 390x844 and 1280x800 views and record supported same-document persistence and expected full-document termination without making a payment.
 - [x] 3.3 Run `pnpm openspec -- validate add-store-item-listening-context --type change --strict` and `git diff --check`; link focused and browser evidence before proposing archive, keeping any authorized deployment acceptance distinct from implementation checks.
+
+## 4. Remove the repeated artist credit
+
+- [x] 4.1 Link the existing title-area artist credit and remove the duplicate artist action, retaining plain credits without a verified profile; verify the shared template on desktop and phone, focused regressions, strict OpenSpec validation and `pnpm validate`. See `validation-artist-credit.md`.

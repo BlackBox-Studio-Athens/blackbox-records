@@ -16,11 +16,7 @@ import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import {
-  createReleaseDetailPath,
-  resolveArtistProfileForRelease,
-  resolveReleaseArtistDisplayName,
-} from '@/lib/catalog-data';
+import { createReleaseDetailPath, resolveArtistProfileForRelease } from '@/lib/catalog-data';
 import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
 import {
   createCartLineItemSnapshotForStorePage,
@@ -49,9 +45,6 @@ if (storeItem.sourceKind === 'release' && !sourceRelease) {
 }
 
 const sourceReleaseArtist = sourceRelease ? await resolveArtistProfileForRelease(sourceRelease) : undefined;
-const sourceReleaseArtistName = sourceRelease
-  ? resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)
-  : undefined;
 const embeddedPlayerData = storeItem.embeddedPlayerData;
 const sourceReleaseUrl = sourceRelease ? createReleaseDetailPath(sourceRelease) : null;
 const sourceReleaseArtistUrl = sourceReleaseArtist
@@ -124,13 +117,25 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       <div class="store-item-purchase" data-store-purchase-group>
         <div class="store-item-identity">
           <h1 class="brand-display-title break-words text-foreground">{storeItem.title}</h1>
-          <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
+          <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">
+            {sourceReleaseArtistUrl ? (
+              <a
+                href={sourceReleaseArtistUrl}
+                data-astro-prefetch
+                class="inline-block content-center underline decoration-border underline-offset-4 transition-colors hover:text-foreground pointer-coarse:min-h-11"
+              >
+                {storeItem.subtitle}
+              </a>
+            ) : (
+              storeItem.subtitle
+            )}
+          </p>
           {primaryAvailability?.optionLabel && (
             <p class="text-sm font-semibold text-foreground" data-store-item-option>
               {primaryAvailability.optionLabel}
             </p>
           )}
-          {(embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
+          {(embeddedPlayerData || sourceReleaseUrl) && (
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-store-item-listening-context>
               {embeddedPlayerData && (
                 <MusicStreamingServiceListenTrigger
@@ -148,15 +153,6 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
                     class="inline-block content-center underline decoration-border underline-offset-4 transition-colors hover:text-foreground pointer-coarse:min-h-11"
                   >
                     Release
-                  </a>
-                )}
-                {sourceReleaseArtistUrl && (
-                  <a
-                    href={sourceReleaseArtistUrl}
-                    data-astro-prefetch
-                    class="inline-block content-center underline decoration-border underline-offset-4 transition-colors hover:text-foreground pointer-coarse:min-h-11"
-                  >
-                    {sourceReleaseArtistName}
                   </a>
                 )}
               </div>
