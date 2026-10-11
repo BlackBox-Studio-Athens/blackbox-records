@@ -2,7 +2,7 @@
 
 ### Requirement: Homepage hero offers Store entry points
 
-The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` and a See pre-orders link to the Home pre-orders showcase. See pre-orders SHALL be shown only while the pre-orders showcase is rendered on Home. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
+The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` and a See pre-orders link to the Home pre-orders showcase. The showcase SHALL hydrate at browser idle priority so the main page can load first. Browse the Store SHALL remain available in the initial HTML. See pre-orders SHALL be shown only while the deferred pre-orders showcase is rendered on Home. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
 
 #### Scenario: Visitor lands on Home with pre-orders open
 
@@ -11,6 +11,13 @@ The homepage hero SHALL show, under the motto, a Browse the Store link to `/stor
 - **THEN** the hero shows both links under the motto
 - **AND** Browse the Store opens `/store/`
 - **AND** choosing See pre-orders brings the pre-orders showcase into view below the header without leaving Home
+
+#### Scenario: Main page loads before the pre-order link is ready
+
+- **WHEN** Home has rendered and its deferred pre-order check is still pending
+- **THEN** the hero, motto and Browse the Store link remain available
+- **AND** See pre-orders stays hidden until the showcase renders
+- **AND** the showcase loads automatically at browser idle priority without requiring scrolling or a click
 
 #### Scenario: Visitor lands on Home with no pre-orders open
 

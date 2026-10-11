@@ -24,7 +24,7 @@ const homeArtists = homeContent.artists;
   <HomeHero tagline={homeContent.hero.tagline} image={homeContent.hero.image} imageAlt={homeContent.hero.image_alt} />
 
   <StorePreorderShowcase
-    client:load
+    client:idle
     candidatesUrl={createProjectRelativeUrl('/preorder-showcase.json')}
     storeUrl={createProjectRelativeUrl('/store/')}
   />

@@ -236,7 +236,7 @@ for (const failedRead of ['listing', 'candidates'] as const) {
     expect(attempts).toBe(2);
     await expect(page.locator('astro-island[component-url*="StorePreorderShowcase"]')).toHaveAttribute(
       'client',
-      'load',
+      'idle',
     );
     expect(documents).toBe(1);
     await plantSentinel(page);
