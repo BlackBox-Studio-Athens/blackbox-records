@@ -2,21 +2,21 @@
 
 ### Requirement: Homepage hero offers Store entry points
 
-The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` and a See pre-orders link to the Home pre-orders showcase. The showcase SHALL hydrate at browser idle priority so the main page can load first. Browse the Store SHALL remain available in the initial HTML. See pre-orders SHALL be shown only while the deferred pre-orders showcase is rendered on Home. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
+The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` as its only action. The hero SHALL NOT render a See pre-orders link. The showcase SHALL hydrate at browser idle priority so the main page can load first. Browse the Store SHALL remain available in the initial HTML independently of the showcase. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
 
 #### Scenario: Visitor lands on Home with pre-orders open
 
 - **GIVEN** the Worker reports at least one stocked pre-order
 - **WHEN** the visitor opens Home
-- **THEN** the hero shows both links under the motto
+- **THEN** the hero shows only Browse the Store under the motto
 - **AND** Browse the Store opens `/store/`
-- **AND** choosing See pre-orders brings the pre-orders showcase into view below the header without leaving Home
+- **AND** the pre-orders showcase remains available further down Home
 
-#### Scenario: Main page loads before the pre-order link is ready
+#### Scenario: Main page loads before the pre-order showcase is ready
 
 - **WHEN** Home has rendered and its deferred pre-order check is still pending
 - **THEN** the hero, motto and Browse the Store link remain available
-- **AND** See pre-orders stays hidden until the showcase renders
+- **AND** no additional hero action appears when the showcase renders
 - **AND** the showcase loads automatically at browser idle priority without requiring scrolling or a click
 
 #### Scenario: Visitor lands on Home with no pre-orders open
@@ -29,9 +29,9 @@ The homepage hero SHALL show, under the motto, a Browse the Store link to `/stor
 #### Scenario: Visitor opens Home on a phone
 
 - **WHEN** Home is displayed at 390 px or narrower, down to 280 px
-- **THEN** the motto and links share the logo's left edge
+- **THEN** the motto and Store link share the logo's left edge
 - **AND** nothing overflows horizontally
-- **AND** the links keep 44 px targets, at their desktop width, sharing one row when they fit and wrapping when they do not
+- **AND** the Store link keeps its 44 px touch target
 
 #### Scenario: Visitor sees the hero without a Scroll label
 

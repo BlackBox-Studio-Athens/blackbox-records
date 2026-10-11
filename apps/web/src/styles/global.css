@@ -5984,17 +5984,6 @@ body.is-app-shell-overlay-open {
   background: var(--background);
 }
 
-/* The hero's See pre-orders link exists only while the showcase renders, which the Worker decides at runtime.
-   Unlayered so these rules outrank the button's inline-flex utility. */
-.homepage-hero-section__preorders-link {
-  display: none;
-  border-bottom: 2px solid var(--preorder-accent);
-}
-
-#main:has(#preorders) .homepage-hero-section__preorders-link {
-  display: inline-flex;
-}
-
 .home-preorders__header {
   display: flex;
   flex-wrap: wrap;

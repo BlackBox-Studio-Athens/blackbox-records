@@ -6,10 +6,10 @@ The Home hero fills the first screen without any sign that the label sells recor
 
 ## What Changes
 
-- Under the motto, add two buttons: Browse the Store (to `/store/`) and See pre-orders (to the pre-orders showcase further down Home).
-- Show See pre-orders only while the showcase is on the page, so the link never points at nothing.
-- Defer the showcase and its See pre-orders link to browser idle time so the main page loads first; Browse the Store stays in the initial HTML.
-- Left-align the motto and buttons at the page gutter on phones, in line with the logo; the buttons keep their desktop width and wrap when they cannot share a row.
+- Under the motto, keep Browse the Store (to `/store/`) and remove See pre-orders entirely, as requested in the 11 October follow-up.
+- Defer the showcase to browser idle time so the main page loads first; Browse the Store stays in the initial HTML and never depends on the showcase.
+- Left-align the motto and button at the page gutter on phones, in line with the logo.
+- Prepare three smaller, quieter Browse treatments, including dark framed options, for owner review before applying a new treatment.
 - Remove the Scroll label. The animated scroll line and its states stay.
 - Retire the Home `hero.scroll_indicator_text` content field: nothing renders it, and editors no longer see it.
 
@@ -21,7 +21,7 @@ None.
 
 ### Modified Capabilities
 
-- `app-shell-and-player`: the homepage hero links to the Store and to the Home pre-orders showcase, and drops its Scroll label.
+- `app-shell-and-player`: the homepage hero links to the Store, removes its conditional pre-orders link and drops its Scroll label.
 
 ## Impact
 

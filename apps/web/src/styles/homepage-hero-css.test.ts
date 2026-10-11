@@ -118,15 +118,11 @@ describe('Homepage hero CSS', () => {
     expect(globalCss).not.toMatch(/homepage-hero-section__media-image[^}]*filter:/s);
   });
 
-  it('shows See pre-orders only while the showcase renders', () => {
-    // Column-0 markers: layered rules are indented, and only unlayered rules outrank the button's inline-flex utility.
-    expect(readCssBlock('\n.homepage-hero-section__preorders-link {')).toMatch(/display:\s*none/i);
-    expect(readCssBlock('\n#main:has(#preorders) .homepage-hero-section__preorders-link {')).toMatch(
-      /display:\s*inline-flex/i,
-    );
-
+  it('keeps the hero Store link independent of the pre-order showcase', () => {
     const heroMarkup = readFileSync(new URL('../components/editorial/HomeHero.astro', import.meta.url), 'utf8');
-    expect(heroMarkup).toMatch(/href="#preorders"[\s\S]*homepage-hero-section__preorders-link/);
+    expect(heroMarkup).toContain('Browse the Store');
+    expect(heroMarkup).not.toContain('See pre-orders');
+    expect(globalCss).not.toContain('.homepage-hero-section__preorders-link');
     expect(heroMarkup).not.toMatch(/scrollIndicatorText/);
   });
 });
