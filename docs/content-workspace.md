@@ -20,6 +20,8 @@ Partner store links appear under Music & listening links after Singles. Add a St
 
 The staff interface is built on EmDash's APIs, not a second CMS or a replacement admin backend. EmDash owns content, private drafts, revision conflict checks, references, media, and the reused Portable Text editor. Label-specific forms and publication review coordinate these APIs with the existing commerce services. The native full admin screens are not the staff navigation foundation.
 
+EmDash 1.2.0 retains this workspace and its supported content types. The native admin builds only English, matching Staff's existing language; Staff's separate bundle keeps its own locale loading. The new native uploaded-video command and pasting/dropping video files are disabled in Staff. Use the existing YouTube/Vimeo field for video embeds; image uploads still use the private thumbnail-producing uploader. Migration and patch ownership are documented in the [CMS migration guide](../apps/backend/cms-migrations/README.md#emdash-120-upgrade).
+
 The staff root and logo open Overview. A 72 px top navigation covers Overview, Catalog, Website, Images, Stock and Orders at widths of at least 1440 px. Catalog and Website have optional 256 px contextual sidebars; smaller screens use a labeled Menu drawer. `/content/` opens named website pages; `?view=footer` groups navigation, social links and newsletter. Existing `?collection=…&id=…` links continue to select their editor. `/items/?variantId=…` resolves the editorial/selling relationship and opens the matching catalog destination.
 
 Private editorial drafts autosave after a 1.5-second typing pause. Incomplete drafts are allowed; unsafe input and invalid supplied references are rejected. Save state is distinct from publication state. Older responses never replace newer typing. Failed saves and conflicts retain input and offer recovery. The editor distinguishes `Discard unsaved changes` (browser-local edits), `Discard saved changes` (the current private draft, returning to the live revision), `Move to trash` (News/social links only), and read-only publication history. Price, stock, wording approval and publication remain explicit operations.
@@ -168,7 +170,7 @@ Code releases still use the reviewed UAT candidate and retained PRD artifact. Se
 
 - Official [shadcn New York registry](https://ui.shadcn.com/docs/components): Sidebar, Table, InputGroup, Breadcrumb, ButtonGroup, Field, NativeSelect, Checkbox, Command/Popover combobox, DropdownMenu, AlertDialog, Alert, Sheet, AspectRatio, Tooltip, Skeleton, Empty, ScrollArea, ToggleGroup, Collapsible, Accordion and supporting components.
 - [blocks.so File Upload Simple](https://blocks.so/file-upload/file-upload-02): adapted native file input, label and help presentation. Uploads call the existing `uploadArtwork` helper.
-- EmDash 0.38's existing Portable Text editor remains the rich-text engine.
+- EmDash's Portable Text editor remains the rich-text engine.
 
 MIT notices are retained alongside the copied components. Staff registry configuration lives in `apps/staff/components.json`; the `cn` utility the components share sits beside them at `apps/staff/src/components/ui/utils.ts`. Generated imports use relative paths to avoid the repository-wide lint resolver confusing the staff and public `@/` aliases.
 
@@ -197,6 +199,8 @@ This serves the built staff app with in-memory API fixtures on loopback, uses th
 For manual browser inspection, run `node scripts/test-content-workspace.mjs --serve` and open `http://127.0.0.1:4399/content/`. Add `--selling` for the retained-item fixture; set `BLACKBOX_FIXTURE_PORT` when another worktree owns 4399. Fixture writes last only until the process stops.
 
 For real-renderer verification, build the CMS and public runtime, run the Local stack, then run `node --import tsx apps/backend/scripts/smoke-content-preview.mjs`. This loopback-only smoke previews every seeded collection, checks protected images, denied writes and released contexts, reports latency/bytes, and verifies drafts and publication history remain unchanged. Add `--browsers` for Chromium/Firefox rendering, paired public/preview screenshots and editor autosave. That UI phase restores its original newsletter draft and never publishes it. The CMS build validates source and generated no-KV configuration. Hosted verification remains separate.
+
+For an embedded-editor upload change, `--browsers --uploads-only` selects the existing batch order, retry, cover selection, native editor upload and entry-switch checks. It uses Local content reads and intercepted writes to verify thumbnail generation without changing stored content. `PREVIEW_BROWSER=chromium` or `firefox` selects one browser. Full private-preview acceptance remains separate. Run publication and preview checks sequentially: the publication smoke deliberately changes and restores Local drafts, so it invalidates preview's no-mutation baseline while running.
 
 ## Failure diagnostics
 

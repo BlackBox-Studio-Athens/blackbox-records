@@ -104,6 +104,7 @@ export default defineConfig({
     react(),
     emdash({
       updateCheck: false,
+      admin: { locales: ['en'] },
       database: d1({ binding: 'CMS_DB' }),
       storage: r2({ binding: 'MEDIA' }),
       migrations: { runtime: 'check', dev: 'auto' },

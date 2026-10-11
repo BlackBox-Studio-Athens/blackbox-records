@@ -5,15 +5,17 @@ import { fileURLToPath } from 'node:url';
 import { resolve, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { getPlatformProxy, unstable_dev } from 'wrangler';
+import { getCoreMigrationIdentity } from 'emdash/migrations';
 
 const backend = fileURLToPath(new URL('../../', import.meta.url));
 const { values } = parseArgs({
   options: { 'source-state': { type: 'string' }, 'source-history': { type: 'string', default: 'auto' } },
 });
 assert.ok(
-  ['auto', 'current', 'legacy'].includes(values['source-history']),
-  'Select auto, current or legacy source history',
+  ['auto', 'current', 'legacy', '1.1.0'].includes(values['source-history']),
+  'Select auto, current (1.0.1), legacy or 1.1.0 source history',
 );
+const targetMigrations = await getCoreMigrationIdentity();
 // Copy only a stopped Local store. The supplied source is never opened by Wrangler or modified.
 const source = resolve(values['source-state'] ?? join(backend, '.wrangler/state'));
 const state = await mkdtemp(join(backend, '.emdash/upgrade-'));
@@ -101,14 +103,8 @@ async function createPendingReleaseDraft() {
     const legacy = !(await db
       .prepare("SELECT name FROM _emdash_migrations WHERE name = '088_cron_oneshot_utc'")
       .first());
-    assert.equal(
-      await db
-        .prepare(
-          "SELECT name FROM _emdash_migrations WHERE name IN ('090_redirect_enable_loop_guard', '091_redirect_artifacts') LIMIT 1",
-        )
-        .first(),
-      null,
-      'Requires a stopped store from before EmDash 1.1.0',
+    const source110 = Boolean(
+      await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '091_redirect_artifacts'").first(),
     );
     if (values['source-history'] !== 'auto')
       assert.equal(
@@ -116,6 +112,8 @@ async function createPendingReleaseDraft() {
         values['source-history'] === 'legacy',
         'Supplied store must match the selected source history',
       );
+    if (values['source-history'] !== 'auto')
+      assert.equal(source110, values['source-history'] === '1.1.0', 'Supplied store must match the selected version');
     if (!legacy)
       assert.ok(
         await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '089_auto_seed_completion'").first(),
@@ -180,6 +178,10 @@ try {
   console.log('Copied Local D1/R2 into disposable upgrade storage.');
   const draftId = await createPendingReleaseDraft();
   const before = await inspect();
+  assert.ok(
+    before.migrations.every((name) => targetMigrations.names.includes(name)),
+    'Refuse a source with unknown core migrations',
+  );
   assert.ok(before.dates.releases.some((release) => release.draft_revision_id === draftId));
   assert.equal(before.distroGallery.field?.type, 'json');
   assert.equal(before.distroGallery.field?.column_type.toLowerCase(), 'json');
@@ -243,6 +245,7 @@ try {
     assert.ok(after.migrations.includes('089_auto_seed_completion'));
     assert.ok(after.migrations.includes('090_redirect_enable_loop_guard'));
     assert.ok(after.migrations.includes('091_redirect_artifacts'));
+    assert.deepEqual(after.migrations, [...targetMigrations.names].sort(), 'All target migrations are applied');
     assert.deepEqual(after.seedComplete, { value: 'true' });
     assert.deepEqual(after.collections, before.collections, 'Restart must not recreate a removed seed collection');
     assert.deepEqual(after.media, before.media, 'Native media identities and metadata survive upgrade');
@@ -275,7 +278,7 @@ try {
     assert.equal(after.fields.length, 0, 'Editorial dates no longer use datetime storage');
   }
   console.log(
-    'EmDash Local upgrade to 1.1.0 and restart passed: migrations through 091, seed completion, media, pending draft, dates, revisions, stock and accepted publication preserved.',
+    `EmDash Local upgrade to ${targetMigrations.emdashVersion} and restart passed: all target migrations, seed completion, media, pending draft, dates, revisions, stock and accepted publication preserved.`,
   );
 } finally {
   await worker?.stop();

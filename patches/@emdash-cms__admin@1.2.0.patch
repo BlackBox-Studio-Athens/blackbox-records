@@ -1,0 +1,181 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index f713bae9..5cf84cd0 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -3658,7 +3658,10 @@ interface BlockSidebarPanel {
+   onDelete: () => void;
+   onClose: () => void;
+ }
++declare function ImageDetailPanel(props: { attributes: Record<string, unknown>; onUpdate: (attrs: Record<string, unknown>) => void; onReplace: (attrs: Record<string, unknown>) => void; onDelete: () => void; onClose: () => void; inline?: boolean; inlineClassName?: string; stickyFooter?: boolean }): react_jsx_runtime0.JSX.Element;
++declare function MediaUploadProvider(props: { upload: (file: File, opts?: UploadMediaOptions) => Promise<MediaItem>; children?: import("react").ReactNode }): react_jsx_runtime0.JSX.Element;
+ interface PortableTextEditorProps {
++  disabledBlockCommands?: readonly string[];
+   value?: PortableTextBlock[];
+   onChange?: (value: PortableTextBlock[]) => void;
+   placeholder?: string;
+@@ -4269,5 +4272,5 @@ declare function SetupWizard(): react_jsx_runtime0.JSX.Element | null;
+  */
+ declare function cn(...inputs: ClassValue[]): string;
+ //#endregion
+-export { API_BASE, API_TOKEN_SCOPES, AdminApp, AdminApp as App, type AdminBranding, type AdminComment, type AdminManifest, type AllowedDomain, ApiResponseError, type ApiTokenCreateResult, type ApiTokenInfo, type ApiTokenScopeValue, type AttachmentInfo, type AuthProviderModule, AuthProviderProvider, type AuthProviders, type AuthorMapping, type BlockType, type BoundField, type BulkAction, type BylineCreditInput, type BylineCustomFieldValue, type BylineFieldDefinition, type BylineFieldType, type BylineFieldUsage, type BylineFieldValidation, type BylineInput, type BylineSummary, type BylineTranslationInput, CAPABILITY_LABELS, type CollectionSchemaStatus, type CollectionStats, type CommentCounts, type CommentStatus, type ContentAuthor, type ContentDateField, ContentEditor, type ContentEditorPanelContext, type ContentEditorPanelExtension, type ContentEditorProps, type ContentItem, ContentList, type ContentListColumn, type ContentListColumnCellContext, type ContentListColumnExtension, type ContentListColumnHeaderContext, type ContentListProps, type ContentSeo, type ContentSeoInput, type CreateAllowedDomainInput, type CreateApiTokenInput, type CreateBylineFieldInput, type CreateCollectionInput, type CreateContentInput, type CreateFieldInput, type CreateMenuInput, type CreateMenuItemInput, type CreateRedirectInput, type CreateRelationInput, type CreateSectionInput, type CreateTaxonomyInput, type CreateTermInput, type CreateWidgetAreaInput, type CreateWidgetInput, type CurrentUser, type CustomTaxonomy, DEFAULT_LOCALE, Dashboard, type DashboardProps, type DashboardStats, EditorHeader, type EditorHeaderProps, type EmailProvider, type EmailSettings, type EntryLockHolder, type EntryLockStatus, type EntryRef, type FieldCompatibility, type FieldDescriptor, type FieldType, type FindManyResult, type GetSectionsOptions, Header, type ImportConfig, type ImportFieldDef, type ImportResult, type InstallPluginOpts, type InviteVerifyResult, Link, type LocalMediaItem, LoginPage, MEDIA_SEARCH_MAX_LENGTH, type MarketplaceAuditSummary, type MarketplaceAuthor, type MarketplaceImageAuditSummary, type MarketplacePluginDetail, type MarketplacePluginSummary, type MarketplaceSearchOpts, type MarketplaceSearchResult, type MarketplaceVersion, type MediaFolder, type MediaFolderListResult, type MediaImportProgress, type MediaImportResult, type MediaItem, MediaLibrary, type MediaLibraryProps, MediaPickerModal, type MediaPickerModalProps, type MediaProviderCapabilities, type MediaProviderInfo, type MediaProviderItem, type MediaUpdateInput, type MediaUploadOptions, MediaUsageAccessDeniedError, type MediaUsageCoverage, type MediaUsageCoverageStatus, type MediaUsageDetailsResponse, type MediaUsageEntryDetail, type MediaUsageOccurrenceDetail, type MediaUsageSiteSettingDetail, type MediaUsageSourceDetail, type Menu, type MenuItem, type LocaleOptions as MenuLocaleOptions, type MenuTranslation, type MenuTranslationsResponse, type MenuWithItems, type NavMenu, type NotFoundSummary, type OrphanedTable, type PasskeyInfo, PasskeyLogin, type PasskeyLoginProps, PasskeyRegistration, type PasskeyRegistrationProps, type PluginAdminModule, PluginAdminProvider, type PluginAdmins, type PluginInfo, type PluginUpdateInfo, PortableTextEditor, type PortableTextEditorProps, type PostTypeAnalysis, type PrepareRequest, type PrepareResult, type PreviewUrlResponse, type ProbeResult, type RecentItem, type Redirect, type RedirectListOptions, type RedirectListResult, type ReferencePageOptions, type RelationDef, type RelationSide, type RelationWithUsage, type ReorderMenuItemsInput, type Revision, type RevisionListResponse, type RewriteUrlsResult, SUPPORTED_LOCALES, SUPPORTED_LOCALE_CODES, SaveButton, type SaveButtonProps, type SchemaCollection, type SchemaCollectionWithFields, type SchemaField, type SearchEnableResult, type Section, type SectionSource, type SectionsResult, type SettingField, Settings, SetupWizard, Shell, type ShellProps, KumoSidebar as Sidebar, SidebarNav, type SidebarNavProps, type SignupVerifyResult, type SiteDomain, type SiteSettings, type SiteSettingsUpdate, type SourceAuth, type SourceCapabilities, type SourceProbeResult, type SuggestedAction, type LocaleDefinition as SupportedLocale, type TaxonomyDef, type TaxonomyTerm, type TermTranslation, type TermTranslationsResponse, type ThemeAuthor, type ThemeAuthorDetail, type ThemeDetail, type ThemeSearchOpts, type ThemeSearchResult, type ThemeSummary, type TranslationSummary, type TranslationsResponse, type TrashedContentItem, type UninstallPluginOpts, type UpdateAllowedDomainInput, type UpdateBylineFieldInput, type UpdateCollectionInput, type UpdateContentInput, type UpdateFieldInput, type UpdateMenuInput, type UpdateMenuItemInput, type UpdatePluginOpts, type UpdateRedirectInput, type UpdateRelationInput, type UpdateSectionInput, type UpdateTermInput, type UpdateUserInput, type UpdateWidgetInput, type UploadMediaOptions, type UserDetail, type UserListItem, type Widget, type WidgetArea, type WidgetComponent, type WpAuthorInfo, type WpImportProgress, type WpPluginAnalysis, type WxrAnalysis, acquireEntryLock, analyzeWpPluginSite, analyzeWxr, apiFetch, bulkCommentAction, changeSiteDomain, checkPluginUpdates, cn, compareRevisions, completeSignup, createAdminRouter, createAllowedDomain, createApiToken, createByline, createBylineField, createBylineTranslation, createCollection, createContent, createField, createMediaFolder, createMenu, createMenuItem, createMenuTranslation, createRedirect, createRelation, createSection, createSignInHandover, createTaxonomy, createTerm, createTermTranslation, createWidget, createWidgetArea, deleteAllowedDomain, deleteByline, deleteBylineField, deleteCollection, deleteComment, deleteContent, deleteField, deleteFromProvider, deleteMedia, deleteMediaFolder, deleteMenu, deleteMenuItem, deletePasskey, deleteRedirect, deleteRelation, deleteSection, deleteTerm, deleteWidget, deleteWidgetArea, describeCapability, disablePlugin, disableUser, discardDraft, duplicateContent, enablePlugin, enableUser, entryLockRefusal, executeWpPluginImport, executeWxrImport, fetch404Summary, fetchAllowedDomains, fetchApiTokens, fetchAuthMode, fetchBlockTypes, fetchByline, fetchBylineTranslations, fetchBylines, fetchCollection, fetchCollections, fetchComment, fetchCommentCounts, fetchComments, fetchContent, fetchContentAuthors, fetchContentList, fetchDashboardStats, fetchEmailSettings, fetchFields, fetchManifest, fetchMarketplacePlugin, fetchMediaFolder, fetchMediaFolders, fetchMediaItem, fetchMediaList, fetchMediaProviders, fetchMediaUsageDetails, fetchMenu, fetchMenuTranslations, fetchMenus, fetchOrphanedTables, fetchPasskeys, fetchPlugin, fetchPluginSettings, fetchPlugins, fetchProviderMedia, fetchRedirects, fetchReferenceChildren, fetchReferenceParents, fetchRelation, fetchRelations, fetchRevision, fetchRevisions, fetchSection, fetchSections, fetchSettings, fetchSiteDomain, fetchTaxonomyDef, fetchTaxonomyDefs, fetchTermTranslations, fetchTerms, fetchTheme, fetchTranslations, fetchTrashedContent, fetchUser, fetchUsers, fetchWidgetArea, fetchWidgetAreas, fetchWidgetComponents, generatePreviewUrl, getBylineFieldUsage, getDraftStatus, getPreviewUrl, hasAllowedDomains, importWxrMedia, importWxrMediaBatched, installMarketplacePlugin, inviteUser, isTerminalRequestError, listBylineFields, notifyUsersOfDomain, parseApiResponse, permanentDeleteContent, prepareWxrImport, probeImportUrl, publishContent, registerOrphanedTable, releaseEntryLock, renameMediaFolder, renamePasskey, reorderBylineFields, reorderCollections, reorderFields, reorderMenuItems, reorderWidgets, replaceMediaImage, requestSignup, resolveLocale, restoreContent, restoreRevision, revokeApiToken, rewriteContentUrls, scheduleContent, searchMarketplace, searchThemes, sendRecoveryLink, sendTestEmail, setPluginMcpEnabled, setSearchEnabled, throwResponseError, uninstallMarketplacePlugin, unpublishContent, unscheduleContent, updateAllowedDomain, updateByline, updateBylineField, updateCollection, updateCommentStatus, updateContent, updateField, updateMarketplacePlugin, updateMedia, updateMenu, updateMenuItem, updatePluginSettings, updateRedirect, updateRelation, updateSection, updateSettings, updateTerm, updateUser, updateWidget, uploadMedia, uploadToProvider, useAuthProviderList, useAuthProviders, useCurrentUser, useLocale, useNavigate, useParams, usePluginAdmins, usePluginField, usePluginHasPages, usePluginHasWidgets, usePluginPage, usePluginWidget, validateInviteToken, verifySignupToken };
++export { ImageDetailPanel, MediaUploadProvider, API_BASE, API_TOKEN_SCOPES, AdminApp, AdminApp as App, type AdminBranding, type AdminComment, type AdminManifest, type AllowedDomain, ApiResponseError, type ApiTokenCreateResult, type ApiTokenInfo, type ApiTokenScopeValue, type AttachmentInfo, type AuthProviderModule, AuthProviderProvider, type AuthProviders, type AuthorMapping, type BlockType, type BoundField, type BulkAction, type BylineCreditInput, type BylineCustomFieldValue, type BylineFieldDefinition, type BylineFieldType, type BylineFieldUsage, type BylineFieldValidation, type BylineInput, type BylineSummary, type BylineTranslationInput, CAPABILITY_LABELS, type CollectionSchemaStatus, type CollectionStats, type CommentCounts, type CommentStatus, type ContentAuthor, type ContentDateField, ContentEditor, type ContentEditorPanelContext, type ContentEditorPanelExtension, type ContentEditorProps, type ContentItem, ContentList, type ContentListColumn, type ContentListColumnCellContext, type ContentListColumnExtension, type ContentListColumnHeaderContext, type ContentListProps, type ContentSeo, type ContentSeoInput, type CreateAllowedDomainInput, type CreateApiTokenInput, type CreateBylineFieldInput, type CreateCollectionInput, type CreateContentInput, type CreateFieldInput, type CreateMenuInput, type CreateMenuItemInput, type CreateRedirectInput, type CreateRelationInput, type CreateSectionInput, type CreateTaxonomyInput, type CreateTermInput, type CreateWidgetAreaInput, type CreateWidgetInput, type CurrentUser, type CustomTaxonomy, DEFAULT_LOCALE, Dashboard, type DashboardProps, type DashboardStats, EditorHeader, type EditorHeaderProps, type EmailProvider, type EmailSettings, type EntryLockHolder, type EntryLockStatus, type EntryRef, type FieldCompatibility, type FieldDescriptor, type FieldType, type FindManyResult, type GetSectionsOptions, Header, type ImportConfig, type ImportFieldDef, type ImportResult, type InstallPluginOpts, type InviteVerifyResult, Link, type LocalMediaItem, LoginPage, MEDIA_SEARCH_MAX_LENGTH, type MarketplaceAuditSummary, type MarketplaceAuthor, type MarketplaceImageAuditSummary, type MarketplacePluginDetail, type MarketplacePluginSummary, type MarketplaceSearchOpts, type MarketplaceSearchResult, type MarketplaceVersion, type MediaFolder, type MediaFolderListResult, type MediaImportProgress, type MediaImportResult, type MediaItem, MediaLibrary, type MediaLibraryProps, MediaPickerModal, type MediaPickerModalProps, type MediaProviderCapabilities, type MediaProviderInfo, type MediaProviderItem, type MediaUpdateInput, type MediaUploadOptions, MediaUsageAccessDeniedError, type MediaUsageCoverage, type MediaUsageCoverageStatus, type MediaUsageDetailsResponse, type MediaUsageEntryDetail, type MediaUsageOccurrenceDetail, type MediaUsageSiteSettingDetail, type MediaUsageSourceDetail, type Menu, type MenuItem, type LocaleOptions as MenuLocaleOptions, type MenuTranslation, type MenuTranslationsResponse, type MenuWithItems, type NavMenu, type NotFoundSummary, type OrphanedTable, type PasskeyInfo, PasskeyLogin, type PasskeyLoginProps, PasskeyRegistration, type PasskeyRegistrationProps, type PluginAdminModule, PluginAdminProvider, type PluginAdmins, type PluginInfo, type PluginUpdateInfo, PortableTextEditor, type PortableTextEditorProps, type PostTypeAnalysis, type PrepareRequest, type PrepareResult, type PreviewUrlResponse, type ProbeResult, type RecentItem, type Redirect, type RedirectListOptions, type RedirectListResult, type ReferencePageOptions, type RelationDef, type RelationSide, type RelationWithUsage, type ReorderMenuItemsInput, type Revision, type RevisionListResponse, type RewriteUrlsResult, SUPPORTED_LOCALES, SUPPORTED_LOCALE_CODES, SaveButton, type SaveButtonProps, type SchemaCollection, type SchemaCollectionWithFields, type SchemaField, type SearchEnableResult, type Section, type SectionSource, type SectionsResult, type SettingField, Settings, SetupWizard, Shell, type ShellProps, KumoSidebar as Sidebar, SidebarNav, type SidebarNavProps, type SignupVerifyResult, type SiteDomain, type SiteSettings, type SiteSettingsUpdate, type SourceAuth, type SourceCapabilities, type SourceProbeResult, type SuggestedAction, type LocaleDefinition as SupportedLocale, type TaxonomyDef, type TaxonomyTerm, type TermTranslation, type TermTranslationsResponse, type ThemeAuthor, type ThemeAuthorDetail, type ThemeDetail, type ThemeSearchOpts, type ThemeSearchResult, type ThemeSummary, type TranslationSummary, type TranslationsResponse, type TrashedContentItem, type UninstallPluginOpts, type UpdateAllowedDomainInput, type UpdateBylineFieldInput, type UpdateCollectionInput, type UpdateContentInput, type UpdateFieldInput, type UpdateMenuInput, type UpdateMenuItemInput, type UpdatePluginOpts, type UpdateRedirectInput, type UpdateRelationInput, type UpdateSectionInput, type UpdateTermInput, type UpdateUserInput, type UpdateWidgetInput, type UploadMediaOptions, type UserDetail, type UserListItem, type Widget, type WidgetArea, type WidgetComponent, type WpAuthorInfo, type WpImportProgress, type WpPluginAnalysis, type WxrAnalysis, acquireEntryLock, analyzeWpPluginSite, analyzeWxr, apiFetch, bulkCommentAction, changeSiteDomain, checkPluginUpdates, cn, compareRevisions, completeSignup, createAdminRouter, createAllowedDomain, createApiToken, createByline, createBylineField, createBylineTranslation, createCollection, createContent, createField, createMediaFolder, createMenu, createMenuItem, createMenuTranslation, createRedirect, createRelation, createSection, createSignInHandover, createTaxonomy, createTerm, createTermTranslation, createWidget, createWidgetArea, deleteAllowedDomain, deleteByline, deleteBylineField, deleteCollection, deleteComment, deleteContent, deleteField, deleteFromProvider, deleteMedia, deleteMediaFolder, deleteMenu, deleteMenuItem, deletePasskey, deleteRedirect, deleteRelation, deleteSection, deleteTerm, deleteWidget, deleteWidgetArea, describeCapability, disablePlugin, disableUser, discardDraft, duplicateContent, enablePlugin, enableUser, entryLockRefusal, executeWpPluginImport, executeWxrImport, fetch404Summary, fetchAllowedDomains, fetchApiTokens, fetchAuthMode, fetchBlockTypes, fetchByline, fetchBylineTranslations, fetchBylines, fetchCollection, fetchCollections, fetchComment, fetchCommentCounts, fetchComments, fetchContent, fetchContentAuthors, fetchContentList, fetchDashboardStats, fetchEmailSettings, fetchFields, fetchManifest, fetchMarketplacePlugin, fetchMediaFolder, fetchMediaFolders, fetchMediaItem, fetchMediaList, fetchMediaProviders, fetchMediaUsageDetails, fetchMenu, fetchMenuTranslations, fetchMenus, fetchOrphanedTables, fetchPasskeys, fetchPlugin, fetchPluginSettings, fetchPlugins, fetchProviderMedia, fetchRedirects, fetchReferenceChildren, fetchReferenceParents, fetchRelation, fetchRelations, fetchRevision, fetchRevisions, fetchSection, fetchSections, fetchSettings, fetchSiteDomain, fetchTaxonomyDef, fetchTaxonomyDefs, fetchTermTranslations, fetchTerms, fetchTheme, fetchTranslations, fetchTrashedContent, fetchUser, fetchUsers, fetchWidgetArea, fetchWidgetAreas, fetchWidgetComponents, generatePreviewUrl, getBylineFieldUsage, getDraftStatus, getPreviewUrl, hasAllowedDomains, importWxrMedia, importWxrMediaBatched, installMarketplacePlugin, inviteUser, isTerminalRequestError, listBylineFields, notifyUsersOfDomain, parseApiResponse, permanentDeleteContent, prepareWxrImport, probeImportUrl, publishContent, registerOrphanedTable, releaseEntryLock, renameMediaFolder, renamePasskey, reorderBylineFields, reorderCollections, reorderFields, reorderMenuItems, reorderWidgets, replaceMediaImage, requestSignup, resolveLocale, restoreContent, restoreRevision, revokeApiToken, rewriteContentUrls, scheduleContent, searchMarketplace, searchThemes, sendRecoveryLink, sendTestEmail, setPluginMcpEnabled, setSearchEnabled, throwResponseError, uninstallMarketplacePlugin, unpublishContent, unscheduleContent, updateAllowedDomain, updateByline, updateBylineField, updateCollection, updateCommentStatus, updateContent, updateField, updateMarketplacePlugin, updateMedia, updateMenu, updateMenuItem, updatePluginSettings, updateRedirect, updateRelation, updateSection, updateSettings, updateTerm, updateUser, updateWidget, uploadMedia, uploadToProvider, useAuthProviderList, useAuthProviders, useCurrentUser, useLocale, useNavigate, useParams, usePluginAdmins, usePluginField, usePluginHasPages, usePluginHasWidgets, usePluginPage, usePluginWidget, validateInviteToken, verifySignupToken };
+ //# sourceMappingURL=index.d.ts.map
+\ No newline at end of file
+diff --git a/dist/index.js b/dist/index.js
+index b453c18b..d44e76ca 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -8946,7 +8946,15 @@ function probeImageDimensions(url, errorMessage) {
+ 		image.src = url;
+ 	});
+ }
++const MediaUploadContext = React$1.createContext(null);
++function MediaUploadProvider({ upload, children }) {
++	return React$1.createElement(MediaUploadContext.Provider, { value: upload }, children);
++}
+ function MediaPickerModal({ open, onOpenChange, onSelect, multiple = false, onSelectMany, mimeTypeFilter = "image/", mimeTypeFilters, fieldId, title: providedTitle, confirmLabel, hideUrlInput = false, mediaKind = "image", localOnly = false }) {
++	const customUpload = React$1.useContext(MediaUploadContext);
++	const scopedUpload = customUpload ?? uploadMedia;
++	localOnly = localOnly || !!customUpload;
++	hideUrlInput = hideUrlInput || !!customUpload;
+ 	const { _: _t } = useLingui();
+ 	const queryClient = useQueryClient();
+ 	const currentUser = useCurrentUser().data;
+@@ -9014,7 +9022,7 @@ function MediaPickerModal({ open, onOpenChange, onSelect, multiple = false, onSe
+ 		if (!providerId) throw new Error("Missing upload target");
+ 		if (providerId === "local") return {
+ 			providerId,
+-			item: withLocalMediaUrl(await uploadMedia(file, {
++item: withLocalMediaUrl(await scopedUpload(file, {
+ 				fieldId,
+ 				signal
+ 			}))
+@@ -13606,6 +13614,7 @@ function imageDimension$1(value) {
+ * the content sidebar when `inline` is true.
+ */
+ function ImageDetailPanel({ attributes, onUpdate, onReplace, onDelete, onClose, inlineClassName, stickyFooter = false, inline = false }) {
++	const scopedUpload = React$1.useContext(MediaUploadContext);
+ 	const { _: _t } = useLingui();
+ 	const altInputId = React$1.useId();
+ 	const sourceInputId = React$1.useId();
+@@ -13775,7 +13784,7 @@ function ImageDetailPanel({ attributes, onUpdate, onReplace, onDelete, onClose,
+ 	];
+ 	const selectableAlignmentOptions = alignmentOptions.filter((option) => option.value !== "wide" && option.value !== "full");
+ 	const [showDeleteConfirm, setShowDeleteConfirm] = React$1.useState(false);
+-	const canEditAsset = Boolean(asset.mediaId && canonicalMediaProviderId(asset.provider) === "local");
++	const canEditAsset = !scopedUpload && Boolean(asset.mediaId && canonicalMediaProviderId(asset.provider) === "local");
+ 	const imageActions = /* @__PURE__ */ jsxs("div", {
+ 		className: "mt-3 flex flex-wrap items-center gap-2",
+ 		children: [/* @__PURE__ */ jsx(Button, {
+@@ -30686,7 +30695,7 @@ function mediaItemToImageAttrs(item) {
+ /**
+ * Portable Text Editor Component
+ */
+-function PortableTextEditor({ value, onChange, placeholder, className, editable = true, "aria-labelledby": ariaLabelledby, pluginBlocks = [], focusMode: controlledFocusMode, onEditorReady, minimal = false, onBlockSidebarOpen, onBlockSidebarClose, variant = "boxed", onArrowUpAtStart }) {
++function PortableTextEditor({ value, onChange, placeholder, className, editable = true, "aria-labelledby": ariaLabelledby, pluginBlocks = [], focusMode: controlledFocusMode, onEditorReady, minimal = false, onBlockSidebarOpen, onBlockSidebarClose, variant = "boxed", onArrowUpAtStart, disabledBlockCommands = [] }) {
+ 	const { _: _t6 } = useLingui();
+ 	const onArrowUpAtStartRef = React$1.useRef(onArrowUpAtStart);
+ 	onArrowUpAtStartRef.current = onArrowUpAtStart;
+@@ -30782,8 +30791,11 @@ function PortableTextEditor({ value, onChange, placeholder, className, editable
+ 		}
+ 	}));
+ 	const queryClient = useQueryClient();
++	const scopedUpload = React$1.useContext(MediaUploadContext) ?? uploadMedia;
++	const scopedUploadRef = React$1.useRef(scopedUpload);
++	scopedUploadRef.current = scopedUpload;
+ 	const uploadImageRef = React$1.useRef(async (file, signal) => {
+-		const item = await uploadMedia(file, { signal });
++		const item = await scopedUploadRef.current(file, { signal });
+ 		queryClient.invalidateQueries({ queryKey: ["media"] });
+ 		if (file.type.startsWith("video/")) return mediaItemToVideoAttrs(item);
+ 		return mediaItemToImageAttrs({
+@@ -30825,6 +30837,8 @@ function PortableTextEditor({ value, onChange, placeholder, className, editable
+ 	const pluginBlockTypes = React$1.useMemo(() => new Set(pluginBlocks.map((block) => block.type)), [pluginBlocks]);
+ 	const pluginBlockTypesRef = React$1.useRef(pluginBlockTypes);
+ 	pluginBlockTypesRef.current = pluginBlockTypes;
++	const disabledBlockCommandsRef = React$1.useRef(disabledBlockCommands);
++	disabledBlockCommandsRef.current = disabledBlockCommands;
+ 	const slashCommands = React$1.useMemo(() => {
+ 		const topLevelInsert = (item, insert) => ({
+ 			...item,
+@@ -30925,8 +30939,9 @@ function PortableTextEditor({ value, onChange, placeholder, className, editable
+ 				setPluginBlockModal(block);
+ 			}
+ 		});
+-		return cmds;
++		return cmds.filter((item) => !disabledBlockCommands.includes(item.id));
+ 	}, [
++		disabledBlockCommands,
+ 		pluginBlockTypes,
+ 		pluginBlocks,
+ 		_t6
+@@ -31038,7 +31053,7 @@ function PortableTextEditor({ value, onChange, placeholder, className, editable
+ 		ImageExtension,
+ 		ImageUploadExtension.configure({
+ 			upload: (file, signal) => uploadImageRef.current(file, signal),
+-			acceptsVideo: () => !pluginBlockTypesRef.current.has("video")
++			acceptsVideo: () => !pluginBlockTypesRef.current.has("video") && !disabledBlockCommandsRef.current.includes("video")
+ 		}),
+ 		MarkdownLinkExtension,
+ 		PluginBlockExtension,
+@@ -31656,6 +31671,7 @@ function PortableTextEditor({ value, onChange, placeholder, className, editable
+ 						toolbarRef,
+ 						editor,
+ 						editable,
++						disabledBlockCommands,
+ 						onInsertBlock: handleTouchInsertBlock,
+ 						onInsertImage: openToolbarImagePicker,
+ 						onTableAction: announceTable,
+@@ -33076,7 +33092,7 @@ const toolbarActiveClassName = "bg-kumo-interact/50 text-kumo-link hover:text-ku
+ * Implements WAI-ARIA toolbar pattern with proper keyboard navigation.
+ * Arrow keys move focus between buttons, Home/End jump to first/last.
+ */
+-function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertImage, onTableAction, variant }) {
++function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertImage, onTableAction, variant, disabledBlockCommands = [] }) {
+ 	const { _: _t11 } = useLingui();
+ 	const [showLinkPopover, setShowLinkPopover] = React$1.useState(false);
+ 	const [linkUrl, setLinkUrl] = React$1.useState("");
+@@ -33345,7 +33361,7 @@ function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertIm
+ 						"aria-hidden": "true"
+ 					})
+ 				}),
+-				/* @__PURE__ */ jsx(ToolbarButton, {
++				!disabledBlockCommands.includes("codeBlock") && /* @__PURE__ */ jsx(ToolbarButton, {
+ 					onClick: () => toggleTextBlockType(editor, "codeBlock"),
+ 					active: editorState.isCodeBlock,
+ 					disabled: !editorState.canTurnInto,
+@@ -33358,7 +33374,7 @@ function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertIm
+ 						"aria-hidden": "true"
+ 					})
+ 				}),
+-				/* @__PURE__ */ jsx(ToolbarButton, {
++				!disabledBlockCommands.includes("image") && /* @__PURE__ */ jsx(ToolbarButton, {
+ 					onClick: onInsertImage,
+ 					disabled: editorState.isInTable,
+ 					title: _t11({
+@@ -33370,7 +33386,7 @@ function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertIm
+ 						"aria-hidden": "true"
+ 					})
+ 				}),
+-				/* @__PURE__ */ jsx(ToolbarButton, {
++				!disabledBlockCommands.includes("htmlBlock") && /* @__PURE__ */ jsx(ToolbarButton, {
+ 					onClick: () => insertHtmlBlock(editor),
+ 					disabled: editorState.isInTable,
+ 					title: _t11({
+@@ -33384,7 +33400,7 @@ function EditorToolbar({ toolbarRef, editor, editable, onInsertBlock, onInsertIm
+ 				})
+ 			] }),
+ 			/* @__PURE__ */ jsx(ToolbarSeparator, {}),
+-			/* @__PURE__ */ jsx(ToolbarGroup, { children: /* @__PURE__ */ jsx(TableToolbarControl, {
++			!disabledBlockCommands.includes("table") && /* @__PURE__ */ jsx(ToolbarGroup, { children: /* @__PURE__ */ jsx(TableToolbarControl, {
+ 				editor,
+ 				editable,
+ 				onRun: onTableAction
+@@ -80964,5 +80980,5 @@ function AdminApp({ pluginAdmins = EMPTY_PLUGINS, authProviders = EMPTY_AUTH_PRO
+ }
+ 
+ //#endregion
+-export { API_BASE, API_TOKEN_SCOPES, AdminApp, AdminApp as App, ApiResponseError, AuthProviderProvider, CAPABILITY_LABELS, ContentEditor, ContentList, DEFAULT_LOCALE, Dashboard, EditorHeader, Header, Link, LoginPage, MEDIA_SEARCH_MAX_LENGTH, MediaLibrary, MediaPickerModal, MediaUsageAccessDeniedError, PasskeyLogin, PasskeyRegistration, PluginAdminProvider, PortableTextEditor, SUPPORTED_LOCALES, SUPPORTED_LOCALE_CODES, SaveButton, Settings, SetupWizard, Shell, KumoSidebar as Sidebar, SidebarNav, acquireEntryLock, analyzeWpPluginSite, analyzeWxr, apiFetch, bulkCommentAction, changeSiteDomain, checkPluginUpdates, cn, compareRevisions, completeSignup, createAdminRouter, createAllowedDomain, createApiToken, createByline, createBylineField, createBylineTranslation, createCollection, createContent, createField, createMediaFolder, createMenu, createMenuItem, createMenuTranslation, createRedirect, createRelation, createSection, createSignInHandover, createTaxonomy, createTerm, createTermTranslation, createWidget, createWidgetArea, deleteAllowedDomain, deleteByline, deleteBylineField, deleteCollection, deleteComment, deleteContent, deleteField, deleteFromProvider, deleteMedia, deleteMediaFolder, deleteMenu, deleteMenuItem, deletePasskey, deleteRedirect, deleteRelation, deleteSection, deleteTerm, deleteWidget, deleteWidgetArea, describeCapability, disablePlugin, disableUser, discardDraft, duplicateContent, enablePlugin, enableUser, entryLockRefusal, executeWpPluginImport, executeWxrImport, fetch404Summary, fetchAllowedDomains, fetchApiTokens, fetchAuthMode, fetchBlockTypes, fetchByline, fetchBylineTranslations, fetchBylines, fetchCollection, fetchCollections, fetchComment, fetchCommentCounts, fetchComments, fetchContent, fetchContentAuthors, fetchContentList, fetchDashboardStats, fetchEmailSettings, fetchFields, fetchManifest, fetchMarketplacePlugin, fetchMediaFolder, fetchMediaFolders, fetchMediaItem, fetchMediaList, fetchMediaProviders, fetchMediaUsageDetails, fetchMenu, fetchMenuTranslations, fetchMenus, fetchOrphanedTables, fetchPasskeys, fetchPlugin, fetchPluginSettings, fetchPlugins, fetchProviderMedia, fetchRedirects, fetchReferenceChildren, fetchReferenceParents, fetchRelation, fetchRelations, fetchRevision, fetchRevisions, fetchSection, fetchSections, fetchSettings, fetchSiteDomain, fetchTaxonomyDef, fetchTaxonomyDefs, fetchTermTranslations, fetchTerms, fetchTheme, fetchTranslations, fetchTrashedContent, fetchUser, fetchUsers, fetchWidgetArea, fetchWidgetAreas, fetchWidgetComponents, generatePreviewUrl, getBylineFieldUsage, getDraftStatus, getPreviewUrl, hasAllowedDomains, importWxrMedia, importWxrMediaBatched, installMarketplacePlugin, inviteUser, isTerminalRequestError, listBylineFields, notifyUsersOfDomain, parseApiResponse, permanentDeleteContent, prepareWxrImport, probeImportUrl, publishContent, registerOrphanedTable, releaseEntryLock, renameMediaFolder, renamePasskey, reorderBylineFields, reorderCollections, reorderFields, reorderMenuItems, reorderWidgets, replaceMediaImage, requestSignup, resolveLocale, restoreContent, restoreRevision, revokeApiToken, rewriteContentUrls, scheduleContent, searchMarketplace, searchThemes, sendRecoveryLink, sendTestEmail, setPluginMcpEnabled, setSearchEnabled, throwResponseError, uninstallMarketplacePlugin, unpublishContent, unscheduleContent, updateAllowedDomain, updateByline, updateBylineField, updateCollection, updateCommentStatus, updateContent, updateField, updateMarketplacePlugin, updateMedia, updateMenu, updateMenuItem, updatePluginSettings, updateRedirect, updateRelation, updateSection, updateSettings, updateTerm, updateUser, updateWidget, uploadMedia, uploadToProvider, useAuthProviderList, useAuthProviders, useCurrentUser, useLocale, useNavigate, useParams, usePluginAdmins, usePluginField, usePluginHasPages, usePluginHasWidgets, usePluginPage, usePluginWidget, validateInviteToken, verifySignupToken };
++export { ImageDetailPanel, MediaUploadProvider, API_BASE, API_TOKEN_SCOPES, AdminApp, AdminApp as App, ApiResponseError, AuthProviderProvider, CAPABILITY_LABELS, ContentEditor, ContentList, DEFAULT_LOCALE, Dashboard, EditorHeader, Header, Link, LoginPage, MEDIA_SEARCH_MAX_LENGTH, MediaLibrary, MediaPickerModal, MediaUsageAccessDeniedError, PasskeyLogin, PasskeyRegistration, PluginAdminProvider, PortableTextEditor, SUPPORTED_LOCALES, SUPPORTED_LOCALE_CODES, SaveButton, Settings, SetupWizard, Shell, KumoSidebar as Sidebar, SidebarNav, acquireEntryLock, analyzeWpPluginSite, analyzeWxr, apiFetch, bulkCommentAction, changeSiteDomain, checkPluginUpdates, cn, compareRevisions, completeSignup, createAdminRouter, createAllowedDomain, createApiToken, createByline, createBylineField, createBylineTranslation, createCollection, createContent, createField, createMediaFolder, createMenu, createMenuItem, createMenuTranslation, createRedirect, createRelation, createSection, createSignInHandover, createTaxonomy, createTerm, createTermTranslation, createWidget, createWidgetArea, deleteAllowedDomain, deleteByline, deleteBylineField, deleteCollection, deleteComment, deleteContent, deleteField, deleteFromProvider, deleteMedia, deleteMediaFolder, deleteMenu, deleteMenuItem, deletePasskey, deleteRedirect, deleteRelation, deleteSection, deleteTerm, deleteWidget, deleteWidgetArea, describeCapability, disablePlugin, disableUser, discardDraft, duplicateContent, enablePlugin, enableUser, entryLockRefusal, executeWpPluginImport, executeWxrImport, fetch404Summary, fetchAllowedDomains, fetchApiTokens, fetchAuthMode, fetchBlockTypes, fetchByline, fetchBylineTranslations, fetchBylines, fetchCollection, fetchCollections, fetchComment, fetchCommentCounts, fetchComments, fetchContent, fetchContentAuthors, fetchContentList, fetchDashboardStats, fetchEmailSettings, fetchFields, fetchManifest, fetchMarketplacePlugin, fetchMediaFolder, fetchMediaFolders, fetchMediaItem, fetchMediaList, fetchMediaProviders, fetchMediaUsageDetails, fetchMenu, fetchMenuTranslations, fetchMenus, fetchOrphanedTables, fetchPasskeys, fetchPlugin, fetchPluginSettings, fetchPlugins, fetchProviderMedia, fetchRedirects, fetchReferenceChildren, fetchReferenceParents, fetchRelation, fetchRelations, fetchRevision, fetchRevisions, fetchSection, fetchSections, fetchSettings, fetchSiteDomain, fetchTaxonomyDef, fetchTaxonomyDefs, fetchTermTranslations, fetchTerms, fetchTheme, fetchTranslations, fetchTrashedContent, fetchUser, fetchUsers, fetchWidgetArea, fetchWidgetAreas, fetchWidgetComponents, generatePreviewUrl, getBylineFieldUsage, getDraftStatus, getPreviewUrl, hasAllowedDomains, importWxrMedia, importWxrMediaBatched, installMarketplacePlugin, inviteUser, isTerminalRequestError, listBylineFields, notifyUsersOfDomain, parseApiResponse, permanentDeleteContent, prepareWxrImport, probeImportUrl, publishContent, registerOrphanedTable, releaseEntryLock, renameMediaFolder, renamePasskey, reorderBylineFields, reorderCollections, reorderFields, reorderMenuItems, reorderWidgets, replaceMediaImage, requestSignup, resolveLocale, restoreContent, restoreRevision, revokeApiToken, rewriteContentUrls, scheduleContent, searchMarketplace, searchThemes, sendRecoveryLink, sendTestEmail, setPluginMcpEnabled, setSearchEnabled, throwResponseError, uninstallMarketplacePlugin, unpublishContent, unscheduleContent, updateAllowedDomain, updateByline, updateBylineField, updateCollection, updateCommentStatus, updateContent, updateField, updateMarketplacePlugin, updateMedia, updateMenu, updateMenuItem, updatePluginSettings, updateRedirect, updateRelation, updateSection, updateSettings, updateTerm, updateUser, updateWidget, uploadMedia, uploadToProvider, useAuthProviderList, useAuthProviders, useCurrentUser, useLocale, useNavigate, useParams, usePluginAdmins, usePluginField, usePluginHasPages, usePluginHasWidgets, usePluginPage, usePluginWidget, validateInviteToken, verifySignupToken };
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file

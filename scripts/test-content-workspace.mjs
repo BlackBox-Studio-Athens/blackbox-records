@@ -885,11 +885,52 @@ else if (process.argv.includes('--editor-recovery')) {
     const releaseArtist = page.getByRole('combobox', { name: 'Artist', exact: true });
     await releaseArtist.waitFor();
     assert.equal(await releaseArtist.getAttribute('aria-required'), 'true');
+    await page.getByRole('button', { name: 'Full text', exact: true }).click();
+    const fullText = page.getByRole('region', { name: 'Full text', exact: true });
+    const fullEditor = fullText.getByRole('textbox', { name: 'Full text', exact: true });
+    await fullEditor.waitFor();
+    assert.equal(await fullText.getByRole('button', { name: 'Insert image', exact: true }).count(), 1);
+    await fullEditor.fill('');
+    await fullEditor.pressSequentially('/video');
+    await page.locator('[data-slash-command-menu]').getByText('No results', { exact: true }).waitFor();
+    await fullEditor.press('Escape');
+    const uploadsBefore = recoveryRequests.filter((request) => request === 'POST /_emdash/api/media').length;
+    await fullEditor.evaluate((element) => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File(['unsupported video'], 'clip.mp4', { type: 'video/mp4' }));
+      element.dispatchEvent(new ClipboardEvent('paste', { clipboardData: transfer, bubbles: true, cancelable: true }));
+      element.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }));
+    });
+    await page.waitForTimeout(350);
+    assert.equal(await fullEditor.locator('video').count(), 0, 'Unsupported uploads cannot insert video blocks');
+    assert.equal(
+      recoveryRequests.filter((request) => request === 'POST /_emdash/api/media').length,
+      uploadsBefore,
+      'Unsupported video paste/drop must not upload media',
+    );
+    await fullEditor.fill('Supported text after upgrade');
+    await fullText.getByLabel('YouTube or Vimeo video URL', { exact: true }).fill('https://youtu.be/1sp213QHLX0');
+    const embedSave = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response
+          .request()
+          .postDataJSON()
+          ?.data?.body?.some(
+            (block) => block._type === 'iframe' && block.src === 'https://www.youtube-nocookie.com/embed/1sp213QHLX0',
+          ),
+    );
+    await fullText.getByRole('button', { name: 'Add video', exact: true }).click();
+    await embedSave;
+    assert.ok(
+      records.releases[0].data.body.some((block) => block._type === 'iframe'),
+      'Approved embeds still save',
+    );
     assert.equal(
       await releaseArtist.evaluate(
         (element) =>
           getComputedStyle(
-            element.closest('[data-slot="field"]').querySelector('[data-slot="field-label"] [aria-hidden="true"]'),
+            element.closest('[data-slot="field"]').querySelector('[data-slot="field-label"] span[aria-hidden="true"]'),
             '::after',
           ).content,
       ),
@@ -902,7 +943,7 @@ else if (process.argv.includes('--editor-recovery')) {
     assert.equal(await artistName.getAttribute('required'), '');
     assert.equal(
       await page
-        .locator('label[for="content-title"] [aria-hidden="true"]')
+        .locator('label[for="content-title"] span[aria-hidden="true"]')
         .evaluate((node) => getComputedStyle(node, '::after').content),
       '"*"',
     );
@@ -910,7 +951,7 @@ else if (process.argv.includes('--editor-recovery')) {
     await artistImage.waitFor();
     assert.equal(
       await artistImage
-        .locator('legend [aria-hidden="true"]')
+        .locator('legend span[aria-hidden="true"]')
         .evaluate((node) => getComputedStyle(node, '::after').content),
       '"*"',
     );

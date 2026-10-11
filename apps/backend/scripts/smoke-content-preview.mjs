@@ -7,6 +7,7 @@ import { formattedProse } from '../../../scripts/fixtures/prose.ts';
 import { proseText, sourceCollectionNames } from '@blackbox/content-model';
 
 const leasedPreviews = new Set();
+const uploadsOnly = process.argv.includes('--uploads-only');
 const fetch = async (input, init = {}) => {
   try {
     const response = await globalThis.fetch(input, { ...init, signal: AbortSignal.timeout(30000) });
@@ -559,7 +560,7 @@ async function checkStaffUploads(page, name) {
     await cover.waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: 'Full text', exact: true }).click();
     const fullText = page.getByRole('region', { name: 'Full text', exact: true });
-    await fullText.getByRole('button', { name: 'Insert Image', exact: true }).click();
+    await fullText.getByRole('button', { name: 'Insert image', exact: true }).click();
     const picker = page.getByRole('dialog', { name: 'Select image', exact: true });
     assert.ok(
       await picker.evaluate((dialog) => {
@@ -706,7 +707,9 @@ if (process.argv.includes('--browsers')) {
   }
 }
 try {
-  for (const collection of process.argv.includes('--pairs-only') ? [] : Object.keys(sourceCollectionNames)) {
+  for (const collection of process.argv.includes('--pairs-only') || uploadsOnly
+    ? []
+    : Object.keys(sourceCollectionNames)) {
     const { items } = await get(`content/${collection}?limit=1`);
     assert.ok(items.length, `Missing Local fixture: ${collection}`);
     const before = await get(`content/${collection}/${items[0].id}`);
@@ -884,23 +887,29 @@ try {
     }
   }
   assert.deepEqual(await get('blackbox/publications'), history, 'Preview must not publish');
-  if (browsers.length) await comparePublicPreviews();
+  if (browsers.length && !uploadsOnly) await comparePublicPreviews();
   const newsletter = (await get('content/newsletter?limit=1')).items[0];
   const newsletterBefore = await get(`content/newsletter/${newsletter.id}`);
-  restoreNewsletter = {
-    id: newsletter.id,
-    data: {
-      ...clean(newsletterBefore.item.data),
-      description_rich: newsletterBefore.item.data.description_rich ?? null,
-    },
-  };
+  if (browsers.length && !uploadsOnly)
+    restoreNewsletter = {
+      id: newsletter.id,
+      data: {
+        ...clean(newsletterBefore.item.data),
+        description_rich: newsletterBefore.item.data.description_rich ?? null,
+      },
+    };
   for (const { name, page } of browsers) {
+    if (uploadsOnly) {
+      await checkStaffUploads(page, name);
+      await releaseLeasedPreviews();
+      continue;
+    }
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${base}/content/?collection=newsletter&id=${encodeURIComponent(newsletter.id)}`);
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await page.getByRole('button', { name: 'Mobile', exact: true }).click();
     const description = page.getByRole('textbox', { name: 'Description', exact: true });
-    for (const command of ['Insert Image', 'Insert HTML', 'Insert Table', 'Code Block']) {
+    for (const command of ['Insert image', 'Insert HTML', 'Insert Table', 'Code Block']) {
       assert.equal(
         await page.getByRole('button', { name: command, exact: true }).count(),
         0,

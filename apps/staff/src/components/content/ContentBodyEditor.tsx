@@ -167,8 +167,8 @@ export default function ContentBodyEditor(
               {...props}
               disabledBlockCommands={
                 props.fullText
-                  ? ['htmlBlock', 'gallery', 'section', 'table']
-                  : ['htmlBlock', 'gallery', 'section', 'table', 'image', 'iframe', 'codeBlock', 'code']
+                  ? ['htmlBlock', 'gallery', 'section', 'table', 'video']
+                  : ['htmlBlock', 'gallery', 'section', 'table', 'image', 'iframe', 'codeBlock', 'code', 'video']
               }
               onChange={(next) =>
                 props.onChange?.((props.fullText ? normalizeEditorialBody(next) : next) as typeof next)
