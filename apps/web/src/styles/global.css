@@ -7522,6 +7522,9 @@ body.is-app-shell-overlay-open {
 /* Releases must retain these rules when reached through the persistent shell. Featured records are stacked twin rows:
    the cover above the copy on phones, equal halves from 40rem and a 29rem cover from 64rem. Catalog tiles share the
    cover frame and the 1.5rem column gap, so from 40rem to 64rem they match the featured covers. */
+#releases-merchandising {
+  padding-top: clamp(1.5rem, 4vw, 3rem);
+}
 #releases-merchandising .releases-feature {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
