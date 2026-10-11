@@ -20,14 +20,17 @@ test('@phone Home Browse keeps its compact outline and full tap target', async (
         left: rect.left,
         logoLeft: document.querySelector('header img')!.getBoundingClientRect().left,
         fontSize: getComputedStyle(link).fontSize,
+        padding: [getComputedStyle(link).paddingLeft, getComputedStyle(link).paddingRight],
         haloHeight: parseFloat(halo.height),
         edgeHits: [rect.top - 7, rect.bottom + 7].map((y) => link.contains(document.elementFromPoint(x, y))),
         overflow: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    expect(layout.width, `${width}px drawn width`).toBeCloseTo(100, 0);
+    // The content-sized label varies slightly with browser/platform font metrics.
+    expect(Math.abs(layout.width - 100), `${width}px drawn width difference`).toBeLessThanOrEqual(2);
     expect(layout.height, `${width}px drawn height`).toBe(28);
     expect(layout.fontSize).toBe('12px');
+    expect(layout.padding).toEqual(['8px', '8px']);
     expect(layout.left, `${width}px gutter`).toBeCloseTo(layout.logoLeft, 0);
     expect(layout.haloHeight, `${width}px tap target`).toBeGreaterThanOrEqual(44);
     expect(layout.edgeHits, `${width}px target edges`).toEqual([true, true]);
