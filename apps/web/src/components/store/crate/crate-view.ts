@@ -623,7 +623,7 @@ export function mountStoreCrate(
   /** A sleeve takes its card's image only once it is drawn, reusing the exact image a visible card already shows. */
   function load(piece: Piece, width: number) {
     const img = piece.img;
-    if (!img || piece.id === null || img.dataset.loaded) return;
+    if (!img || piece.id === null || img.dataset.loaded !== undefined) return;
     const source = cardImageOf(piece.id);
     if (!source) return;
     img.dataset.loaded = '';
