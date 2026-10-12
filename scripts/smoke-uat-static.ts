@@ -410,6 +410,7 @@ async function runUatStaticSmokeScenario(input: {
     return evidence;
   } finally {
     diagnostics?.dispose();
+    await context?.unrouteAll({ behavior: 'wait' });
     await context?.close();
   }
 }
