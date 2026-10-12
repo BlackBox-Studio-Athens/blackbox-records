@@ -28,5 +28,5 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
 ## 4. Acceptance
 
-- [ ] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence.
+- [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed after the readability redesign; see [validation.md](validation.md). Committed as `0995c185` and `aa5dfac6`.
 - [ ] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.
