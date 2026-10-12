@@ -34,6 +34,8 @@ import {
 } from './platform/interfaces/http/responses';
 import {
   acceptSelectedPublication,
+  bandcampResolutionPath,
+  handleBandcampResolution,
   authenticatePreview,
   createStaffThumbnailCandidate,
   guardItemLifecycle,
@@ -699,6 +701,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       );
       return Response.json({ status: 'checked' }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
+    if (url.pathname === bandcampResolutionPath) return handleBandcampResolution(request, identity);
     if (url.pathname.startsWith('/_emdash/api/blackbox/publications') || url.pathname === itemArtworkPath) {
       if (!identity) return new Response('Forbidden', { status: 403 });
       const environment = bindings.PRODUCT_ENVIRONMENT?.toLowerCase();

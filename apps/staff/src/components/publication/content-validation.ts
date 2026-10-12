@@ -1,5 +1,5 @@
 import {
-  buildBandcampEmbedUrl,
+  BandcampRecording,
   getCmsContentIssues,
   type CmsCollection,
   type CmsContentIssue,
@@ -67,8 +67,7 @@ export function youtubeVideoId(input: string): string | null {
   }
 }
 
-// Accepts Bandcamp's Share/Embed code or its iframe src and returns the canonical player URL.
-export function bandcampEmbedSrc(input: string): string | null {
-  const src = /<iframe\b[^>]*\bsrc="([^"]+)"/i.exec(input)?.[1] ?? input.trim();
-  return buildBandcampEmbedUrl(src) || null;
+export function bandcampRecordingFromInput(input: string): BandcampRecording | null {
+  const src = /<iframe\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1/i.exec(input)?.[2] ?? input.trim();
+  return BandcampRecording.fromEmbed(src);
 }

@@ -184,6 +184,8 @@ Stock resolves URL and recovery state before its first inventory read. Entry, fi
 
 ## Verification
 
+The optional Bandcamp player field in Releases and Distro accepts HTTPS artist.bandcamp.com album/track addresses, official player URLs and Share/Embed iframe code. Page lookup starts after 750 ms and uses the authenticated, read-only `POST /_emdash/api/blackbox/bandcamp/resolve` endpoint. It validates recording metadata, limits redirects to three supported recording pages, caps decoded HTML at 2 MiB and stops after ten seconds. Only a validated canonical embed enters draft data. Pending or failed input blocks autosave, review and navigation; Retry, Revert and Clear preserve deliberate recovery. Resolution does not establish editorial identity or permanent playback availability, and it never publishes content. Custom Bandcamp domains require official embed code.
+
 Run the normal unit, check and build gates. For the focused browser regression:
 
 ```sh

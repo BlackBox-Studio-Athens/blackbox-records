@@ -1,4 +1,5 @@
 // Public API of the cms-runtime module: only what the combined Worker (cms-worker.ts) consumes.
+export { handleBandcampResolution, bandcampResolutionPath } from './bandcamp-resolution';
 export { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
 export { readPriceDrafts } from './price-drafts';
 export { staffAssetResponse } from './staff-assets';

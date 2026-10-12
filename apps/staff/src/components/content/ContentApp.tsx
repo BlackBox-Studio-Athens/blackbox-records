@@ -161,6 +161,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     commerceGuard.current = guard;
   }, []);
   const uploadPending = useRef(false);
+  const bandcampPendingRef = useRef(false);
+  const [bandcampPending, setBandcampPending] = useState(false);
+  const [editorReset, setEditorReset] = useState(0);
+  const registerBandcampPending = useCallback((pending: boolean) => {
+    bandcampPendingRef.current = pending;
+    setBandcampPending(pending);
+  }, []);
   const uploadGroups = useRef(0);
   const publicationRequest = useRef(false);
   const [preparingPublication, setPreparingPublication] = useState<'review' | 'publish' | null>(null);
@@ -170,13 +177,17 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }, []);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (uploadPending.current || publicationRequest.current) event.preventDefault();
+      if (uploadPending.current || publicationRequest.current || bandcampPendingRef.current) event.preventDefault();
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, []);
   function canLeaveEditor() {
     if (publicationRequest.current) return false;
+    if (bandcampPendingRef.current) {
+      setMessage('Resolve, revert or clear the Bandcamp player before saving or leaving this item.');
+      return false;
+    }
     if (uploadPending.current) {
       setMessage('Wait for the image uploads to finish before leaving this item.');
       return false;
@@ -682,6 +693,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     const focusTarget = reloadFocus.current ?? editorHeading.current;
     setConfirmReload(false);
     if (!current) return;
+    registerBandcampPending(false);
+    setEditorReset((value) => value + 1);
     if (!current.item.id) {
       try {
         sessionStorage.removeItem(pendingKey);
@@ -708,6 +721,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   async function discardSavedDraft() {
+    if (bandcampPendingRef.current) {
+      setMessage('Resolve, revert or clear the Bandcamp player before discarding saved changes.');
+      setConfirmDraftDiscard(false);
+      return;
+    }
     if (uploadPending.current) {
       setMessage('Wait for the image uploads to finish before discarding changes.');
       setConfirmDraftDiscard(false);
@@ -754,6 +772,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
       setData(loaded.item.data);
+      setEditorReset((value) => value + 1);
       if (!['releases', 'distro'].includes(collection)) setItemTab('details');
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
       setDirty(false);
@@ -833,8 +852,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     identity: `${collection}:${document?.item.slug || ''}`,
     value: data,
     dirty,
+    blocked: bandcampPending,
     enabled: !!document && !busy && !conflict && document.item.publicationState !== 'pending',
     async save(snapshot) {
+      if (bandcampPendingRef.current) throw new Error('Resolve, revert or clear the Bandcamp player before saving.');
       const current = currentDocument.current;
       if (!current) return;
       try {
@@ -897,6 +918,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   async function saveNew(event: React.FormEvent) {
     event.preventDefault();
+    if (!canLeaveEditor()) return;
     await autosave.flush();
   }
 
@@ -951,7 +973,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         event.metaKey ||
         event.shiftKey ||
         event.button !== 0 ||
-        (!needsSave.current && !commerceGuard.current && !uploadPending.current)
+        (!needsSave.current && !commerceGuard.current && !uploadPending.current && !bandcampPendingRef.current)
       )
         return;
       event.preventDefault();
@@ -1518,7 +1540,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 ? 'Saving…'
                                 : autosave.error
                                   ? 'Not saved'
-                                  : dirty
+                                  : dirty || bandcampPending
                                     ? 'Unsaved changes'
                                     : 'Changes saved'}{' '}
                               ·{' '}
@@ -1607,7 +1629,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   <History />
                                   Publication history
                                 </DropdownMenuItem>
-                                {dirty && (
+                                {(dirty || bandcampPending) && (
                                   <DropdownMenuItem onSelect={() => requestDiscard()}>
                                     Discard unsaved changes
                                   </DropdownMenuItem>
@@ -1692,7 +1714,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
                             >
                               <legend className="sr-only">{contentSections[collection]} details</legend>
-                              <ContentFeature key={`${collection}:${document.item.slug}`} name="Editor">
+                              <ContentFeature key={`${collection}:${document.item.slug}:${editorReset}`} name="Editor">
                                 <ContentFields
                                   collection={collection}
                                   data={data}
@@ -1703,6 +1725,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   onAddUpcomingRelease={addUpcomingRelease}
                                   editorIdentity={`${collection}:${document.item.slug}`}
                                   onUploadPendingChange={registerUploadPending}
+                                  onBandcampPendingChange={registerBandcampPending}
                                   onAppendGalleryImages={(request) => {
                                     const current = currentDocument.current;
                                     if (!current || request.editorIdentity !== `${collection}:${current.item.slug}`)

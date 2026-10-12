@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateCmsDraft } from '@blackbox/content-model';
-import { bandcampEmbedSrc, getContentValidation, youtubeVideoId } from './content-validation';
+import { bandcampRecordingFromInput, getContentValidation, youtubeVideoId } from './content-validation';
 
 describe('content validation adapter', () => {
   it('accepts navigation checkboxes in the 0/1 form EmDash stores', () => {
@@ -58,9 +58,11 @@ it('reads the Bandcamp player URL from pasted embed code or a bare src', () => {
   const houseSrc =
     'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
   expect(
-    bandcampEmbedSrc(`<iframe style="border: 0" src="${src}" seamless><a href="https://x.bandcamp.com">X</a></iframe>`),
+    bandcampRecordingFromInput(
+      `<iframe style="border: 0" src="${src}" seamless><a href="https://x.bandcamp.com">X</a></iframe>`,
+    )?.player.embedUrl,
   ).toBe(houseSrc);
-  expect(bandcampEmbedSrc(` ${src} `)).toBe(houseSrc);
-  expect(bandcampEmbedSrc('https://artist.bandcamp.com/album/example')).toBeNull();
-  expect(bandcampEmbedSrc('<iframe src="https://evil.example/EmbeddedPlayer/album=1/"></iframe>')).toBeNull();
+  expect(bandcampRecordingFromInput(` ${src} `)?.player.embedUrl).toBe(houseSrc);
+  expect(bandcampRecordingFromInput('https://artist.bandcamp.com/album/example')).toBeNull();
+  expect(bandcampRecordingFromInput('<iframe src="https://evil.example/EmbeddedPlayer/album=1/"></iframe>')).toBeNull();
 });

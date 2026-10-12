@@ -1,4 +1,5 @@
 import TracklistFields from './TracklistFields';
+import BandcampField from './BandcampField';
 import CountryPicker from './CountryPicker';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
 import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
@@ -44,12 +45,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
-import {
-  bandcampEmbedSrc,
-  contentFieldErrors,
-  youtubeVideoId,
-  type ContentValidation,
-} from '../publication/content-validation';
+import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
@@ -81,6 +77,7 @@ export default function ContentFields({
   editorIdentity,
   onAppendGalleryImages,
   onUploadPendingChange,
+  onBandcampPendingChange,
   disabled = false,
   validation,
   validationAttempt,
@@ -97,6 +94,7 @@ export default function ContentFields({
     images: Array<{ image: { id: string }; image_alt: string }>;
   }) => void;
   onUploadPendingChange?: (pending: boolean) => void;
+  onBandcampPendingChange?: (pending: boolean) => void;
   disabled?: boolean;
   validation: ContentValidation;
   validationAttempt: number;
@@ -485,14 +483,12 @@ export default function ContentFields({
     );
   }
   const bandcamp = (
-    <ParsedField
-      path="bandcamp_embed_url"
-      label="Bandcamp player"
+    <BandcampField
+      key={editorIdentity}
+      base={base}
+      disabled={disabled}
       stored={String(data.bandcamp_embed_url ?? '')}
-      parse={bandcampEmbedSrc}
-      invalidMessage="Paste the embed code from Bandcamp's Share/Embed, not the album page address."
-      required={false}
-      help="Optional. Paste the embed code from Bandcamp's Share/Embed."
+      onPendingChange={onBandcampPendingChange}
       onChange={(next) => set('bandcamp_embed_url', next || null)}
       errors={errors('bandcamp_embed_url')}
     />

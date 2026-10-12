@@ -3098,6 +3098,80 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
     await page.goto(`${origin}/content/?collection=releases&id=${created.id}`);
     await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
+    const bandcamp = page.getByRole('textbox', { name: 'Bandcamp player', exact: true });
+    const resolvedPlayer =
+      'https://bandcamp.com/EmbeddedPlayer/album=2345223781/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
+    const bandcampCalls = [];
+    const bandcampRoute = '**/_emdash/api/blackbox/bandcamp/resolve';
+    let finishOldLookup;
+    await page.route(bandcampRoute, async (route) => {
+      const url = route.request().postDataJSON().url;
+      bandcampCalls.push(url);
+      if (url.endsWith('/album/stale'))
+        await new Promise((resolve) => {
+          finishOldLookup = resolve;
+        });
+      if (url.endsWith('/album/fail')) {
+        await route.fulfill({
+          status: 422,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ type: '/problems/bandcamp_resolution_failed', detail: 'Bandcamp unavailable.' }),
+        });
+      } else {
+        await route
+          .fulfill({
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              data: { kind: 'album', id: url.endsWith('/album/stale') ? '123' : '2345223781' },
+            }),
+          })
+          .catch(() => {});
+      }
+    });
+    const playerSaved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.request().postDataJSON()?.data?.bandcamp_embed_url === resolvedPlayer,
+    );
+    await bandcamp.fill('https://mistyroute.bandcamp.com/album/ethos');
+    assert.equal((await playerSaved).status(), 200);
+    await bandcamp.fill('https://mistyroute.bandcamp.com/album/fail');
+    await page.getByText('Bandcamp unavailable.', { exact: true }).waitFor();
+    assert.equal(records.releases.find((item) => item.id === created.id).data.bandcamp_embed_url, resolvedPlayer);
+    const releaseTitle = page.getByRole('textbox', { name: 'Release title', exact: true });
+    const savedTitle = await releaseTitle.inputValue();
+    await releaseTitle.fill(savedTitle + ' unsaved lookup check');
+    await page.waitForTimeout(1800);
+    assert.equal(records.releases.find((item) => item.id === created.id).data.title, savedTitle);
+    await releaseTitle.fill(savedTitle);
+    await page.evaluate(() => window.dispatchEvent(new Event('staff:review-changes')));
+    await page
+      .getByText('Resolve, revert or clear the Bandcamp player before saving or leaving this item.', { exact: true })
+      .waitFor();
+    const retryLookup = page.waitForResponse((response) => response.url().endsWith('/blackbox/bandcamp/resolve'));
+    await page.getByRole('button', { name: 'Retry', exact: true }).click();
+    await retryLookup;
+    await page.getByText('Bandcamp unavailable.', { exact: true }).waitFor();
+    assert.equal(bandcampCalls.filter((url) => url.endsWith('/album/fail')).length, 2);
+    await page.getByRole('button', { name: 'Revert', exact: true }).click();
+    assert.equal(await bandcamp.inputValue(), resolvedPlayer);
+    await bandcamp.fill('https://mistyroute.bandcamp.com/album/stale');
+    const lookupDeadline = Date.now() + 10_000;
+    while (!finishOldLookup && Date.now() < lookupDeadline) await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.ok(finishOldLookup, 'The stale-response fixture must start its lookup');
+    await bandcamp.fill(`<iframe src='${resolvedPlayer}'></iframe>`);
+    finishOldLookup();
+    await page.waitForTimeout(1600);
+    assert.equal(records.releases.find((item) => item.id === created.id).data.bandcamp_embed_url, resolvedPlayer);
+    await bandcamp.fill('invalid');
+    const playerCleared = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' && response.request().postDataJSON()?.data?.bandcamp_embed_url === null,
+    );
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    assert.equal((await playerCleared).status(), 200);
+    await page.unroute(bandcampRoute);
     const singles = page.getByRole('group', { name: 'Singles', exact: true });
     await singles.getByRole('button', { name: 'Add row' }).click();
     await singles.getByRole('textbox', { name: 'Single title' }).fill('First single');
@@ -3163,6 +3237,23 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.getByRole('button', { name: 'Add tracklist', exact: true }).waitFor();
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
     assert.equal(records.releases.find((item) => item.id === created.id).data.tracklist, null);
+    const savedPlayerRelease = records.releases.find((item) => item.id === created.id);
+    savedPlayerRelease.liveData = { ...structuredClone(savedPlayerRelease.data), bandcamp_embed_url: resolvedPlayer };
+    savedPlayerRelease.liveRevisionId = 'live-player';
+    savedPlayerRelease.draftRevisionId = 'draft-player';
+    await page.reload();
+    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
+    assert.equal(await bandcamp.inputValue(), '');
+    await page.getByRole('button', { name: 'More draft actions', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Discard saved changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard saved changes', exact: true }).click();
+    await page.getByText('Saved changes discarded. The live version is now shown.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
+    await page.waitForFunction(
+      (expected) => document.querySelector('#content-bandcamp_embed_url')?.value === expected,
+      resolvedPlayer,
+    );
+    assert.equal(savedPlayerRelease.data.bandcamp_embed_url, resolvedPlayer);
     // Complete catalog filtering, pagination and browser navigation with 250 entries.
     const originalDistro = [...records.distro];
     records.distro.push(

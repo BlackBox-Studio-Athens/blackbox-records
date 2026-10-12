@@ -5,6 +5,7 @@ export function useDraftAutosave<T>({
   value,
   dirty,
   enabled,
+  blocked = false,
   save,
   saved,
 }: {
@@ -12,11 +13,12 @@ export function useDraftAutosave<T>({
   value: T;
   dirty: boolean;
   enabled: boolean;
+  blocked?: boolean;
   save(value: T): Promise<void>;
   saved(value: T): void;
 }) {
-  const latest = useRef({ identity, value, dirty, enabled, save, saved });
-  latest.current = { identity, value, dirty, enabled, save, saved };
+  const latest = useRef({ identity, value, dirty, enabled, blocked, save, saved });
+  latest.current = { identity, value, dirty, enabled, blocked, save, saved };
   const inFlight = useRef<Promise<boolean> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -26,6 +28,7 @@ export function useDraftAutosave<T>({
       return flush();
     }
     const current = latest.current;
+    if (current.blocked) return false;
     if (!current.dirty) return true;
     if (!current.enabled || !navigator.onLine) {
       setError('Not saved. Reconnect or resolve the issue below, then retry.');
@@ -55,18 +58,18 @@ export function useDraftAutosave<T>({
     const success = await request;
     if (!success || latest.current.identity !== current.identity) return success;
     // Navigation and review must also finish edits made while this write was pending.
-    return latest.current.dirty ? flush() : true;
+    return latest.current.dirty || latest.current.blocked ? flush() : true;
   }, []);
   useEffect(() => {
     if (!dirty) setError('');
   }, [identity, dirty]);
   useEffect(() => {
-    if (!dirty || !enabled || error) return;
+    if (!dirty || !enabled || blocked || error) return;
     const timer = window.setTimeout(() => {
       void flush();
     }, 1500);
     return () => window.clearTimeout(timer);
-  }, [value, dirty, enabled, error, flush]);
+  }, [value, dirty, enabled, blocked, error, flush]);
   useEffect(() => {
     const reconnect = () => {
       if (latest.current.dirty) void flush();
