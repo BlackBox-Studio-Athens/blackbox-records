@@ -27,3 +27,4 @@
 
 /app-shell-overlay/*
   Cache-Control: public, max-age=0, must-revalidate
+  X-Robots-Tag: noindex

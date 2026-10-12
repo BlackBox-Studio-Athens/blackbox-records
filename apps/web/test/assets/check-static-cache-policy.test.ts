@@ -17,20 +17,15 @@ describe('check-static-cache-policy', () => {
     expect(validateStaticCachePolicyArtifact(headers)).toEqual([]);
     const rules = parseHeadersArtifact(headers);
     expect(rules.find((rule) => rule.path === '/release.json')?.headers).toEqual(['Cache-Control: no-store']);
-    for (const route of [
-      '/',
-      '/store/*',
-      '/artists/*',
-      '/releases/*',
-      '/news/*',
-      '/about/*',
-      '/services/*',
-      '/app-shell-overlay/*',
-    ]) {
+    for (const route of ['/', '/store/*', '/artists/*', '/releases/*', '/news/*', '/about/*', '/services/*']) {
       expect(rules.find((rule) => rule.path === route)?.headers).toEqual([
         'Cache-Control: public, max-age=0, must-revalidate',
       ]);
     }
+    expect(rules.find((rule) => rule.path === '/app-shell-overlay/*')?.headers).toEqual([
+      'Cache-Control: public, max-age=0, must-revalidate',
+      'X-Robots-Tag: noindex',
+    ]);
   });
   it('parses header rules from the built artifact format', () => {
     expect(

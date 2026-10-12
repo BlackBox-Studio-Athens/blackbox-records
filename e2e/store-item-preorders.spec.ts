@@ -55,6 +55,21 @@ for (const width of [1440, 390]) {
         'Around October 2026',
         'Charged in full today',
       ]);
+      // Playwright text matching skips script contents, so read the structured data from the DOM.
+      const productData = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((scripts) =>
+          scripts.map((script) => JSON.parse(script.textContent!)).filter((data) => data['@type'] === 'Product'),
+        );
+      expect(productData).toHaveLength(1);
+      expect(productData[0]).toMatchObject({
+        offers: {
+          price: '28.00',
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/PreOrder',
+          availabilityStarts: '2026-06-09',
+        },
+      });
       await expect(
         purchase.getByText(
           released

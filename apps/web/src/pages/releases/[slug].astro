@@ -1,7 +1,11 @@
 ---
+import { tracklistGroups } from '@blackbox/content-model';
 import ReleaseDetailContent from '@/components/editorial/ReleaseDetailContent.astro';
 import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { getLabelSettings } from '@/lib/site-data';
+import { createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
+import { createMusicAlbumStructuredData } from '@/platform/lib/structured-data';
 import {
   createReleaseDetailStaticPaths,
   resolveArtistProfileForRelease,
@@ -21,11 +25,26 @@ const release = Astro.props.release ?? (await getEntry('releases', Astro.params.
 if (!release) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const releaseArtist = await resolveArtistProfileForRelease(release);
 const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
+const album = createMusicAlbumStructuredData({
+  name: release.data.title,
+  url: createCanonicalUrl(Astro.url, Astro.site),
+  image: new URL(release.data.cover_image.src, Astro.site ?? Astro.url).href,
+  label: (await getLabelSettings()).label_name,
+  artist: {
+    name: artistName,
+    url: releaseArtist
+      ? new URL(createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`), Astro.site ?? Astro.url).href
+      : undefined,
+  },
+  releaseDate: release.data.release_date,
+  tracks: tracklistGroups(release.data.tracklist, release.data.tracklist?.format).flatMap((group) => group.tracks),
+});
 ---
 
 <SiteLayout
   pageTitle={release.data.title}
   pageDescription={release.data.summary || `${release.data.title} by ${artistName}`}
+  structuredData={album}
 >
   <ReleaseDetailContent release={release} />
 </SiteLayout>

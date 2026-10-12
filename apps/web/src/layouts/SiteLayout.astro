@@ -17,6 +17,7 @@ import {
 } from '@/platform/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';
+import { createWebSiteStructuredData, serializeStructuredData } from '@/platform/lib/structured-data';
 
 interface Props {
   pageTitle?: string;
@@ -28,10 +29,22 @@ interface Props {
   pageDate?: Date;
   redirectUrl?: string;
   robots?: string;
+  /** A page entity (MusicAlbum, MusicGroup) published beside the Organization data. */
+  structuredData?: Record<string, unknown>;
 }
 
-const { pageTitle, pageDescription, pageSummary, bodyClass, mainClass, layoutType, pageDate, redirectUrl, robots } =
-  Astro.props;
+const {
+  pageTitle,
+  pageDescription,
+  pageSummary,
+  bodyClass,
+  mainClass,
+  layoutType,
+  pageDate,
+  redirectUrl,
+  robots,
+  structuredData,
+} = Astro.props;
 
 const [labelSettings, socialItems] = await Promise.all([getLabelSettings(), getSocialItems()]);
 
@@ -51,6 +64,9 @@ const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 const baseHtmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
 const htmlTitle = showReviewSiteMarker ? `[UAT] ${baseHtmlTitle}` : baseHtmlTitle;
 const preloadGeistMono = Astro.url.pathname === createProjectRelativeUrl('/releases/');
+const pageEntity =
+  structuredData ??
+  (Astro.url.pathname === createProjectRelativeUrl('/') ? createWebSiteStructuredData(orgName, orgUrl) : undefined);
 const resolvedBodyClass = ['min-h-screen flex flex-col overflow-x-clip bg-background text-foreground', bodyClass]
   .filter(Boolean)
   .join(' ');
@@ -147,6 +163,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
         sameAs,
       })}
     />
+    {pageEntity && <script is:inline type="application/ld+json" set:html={serializeStructuredData(pageEntity)} />}
     <link rel="preload" href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     {preloadGeistMono && (

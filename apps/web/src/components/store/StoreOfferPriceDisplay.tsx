@@ -5,6 +5,7 @@ import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
 import { cn } from '@/components/ui/utils';
 import { preorderBadges, shipEstimateText } from '@/platform/lib/preorder-estimate';
+import type { ProductFacts } from '@/platform/lib/structured-data';
 
 export const STORE_OFFER_PRICE_DISPLAY_COPY = {
   loading: 'Checking price',
@@ -18,6 +19,8 @@ export type StoreOfferPriceDisplayView = {
   label: string;
   tone: StoreOfferPriceDisplayTone;
   preorder?: Extract<PublicStoreOffer, { catalogStatus: 'ready' }>['preorder'];
+  /** `Product` JSON-LD from the same offer, only when the page passes its product facts. */
+  structuredData?: string;
 };
 
 type StoreOfferPriceDisplayProps = {
@@ -26,6 +29,7 @@ type StoreOfferPriceDisplayProps = {
   releaseDate?: Date | string | null | undefined;
   isVinyl?: boolean;
   preorderFacts?: boolean;
+  product?: ProductFacts;
   suppressUnavailableHeadline?: boolean;
   storeItemSlug: string;
 };
@@ -58,9 +62,21 @@ export function createStoreOfferPriceDisplayView(
 export async function loadStoreOfferPriceDisplayView(
   api: PublicCheckoutApi,
   storeItemSlug: string,
+  product?: ProductFacts,
 ): Promise<StoreOfferPriceDisplayView> {
   try {
-    return createStoreOfferPriceDisplayView(await api.readStoreOffer(storeItemSlug));
+    const offer = await api.readStoreOffer(storeItemSlug);
+    const view = createStoreOfferPriceDisplayView(offer);
+    if (!product || view.tone !== 'ready') return view;
+    // Lazy: only the Store Item page passes product facts, and the price never waits on this module.
+    const structuredData = await import('@/platform/lib/structured-data').then(
+      (module) => {
+        const entity = module.createProductStructuredData(offer, product);
+        return entity && module.serializeStructuredData(entity);
+      },
+      () => null,
+    );
+    return structuredData ? { ...view, structuredData } : view;
   } catch {
     return {
       ...createStoreOfferPriceDisplayView(null),
@@ -75,6 +91,7 @@ export default function StoreOfferPriceDisplay({
   releaseDate,
   isVinyl = false,
   preorderFacts = false,
+  product,
   storeItemSlug,
   suppressUnavailableHeadline = false,
 }: StoreOfferPriceDisplayProps) {
@@ -95,7 +112,7 @@ export default function StoreOfferPriceDisplay({
       try {
         const checkoutApi =
           api ?? (await import('@/components/store/checkout/public-checkout-api')).createPublicCheckoutApi();
-        const nextView = await loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
+        const nextView = await loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug, product);
         if (isActive) setView(nextView);
       } catch {
         if (isActive) setView({ ...createStoreOfferPriceDisplayView(null), tone: 'error' });
@@ -106,7 +123,7 @@ export default function StoreOfferPriceDisplay({
     return () => {
       isActive = false;
     };
-  }, [api, storeItemSlug]);
+  }, [api, product, storeItemSlug]);
 
   return (
     <Wrapper>
@@ -154,6 +171,9 @@ export default function StoreOfferPriceDisplay({
             <dd>Charged in full today</dd>
           </div>
         </dl>
+      )}
+      {view.structuredData && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: view.structuredData }} />
       )}
     </Wrapper>
   );

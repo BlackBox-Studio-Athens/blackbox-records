@@ -2,6 +2,8 @@
 import ArtistDetailContent from '@/components/artists/ArtistDetailContent.astro';
 import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { createCanonicalUrl } from '@/platform/config/site';
+import { createMusicGroupStructuredData } from '@/platform/lib/structured-data';
 import { createArtistDetailStaticPaths, type ArtistProfileEntry } from '@/lib/catalog-data';
 
 export async function getStaticPaths() {
@@ -15,8 +17,15 @@ interface Props {
 const artist = Astro.props.artist ?? (await getEntry('artists', Astro.params.slug ?? ''));
 if (!artist) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const artistName = artist.data.title || 'Artist';
+const group = createMusicGroupStructuredData({
+  name: artistName,
+  url: createCanonicalUrl(Astro.url, Astro.site),
+  image: new URL(artist.data.image.src, Astro.site ?? Astro.url).href,
+  genre: artist.data.genre,
+  sameAs: (artist.data.profile_links ?? []).map((link) => link.url),
+});
 ---
 
-<SiteLayout pageTitle={artistName} pageDescription={artist.data.bio}>
+<SiteLayout pageTitle={artistName} pageDescription={artist.data.bio} structuredData={group}>
   <ArtistDetailContent artist={artist} />
 </SiteLayout>

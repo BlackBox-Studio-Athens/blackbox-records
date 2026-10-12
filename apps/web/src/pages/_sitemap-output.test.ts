@@ -12,4 +12,11 @@ describe('sitemap Store category coverage', () => {
     expect(source).toContain('storeEntries.flatMap((entry) => entry.categoryIds)');
     expect(source).not.toContain("'/distro/'");
   });
+
+  it('lists every Store Item from the same source as the Store Item static paths', () => {
+    expect(source).toContain('listStoreItems()');
+    expect(source).toContain('storeItems.map((storeItem) => `/store/${storeItem.slug}/`)');
+    expect(source).toContain('...storeItemPaths]');
+    expect(source).not.toContain('<lastmod>');
+  });
 });

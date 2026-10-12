@@ -217,6 +217,41 @@ describe('StoreOfferPriceDisplay', () => {
     expect(html).not.toContain('preorder-facts');
   });
 
+  it('publishes one Product script from the ready offer only when the page passes its facts', async () => {
+    const product = {
+      name: 'Disintegration',
+      description: 'Black vinyl.',
+      image: 'https://example.test/cover.jpg',
+      url: 'https://example.test/store/disintegration-black-vinyl-lp/',
+      brand: 'Blackbox Records',
+    };
+    const api = createApi({ readStoreOffer: vi.fn(async () => workerOffer) });
+    const view = await loadStoreOfferPriceDisplayView(api, workerOffer.storeItemSlug, product);
+    const html = renderView(view, { product });
+
+    expect(JSON.parse(view.structuredData!)).toMatchObject({ '@type': 'Product', offers: { price: '28.00' } });
+    expect(html.match(/application\/ld\+json/g)).toHaveLength(1);
+    expect(renderView(await loadStoreOfferPriceDisplayView(api, workerOffer.storeItemSlug))).not.toContain('ld+json');
+  });
+
+  it('publishes no Product script after a failed read', async () => {
+    const api = createApi({
+      readStoreOffer: vi.fn(async () => {
+        throw new Error('Worker unavailable');
+      }),
+    });
+    const view = await loadStoreOfferPriceDisplayView(api, workerOffer.storeItemSlug, {
+      name: 'Disintegration',
+      description: 'Black vinyl.',
+      image: 'https://example.test/cover.jpg',
+      url: 'https://example.test/store/disintegration-black-vinyl-lp/',
+      brand: 'Blackbox Records',
+    });
+
+    expect(view).not.toHaveProperty('structuredData');
+    expect(renderView(view)).not.toContain('ld+json');
+  });
+
   it('shows no facts after a failed read', async () => {
     const api = createApi({
       readStoreOffer: vi.fn(async () => {

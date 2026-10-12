@@ -28,6 +28,7 @@
         "./lib/public-image-fallback.ts",
         "./lib/preorder-estimate.ts",
         "./lib/availability-copy.ts",
+        "./lib/structured-data.ts",
         "./utils/urls.ts"
       ],
       "namedInterfaces": {},

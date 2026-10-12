@@ -13,10 +13,11 @@ import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
 import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
-import { createProjectRelativeUrl } from '@/platform/config/site';
+import { createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createReleaseDetailPath, resolveArtistProfileForRelease } from '@/lib/catalog-data';
+import { getLabelSettings } from '@/lib/site-data';
 import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
 import {
   createCartLineItemSnapshotForStorePage,
@@ -96,13 +97,18 @@ const credits = sourceRelease?.data.credits ?? [];
 const partnerLinks = sourceRelease?.data.partner_links ?? [];
 const singles = sourceRelease?.data.singles ?? [];
 const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 0;
+const pageDescription = storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`;
+const product = {
+  name: storeItem.title,
+  description: pageDescription,
+  image: new URL(storeItem.image.src, Astro.site ?? Astro.url).href,
+  url: createCanonicalUrl(Astro.url, Astro.site),
+  brand: storeItem.sourceKind === 'release' ? (await getLabelSettings()).label_name : storeItem.subtitle,
+  releaseDate,
+};
 ---
 
-<SiteLayout
-  mainClass="store-item-page"
-  pageTitle={`${storeItem.title} | Store`}
-  pageDescription={storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`}
->
+<SiteLayout mainClass="store-item-page" pageTitle={`${storeItem.title} | Store`} pageDescription={pageDescription}>
   <section class="layout-container pt-6 pb-6" data-tone="store">
     <a
       href={createProjectRelativeUrl('/store/')}
@@ -163,6 +169,7 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
           releaseDate={releaseDate}
           isVinyl={isVinyl}
           preorderFacts
+          product={product}
           suppressUnavailableHeadline
           className="block font-display text-3xl tracking-[0.08em] uppercase text-foreground"
         />
