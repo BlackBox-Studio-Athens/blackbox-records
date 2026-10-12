@@ -2669,7 +2669,8 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.goto(`${origin}/content/?collection=releases`);
     await page.getByRole('button', { name: 'Hide navigation', exact: true }).waitFor();
     const topNavigation = page.locator('.staff-top-navigation');
-    assert.equal(await topNavigation.getByRole('link').count(), 6);
+    const navigationLabels = ['Overview', 'Catalog', 'Website', 'Images', 'Stock', 'Orders', 'Stats'];
+    assert.deepEqual(await topNavigation.getByRole('link').allTextContents(), navigationLabels);
     await page.getByRole('button', { name: 'Hide navigation', exact: true }).click();
     await page.reload();
     await page.getByRole('button', { name: 'Show navigation', exact: true }).waitFor();
@@ -2727,6 +2728,7 @@ else if (process.argv.includes('--editor-recovery')) {
         ['Catalog', 'Website'].includes(name) ? 1 : 0,
       );
     }
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
     assert.equal(
       await page.getByRole('link', { name: 'View website', exact: true }).getAttribute('href'),
       expectedWebsiteUrl,
@@ -2753,9 +2755,12 @@ else if (process.argv.includes('--editor-recovery')) {
         await page.getByRole('button', { name: 'Menu', exact: true }).click();
         const drawer = page.getByRole('dialog', { name: 'Staff workspace', exact: true });
         await drawer.waitFor();
-        assert.equal(
-          await drawer.getByRole('navigation', { name: 'Staff workspace', exact: true }).getByRole('link').count(),
-          6,
+        assert.deepEqual(
+          await drawer
+            .getByRole('navigation', { name: 'Staff workspace', exact: true })
+            .getByRole('link')
+            .allTextContents(),
+          navigationLabels,
         );
         await page.keyboard.press('Shift+Tab');
         assert.equal(await page.evaluate(() => !!document.activeElement.closest('[role="dialog"]')), true);
