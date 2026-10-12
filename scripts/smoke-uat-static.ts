@@ -869,6 +869,7 @@ async function checkPhoneRoutes(
       });
     }
   } finally {
+    await context.unrouteAll({ behavior: 'wait' });
     await context.close();
   }
   return checks;
