@@ -1465,7 +1465,7 @@ else if (process.argv.includes('--editor-recovery')) {
   }
 
   async function assertOptionalFeatures(browser) {
-    const historyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const historyContext = await browser.newContext({ viewport: { width: 1920, height: 1000 } });
     const historyPage = await historyContext.newPage();
     historyPage.on('pageerror', (error) => console.error('History browser error:', error.message));
     const historyRequests = [];
