@@ -79,10 +79,12 @@ function fixture(t, options = {}) {
       if (pathname === '/client/v4/user/tokens/verify') return envelope({ status: 'active' });
       if (pathname === zonePath) return envelope({ name: new URL(apex).hostname, account: { id: account } });
       if (pathname === `${zonePath}/dns_records`) {
-        return envelope(
+        const records =
           url.searchParams.get('name') === state.dns.name
-            ? [{ ...state.dns }]
-            : [{ id: 'www-dns', name: `www.${state.dns.name}`, content: state.dns.name }],
+            ? [{ ...state.dns }, { id: 'apex-txt', name: state.dns.name, type: 'TXT', content: 'verification' }]
+            : [{ id: 'www-dns', name: `www.${state.dns.name}`, type: 'CNAME', content: state.dns.name }];
+        return envelope(
+          records.filter((record) => !url.searchParams.has('type') || record.type === url.searchParams.get('type')),
         );
       }
       if (pathname === `${zonePath}/dns_records/apex-dns` && method === 'PATCH') {

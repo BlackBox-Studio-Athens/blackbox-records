@@ -170,8 +170,8 @@ export async function runLaunch(
     ...(settings ? { settings } : {}),
   });
   const readDns = async (name) => {
-    const records = await api(`${cfZone}/dns_records?name=${encodeURIComponent(name)}&per_page=100`);
-    assert.equal(records.length, 1, `Expected exactly one ${name} DNS record.`);
+    const records = await api(`${cfZone}/dns_records?name=${encodeURIComponent(name)}&type=CNAME&per_page=100`);
+    assert.equal(records.length, 1, `Expected exactly one ${name} CNAME record.`);
     return records[0];
   };
   const verifyHome = async () => {

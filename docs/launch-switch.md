@@ -1,6 +1,6 @@
 # Launch preparation and switch
 
-This runbook implements [prepare-launch-switch](../openspec/changes/prepare-launch-switch/tasks.md). Its hosted acceptance tasks remain the authority for readiness. Local tests do not authorize shopper launch or establish hosted routing, Access, Stripe delivery or provider acceptance.
+This runbook implements [prepare-launch-switch](../openspec/changes/archive/2026-10-12-prepare-launch-switch/tasks.md), completed on 2026-10-12. Its [validation record](../openspec/changes/archive/2026-10-12-prepare-launch-switch/validation.md) establishes preparation readiness. Local tests do not authorize shopper launch or replace hosted routing, Access, Stripe delivery or provider acceptance.
 
 ## Prepare the API and artwork
 
@@ -32,7 +32,7 @@ HTTP reads refuse UAT redirects instead of treating the login page as success. B
 
 Public/staff e2e jobs build local fixtures; they make no hosted UAT site read. Content-workspace tests only use the UAT URL as fixture data. Resend smoke sends the UAT URL as an Origin header to the public API; it does not read the site. Worker identity checks, Stripe webhooks, catalog API reads and Local `uat-connected` stay on the public UAT API and receive no site token.
 
-After enabling Access, run the UAT push and promotion gates, verify anonymous production and preview pages require sign-in, verify a fresh accepted image and email logo anonymously, and confirm the UAT API remains public. No Access setup or hosted proof has been performed by the local implementation.
+Access setup and hosted proof completed on 2026-10-12: run 38239956395 passed its deploy gate with Access enabled; anonymous production and preview pages require sign-in, token reads succeed, accepted media and the email logo remain public, and the UAT API remains public. The original UAT checkout override is restored to true on accepted source 58035ca. See the change's validation record for evidence and the corrected Dashboard restoration incident.
 
 ## Credentials and saved Dashboard review
 
@@ -49,6 +49,10 @@ STRIPE_LAUNCH_KEY=<restricted-live-key>
 Scope the Cloudflare token to the project account and `blackboxrecordsathens.com` zone: Zone Read, DNS Edit, Zone Settings Edit, Single Redirect Read, Account Pages Read, Workers Scripts Edit, Bulk URL Redirects Edit and Account Filter Lists Edit. The last two are both required by the [Bulk Redirect API](https://developers.cloudflare.com/rules/url-forwarding/bulk-redirects/create-api/). The implementation reads `/user/tokens/verify`; use a user API token. It checks active status, zone/account identity and resource reads; it cannot prove write permissions without writing.
 
 The restricted live Stripe key needs account, Product and webhook endpoint reads, plus webhook endpoint write for the separately executed preparation update. Artwork mutation needs its own reviewed catalog authority. No payment, refund or customer write is needed by the launch command. `gh` must already be authenticated for read access to repository Actions runs/jobs. Chromium must be installed for the controlled fallback check.
+
+Both scoped launch credentials were created with specific owner approval on 2026-10-12 and saved in ignored `.env.launch`; the Stripe owner completed email verification. No automatic expiry was selected. The optional Bing key is absent. The cutover rehearsal passed with 12 reads; the pre-cutover finalize rehearsal correctly refused with zero requests. Shell values still override the file, so remove unrelated process credentials before using this file.
+
+PRD email branding currently uses the public PRD Pages URLs, matching `readEmailRuntimeConfig`; replies use `support@blackboxrecordsathens.com`. Those three deployed variables were corrected during form acceptance, preserving accepted code and every other binding. Finalization's Pages redirect carries existing email links to the apex. Any future direct-apex email-brand migration must update the runtime profile and variables together.
 
 Inspect the signed-in live Stripe Dashboard through the Chrome extension: business website, Checkout terms/privacy and enabled legal links. Save only this review data to ignored `.codex-artifacts/launch/stripe-dashboard-review.json`:
 

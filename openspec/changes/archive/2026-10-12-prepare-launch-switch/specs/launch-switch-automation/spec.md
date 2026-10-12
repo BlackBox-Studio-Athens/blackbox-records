@@ -1,3 +1,7 @@
+## Purpose
+
+Define the staged local launch commands, their read-only rehearsal, recovery boundaries and prerequisites for retiring temporary production addresses.
+
 ## ADDED Requirements
 
 ### Requirement: Launch runs as staged local commands

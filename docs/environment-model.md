@@ -80,7 +80,7 @@ The About contact directory links `info@`, `demos@` and `touring@blackboxrecords
 
 ## Origins And API Targets
 
-The prepared PRD API target is `https://blackboxrecordsathens.com/api/*`, with approved product artwork at `/media/published/*`. The readiness Pages site remains in allowed origins through cutover. Routing promotion, GitHub variable change, Stripe endpoint migration and hosted acceptance are tracked separately in [launch preparation](../openspec/changes/prepare-launch-switch/tasks.md); the [launch runbook](launch-switch.md) owns Access setup, credential scopes and staged recovery. These prepared settings do not establish that the hosted migration has happened.
+The PRD API serves `https://blackboxrecordsathens.com/api/*`, with approved product artwork at `/media/published/*`. The readiness Pages site remains in allowed origins through cutover. Routing promotion, GitHub variable change, Stripe endpoint/artwork migration and hosted acceptance completed on 2026-10-12; [launch preparation evidence](../openspec/changes/archive/2026-10-12-prepare-launch-switch/validation.md) records the accepted release and checks. The [launch runbook](launch-switch.md) owns Access setup, credential scopes and staged recovery. Apex Home remains the Holding Page until the separate shopper cutover.
 
 | Scope                 | `PUBLIC_BACKEND_BASE_URL`                                                             | `CHECKOUT_RETURN_ORIGINS`                                                                |
 | --------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |

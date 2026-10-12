@@ -25,7 +25,7 @@ The owner approved a narrow published-media bypass on 2026-10-12: only the canon
 
 PRD's backend origin profile and new approved artwork URLs use the apex. The additional `/media/published/*` Worker route serves approved objects before and after cutover. During migration the existing PRD Worker origin serves the same approved bytes; disabling that address is deferred to finalization. Migrating existing Stripe URLs remains a reviewed live catalog operation.
 
-CI reads UAT with an Access service token (`CF-Access-Client-Id` and `CF-Access-Client-Secret`) wherever it reads the UAT site. The inventory and repository secret names live in [the launch runbook](../../../docs/launch-switch.md). HTTP reads refuse redirects, and browser requests fulfill one authenticated hop only on the UAT origin. Access-authenticated provider smoke cannot retain a Playwright trace because it would record credentials; screenshots and redacted summaries remain available.
+CI reads UAT with an Access service token (`CF-Access-Client-Id` and `CF-Access-Client-Secret`) wherever it reads the UAT site. The inventory and repository secret names live in [the launch runbook](../../../../docs/launch-switch.md). HTTP reads refuse redirects, and browser requests fulfill one authenticated hop only on the UAT origin. Access-authenticated provider smoke cannot retain a Playwright trace because it would record credentials; screenshots and redacted summaries remain available.
 
 ## The launch script
 
