@@ -30,3 +30,4 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
 - [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed after the readability redesign; see [validation.md](validation.md). Committed as `0995c185` and `aa5dfac6`.
 - [ ] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.
+  - Attempted on PRD release `be69cd6e` / run 565: Stats returned HTTP 503, reference `2d75ec48-58d0-4e47-8a1c-351abf412552`; matching Worker events are recorded in [validation.md](validation.md#prd-release-and-live-acceptance--2026-10-13). The full UTC-day comparison and live GraphQL field compatibility remain unverified.

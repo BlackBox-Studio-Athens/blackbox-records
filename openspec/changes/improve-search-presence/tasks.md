@@ -40,4 +40,5 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 - [x] 5.1 [Claude or Codex] Run focused tests, strict OpenSpec validation and `pnpm validate`; record evidence.
   - [Validation note](validation.md).
 - [ ] 5.2 [Claude or Codex] After promotion (on `pages.dev` before switch day, on the apex after): run Rich Results Test and Schema Markup Validator on one in-stock and one pre-order item, one sold-out item (expect no `Product` data), one release, one artist and Home; record results.
+  - PRD release `be69cd6e` / run 565: both validators checked the in-stock item, release, artist and Home. The live listing has no pre-order or sold-out item; the release also has a non-error MusicAlbum `recordLabel` warning. Full matrix and screenshots are in [validation.md](validation.md#task-52-external-schema-validators); this task remains unchecked.
 - [ ] 5.3 [Claude or Codex] After switch day, confirm in Search Console that the submitted sitemap's URL count matches the generated sitemap; archive this change.
