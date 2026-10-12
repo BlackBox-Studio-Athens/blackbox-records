@@ -15,6 +15,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read site visits, page views and their top breakdowns. */
+        get: operations["readSiteAnalytics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/inventory": {
         parameters: {
             query?: never;
@@ -778,6 +795,40 @@ export type components = {
             /** @enum {string} */
             zeroStockState: "coming_soon" | "repressing" | "sold_out";
         };
+        SiteAnalytics: {
+            daily: {
+                /** Format: date */
+                date: string;
+                pageViews: number;
+                visits: number;
+            }[];
+            deviceTypes: {
+                deviceType: string;
+                pageViews: number;
+                visits: number;
+            }[];
+            /** Format: date-time */
+            generatedAt: string | null;
+            /** @enum {string} */
+            range: "7d" | "30d";
+            /** @enum {string} */
+            status: "ok" | "not_configured";
+            topCountries: {
+                country: string;
+                pageViews: number;
+                visits: number;
+            }[];
+            topPaths: {
+                pageViews: number;
+                path: string;
+                visits: number;
+            }[];
+            topReferrers: {
+                host: string;
+                pageViews: number;
+                visits: number;
+            }[];
+        };
     };
     responses: never;
     parameters: never;
@@ -815,6 +866,55 @@ export interface operations {
                 };
             };
             /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readSiteAnalytics: {
+        parameters: {
+            query: {
+                range: "7d" | "30d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Analytics snapshot or not configured. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteAnalytics"];
+                };
+            };
+            /** @description Range must be 7d or 30d. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Analytics or operator authentication is temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;

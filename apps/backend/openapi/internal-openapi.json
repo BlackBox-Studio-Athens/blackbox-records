@@ -697,6 +697,163 @@
           "needs_review"
         ]
       },
+      "SiteAnalytics": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d"
+            ]
+          },
+          "generatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_configured"
+            ]
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "visits": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pageViews": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "date",
+                "visits",
+                "pageViews"
+              ]
+            }
+          },
+          "topPaths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "visits": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pageViews": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "path",
+                "visits",
+                "pageViews"
+              ]
+            }
+          },
+          "topReferrers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "host": {
+                  "type": "string"
+                },
+                "visits": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pageViews": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "host",
+                "visits",
+                "pageViews"
+              ]
+            }
+          },
+          "topCountries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "country": {
+                  "type": "string"
+                },
+                "visits": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pageViews": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "country",
+                "visits",
+                "pageViews"
+              ]
+            }
+          },
+          "deviceTypes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "deviceType": {
+                  "type": "string"
+                },
+                "visits": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pageViews": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "deviceType",
+                "visits",
+                "pageViews"
+              ]
+            }
+          }
+        },
+        "required": [
+          "range",
+          "generatedAt",
+          "status",
+          "daily",
+          "topPaths",
+          "topReferrers",
+          "topCountries",
+          "deviceTypes"
+        ]
+      },
       "InventoryPage": {
         "type": "object",
         "properties": {
@@ -2507,6 +2664,71 @@
           },
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/analytics": {
+      "get": {
+        "operationId": "readSiteAnalytics",
+        "tags": [
+          "Internal analytics"
+        ],
+        "summary": "Read site visits, page views and their top breakdowns.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d"
+              ]
+            },
+            "required": true,
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics snapshot or not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteAnalytics"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Range must be 7d or 30d.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Analytics or operator authentication is temporarily unavailable.",
             "content": {
               "application/problem+json": {
                 "schema": {

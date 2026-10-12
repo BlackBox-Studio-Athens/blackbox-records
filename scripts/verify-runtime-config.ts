@@ -24,6 +24,9 @@ export type RuntimeConfigCategory = {
     | 'CHECKOUT_RETURN_ORIGINS'
     | 'CF_ACCESS_POLICY_AUD'
     | 'CF_ACCESS_TEAM_DOMAIN'
+    | 'CLOUDFLARE_ANALYTICS_API_TOKEN'
+    | 'CLOUDFLARE_ACCOUNT_ID'
+    | 'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG'
     | 'COMMERCE_DB'
     | 'FLAGS'
     | 'LOCAL_OPERATOR_EMAIL'
@@ -146,6 +149,7 @@ export function verifyRuntimeConfig(input: {
     classifyWorkerOriginScope(productEnvironmentProfile, environmentBlock),
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
     ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
+    ...classifyAnalyticsRuntimeConfig(environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
     classifyPrdLaunchApproval(productEnvironmentProfile),
     classifyPrdCatalogCronPresence(productEnvironmentProfile, environmentBlock),
@@ -293,7 +297,10 @@ function classifyWorkerConfigPresence(
 }
 
 function classifySecretPresence(
-  name: Extract<RuntimeConfigCategory['name'], 'RESEND_API_KEY' | 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'>,
+  name: Extract<
+    RuntimeConfigCategory['name'],
+    'CLOUDFLARE_ANALYTICS_API_TOKEN' | 'RESEND_API_KEY' | 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'
+  >,
   secretNames: readonly string[] | null,
 ): RuntimeConfigCategory {
   if (!secretNames) {
@@ -308,6 +315,27 @@ function classifySecretPresence(
     name,
     status: secretNames.includes(name) ? 'present' : 'missing',
   };
+}
+
+function classifyAnalyticsRuntimeConfig(
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
+): RuntimeConfigCategory[] {
+  const categories = [
+    classifySecretPresence('CLOUDFLARE_ANALYTICS_API_TOKEN', secretNames),
+    ...(['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG'] as const).map((name) =>
+      classifyWranglerTextPresence(name, environmentBlock, new RegExp(`"${name}"\\s*:\\s*"[^"\\s][^"]*"`)),
+    ),
+  ];
+  return categories.map((category) =>
+    category.status === 'present'
+      ? category
+      : {
+          ...category,
+          status: 'not_applicable',
+          detail: `Optional analytics ${category.status}; the endpoint returns not_configured until all three bindings are set.`,
+        },
+  );
 }
 
 function classifyResendRuntimeConfig(

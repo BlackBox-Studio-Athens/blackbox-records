@@ -31,6 +31,43 @@ const wranglerConfigText = `
 const requiredResendSecrets = ['RESEND_API_KEY', 'RESEND_NEWSLETTER_TOPIC_ID'];
 
 describe('runtime config verification', () => {
+  it('keeps absent analytics optional and reports configured bindings without values', () => {
+    const disabled = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText,
+    });
+    expect(disabled.issues).toEqual([]);
+    const names = ['CLOUDFLARE_ANALYTICS_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG'];
+    expect(disabled.categories.filter((category) => names.includes(category.name))).toEqual(
+      names.map((name) => expect.objectContaining({ name, status: 'not_applicable' })),
+    );
+    const configured = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: [...requiredResendSecrets, 'CLOUDFLARE_ANALYTICS_API_TOKEN'],
+      wranglerConfigText: wranglerConfigText.replace(
+        '"PRODUCT_ENVIRONMENT": "PRD",',
+        '"PRODUCT_ENVIRONMENT": "PRD", "CLOUDFLARE_ACCOUNT_ID": "private-account-id", "CLOUDFLARE_WEB_ANALYTICS_SITE_TAG": "private-site-tag",',
+      ),
+    });
+    expect(configured.issues).toEqual([]);
+    expect(configured.categories.filter((category) => names.includes(category.name))).toEqual(
+      names.map((name) => expect.objectContaining({ name, status: 'present' })),
+    );
+    expect(formatRuntimeConfigVerificationReport(configured)).not.toMatch(/private-account-id|private-site-tag/);
+    const blank = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText: wranglerConfigText.replace(
+        '"PRODUCT_ENVIRONMENT": "PRD",',
+        '"PRODUCT_ENVIRONMENT": "PRD", "CLOUDFLARE_ACCOUNT_ID": "", "CLOUDFLARE_WEB_ANALYTICS_SITE_TAG": "   ",',
+      ),
+    });
+    expect(blank.categories.filter((category) => names.includes(category.name))).toEqual(
+      names.map((name) => expect.objectContaining({ name, status: 'not_applicable' })),
+    );
+  });
+
   it('parses the target environment argument', () => {
     expect(parseRuntimeConfigVerifyArgs(['--env', 'prd'])).toEqual({
       environment: 'PRD',

@@ -1,0 +1,25 @@
+{
+  "data": {
+    "viewer": {
+      "accounts": [
+        {
+          "daily": [
+            { "dimensions": { "date": "2026-10-11" }, "count": 12, "sum": { "visits": 8 } },
+            { "dimensions": { "date": "2026-10-12" }, "count": 5, "sum": { "visits": 3 } }
+          ],
+          "topPaths": [
+            { "dimensions": { "value": "/" }, "count": 12, "sum": { "visits": 8 } },
+            { "dimensions": { "value": "/store/" }, "count": 5, "sum": { "visits": 3 } }
+          ],
+          "topReferrers": [
+            { "dimensions": { "value": "" }, "count": 10, "sum": { "visits": 7 } },
+            { "dimensions": { "value": "bandcamp.com" }, "count": 7, "sum": { "visits": 4 } }
+          ],
+          "topCountries": [{ "dimensions": { "value": "GR" }, "count": 17, "sum": { "visits": 11 } }],
+          "deviceTypes": [{ "dimensions": { "value": "mobile" }, "count": 17, "sum": { "visits": 11 } }]
+        }
+      ]
+    }
+  },
+  "errors": null
+}
