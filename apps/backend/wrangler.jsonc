@@ -168,6 +168,14 @@
       "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "routes": [
         {
+          "pattern": "blackboxrecordsathens.com/api/*",
+          "zone_name": "blackboxrecordsathens.com",
+        },
+        {
+          "pattern": "blackboxrecordsathens.com/media/published/*",
+          "zone_name": "blackboxrecordsathens.com",
+        },
+        {
           "pattern": "staff.blackboxrecordsathens.com/api/internal/*",
           "zone_name": "blackboxrecordsathens.com",
         },

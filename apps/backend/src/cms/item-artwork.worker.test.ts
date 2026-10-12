@@ -64,6 +64,24 @@ beforeEach(async () => {
   for (const object of (await env.TEST_SNAPSHOTS.list()).objects) await env.TEST_SNAPSHOTS.delete(object.key);
 });
 
+test('new PRD artwork uses the apex while existing technical URLs retain the same approved bytes', async () => {
+  const ctx = { ...context(), profile: productEnvironmentProfiles.PRD };
+  const response = await handleItemArtwork(post(), ctx);
+  expect(response.status).toBe(200);
+  const url = `https://blackboxrecordsathens.com${publishedMediaPath}${sha256}`;
+  expect(await response.json()).toEqual({ _rev: 'saved-one', imageUrl: url });
+  for (const value of [
+    url,
+    `https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev${publishedMediaPath}${sha256}`,
+  ]) {
+    const image = await serve(new Request(value), productEnvironmentProfiles.PRD);
+    expect(image.status).toBe(200);
+    expect(new Uint8Array(await image.arrayBuffer())).toEqual(pixels);
+  }
+  expect((await serve(new Request(url), productEnvironmentProfiles.UAT)).status).toBe(404);
+  expect((await serve(new Request(url + '?private=1'), productEnvironmentProfiles.PRD)).status).toBe(404);
+});
+
 test('approves only the selected saved artwork, replays without writes, and serves immutable bytes without exposing private snapshots', async () => {
   await storeSnapshotMedia(env.TEST_SNAPSHOTS, 'uat', pixels);
   expect((await serve(publicRequest())).status).toBe(404);

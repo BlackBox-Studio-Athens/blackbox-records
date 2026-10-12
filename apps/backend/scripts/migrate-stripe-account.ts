@@ -16,6 +16,7 @@ import {
 import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../src/domain/commerce';
 import { createStripeAccountCatalogGateway, type StripeAccountCatalogInput } from '../src/infrastructure/stripe';
 import { productEnvironmentProfileFromWorkerRuntimeTarget } from '../src/platform/env';
+import { uatAccessHeaders } from '../../../scripts/uat-access.mjs';
 
 type Environment = 'uat' | 'prd';
 type Row = Record<string, string | number | null>;
@@ -213,7 +214,12 @@ export async function verifyAccountMigrationImage(
   const origin = media?.[1] === 'published' ? profile.publicBackendOrigin : profile.publicSite.origin;
   if (url.protocol !== 'https:' || url.origin !== origin || !media || url.search || url.hash)
     throw new AccountMigrationError('Product image is not this environment’s runtime media URL.');
-  const response = await request(url, { method: 'GET', redirect: 'error', signal: AbortSignal.timeout(15_000) });
+  const response = await request(url, {
+    method: 'GET',
+    headers: uatAccessHeaders(url.href),
+    redirect: 'error',
+    signal: AbortSignal.timeout(15_000),
+  });
   await response.body?.cancel();
   if (!response.ok || !response.headers.get('content-type')?.startsWith('image/'))
     throw new AccountMigrationError('Destination Product image does not resolve.');

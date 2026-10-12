@@ -81,6 +81,7 @@
       "site:dev:stop",
       "dev:clean",
       "cms:inventory",
+      "launch:switch",
       "dev:backend",
       "dev:backend:mock",
       "dev:backend:mock-api",

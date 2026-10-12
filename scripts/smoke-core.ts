@@ -219,7 +219,11 @@ export function scanHighRiskSmokeExposure(text: string): string[] {
 }
 
 export function redactSensitiveSmokeText(text: string): string {
-  return text
+  const safeText = ['UAT_ACCESS_CLIENT_ID', 'UAT_ACCESS_CLIENT_SECRET'].reduce((value, name) => {
+    const secret = process.env[name];
+    return secret ? value.replaceAll(secret, '[redacted_access_service_token]') : value;
+  }, text);
+  return safeText
     .replace(/\bSTRIPE_SECRET_KEY\b\s*[:=]\s*[^\s]+/g, 'STRIPE_SECRET_KEY=[redacted_stripe_secret_key]')
     .replace(/\bSTRIPE_WEBHOOK_SECRET\b\s*[:=]\s*[^\s]+/g, 'STRIPE_WEBHOOK_SECRET=[redacted_stripe_webhook_secret]')
     .replace(

@@ -1,4 +1,6 @@
 import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
+import { authenticateUatBrowser } from './smoke-browser';
+import { fetchWithUatAccess, uatAccessHeaders } from './uat-access.mjs';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -1274,11 +1276,17 @@ async function runScenarioWithBrowser(input: {
 }): Promise<StripeSandboxScenarioAutomationResult> {
   const scenarioStartedAt = Date.now();
   const durations = createEmptyStripeSandboxSmokeDurations();
+  if (input.options.trace && Object.keys(uatAccessHeaders(input.options.siteUrl)).length) {
+    throw new Error(
+      'Access-authenticated provider smoke cannot retain service credentials in a trace; use screenshots.',
+    );
+  }
   const context = await input.browser.newContext({
     locale: 'en-US',
     viewport: { height: 900, width: 1280 },
   });
   const tracePath = input.options.trace ? path.join(input.scenarioArtifactDir, 'trace.zip') : null;
+  await authenticateUatBrowser(context, input.options.siteUrl);
 
   if (tracePath) {
     await context.tracing.start({ screenshots: true, snapshots: true });
@@ -1924,7 +1932,7 @@ function runWrangler(args: string[]): SpawnSyncReturns<string> {
 
 async function isHttpReady(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url);
+    const response = await fetchWithUatAccess(url);
 
     return response.status < 500;
   } catch {

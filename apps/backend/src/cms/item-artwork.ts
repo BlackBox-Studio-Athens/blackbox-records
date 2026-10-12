@@ -126,7 +126,10 @@ export async function servePublishedMedia(request: Request, bucket: R2Bucket, pr
   const validOrigin =
     profile.productEnvironment === 'LOCAL'
       ? url.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname)
-      : url.origin === profile.publicBackendOrigin;
+      : url.origin === profile.publicBackendOrigin ||
+        // Keep already approved Stripe images available until the launch migration and retirement finish.
+        (profile.productEnvironment === 'PRD' &&
+          url.origin === 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
   if (
     !validOrigin ||
     !url.pathname.startsWith(publishedMediaPath) ||

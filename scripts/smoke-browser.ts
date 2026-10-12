@@ -1,4 +1,5 @@
-import type { ConsoleMessage, Page } from 'playwright';
+import type { BrowserContext, ConsoleMessage, Page } from 'playwright';
+import { uatAccessHeaders } from './uat-access.mjs';
 
 import { redactSensitiveSmokeText, truncateForConsole } from './smoke-core';
 
@@ -7,6 +8,17 @@ const ignoredConsoleIssuePatterns: readonly RegExp[] = [
   // Intermittent from embedded YouTube players; the site itself never requests Compute Pressure.
   /Permissions policy violation: compute-pressure is not allowed in this document/i,
 ];
+
+export async function authenticateUatBrowser(context: BrowserContext, siteUrl: string): Promise<void> {
+  const headers = uatAccessHeaders(siteUrl);
+  if (!Object.keys(headers).length) return;
+  const origin = new URL(siteUrl).origin;
+  await context.route(`${origin}/**`, async (route) => {
+    // Fulfill a single hop, so redirects to Stripe or another origin never inherit the service token.
+    const response = await route.fetch({ headers: { ...route.request().headers(), ...headers }, maxRedirects: 0 });
+    await route.fulfill({ response });
+  });
+}
 
 export type SmokePageDiagnostics = {
   consoleErrors: string[];

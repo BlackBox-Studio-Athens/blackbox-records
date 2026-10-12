@@ -144,7 +144,7 @@ test('only UAT carries the Review Site Marker', () => {
 
 // main() with canned HTTP: each entry is a fresh Response, so a route can be fetched more than once.
 // A route key is the URL for a GET, or `<METHOD> <url>` for any other method.
-const backend = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
+const backend = 'https://blackboxrecordsathens.com';
 const site = 'https://blackbox-records-web.pages.dev';
 const capabilitiesUrl = `${backend}/api/store/capabilities`;
 const preflightUrl = `OPTIONS ${capabilitiesUrl}`;
@@ -225,7 +225,7 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
 
 test('UAT post-deployment checks accept a closed gate and refuse a reopened gate', async (t) => {
   t.mock.method(console, 'log', () => {});
-  const uatBackend = backend.replace('-prd.', '-uat.');
+  const uatBackend = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
   const uatSite = 'https://blackbox-records-web-uat.pages.dev';
   const headers = { 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' };
   const env = { ...prdEnv, UAT_PUBLIC_BACKEND_BASE_URL: uatBackend };

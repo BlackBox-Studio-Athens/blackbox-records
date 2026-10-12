@@ -59,7 +59,7 @@ const backendDir = path.join(rootDir, 'apps', 'backend');
 
 export const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 export const UAT_WEBHOOK_URL = `${UAT_WORKER_URL}/api/stripe/webhooks`;
-export const PRD_WORKER_URL = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
+export const PRD_WORKER_URL = 'https://blackboxrecordsathens.com';
 export const PRD_WEBHOOK_URL = `${PRD_WORKER_URL}/api/stripe/webhooks`;
 
 const requiredCatalogEvents = [...STRIPE_CATALOG_WEBHOOK_EVENT_TYPES];

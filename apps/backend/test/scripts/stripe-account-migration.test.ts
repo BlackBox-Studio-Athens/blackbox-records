@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import type Stripe from 'stripe';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { StripeCatalogGatewayClient } from '../../src/infrastructure/stripe';
 import { productEnvironmentProfileFromWorkerRuntimeTarget } from '../../src/platform/env';
 import { CatalogReconciler } from '../../src/application/commerce/catalog-sync';
@@ -440,6 +440,25 @@ describe('reviewed account migration', () => {
       expect(f.baseline()).toEqual(oldPresetState);
     },
   );
+  it('authenticates only UAT Pages catalog image reads and refuses redirects', async () => {
+    vi.stubEnv('UAT_ACCESS_CLIENT_ID', 'fixture-client');
+    vi.stubEnv('UAT_ACCESS_CLIENT_SECRET', 'fixture-secret');
+    try {
+      const profile = productEnvironmentProfileFromWorkerRuntimeTarget('uat');
+      for (const [url, expected] of [
+        [`${profile.publicSite.origin}/media/content/${'a'.repeat(64)}`, 'fixture-secret'],
+        [image, null],
+      ] as const) {
+        await verifyAccountMigrationImage(url, 'uat', async (_input, options) => {
+          expect(new Headers(options?.headers).get('CF-Access-Client-Secret')).toBe(expected);
+          expect(options?.redirect).toBe('error');
+          return new Response(null, { headers: { 'Content-Type': 'image/webp' } });
+        });
+      }
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 
   it.each([undefined, null, {}, '[]', 0])('rejects a D1 SELECT without a row array (%j)', (results) => {
     expect(() => parseAccountMigrationQueryRows(results)).toThrow('D1 migration SELECT returned invalid rows');

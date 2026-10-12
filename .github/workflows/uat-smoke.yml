@@ -24,6 +24,8 @@ jobs:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       UAT_SITE_URL: https://blackbox-records-web-uat.pages.dev
       UAT_WORKER_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
+      UAT_ACCESS_CLIENT_ID: ${{ secrets.UAT_ACCESS_CLIENT_ID }}
+      UAT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_ACCESS_CLIENT_SECRET }}
     steps:
       - name: Checkout deployed commit
         uses: actions/checkout@v7.0.1

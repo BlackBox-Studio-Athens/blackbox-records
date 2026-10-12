@@ -28,6 +28,8 @@ jobs:
       - name: Resolve the release UAT serves
         env:
           GH_TOKEN: ${{ github.token }}
+          UAT_ACCESS_CLIENT_ID: ${{ secrets.UAT_ACCESS_CLIENT_ID }}
+          UAT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_ACCESS_CLIENT_SECRET }}
         run: node scripts/release-candidate.mjs resolve >> "$GITHUB_ENV"
       - name: Checkout candidate
         uses: actions/checkout@v7.0.1

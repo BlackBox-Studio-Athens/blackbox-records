@@ -25,7 +25,13 @@ import {
   truncateForConsole,
   writeJsonFile,
 } from './smoke-core';
-import { attachSmokePageDiagnostics, captureSmokePageScreenshot, probeSmokeRoute } from './smoke-browser';
+import {
+  authenticateUatBrowser,
+  attachSmokePageDiagnostics,
+  captureSmokePageScreenshot,
+  probeSmokeRoute,
+} from './smoke-browser';
+import { fetchWithUatAccess } from './uat-access.mjs';
 
 export type UatStaticSmokeScenarioName = 'public_assets' | 'checkout_shell' | 'public_routes' | 'image_transform';
 export type UatStaticSmokeScenarioSelection = UatStaticSmokeScenarioName | 'all';
@@ -318,6 +324,7 @@ async function runUatStaticSmokeScenario(input: {
       locale: 'en-US',
       viewport: { height: 900, width: 1280 },
     });
+    await authenticateUatBrowser(context, input.options.siteUrl);
     const page = await context.newPage();
     page.setDefaultTimeout(input.options.timeoutMs);
     diagnostics = attachSmokePageDiagnostics(page);
@@ -819,6 +826,7 @@ async function checkPhoneRoutes(
   });
   const checks: UatStaticSmokeCheck[] = [];
   try {
+    await authenticateUatBrowser(context, options.siteUrl);
     const page = await context.newPage();
     page.setDefaultTimeout(options.timeoutMs);
     for (const routePath of phoneSmokeRoutes(paths)) {
@@ -981,7 +989,7 @@ async function fetchSmokeResponse(url: string, timeoutMs: number, headers?: Head
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, { headers, method: 'GET', signal: controller.signal });
+    return await fetchWithUatAccess(url, { headers, method: 'GET', signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }

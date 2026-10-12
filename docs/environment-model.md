@@ -80,12 +80,14 @@ The About contact directory links `info@`, `demos@` and `touring@blackboxrecords
 
 ## Origins And API Targets
 
-| Scope                 | `PUBLIC_BACKEND_BASE_URL`                                                | `CHECKOUT_RETURN_ORIGINS`                                                                |
-| --------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| Local `mock`          | `http://127.0.0.1:8787`                                                  | `http://127.0.0.1:4321,http://localhost:4321`                                            |
-| Local `uat-connected` | `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev` | UAT Worker allows local origins only as named diagnostics                                |
-| UAT                   | `UAT_PUBLIC_BACKEND_BASE_URL` in Cloudflare Pages workflow variables     | `http://127.0.0.1:4321,http://localhost:4321,https://blackbox-records-web-uat.pages.dev` |
-| PRD                   | `PRD_PUBLIC_BACKEND_BASE_URL` in Cloudflare Pages workflow variables     | `https://blackbox-records-web.pages.dev`                                                 |
+The prepared PRD API target is `https://blackboxrecordsathens.com/api/*`, with approved product artwork at `/media/published/*`. The readiness Pages site remains in allowed origins through cutover. Routing promotion, GitHub variable change, Stripe endpoint migration and hosted acceptance are tracked separately in [launch preparation](../openspec/changes/prepare-launch-switch/tasks.md); the [launch runbook](launch-switch.md) owns Access setup, credential scopes and staged recovery. These prepared settings do not establish that the hosted migration has happened.
+
+| Scope                 | `PUBLIC_BACKEND_BASE_URL`                                                             | `CHECKOUT_RETURN_ORIGINS`                                                                |
+| --------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Local `mock`          | `http://127.0.0.1:8787`                                                               | `http://127.0.0.1:4321,http://localhost:4321`                                            |
+| Local `uat-connected` | `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev`              | UAT Worker allows local origins only as named diagnostics                                |
+| UAT                   | `UAT_PUBLIC_BACKEND_BASE_URL` in Cloudflare Pages workflow variables                  | `http://127.0.0.1:4321,http://localhost:4321,https://blackbox-records-web-uat.pages.dev` |
+| PRD                   | `PRD_PUBLIC_BACKEND_BASE_URL=https://blackboxrecordsathens.com` in workflow variables | `https://blackbox-records-web.pages.dev,https://blackboxrecordsathens.com`               |
 
 Cloudflare Pages branch or preview deploys are non-product diagnostics. They must not be used as UAT acceptance, PRD readiness, Promotion Evidence, or shopper-facing commerce proof.
 
@@ -97,6 +99,8 @@ Generated Product Projection image URLs are environment-scoped catalog promotion
 - PRD catalog verification and readiness use the Cloudflare Pages PRD asset base: `https://blackbox-records-web.pages.dev/`, unless a later approved change defines a PRD custom domain or shared canonical asset CDN.
 - PRD readiness/live evidence must fail if it is generated from UAT Product image URLs.
 
+Launch preparation changes new approved PRD product artwork to apex `/media/published/<sha256>` URLs and preserves the old Worker media origin during migration. Existing Stripe image URLs still need the reviewed migration and hosted proof before finalization; its guard refuses remaining technical-origin artwork. The canonical content-image source remains the configured Pages source until its separate hosted routing checks pass.
+
 ## Email Brand Assets
 
 - Local and UAT email brand home URL: `https://blackbox-records-web-uat.pages.dev/`.
@@ -104,6 +108,8 @@ Generated Product Projection image URLs are environment-scoped catalog promotion
 - PRD email brand home URL: `https://blackbox-records-web.pages.dev/`.
 - PRD email brand logo URL: `https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png`.
 - These URLs are public brand assets, not secrets, and `pnpm runtime:config:verify --env local|uat|prd` classifies them with the other Worker email config categories.
+
+When enabling UAT Access, keep only accepted canonical-host media and the exact public email logo path anonymously readable as described in [the runbook](launch-switch.md#uat-access-setup-and-read-inventory). UAT pages and preview addresses require Access; the public UAT API remains available to Stripe and Local diagnostics.
 
 ## Manual Checkpoints
 

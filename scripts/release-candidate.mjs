@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
+import { fetchWithUatAccess } from './uat-access.mjs';
 
 const sites = {
   uat: 'https://blackbox-records-web-uat.pages.dev',
@@ -10,7 +11,7 @@ const sites = {
 };
 const backends = {
   uat: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
-  prd: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
+  prd: 'https://blackboxrecordsathens.com',
 };
 const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { encoding: 'utf8' }));
 
@@ -92,8 +93,13 @@ export function validateReviewMarker(target, html) {
   );
 }
 
-async function publicJson(url, optional = false, request = fetch) {
-  const response = await request(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+async function publicJson(url, optional = false, request = fetch, env = process.env) {
+  const response = await fetchWithUatAccess(
+    url,
+    { cache: 'no-store', signal: AbortSignal.timeout(30_000) },
+    request,
+    env,
+  );
   if (optional && response.status === 404) return null;
   assert.ok(response.ok, `Cannot verify ${url}: HTTP ${response.status}`);
   return response.json();
@@ -118,7 +124,7 @@ export async function resolveCandidate({ env = process.env, api = gh, json = pub
 }
 
 export async function main(command, target, { fetch = globalThis.fetch, env = process.env } = {}) {
-  const json = (url, optional) => publicJson(url, optional, fetch);
+  const json = (url, optional) => publicJson(url, optional, fetch, env);
   if (command === 'resolve') {
     const { sha, runId, runNumber } = await resolveCandidate({ env, json });
     console.log(`SOURCE_SHA=${sha}\nCANDIDATE_RUN_ID=${runId}\nCANDIDATE_RUN_NUMBER=${runNumber}`);
@@ -165,10 +171,15 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
     assert.equal(current.publicationMode, 'runtime');
     assert.match(current.content?.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
     // A unique query bypasses the renderer's s-maxage edge copy, which can still name the previous SHA.
-    const page = await fetch(`${site}/?release=${release.sha}`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(30_000),
-    });
+    const page = await fetchWithUatAccess(
+      `${site}/?release=${release.sha}`,
+      {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(30_000),
+      },
+      fetch,
+      env,
+    );
     assert.ok(page.ok, 'Public renderer unavailable.');
     assert.equal(page.headers.get('X-Release-SHA'), release.sha);
     validateReviewMarker(target, await page.text());

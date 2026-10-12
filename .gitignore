@@ -38,6 +38,7 @@ apps/backend/.emdash/
 apps/backend/prisma/seeds/uat-commerce-state.sql
 apps/backend/prisma/seeds/prd-commerce-readiness.sql
 .env.local
+.env.launch
 **/.env.local
 
 # Local secrets and account-specific checkout data

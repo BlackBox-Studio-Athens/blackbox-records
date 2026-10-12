@@ -52,6 +52,8 @@ UAT paid-order and catalog webhook evidence must use the persistent Stripe Dashb
 https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks
 ```
 
+PRD launch preparation changes the existing live endpoint URL to `https://blackboxrecordsathens.com/api/stripe/webhooks` while retaining its endpoint ID, subscribed events and signing secret. `pnpm stripe:webhooks:verify --env prd` now expects that URL. Configuration verification alone does not prove signed delivery; inspect the next delivered event and runtime result. UAT's endpoint stays on its public Worker address. See [the launch runbook](launch-switch.md) for migration order, Access service-token secrets and Chrome inspection of saved live Checkout policy links. Hosted migration and delivery acceptance remain open until recorded in the preparation change.
+
 The endpoint must be a Stripe test-mode account endpoint and include these catalog events:
 
 ```text

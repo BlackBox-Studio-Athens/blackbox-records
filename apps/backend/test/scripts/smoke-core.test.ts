@@ -23,6 +23,18 @@ import {
 } from '../../../../scripts/smoke-core';
 
 describe('smoke core helpers', () => {
+  it('redacts Access service credentials from browser diagnostics and summaries', () => {
+    vi.stubEnv('UAT_ACCESS_CLIENT_ID', 'fixture-access-client');
+    vi.stubEnv('UAT_ACCESS_CLIENT_SECRET', 'fixture-access-secret');
+    try {
+      expect(redactSensitiveSmokeText('fixture-access-client fixture-access-secret')).toBe(
+        '[redacted_access_service_token] [redacted_access_service_token]',
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('builds normalized smoke routes and artifact paths', () => {
     expect(createRouteUrl('https://blackbox.example/blackbox-records/', '/store/checkout/')).toBe(
       'https://blackbox.example/blackbox-records/store/checkout/',

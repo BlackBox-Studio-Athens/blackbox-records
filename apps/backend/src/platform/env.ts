@@ -95,7 +95,7 @@ export const productEnvironmentProfiles = productEnvironmentProfileMapSchema.par
       basePath: '/',
       pagesProject: 'blackbox-records-web',
     },
-    publicBackendOrigin: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
+    publicBackendOrigin: 'https://blackboxrecordsathens.com',
     catalogVerificationPolicy: {
       applyScheduledChanges: false,
     },
