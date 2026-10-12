@@ -99,7 +99,7 @@ Generated Product Projection image URLs are environment-scoped catalog promotion
 - PRD catalog verification and readiness use the Cloudflare Pages PRD asset base: `https://blackbox-records-web.pages.dev/`, unless a later approved change defines a PRD custom domain or shared canonical asset CDN.
 - PRD readiness/live evidence must fail if it is generated from UAT Product image URLs.
 
-Launch preparation changes new approved PRD product artwork to apex `/media/published/<sha256>` URLs and preserves the old Worker media origin during migration. Existing Stripe image URLs still need the reviewed migration and hosted proof before finalization; its guard refuses remaining technical-origin artwork. The canonical content-image source remains the configured Pages source until its separate hosted routing checks pass.
+Launch preparation changes approved PRD product artwork to apex `/media/published/<sha256>` URLs and preserves the old Worker media origin until finalization. On 2026-10-12 all 99 active Stripe Product image URLs were migrated; their 98 distinct images matched the content-addressed bytes, Product fields outside images/update timestamps and all 99 stock records were unchanged. Finalization still checks the current inventory and refuses technical-origin artwork. The canonical content-image source remains the configured Pages source until its separate hosted routing checks pass.
 
 ## Email Brand Assets
 

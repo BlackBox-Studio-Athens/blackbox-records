@@ -112,7 +112,9 @@ export async function runLaunch(
   };
   const countRequest = (publicRead = false) => {
     assert.ok(++summary.requests <= 200, 'Launch request ceiling reached.');
-    if (publicRead) assert.ok(++summary.publicRequests <= 100, 'Public request ceiling reached.');
+    // Finalization also reads the catalog's images; leave room for the measured browser fallback traffic.
+    if (publicRead)
+      assert.ok(++summary.publicRequests <= (stage === 'finalize' ? 175 : 100), 'Public request ceiling reached.');
   };
   const request = async (url, init = {}, publicRead = false) => {
     countRequest(publicRead);

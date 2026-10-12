@@ -144,15 +144,13 @@ function fixture(t, options = {}) {
       if (pathname === '/v1/products')
         return Response.json({
           has_more: false,
-          data: [
-            {
-              images: [
-                options.oldArtwork
-                  ? `https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev/media/published/${'e'.repeat(64)}`
-                  : `${apex}/media/published/${'e'.repeat(64)}`,
-              ],
-            },
-          ],
+          data: Array.from({ length: options.artworkCount ?? 1 }, (_, index) => ({
+            images: [
+              options.oldArtwork
+                ? `https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev/media/published/${'e'.repeat(64)}`
+                : `${apex}/media/published/${index.toString(16).padStart(64, '0')}`,
+            ],
+          })),
         });
     }
     if (url.origin === pages && state.rules?.rules?.length)
@@ -206,8 +204,9 @@ function fixture(t, options = {}) {
     now: () => now,
     sleep: async () => {},
     log: (message) => output.push(message),
-    imageFallback: async () => {
+    imageFallback: async ({ countRequest }) => {
       state.imageChecks += 1;
+      for (let index = 0; index < (options.browserRequests ?? 0); index += 1) countRequest();
       return { loaded: true };
     },
     github: (endpoint) =>
@@ -321,6 +320,16 @@ test('finalize dry-run rechecks stability but performs no external writes', asyn
   const result = await runLaunch('finalize', { ...f.dependencies, dryRun: true });
   assert.equal(result.status, 'planned');
   assert.equal(f.state.writes.length, 0);
+});
+
+test('finalize fits a full catalog and measured fallback traffic within its request budget', async (t) => {
+  const f = fixture(t, { artworkCount: 100, browserRequests: 43 });
+  f.prepareFinalize();
+  const result = await runLaunch('finalize', f.dependencies);
+  assert.equal(result.status, 'passed', result.error);
+  assert.equal(f.state.calls.filter((call) => call.method === 'HEAD').length, 100);
+  assert.ok(result.publicRequests > 150 && result.publicRequests <= 175);
+  assert.ok(result.requests <= 200);
 });
 
 test('finalize refuses before any write while Stripe artwork depends on workers.dev', async (t) => {

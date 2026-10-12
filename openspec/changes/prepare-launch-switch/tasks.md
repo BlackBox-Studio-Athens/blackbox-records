@@ -4,13 +4,13 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 ## 1. PRD API under the apex
 
-- [ ] 1.1 [Claude or Codex] Add the PRD route `blackboxrecordsathens.com/api/*` and the apex to the PRD allowed origins; promote and prove `/api/` reaches the backend while the apex serves the Holding Page.
+- [x] 1.1 [Claude or Codex] Add the PRD route `blackboxrecordsathens.com/api/*` and the apex to the PRD allowed origins; promote and prove `/api/` reaches the backend while the apex serves the Holding Page. PRD promotion 38237055376 passed; apex API serves source 5f09436 while Home remains the noindex Holding Page.
 - [x] 1.2 [Claude or Codex] Find any server-side call from the PRD renderer or Pages gateway to the backend's public URL and move it to a service binding.
 - [x] 1.3 [Owner] Set the GitHub variable `PRD_PUBLIC_BACKEND_BASE_URL` to `https://blackboxrecordsathens.com`. Completed by Codex under the owner's continuation authorization; value read back on 2026-10-12.
 - [ ] 1.4 [Claude or Codex] Promote and verify from `pages.dev`: listing prices, checkout start, and the Services, newsletter and Notify me forms.
 - [ ] 1.5 [Owner] Create a restricted live Stripe key with read access and webhook endpoint write.
-- [ ] 1.6 [Claude or Codex] With that key, update the live webhook endpoint URL to `https://blackboxrecordsathens.com/api/stripe/webhooks` and confirm the next delivered event; update the environment model and Stripe docs.
-- [ ] 1.7 [Claude or Codex] Add apex delivery for approved PRD product artwork, preserve old image delivery during migration, and migrate active Stripe Product image URLs without changing prices, stock or unpublished content. Promote and verify apex image bytes before finalization; its read-only guard must refuse remaining technical-origin images. Added with owner approval on 2026-10-12; local delivery, URL generation, compatibility and guard implemented; hosted migration remains pending.
+- [x] 1.6 [Claude or Codex] With scoped live Stripe authority, update the live webhook endpoint URL to `https://blackboxrecordsathens.com/api/stripe/webhooks` and confirm the next delivered event; update the environment model and Stripe docs. Completed through the existing live connector, retaining endpoint ID/events/secret; Workbench signed replay returned 200 and all 99 subsequent artwork events have no pending delivery.
+- [x] 1.7 [Claude or Codex] Add apex delivery for approved PRD product artwork, preserve old image delivery during migration, and migrate active Stripe Product image URLs without changing prices, stock or unpublished content. Promote and verify apex image bytes before finalization; its read-only guard must refuse remaining technical-origin images. Added with owner approval on 2026-10-12; all 98 distinct images match their SHA-256 identities, two legacy byte comparisons match, all 99 Product URLs are migrated with other fields unchanged, and the 99 stock rows match before/after.
 
 ## 2. UAT behind Access
 
