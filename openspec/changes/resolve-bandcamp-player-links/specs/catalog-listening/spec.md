@@ -18,7 +18,7 @@ Editors SHALL be able to supply the same optional Bandcamp player and Tidal sour
 
 #### Scenario: Editor pastes an album or track page
 
-- **WHEN** the editor stops typing a supported page address for 750 ms
+- **WHEN** the editor stops typing a supported page address for 750 ms and Bandcamp supplies the recording metadata
 - **THEN** an authenticated bounded lookup obtains its validated recording identity and derives the house-style embed
 - **AND** Ethos resolves to album 2345223781 and Hail resolves to track 1718987398, without substituting its parent album
 - **AND** opening existing saved embeds performs no lookup or rewrite.
@@ -35,6 +35,13 @@ Editors SHALL be able to supply the same optional Bandcamp player and Tidal sour
 - **WHEN** a request lacks editor authorization or same-origin protection, or an upstream response exceeds the deadline, redirect or decoded size limits
 - **THEN** resolution fails without content writes, publication alarms or forwarding staff credentials
 - **AND** every redirect is constrained to supported HTTPS Bandcamp recording pages.
+
+#### Scenario: Bandcamp challenges the hosted request
+
+- **WHEN** Bandcamp returns an HTTP 200 Client Challenge document without recording metadata
+- **THEN** staff reports that automatic server lookup is blocked and directs the editor to Bandcamp's Share/Embed code
+- **AND** the response remains private and no-store, the previous source stays intact, and no recording identity is guessed
+- **AND** diagnostics record the provider-challenge category without credentials, page content or raw exception messages.
 
 #### Scenario: Existing content has no provider fields
 

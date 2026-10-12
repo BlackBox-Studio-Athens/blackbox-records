@@ -19,7 +19,10 @@ const metadata = (
 ) => `<meta property="og:video:secure_url" content="https://bandcamp.com/EmbeddedPlayer/v=2/${kind}=${id}/size=large/tracklist=false/artwork=small/">
 <script data-tralbum="${JSON.stringify({ id, item_type: kind, current: { id, type: kind, ...(kind === 'track' ? { album_id: 2345223781 } : {}) } }).replaceAll('"', '&quot;')}"></script>`;
 const page = (url = ethos) => BandcampPage.parse(url)!;
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 test('resolves Ethos and Hail from agreeing metadata without forwarding staff credentials', async () => {
   for (const [url, kind, id] of [
@@ -48,6 +51,34 @@ test('falls back to structured metadata and supports numeric HTML entities', asy
     .replaceAll('&quot;', '&#34;');
   const result = await resolveBandcampPage(page(), vi.fn<typeof fetch>().mockResolvedValue(htmlResponse(structured)));
   expect(result.toJSON()).toEqual({ kind: 'album', id: '2345223781' });
+});
+
+test('recognizes an HTTP 200 browser challenge and directs staff to Share/Embed without retrying', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const fetchPage = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(
+      htmlResponse('<!doctype html><title>Client Challenge</title><script src="/_fs-ch-1/challenge.js"></script>'),
+    );
+  const response = await handleBandcampResolution(post(), { role: 30 }, fetchPage);
+  expect(response.status).toBe(422);
+  expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+  expect(await response.json()).toMatchObject({
+    detail:
+      'Bandcamp is blocking automatic lookup from this server. Open the album or track on Bandcamp and paste its Share/Embed code.',
+  });
+  expect(fetchPage).toHaveBeenCalledTimes(1);
+  expect(warn).toHaveBeenCalledWith(expect.objectContaining({ safeReason: 'provider_challenge' }));
+});
+
+test('unknown upstream errors remain private in responses and diagnostics', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const fetchPage = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('private-provider-detail'));
+  const response = await handleBandcampResolution(post(), { role: 30 }, fetchPage);
+  expect(response.status).toBe(422);
+  expect(await response.text()).not.toContain('private-provider-detail');
+  expect(warn).toHaveBeenCalledWith(expect.objectContaining({ safeReason: 'type_error' }));
+  expect(JSON.stringify(warn.mock.calls)).not.toContain('private-provider-detail');
 });
 
 test.each([

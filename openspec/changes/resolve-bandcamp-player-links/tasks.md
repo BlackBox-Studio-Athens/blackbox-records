@@ -24,3 +24,10 @@
 - [x] 5.1 Review connected callers and remove repeated embed parsing, redundant request bookkeeping and the SSR assertion that cannot exercise effects.
 - [x] 5.2 Reset the editor after saved-draft discard so the Bandcamp field displays the restored source, with a browser regression.
 - [x] 5.3 Verify the reviewed source and commit locally without pushing or deploying.
+
+## 6. Hosted provider failure
+
+- [x] 6.1 Reproduce PRD's Ethos failure without editing content and compare Local and isolated hosted fetch responses.
+- [x] 6.2 Recognize Bandcamp's successful-status challenge document, preserve safe actionable feedback and emit sanitized failure diagnostics; add regression coverage.
+- [x] 6.3 Validate and commit the failure-handling correction locally; record the unresolved hosted URL-only limitation.
+- [ ] 6.4 Resolve the provider access restriction before claiming PRD URL-only acceptance. Blocked: Bandcamp challenges the hosted request source; no supported alternative has been established.

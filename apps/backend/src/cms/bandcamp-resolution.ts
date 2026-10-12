@@ -1,6 +1,7 @@
 import { BandcampPage, BandcampRecording } from '@blackbox/content-model';
 import { z } from 'zod';
 import { cmsStringProblemResponse } from '../platform/interfaces/http/responses';
+import { createWorkerLogger, normalizeUnknownError } from '../platform/observability';
 import { readBoundedText } from './preview-content';
 
 export const bandcampResolutionPath = '/_emdash/api/blackbox/bandcamp/resolve';
@@ -10,6 +11,8 @@ const tralbumSchema = z.object({
   item_type: z.enum(['album', 'track']),
   current: z.object({ id: z.number().int().positive().safe(), type: z.enum(['album', 'track']) }),
 });
+
+class BandcampChallengeError extends Error {}
 
 function decodeAttribute(value: string) {
   const named: Record<string, string> = { quot: '"', amp: '&', apos: "'", lt: '<', gt: '>' };
@@ -22,10 +25,16 @@ function decodeAttribute(value: string) {
 
 async function recordingFromHtml(html: string, page: BandcampPage): Promise<BandcampRecording> {
   const recordings: BandcampRecording[] = [];
+  let title = '';
   const add = (recording: BandcampRecording | null) => {
     if (recording) recordings.push(recording);
   };
   await new HTMLRewriter()
+    .on('title', {
+      text(chunk) {
+        title += chunk.text;
+      },
+    })
     .on('meta[property="og:video"], meta[property="og:video:secure_url"]', {
       element(element) {
         add(BandcampRecording.fromEmbed(decodeAttribute(element.getAttribute('content') ?? '')));
@@ -49,6 +58,10 @@ async function recordingFromHtml(html: string, page: BandcampPage): Promise<Band
     .transform(new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }))
     .body?.pipeTo(new WritableStream());
   const recording = recordings[0];
+  if (!recording && title.trim() === 'Client Challenge')
+    throw new BandcampChallengeError(
+      'Bandcamp is blocking automatic lookup from this server. Open the album or track on Bandcamp and paste its Share/Embed code.',
+    );
   if (
     !recording ||
     recording.kind !== page.kind ||
@@ -140,7 +153,20 @@ export async function handleBandcampResolution(
       { success: true, data: recording.toJSON() },
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
-  } catch {
-    return reject(422, 'Could not resolve this Bandcamp player. Retry, revert, clear, or paste its Share/Embed code.');
+  } catch (error) {
+    const challenged = error instanceof BandcampChallengeError;
+    createWorkerLogger().warn({
+      event: 'bandcamp_resolution_failed',
+      path: bandcampResolutionPath,
+      ...normalizeUnknownError(error),
+      ...(challenged ? { safeReason: 'provider_challenge' } : {}),
+      status: 422,
+    });
+    return reject(
+      422,
+      challenged
+        ? error.message
+        : 'Could not resolve this Bandcamp player. Retry, revert, clear, or paste its Share/Embed code.',
+    );
   }
 }
