@@ -1,0 +1,32 @@
+# Tasks
+
+Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs the owner's dashboard sign-in or staff content access.
+
+## 1. Search engines and visit measurement
+
+- [ ] 1.1 [Owner] Add `blackboxrecordsathens.com` as a Domain property in Google Search Console and verify it through Cloudflare DNS.
+- [ ] 1.2 [Owner] In Bing Webmaster Tools, import the verified property from Search Console.
+- [ ] 1.3 [Owner] Turn on Crawler Hints (Cloudflare → Caching → Configuration).
+- [x] 1.4 [Owner] Turn on Web Analytics automatic setup for `blackboxrecordsathens.com` (Cloudflare → Analytics & Logs → Web Analytics); note the site tag for 2.2. Evidence: signed-in Chrome setup now enables normal automatic collection, including EU visitors; site tag recorded in [owner setup](owner-setup.md).
+- [ ] 1.5 [Owner] Add a Cloudflare Web Analytics paragraph to the privacy notice in staff and publish it.
+- [ ] 1.6 [Claude or Codex] After switch day, confirm the apex HTML carries the beacon, in-shell navigation counts page views and no analytics cookie is set; record evidence.
+
+## 2. Analytics read
+
+- [x] 2.1 [Claude or Codex] Read the GraphQL `settings` limits for `rumPageloadEventsAdaptiveGroups` and `workersInvocationsAdaptive` on the account; fix the supported ranges in the design. Evidence: one settings-only query returned HTTP 200/no errors; both `7d` and `30d` fit the verified [limits](design.md).
+- [x] 2.2 [Owner] Create a Cloudflare API token limited to Account Analytics Read and store it as the PRD Worker secret `CLOUDFLARE_ANALYTICS_API_TOKEN`; add `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_WEB_ANALYTICS_SITE_TAG` as PRD vars. UAT reuses the same site tag read-only or returns a stable not-configured state. Evidence: owner-confirmed token creation and encrypted PRD secret/vars verified through Chrome; existing config preserved, UAT left optional; [owner setup](owner-setup.md).
+- [x] 2.3 [Claude or Codex] Add `GET /api/internal/analytics?range=7d|30d` with the GraphQL queries, 15-minute Cache API caching, stable errors and request IDs; register the secret in runtime-config verification. Evidence: protected read, optional config, runtime forwarding and generated internal contracts implemented; [Local summary](../../../.codex-artifacts/validation/2026-10-12T15-10-47-958Z-65748-b74604/summary.json).
+- [x] 2.4 [Claude or Codex] Worker tests for range validation, response mapping, caching, upstream failure and Access rejection. Evidence: all 25 analytics Worker tests pass, including missing configuration, timeout and secret-safe errors; [Local summary](../../../.codex-artifacts/validation/2026-10-12T15-10-47-958Z-65748-b74604/summary.json).
+
+Backend-only evidence and remaining acceptance: [validation.md](validation.md).
+
+## 3. Staff Stats page
+
+- [x] 3.1 [Claude] Present visual options for the Stats page and wait for the owner's choice. Evidence: three-option canvas checked at 390/1280 px; owner chose C with Recharts via shadcn Chart and approved the dependency ([design](design.md#staff-stats)).
+- [x] 3.2 [Claude] Implement the chosen page and its staff navigation entry, with loading, failure, stale-data and empty states; add the internal API client. Evidence: `/stats/` in the new `staff-stats` module, Stats nav after Orders, lazy Recharts chunk, `staff-platform` analytics client; Worker requests removed after owner review; approved summary-sentence readability redesign ([validation](validation.md#staff-stats-page)).
+- [x] 3.3 [Claude] Focused staff tests and a browser check at phone and desktop widths. Evidence: client, store, view, navigation, shell and backend analytics tests pass; stubbed Local staff screenshots at 390/1280 px and header checks at 1280–1920 px ([validation](validation.md#staff-stats-page)).
+
+## 4. Acceptance
+
+- [ ] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence.
+- [ ] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.

@@ -27,6 +27,7 @@ export function staffTarget(value: string, origin: string): string | null {
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
       '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock'],
       '/review/': ['q', 'scope', 'cursor'],
+      '/stats/': ['range'],
       '/calendar/': ['month', 'collection', 'view'],
     };
     const allowed = keys[url.pathname];
@@ -45,6 +46,7 @@ export function staffTarget(value: string, origin: string): string | null {
       history: ['1'],
       status: ['paid', 'not_paid', 'needs_review', 'pending_payment'],
       notification: ['pending', 'needs_review'],
+      range: ['30d'],
     };
     for (const [key, entry] of url.searchParams) {
       if (!allowed.includes(key) || url.searchParams.getAll(key).length !== 1) return null;
@@ -101,6 +103,7 @@ export function staffLabel(path: string): string {
         '/calendar/': 'Publication calendar',
         '/stock/': 'Inventory',
         '/orders/': 'Orders',
+        '/stats/': 'Stats',
         '/items/new/': 'Item setup',
       } as Record<string, string>
     )[url.pathname] ?? 'Catalog'

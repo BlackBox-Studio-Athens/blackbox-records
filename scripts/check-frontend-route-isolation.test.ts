@@ -23,6 +23,7 @@ describe('frontend route isolation', () => {
     'items/new/index.html',
     'content/index.html',
     'review/index.html',
+    'stats/index.html',
   ])('rejects %s in the public artifact', (route) => {
     const dist = createDist(['index.html', route]);
     expect(() => assertFrontendRouteIsolation('web', dist)).toThrow(route);
@@ -54,6 +55,7 @@ function createStaffDist(violation?: string): string {
     'logo-horizontal.png',
     'orders/index.html',
     'robots.txt',
+    'stats/index.html',
     'stock/index.html',
     ...(violation ? [violation] : []),
   ]);

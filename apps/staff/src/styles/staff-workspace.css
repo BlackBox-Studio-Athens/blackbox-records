@@ -442,6 +442,9 @@ body[data-workspace='content'] {
 [data-area='orders'] {
   --area-color: oklch(76% 0.08 185);
 }
+[data-area='stats'] {
+  --area-color: oklch(76% 0.09 95);
+}
 .staff-view-website {
   display: inline-flex;
   align-items: center;
@@ -1361,6 +1364,18 @@ body[data-workspace='content'] {
   .staff-area-link {
     gap: 6px;
     padding-inline: 8px;
+  }
+}
+/* Area links and header utilities only fit together from 1920px; below that the utilities stay in Menu. */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .staff-header-utilities {
+    display: none;
+  }
+  .staff-header-context {
+    margin-left: auto;
+  }
+  .staff-menu-trigger {
+    display: inline-flex;
   }
 }
 

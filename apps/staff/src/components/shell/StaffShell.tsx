@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNod
 import {
   ArrowRight,
   Boxes,
+  ChartColumn,
   ChevronLeft,
   Disc3,
   FileText,
@@ -54,6 +55,7 @@ const areas = [
   { label: 'Images', href: '/content/?view=media', icon: ImageIcon, color: 'images', links: [] },
   { label: 'Stock', href: '/stock/', icon: Boxes, color: 'stock', links: [] },
   { label: 'Orders', href: '/orders/', icon: FileText, color: 'orders', links: [] },
+  { label: 'Stats', href: '/stats/', icon: ChartColumn, color: 'stats', links: [] },
 ];
 const additions = [
   { label: 'Artist', href: '/content/?collection=artists&new=1', icon: Disc3 },
@@ -189,15 +191,17 @@ export default function StaffShell({
       entry.color ===
       (url.pathname.startsWith('/orders/')
         ? 'orders'
-        : url.pathname.startsWith('/stock/')
-          ? 'stock'
-          : view === 'media'
-            ? 'images'
-            : ['artists', 'releases', 'distro'].includes(section ?? '')
-              ? 'catalog'
-              : url.pathname.startsWith('/content/')
-                ? 'website'
-                : 'overview'),
+        : url.pathname.startsWith('/stats/')
+          ? 'stats'
+          : url.pathname.startsWith('/stock/')
+            ? 'stock'
+            : view === 'media'
+              ? 'images'
+              : ['artists', 'releases', 'distro'].includes(section ?? '')
+                ? 'catalog'
+                : url.pathname.startsWith('/content/')
+                  ? 'website'
+                  : 'overview'),
   )!;
   const selectedHref =
     area.color === 'website'

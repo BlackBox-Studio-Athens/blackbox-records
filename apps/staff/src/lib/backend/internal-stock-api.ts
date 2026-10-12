@@ -201,7 +201,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
   };
 }
 
-async function readErrorBody(response: Response): Promise<unknown> {
+export async function readErrorBody(response: Response): Promise<unknown> {
   const text = await response.text();
 
   if (!text) {

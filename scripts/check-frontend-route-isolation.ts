@@ -18,6 +18,7 @@ const staffFiles = new Set([
   'logo-horizontal.png',
   'orders/index.html',
   'robots.txt',
+  'stats/index.html',
   'stock/index.html',
 ]);
 
@@ -26,7 +27,7 @@ export function assertFrontendRouteIsolation(mode: FrontendRouteIsolationMode, d
 
   if (mode === 'web') {
     const stockFiles = files.filter((file) =>
-      ['stock', 'orders', 'items', 'content', 'review', 'calendar'].some(
+      ['stock', 'orders', 'stats', 'items', 'content', 'review', 'calendar'].some(
         (route) => file === route || file.startsWith(`${route}/`),
       ),
     );

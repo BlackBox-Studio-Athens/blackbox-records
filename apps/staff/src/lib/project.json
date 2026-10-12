@@ -20,6 +20,7 @@
         "./backend/content-publication-api.ts",
         "./backend/editorial-api.ts",
         "./item-commerce.ts",
+        "./backend/internal-analytics-api.ts",
         "./backend/internal-stock-api.ts",
         "./content-sections.ts",
         "./lenis-scroll-roots.ts",

@@ -20,3 +20,13 @@ it.each([
   expect(html.includes('href="https://staff.blackboxrecordsathens.com/" target="_blank"')).toBe(environment === 'uat');
   expect(html).not.toContain('href="/review/"');
 });
+
+it('lists Stats after Orders', () => {
+  const html = renderToStaticMarkup(
+    <StaffShell title="Overview" environment="mock">
+      Workspace
+    </StaffShell>,
+  );
+  expect(html.indexOf('href="/stats/"')).toBeGreaterThan(html.indexOf('href="/orders/"'));
+  expect(html).toContain('data-area="stats"');
+});

@@ -1,0 +1,10 @@
+---
+import StatsWorkspace from '../../components/stats/StatsWorkspace';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+import '../../styles/stats.css';
+---
+
+<StockOpsLayout pageTitle="Stats" pageDescription="Website visits for BlackBox Records staff.">
+  <StatsWorkspace backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

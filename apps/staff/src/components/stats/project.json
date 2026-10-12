@@ -1,0 +1,24 @@
+{
+  "name": "staff-stats",
+  "tags": ["module", "scope:staff"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/staff exec vitest run --project=staff-stats --config vitest.modules.config.ts",
+      "inputs": ["staffTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/staff exec vitest --watch --project=staff-stats --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./StatsWorkspace.tsx"],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform"],
+      "workspaceInterfaces": {}
+    }
+  }
+}

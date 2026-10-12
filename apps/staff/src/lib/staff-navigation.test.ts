@@ -205,3 +205,11 @@ test('pending history leaves keep the task URL, cancel coherently, and replay on
     stop();
   }
 });
+
+test('Stats accepts only its 30-day range parameter', () => {
+  expect(staffTarget('/stats/', origin)).toBe('/stats/');
+  expect(staffTarget('/stats/?range=30d', origin)).toBe('/stats/?range=30d');
+  expect(staffTarget('/stats/?range=90d', origin)).toBeNull();
+  expect(staffTarget('/stats/?status=paid', origin)).toBeNull();
+  expect(staffLabel('/stats/?range=30d')).toBe('Stats');
+});
