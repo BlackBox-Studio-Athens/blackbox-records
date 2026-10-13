@@ -54,7 +54,6 @@ export function createProductStructuredData(offer: PublicStoreOffer, product: Pr
     name: product.name,
     description: product.description,
     image: product.image,
-    sku: offer.variantId,
     brand: { '@type': 'Brand', name: product.brand },
     offers: {
       '@type': 'Offer',
@@ -91,7 +90,10 @@ export function createMusicAlbumStructuredData(album: MusicAlbumFacts): Entity {
     name: album.name,
     url: album.url,
     image: album.image,
-    recordLabel: { '@type': 'Organization', name: album.label },
+    albumRelease: {
+      '@type': 'MusicRelease',
+      recordLabel: { '@type': 'Organization', name: album.label },
+    },
     ...(album.artist
       ? {
           byArtist: {

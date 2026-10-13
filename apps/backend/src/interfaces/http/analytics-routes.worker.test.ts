@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { commerceRuntimeConfigFromBindings, type AppBindings } from '../../platform/env';
 import { createHttpApp } from './app';
 import fixture from './routes/fixtures/site-analytics-graphql.json';
+import liveFixture from './routes/fixtures/site-analytics-live-graphql.json';
 
 const secret = 'test-analytics-secret-never-expose';
 let bindings: AppBindings;
@@ -17,7 +18,7 @@ const read = (range = '7d', requestId = 'analytics-test') =>
   );
 
 beforeEach(async () => {
-  cache = await caches.open('site-analytics-v1');
+  cache = await caches.open('site-analytics-v2');
   vi.spyOn(caches, 'open').mockResolvedValue(cache);
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-12T12:00:00.000Z'));
@@ -87,6 +88,8 @@ describe('protected analytics read', () => {
       accountTag: bindings.CLOUDFLARE_ACCOUNT_ID,
       rumFilter: {
         siteTag: 'test-site',
+        requestHost: 'blackboxrecordsathens.com',
+        bot: 0,
         datetime_geq: range === '7d' ? '2026-10-06T00:00:00.000Z' : '2026-09-13T00:00:00.000Z',
         datetime_lt: '2026-10-12T12:00:00.000Z',
       },
@@ -94,6 +97,44 @@ describe('protected analytics read', () => {
     expect(request.query).not.toContain('workersInvocationsAdaptive');
     expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(JSON.stringify(body)).not.toContain(secret);
+  });
+
+  it.each(['7d', '30d'])('reads the captured live Cloudflare response as a stream for %s', async (range) => {
+    vi.setSystemTime(new Date('2026-10-13T12:00:00.000Z'));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => {
+        const bytes = new TextEncoder().encode(JSON.stringify(liveFixture));
+        return Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                for (let offset = 0; offset < bytes.length; offset += 127)
+                  controller.enqueue(bytes.slice(offset, offset + 127));
+                controller.close();
+              },
+            }),
+          ),
+        );
+      }),
+    );
+    const response = await read(range);
+    expect(response.status).toBe(200);
+    const body = await response.json<{ daily: Array<{ date: string; visits: number; pageViews: number }> }>();
+    expect(body.daily).toHaveLength(range === '7d' ? 7 : 30);
+    expect(body.daily.find((day) => day.date === '2026-10-09')).toEqual({
+      date: '2026-10-09',
+      visits: 17,
+      pageViews: 17,
+    });
+    expect(body.daily.at(-1)).toEqual({ date: '2026-10-13', visits: 0, pageViews: 0 });
+    expect(body).toMatchObject({
+      status: 'ok',
+      topPaths: expect.arrayContaining([{ path: '/', visits: 2, pageViews: 2 }]),
+      topReferrers: [{ host: 'www.google.com', visits: 17, pageViews: 17 }],
+      topCountries: [{ country: 'US', visits: 17, pageViews: 17 }],
+      deviceTypes: [{ deviceType: 'desktop', visits: 17, pageViews: 17 }],
+    });
   });
 
   it('uses the real Workers Cache API for 15 minutes without caching request identity', async () => {
@@ -109,11 +150,44 @@ describe('protected analytics read', () => {
     expect(stored.headers.get('Cache-Control')).toBe('public, max-age=900');
     expect(stored.headers.has('X-Request-Id')).toBe(false);
     expect((key as Request).url).not.toContain(secret);
+    expect(new URL((key as Request).url).pathname).toContain('/__analytics-cache/v2/');
     await read('30d');
     expect(upstream).toHaveBeenCalledTimes(2);
     bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = 'another-site';
     await read();
     expect(upstream).toHaveBeenCalledTimes(3);
+    bindings.CLOUDFLARE_ACCOUNT_ID = crypto.randomUUID();
+    await read();
+    expect(upstream).toHaveBeenCalledTimes(4);
+  });
+
+  it('does not serve a snapshot from the earlier unfiltered cache', async () => {
+    vi.mocked(caches.open).mockRestore();
+    const oldCache = await caches.open('site-analytics-v1');
+    await oldCache.put(
+      new Request(
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/v1/LOCAL/${bindings.CLOUDFLARE_ACCOUNT_ID}/test-site/2026-10-12?range=7d`,
+      ),
+      Response.json(
+        {
+          range: '7d',
+          generatedAt: '2026-10-12T12:00:00.000Z',
+          status: 'ok',
+          daily: [{ date: '2026-10-12', visits: 999, pageViews: 999 }],
+          topPaths: [],
+          topReferrers: [],
+          topCountries: [],
+          deviceTypes: [],
+        },
+        { headers: { 'Cache-Control': 'public, max-age=900' } },
+      ),
+    );
+    const open = vi.spyOn(caches, 'open');
+    const upstream = vi.fn().mockImplementation(() => Promise.resolve(Response.json(fixture)));
+    vi.stubGlobal('fetch', upstream);
+    expect(await (await read()).json()).toMatchObject({ status: 'ok' });
+    expect(upstream).toHaveBeenCalledOnce();
+    expect(open).toHaveBeenCalledExactlyOnceWith('site-analytics-v2');
   });
 
   it('returns configured empty traffic separately from missing configuration', async () => {
@@ -172,45 +246,61 @@ describe('protected analytics read', () => {
     },
   );
 
-  it.each(['http', 'graphql', 'invalid_json', 'invalid_shape', 'network', 'oversized'])(
-    'returns safe problem details for %s failure without caching it',
-    async (failure) => {
-      const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const upstream = vi.fn().mockImplementation(() => {
-        if (failure === 'network') throw new Error(secret);
-        return Promise.resolve(
-          failure === 'http'
-            ? new Response(secret, { status: 403 })
-            : failure === 'graphql'
-              ? Response.json({ ...fixture, errors: [{ message: secret }] })
-              : failure === 'invalid_shape'
-                ? Response.json({ data: secret })
-                : new Response(failure === 'oversized' ? secret.repeat(10000) : secret),
-        );
-      });
-      vi.stubGlobal('fetch', upstream);
-      const response = await read();
-      expect(response.status).toBe(503);
-      expect(response.headers.get('Content-Type')).toContain('application/problem+json');
-      expect(response.headers.get('X-Request-Id')).toBe('analytics-test');
-      expect(response.headers.get('Cache-Control')).toBe('no-store');
-      const body = await response.json();
-      expect(body).toEqual({
-        type: '/problems/service_unavailable',
-        title: 'Service unavailable.',
-        status: 503,
-        code: 'service_unavailable',
-        detail: 'Analytics is temporarily unavailable. Try again.',
-        error: 'Analytics is temporarily unavailable. Try again.',
+  it.each([
+    ['http', 'upstream_http'],
+    ['graphql', 'upstream_graphql'],
+    ['invalid_json', 'upstream_invalid_json'],
+    ['invalid_shape', 'upstream_invalid_shape'],
+    ['missing_body', 'upstream_invalid_shape'],
+    ['network', 'upstream_network'],
+    ['oversized', 'upstream_body_too_large'],
+  ])('returns safe problem details and a fixed reason for %s without caching it', async (failure, safeReason) => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const upstream = vi.fn().mockImplementation(() => {
+      if (failure === 'network') throw new Error(secret);
+      return Promise.resolve(
+        failure === 'http'
+          ? new Response(secret, { status: 403 })
+          : failure === 'graphql'
+            ? Response.json({ data: null, errors: [{ message: secret }] })
+            : failure === 'invalid_shape'
+              ? Response.json({ data: secret })
+              : new Response(
+                  failure === 'missing_body' ? null : failure === 'oversized' ? secret.repeat(10000) : secret,
+                ),
+      );
+    });
+    vi.stubGlobal('fetch', upstream);
+    const response = await read();
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Content-Type')).toContain('application/problem+json');
+    expect(response.headers.get('X-Request-Id')).toBe('analytics-test');
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const body = await response.json();
+    expect(body).toEqual({
+      type: '/problems/service_unavailable',
+      title: 'Service unavailable.',
+      status: 503,
+      code: 'service_unavailable',
+      detail: 'Analytics is temporarily unavailable. Try again.',
+      error: 'Analytics is temporarily unavailable. Try again.',
+      requestId: 'analytics-test',
+    });
+    expect(JSON.stringify([body, log.mock.calls])).not.toContain(secret);
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'analytics_read_failed',
         requestId: 'analytics-test',
-      });
-      expect(JSON.stringify([body, log.mock.calls])).not.toContain(secret);
-      await read();
-      expect(upstream).toHaveBeenCalledTimes(2);
-    },
-  );
+        safeReason,
+        ...(failure === 'network' ? {} : { upstreamStatus: failure === 'http' ? 403 : 200 }),
+      }),
+    );
+    await read();
+    expect(upstream).toHaveBeenCalledTimes(2);
+  });
 
   it('aborts an upstream request at the configured deadline', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const controller = new AbortController();
     const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
     vi.stubGlobal(
@@ -226,6 +316,43 @@ describe('protected analytics read', () => {
     await vi.waitFor(() => expect(timeout).toHaveBeenCalledWith(10000));
     controller.abort();
     expect((await pending).status).toBe(503);
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'analytics_read_failed',
+        safeReason: 'upstream_timeout',
+        requestId: 'analytics-test',
+      }),
+    );
+  });
+
+  it('keeps the abort deadline active while the upstream body is streaming', async () => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    const upstream = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          new ReadableStream({
+            start(stream) {
+              controller.signal.addEventListener('abort', () => stream.error(new DOMException(secret, 'TimeoutError')));
+            },
+          }),
+        ),
+      ),
+    );
+    vi.stubGlobal('fetch', upstream);
+    const pending = read();
+    await vi.waitFor(() => expect(upstream).toHaveBeenCalledOnce());
+    controller.abort();
+    expect((await pending).status).toBe(503);
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'analytics_read_failed',
+        safeReason: 'upstream_timeout',
+        upstreamStatus: 200,
+      }),
+    );
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
   });
 
   it.each(['missing', 'forged'])('rejects %s Access identity even when data is cached', async (identity) => {

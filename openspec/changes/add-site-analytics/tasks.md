@@ -18,6 +18,8 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 - [x] 2.3 [Claude or Codex] Add `GET /api/internal/analytics?range=7d|30d` with the GraphQL queries, 15-minute Cache API caching, stable errors and request IDs; register the secret in runtime-config verification. Evidence: protected read, optional config, runtime forwarding and generated internal contracts implemented; [Local summary](../../../.codex-artifacts/validation/2026-10-12T15-10-47-958Z-65748-b74604/summary.json).
 - [x] 2.4 [Claude or Codex] Worker tests for range validation, response mapping, caching, upstream failure and Access rejection. Evidence: all 25 analytics Worker tests pass, including missing configuration, timeout and secret-safe errors; [Local summary](../../../.codex-artifacts/validation/2026-10-12T15-10-47-958Z-65748-b74604/summary.json).
 
+- [x] 2.5 [Claude or Codex] Apply the approved public-apex/bot filter with a new cache version, distinguish upstream failure categories safely, and test the captured live response plus runtime configuration forwarding. Record the deployed 503 cause only when demonstrated. Local corrections and focused regressions passed; deployed diagnosis remains part of 4.2. See [validation.md](validation.md#stats-read-corrections--2026-10-13).
+
 Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
 ## 3. Staff Stats page
@@ -30,4 +32,4 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
 - [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed after the readability redesign; see [validation.md](validation.md). Committed as `0995c185` and `aa5dfac6`.
 - [ ] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.
-  - Attempted on PRD release `be69cd6e` / run 565: Stats returned HTTP 503, reference `2d75ec48-58d0-4e47-8a1c-351abf412552`; matching Worker events are recorded in [validation.md](validation.md#prd-release-and-live-acceptance--2026-10-13). The full UTC-day comparison and live GraphQL field compatibility remain unverified.
+  - Attempted on PRD release `be69cd6e` / run 565: Stats returned HTTP 503, reference `2d75ec48-58d0-4e47-8a1c-351abf412552`; matching Worker events are recorded in [validation.md](validation.md#prd-release-and-live-acceptance--2026-10-13). Subsequent Explorer reads proved the live query fields and the approved apex/bot filter. Worker-secret execution and the full UTC-day comparison remain unverified; the next comparison must select the same public host and exclude bots.

@@ -27,6 +27,8 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 - [x] 3.2 [Claude or Codex] Add `MusicAlbum` data to release pages and `MusicGroup` data to artist pages through the same helper; unit-test with and without tracklist, artist and links.
   - Content has no release type field, so `albumReleaseType` is omitted.
 
+- [x] 3.3 [Claude or Codex] Correct the MusicAlbum label relationship to nested MusicRelease, omit synthetic SKU from Product JSON-LD, and verify stock/pre-order/no-price rules with focused tests. All 12 affected test projects passed; see [validation.md](validation.md#structured-data-corrections--2026-10-13). External checks of this source remain part of 5.2 after a separately authorized release.
+
 ## 4. Owner
 
 - [ ] 4.1 [Owner] After `add-site-analytics` 1.1, set Greece-only shipping and the 14-day return policy in Search Console's shipping and returns settings. If they are not offered, tell Claude or Codex to add them to the `Organization` data instead.

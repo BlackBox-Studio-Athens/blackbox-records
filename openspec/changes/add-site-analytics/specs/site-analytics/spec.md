@@ -57,3 +57,15 @@ The backend SHALL serve `GET /api/internal/analytics` behind the existing Access
 - **THEN** the backend returns the documented response contract with UTC daily visits/page views, top paths/referrer hosts/countries and device types
 - **AND** successful snapshots are cached for 15 minutes without bypassing Access verification or sharing request IDs
 - **AND** missing or other range values return the stable invalid-request error.
+
+#### Scenario: Staff reads public visitor traffic
+
+- **WHEN** analytics is read for either supported range
+- **THEN** every GraphQL group filters the configured site to `requestHost: "blackboxrecordsathens.com"` and `bot: 0`
+- **AND** cached data from the previous unfiltered query is not reused.
+
+#### Scenario: A failed analytics read is diagnosed
+
+- **WHEN** an upstream HTTP, GraphQL, timeout, network, JSON, body-size or response-shape failure occurs
+- **THEN** the existing request-correlated event identifies a fixed safe failure category and the upstream HTTP status when available
+- **AND** logs and client responses contain no credentials, raw provider bodies or arbitrary exception messages.

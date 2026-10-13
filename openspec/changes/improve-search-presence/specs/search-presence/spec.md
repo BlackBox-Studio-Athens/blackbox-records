@@ -37,6 +37,12 @@ A Store Item page SHALL publish `Product` structured data with an `Offer` only a
 - **WHEN** the Worker offer read fails
 - **THEN** the page contains no `Product` structured data.
 
+#### Scenario: Internal identifiers are longer than merchant SKU limits
+
+- **WHEN** a priced Store Item publishes `Product` structured data
+- **THEN** optional `sku` is omitted rather than populated from or shortened from the internal variant ID
+- **AND** commerce identifiers are unchanged.
+
 ### Requirement: Site, releases and artists are described as entities
 
 Home SHALL publish `WebSite` data naming the site. Release pages SHALL publish `MusicAlbum` data and artist pages `MusicGroup` data, server-rendered from accepted content.
@@ -45,3 +51,4 @@ Home SHALL publish `WebSite` data naming the site. Release pages SHALL publish `
 
 - **WHEN** a release with an artist and a tracklist is rendered
 - **THEN** its `MusicAlbum` names the release, links the artist's `MusicGroup` page, gives the release date, image and label, and lists the tracks.
+- **AND** the label is represented by `recordLabel` on a nested `albumRelease` of type `MusicRelease`, not directly on `MusicAlbum`.

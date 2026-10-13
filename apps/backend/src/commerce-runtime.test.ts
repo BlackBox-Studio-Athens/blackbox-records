@@ -47,6 +47,9 @@ describe('free-tier commerce execution', () => {
       STRIPE_API_BASE_URL: 'https://stripe-A.example',
       CHECKOUT_RETURN_ORIGINS: 'https://shop-A.example',
       RESEND_API_KEY: 're_A',
+      CLOUDFLARE_ANALYTICS_API_TOKEN: 'test-analytics-A',
+      CLOUDFLARE_ACCOUNT_ID: 'test-account-A',
+      CLOUDFLARE_WEB_ANALYTICS_SITE_TAG: 'test-site-A',
     } as const;
     const b = {
       PRODUCT_ENVIRONMENT: 'PRD',
@@ -74,6 +77,11 @@ describe('free-tier commerce execution', () => {
         STRIPE_API_BASE_URL: 'STRIPE_API_BASE_URL' in config ? config.STRIPE_API_BASE_URL : undefined,
         CHECKOUT_RETURN_ORIGINS: 'CHECKOUT_RETURN_ORIGINS' in config ? config.CHECKOUT_RETURN_ORIGINS : undefined,
         RESEND_API_KEY: 'RESEND_API_KEY' in config ? config.RESEND_API_KEY : undefined,
+        CLOUDFLARE_ANALYTICS_API_TOKEN:
+          'CLOUDFLARE_ANALYTICS_API_TOKEN' in config ? config.CLOUDFLARE_ANALYTICS_API_TOKEN : undefined,
+        CLOUDFLARE_ACCOUNT_ID: 'CLOUDFLARE_ACCOUNT_ID' in config ? config.CLOUDFLARE_ACCOUNT_ID : undefined,
+        CLOUDFLARE_WEB_ANALYTICS_SITE_TAG:
+          'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG' in config ? config.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG : undefined,
       });
       expect(received.COMMERCE_DB).toBe(env.COMMERCE_DB);
       expect(received.FLAGS).toBe(env.FLAGS);

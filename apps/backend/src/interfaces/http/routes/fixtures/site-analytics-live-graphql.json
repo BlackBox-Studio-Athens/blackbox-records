@@ -1,0 +1,31 @@
+{
+  "data": {
+    "viewer": {
+      "accounts": [
+        {
+          "daily": [{ "count": 17, "dimensions": { "date": "2026-10-09" }, "sum": { "visits": 17 } }],
+          "deviceTypes": [{ "count": 17, "dimensions": { "value": "desktop" }, "sum": { "visits": 17 } }],
+          "topCountries": [{ "count": 17, "dimensions": { "value": "US" }, "sum": { "visits": 17 } }],
+          "topPaths": [
+            { "count": 2, "dimensions": { "value": "/" }, "sum": { "visits": 2 } },
+            { "count": 2, "dimensions": { "value": "/store/" }, "sum": { "visits": 2 } },
+            { "count": 2, "dimensions": { "value": "/services/" }, "sum": { "visits": 2 } },
+            { "count": 2, "dimensions": { "value": "/about/" }, "sum": { "visits": 2 } },
+            { "count": 2, "dimensions": { "value": "/releases/" }, "sum": { "visits": 2 } },
+            { "count": 1, "dimensions": { "value": "/privacy/" }, "sum": { "visits": 1 } },
+            { "count": 1, "dimensions": { "value": "/store/anarchotribal-vinyl/" }, "sum": { "visits": 1 } },
+            { "count": 1, "dimensions": { "value": "/store/caregivers-vinyl/" }, "sum": { "visits": 1 } },
+            {
+              "count": 1,
+              "dimensions": { "value": "/store/lotus-vinyl-12-inch-ae94854c-5b26-44bf-8c1b-8086e636bb2e/" },
+              "sum": { "visits": 1 }
+            },
+            { "count": 1, "dimensions": { "value": "/terms/" }, "sum": { "visits": 1 } }
+          ],
+          "topReferrers": [{ "count": 17, "dimensions": { "value": "www.google.com" }, "sum": { "visits": 17 } }]
+        }
+      ]
+    }
+  },
+  "errors": null
+}

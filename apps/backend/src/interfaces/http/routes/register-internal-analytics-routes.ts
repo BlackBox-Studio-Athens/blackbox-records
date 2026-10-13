@@ -29,6 +29,7 @@ const rumRow = z.object({
   sum: z.object({ visits: z.number().nonnegative() }),
 });
 const breakdownRows = z.array(rumRow.extend({ dimensions: z.object({ value: z.string().max(4096) }) })).max(100);
+const graphqlErrorsSchema = z.object({ errors: z.array(z.unknown()).min(1) });
 const upstreamSchema = z
   .object({
     errors: z.array(z.unknown()).nullish(),
@@ -69,6 +70,19 @@ const query = `query SiteAnalytics($accountTag: string!, $rumFilter: AccountRumP
     }
   } }
 }`;
+
+class AnalyticsReadFailure extends Error {
+  constructor(
+    readonly safeReason:
+      | 'upstream_http'
+      | 'upstream_graphql'
+      | 'upstream_invalid_json'
+      | 'upstream_body_too_large'
+      | 'upstream_invalid_shape',
+  ) {
+    super(safeReason);
+  }
+}
 
 export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
   app.openapi(
@@ -122,18 +136,21 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
       start.setUTCDate(start.getUTCDate() - days + 1);
       // Isolate environments/sites and UTC windows; cache only data, never identity or request IDs.
       const cacheKey = new Request(
-        `https://staff.blackboxrecordsathens.com/__analytics-cache/v1/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/v2/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
       );
       let cache: Cache | undefined;
       try {
-        cache = await caches.open('site-analytics-v1');
+        cache = await caches.open('site-analytics-v2');
         const cached = await cache.match(cacheKey);
         if (cached) return jsonNoStore(context.json(responseSchema.parse(await cached.json()), 200));
       } catch {
         requestLogger(context).warn({ event: 'analytics_cache_unavailable', safeReason: 'read_failed' });
       }
 
+      let upstreamStatus: number | undefined;
+      let signal: AbortSignal | undefined;
       try {
+        signal = AbortSignal.timeout(10000);
         const filter = { datetime_geq: start.toISOString(), datetime_lt: now.toISOString() };
         const upstream = await fetch('https://api.cloudflare.com/client/v4/graphql', {
           method: 'POST',
@@ -141,15 +158,23 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query,
-            variables: { accountTag, rumFilter: { ...filter, siteTag } },
+            variables: {
+              accountTag,
+              rumFilter: { ...filter, siteTag, requestHost: 'blackboxrecordsathens.com', bot: 0 },
+            },
           }),
-          signal: AbortSignal.timeout(10000),
+          signal,
         });
+        upstreamStatus = upstream.status;
         if (!upstream.ok) {
           await upstream.body?.cancel();
-          throw new Error('upstream_http');
+          throw new AnalyticsReadFailure('upstream_http');
         }
-        const data = upstreamSchema.parse(await readGraphqlBody(upstream)).data.viewer.accounts[0]!;
+        const body = await readGraphqlBody(upstream);
+        if (graphqlErrorsSchema.safeParse(body).success) throw new AnalyticsReadFailure('upstream_graphql');
+        const parsed = upstreamSchema.safeParse(body);
+        if (!parsed.success) throw new AnalyticsReadFailure('upstream_invalid_shape');
+        const data = parsed.data.data.viewer.accounts[0]!;
         const daily = Array.from({ length: days }, (_, index) => {
           const date = new Date(start.getTime() + index * 86400000).toISOString().slice(0, 10);
           const rows = data.daily.filter((row) => row.dimensions.date === date);
@@ -177,8 +202,16 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
           requestLogger(context).warn({ event: 'analytics_cache_unavailable', safeReason: 'write_failed' });
         }
         return jsonNoStore(context.json(result, 200));
-      } catch {
-        requestLogger(context).warn({ event: 'analytics_read_failed', safeReason: 'upstream_unavailable' });
+      } catch (error) {
+        requestLogger(context).warn({
+          event: 'analytics_read_failed',
+          safeReason: signal?.aborted
+            ? 'upstream_timeout'
+            : error instanceof AnalyticsReadFailure
+              ? error.safeReason
+              : 'upstream_network',
+          upstreamStatus,
+        });
         return jsonError(context, {
           code: 'service_unavailable',
           message: 'Analytics is temporarily unavailable. Try again.',
@@ -191,7 +224,7 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
 
 async function readGraphqlBody(response: Response): Promise<unknown> {
   const reader = response.body?.getReader();
-  if (!reader) throw new Error('upstream_body_missing');
+  if (!reader) throw new AnalyticsReadFailure('upstream_invalid_shape');
   const decoder = new TextDecoder();
   let text = '';
   let bytes = 0;
@@ -200,10 +233,14 @@ async function readGraphqlBody(response: Response): Promise<unknown> {
       const { done, value } = await reader.read();
       if (done) break;
       bytes += value.byteLength;
-      if (bytes > 128 * 1024) throw new Error('upstream_body_too_large');
+      if (bytes > 128 * 1024) throw new AnalyticsReadFailure('upstream_body_too_large');
       text += decoder.decode(value, { stream: true });
     }
-    return JSON.parse(text + decoder.decode());
+    try {
+      return JSON.parse(text + decoder.decode());
+    } catch {
+      throw new AnalyticsReadFailure('upstream_invalid_json');
+    }
   } finally {
     await reader.cancel();
     reader.releaseLock();

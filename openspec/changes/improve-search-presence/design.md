@@ -25,7 +25,7 @@ A source test asserts that every Store Item path is in the sitemap. A build-outp
 
 The Store Item price and availability are read in the browser by `StoreOfferPriceDisplay` from the Worker, so the prerendered HTML has no price. Writing a price at build time would go stale when staff change prices. Instead, the component writes one `application/ld+json` script after its offer read succeeds, using the same values it displays. Google renders JavaScript and accepts generated structured data. Bing may not, which is an accepted limit.
 
-- `Product`: `name`, `image` (the Store Item image's absolute URL), `description` (the page description), `sku` (variant ID), `brand` (`BlackBox Records` for label releases, the distro label otherwise).
+- `Product`: `name`, `image` (the Store Item image's absolute URL), `description` (the page description), `brand` (`BlackBox Records` for label releases, the distro label otherwise). Optional `sku` is omitted: internal variant IDs are not merchant SKUs, and long IDs triggered Google's length warning. No identifier is shortened, fabricated or changed in commerce data.
 - `Offer`: `price`, `priceCurrency` `EUR`, `url`, and `availability`:
   - `InStock` when buyable
   - `PreOrder` with `availabilityStarts` set to the release date for pre-orders
@@ -40,11 +40,13 @@ All of these are server-rendered from accepted content.
 - **Home:** `WebSite` with the label name from site settings (the same name as `Organization`) and `url`, so Google can show the site name instead of the domain.
 - **Release pages:** `MusicAlbum` with:
   - `name`, `byArtist` (`MusicGroup` with its artist page URL), `datePublished`
-  - `image`, `recordLabel` (`BlackBox Records`), `albumReleaseType` where the content says it
+  - `image`, `albumRelease` (`MusicRelease` with `recordLabel` naming the label), `albumReleaseType` where the content says it
   - `track` from the tracklist when present
 - **Artist pages:** `MusicGroup` with `name`, `url`, `image`, `genre` and `sameAs` from the artist's links.
 
 One helper module in `apps/web` builds these objects, and each page passes its own data. `Organization` stays in `SiteLayout.astro`.
+
+`recordLabel` belongs on `MusicRelease`, not directly on `MusicAlbum` ([Schema.org](https://schema.org/recordLabel)). The nested release preserves the label credit without asserting an unsupported album property. Ratings, reviews, shipping and returns are not invented to silence optional validator warnings.
 
 ## Validation
 

@@ -48,7 +48,6 @@ describe('structured data', () => {
       name: 'Equilibrium',
       description: 'Second album.',
       image: 'https://example.test/cover.jpg',
-      sku: 'variant_equilibrium-lp_standard',
       brand: { '@type': 'Brand', name: 'Blackbox Records' },
       offers: {
         '@type': 'Offer',
@@ -137,7 +136,10 @@ describe('structured data', () => {
       name: 'Equilibrium',
       url: 'https://example.test/releases/equilibrium/',
       image: 'https://example.test/cover.jpg',
-      recordLabel: { '@type': 'Organization', name: 'Blackbox Records' },
+      albumRelease: {
+        '@type': 'MusicRelease',
+        recordLabel: { '@type': 'Organization', name: 'Blackbox Records' },
+      },
       byArtist: { '@type': 'MusicGroup', name: 'Afterwise', url: 'https://example.test/artists/afterwise/' },
       datePublished: '2026-10-16',
       numTracks: 2,
@@ -156,7 +158,7 @@ describe('structured data', () => {
       label: 'Blackbox Records',
       tracks: [],
     });
-    expect(Object.keys(album)).toEqual(['@context', '@type', 'name', 'url', 'image', 'recordLabel']);
+    expect(Object.keys(album)).toEqual(['@context', '@type', 'name', 'url', 'image', 'albumRelease']);
   });
 
   it('describes an artist with and without links', () => {
