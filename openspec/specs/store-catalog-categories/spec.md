@@ -313,7 +313,7 @@ Store listing cards SHALL present the source item title in Veneer and its existi
 
 ### Requirement: Store cards expose whole-item navigation and unobstructed availability
 
-All Store categories SHALL use one native link covering each card except its independent Listen button. Cards SHALL retain price and show resolved unavailability beside it, wrapping on narrow layouts without covering artwork. Active Coverflow cards SHALL expose the same purchase information.
+All Store categories SHALL use one native link covering each card except its independent Listen button. Cards SHALL retain price and show resolved unavailability beside it, wrapping on narrow layouts without covering artwork. Every Store browsing view SHALL expose the same purchase information.
 
 #### Scenario: Shopper opens a card
 
@@ -323,9 +323,9 @@ All Store categories SHALL use one native link covering each card except its ind
 
 #### Scenario: A depleted item appears
 
-- **WHEN** fresh listing data reports sold_out or out_of_stock
-- **THEN** Sold Out or Out of Stock appears beside the retained price with readable text and the corresponding subtle Store Blood or neutral outline
-- **AND** artwork, listening, image previews and card navigation remain usable on mobile, desktop, zoomed layouts and active Coverflow cards.
+- **WHEN** fresh listing data reports coming_soon, repressing or sold_out
+- **THEN** Coming Soon, Repressing or Sold Out appears beside the retained price with readable text, followed by any shown expected month, with the subtle Store Blood outline for Sold Out and the neutral outline otherwise
+- **AND** artwork, listening, image previews and card navigation remain usable on mobile, desktop, zoomed layouts and every Store browsing view.
 
 ### Requirement: Store grids use compact responsive product presentation
 

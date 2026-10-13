@@ -8,7 +8,7 @@ Provide bounded, browser-safe Store listing prices and availability from current
 
 ### Requirement: Listing-price projection is browser-safe and bounded
 
-The Worker SHALL expose one read-only listing-price projection with at most one record per canonical Store Item snapshot. It SHALL retain the discriminated price representation, one required availabilityState: stocked, sold_out, out_of_stock, or unavailable, and one required pre-order field that is empty or carries only the shopper-visible Ship Estimate. A ready record MAY also carry the optional lowStockQuantity defined by the requirement "Listing projection carries an opt-in copies-left count", independently of the pre-order field. One bulk database query SHALL read price snapshots, canonical item identity, current availability, stock and pending checkout holds without provider reads or writes.
+The Worker SHALL expose one read-only listing-price projection with at most one record per canonical Store Item snapshot. It SHALL retain the discriminated price representation, one required availabilityState: stocked, coming_soon, repressing, sold_out, or unavailable, and one required pre-order field that is empty or carries only the shopper-visible Ship Estimate. A coming_soon or repressing record MAY carry an optional expectedMonth. A ready record MAY also carry the optional lowStockQuantity defined by the requirement "Listing projection carries an opt-in copies-left count", independently of the pre-order field. One bulk database query SHALL read price snapshots, canonical item identity, current availability, stock and pending checkout holds without provider reads or writes.
 
 #### Scenario: Browser reads a usable listing price
 
@@ -42,14 +42,22 @@ The Worker SHALL expose one read-only listing-price projection with at most one 
 - **WHEN** current availability and effective stock are classified
 - **THEN** listing and detail readers share pause and missing-record precedence
 - **AND** effective stock is max(0, min(physical quantity, online quantity) minus pending-payment order-line quantities)
-- **AND** depletion reports out_of_stock when restockPlanned is true, otherwise sold_out; missing records and independent selling pauses report unavailable.
+- **AND** depletion reports the variant's staff-chosen zero-stock state, coming_soon, repressing or sold_out, defaulting to sold_out; a missing stock record counts as zero stock with the default
+- **AND** a missing availability record or an independent selling pause reports unavailable, a technical state with no shopper label
+- **AND** positive effective stock reports stocked whatever zero-stock state is chosen.
+
+#### Scenario: Expected month is reported
+
+- **WHEN** a coming_soon or repressing record's stock carries an expected month that has not passed on the current Europe/Athens date
+- **THEN** the record carries expectedMonth as `YYYY-MM`
+- **AND** a passed month, a sold_out, stocked or unavailable record, and a record without a month carry no expectedMonth.
 
 #### Scenario: Pre-order is reported
 
 - **WHEN** an item's stock record carries a pre-order that is open on the current Europe/Athens date
-- **THEN** the record reports the pre-order with its Ship Estimate, or without one when a month estimate has passed
-- **AND** the pre-order field is independent of availabilityState and of the price state
-- **AND** an item without a stock record, without a pre-order, or whose exact ship date has arrived reports no pre-order.
+- **THEN** a stocked record reports the pre-order with its Ship Estimate, or without one when a month estimate has passed
+- **AND** the pre-order field is independent of the price state
+- **AND** an item that is not stocked, has no stock record or pre-order, or whose exact ship date has arrived reports no pre-order, so a pre-order whose copies ran out closes for shoppers while staff keep it open for paid orders.
 
 #### Scenario: A pre-order also qualifies for the copies-left count
 
@@ -66,8 +74,8 @@ The Worker SHALL expose one read-only listing-price projection with at most one 
 #### Scenario: Browser inspects the listing-price response
 
 - **WHEN** the Worker returns the projection
-- **THEN** it exposes only storeItemSlug, presentationState, displayPrice when ready, availabilityState, the optional lowStockQuantity of a ready record, and the pre-order field with at most a Ship Estimate
-- **AND** quantities other than that opt-in count, restock flags, copies-left switches, pre-order start times, Stripe identifiers, variant identifiers, canCheckout, D1 identifiers and provider payloads remain private
+- **THEN** it exposes only storeItemSlug, presentationState, displayPrice when ready, availabilityState, the optional expectedMonth, the optional lowStockQuantity of a ready record, and the pre-order field with at most a Ship Estimate
+- **AND** quantities other than that opt-in count, zero-stock choices other than the reported state, copies-left switches, pre-order start times, availability alert counts, Stripe identifiers, variant identifiers, canCheckout, D1 identifiers and provider payloads remain private
 - **AND** checkout independently validates current commerce authority.
 
 ### Requirement: Store collection prices use one projection read
@@ -225,3 +233,38 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 
 - **WHEN** shell navigation restores or reuses a Store collection snapshot
 - **THEN** Buy is hidden and idle until that activation's projection read shows it again.
+
+### Requirement: Store cards use the shared availability vocabulary
+
+Store collection cards SHALL show Coming Soon, Repressing or Sold Out in the slot beside the retained price for the matching availabilityState, with a shown expected month inside the same chip as "Coming Soon · Nov 2026". Only Sold Out SHALL use the Store Blood tone. An unavailable record, or a state the browser does not recognise, SHALL show the price with no status and no Buy.
+
+#### Scenario: First pressing has not arrived
+
+- **WHEN** a card's record is coming_soon with expectedMonth 2026-11
+- **THEN** the card shows one chip reading Coming Soon · Nov 2026 beside the price
+- **AND** Buy is hidden and the whole-card link still opens the item page.
+
+#### Scenario: Labels stay consistent
+
+- **WHEN** a record is repressing or sold_out
+- **THEN** the card shows Repressing or Sold Out respectively
+- **AND** the strings Out of Stock, Currently Unavailable and Unavailable never appear.
+
+#### Scenario: Selling is paused or the state is unknown
+
+- **WHEN** a record is unavailable or carries an availabilityState absent from the browser's vocabulary
+- **THEN** the card shows its price with no status chip and no Buy, rather than a label or stale status.
+
+### Requirement: Availability states keep one tone on every surface
+
+Each shopper availability state SHALL use the same tone wherever it appears: Store cards, the Store item page, Releases badges, the cart and checkout. Sold Out alone SHALL use a solid Store Blood edge; Coming Soon and Repressing SHALL use a dashed neutral edge; Pre-order keeps Preorder Sea Green. Size and shape SHALL follow the surface, a compact chip or the item page's purchase control. Notify me SHALL be a quiet text action, never an outlined or red control.
+
+#### Scenario: Sold Out appears on several surfaces
+
+- **WHEN** one variant reads Sold Out on its Store card, item page, Releases card and a cart line
+- **THEN** each shows the Store Blood edge, and none of them shows that edge for Coming Soon or Repressing.
+
+#### Scenario: Notify me sits under a Coming Soon status
+
+- **WHEN** Notify me renders on a Store item page
+- **THEN** it reads as a quiet text action with a mail icon, so it is not mistaken for the status above it.

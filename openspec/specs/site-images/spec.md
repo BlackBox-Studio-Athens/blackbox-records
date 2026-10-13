@@ -381,15 +381,16 @@ The system SHALL keep link-preview and small brand-mark images within derivative
 
 #### Scenario: A page publishes link-preview metadata
 
-- **WHEN** a page with a Content Image emits `og:image` and `twitter:image`
-- **THEN** both reference a 1200 px JPEG derivative resolved against the site origin
-- **AND** the original upload is not referenced solely for link previews.
+- **WHEN** any public page or the PRD Holding Page emits `og:image` and `twitter:image`
+- **THEN** both reference the one 1200 × 630 JPEG brand card resolved against the site origin
+- **AND** the brand logo sits inside the card's centre 630 px square, so square crops keep the whole logo
+- **AND** no Content Image or original upload is referenced for link previews.
 
 #### Scenario: The PRD Holding Page shows its logo
 
 - **WHEN** the Holding Page renders its logo at 72 to 120 CSS pixels
 - **THEN** it uses a derivative no wider than 240 pixels
-- **AND** its stable metadata image and closed asset set remain valid.
+- **AND** its brand card metadata image and closed asset set remain valid.
 
 #### Scenario: The header renders on any page
 

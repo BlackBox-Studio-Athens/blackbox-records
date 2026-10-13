@@ -418,3 +418,41 @@ The system SHALL use `Store Crate`, shown to shoppers as Crate, for the per-form
 - **THEN** `bin` names one format's place in it: the `crate` for Vinyl 12-inch, the `CD bin` for CDs and the `tape rack` for Tapes
 - **AND** `sleeve` names one item standing in a flip bin, `pile` the sleeves flipped forward, `back board` the end of a flip bin, and `item in hand` the item the shopper is looking at
 - **AND** `Coverflow` no longer names any Store browsing view.
+
+### Requirement: Availability terms are canonical
+
+The system SHALL name physical availability with one vocabulary: Buy for orderable stock, Pre-order for orderable copies not yet here, Coming Soon for copies on the way that cannot be ordered yet, Repressing for a sold-out edition being pressed again, and Sold Out for an edition with no more copies planned. Shopper copy SHALL write them in Title Case. Identifiers SHALL use stocked, coming_soon, repressing and sold_out; `unavailable` names only a technical selling pause and has no shopper label.
+
+#### Scenario: Zero stock is described
+
+- **WHEN** specs, code, tests, docs or UI copy describe an edition with no copies available online
+- **THEN** they use Coming Soon, Repressing or Sold Out according to the staff choice
+- **AND** they do not use Out of Stock, Currently Unavailable, Unavailable, Back soon, Awaiting stock or coming later.
+
+#### Scenario: Coming Soon and Pre-order differ
+
+- **WHEN** copies are on the way
+- **THEN** Pre-order names the state in which shoppers can pay now, and Coming Soon the state in which they cannot
+- **AND** an expected month is worded Expected Month YYYY and never as a Ship Estimate or delivery promise.
+
+#### Scenario: An availability alert is named
+
+- **WHEN** a shopper's request to be emailed once an edition becomes orderable is described
+- **THEN** it is an `Availability Alert`, labelled Notify me to shoppers
+- **AND** it is not called a newsletter subscription, waitlist or reservation.
+
+### Requirement: Tax and delivery monetary terms are canonical
+
+The system SHALL use VAT Treatment, Delivery Charge, Packing Profile, Order Monetary Snapshot and Fiscal Document consistently in commerce planning, implementation and operational evidence.
+
+#### Scenario: Monetary responsibilities are named
+
+- **WHEN** an artifact describes pricing and fiscal responsibilities
+- **THEN** VAT Treatment means actual applicable tax handling; current NO_TAX_COLLECTED records collection behavior only, without establishing exemption, liability or registration, while historical inclusive agreements retain their own treatment
+- **AND** ΑΦΜ means the seller's tax identifier, which alone establishes neither business commencement nor VAT Treatment
+- **AND** Delivery Charge means one gross order fee based on total validated cart units: €3 for 1–4, €6 for 5–8 or €10 for 9 or more, independent of actual parcel count and distinct from carrier cost; historical agreements retain their original fee
+- **AND** Packing Profile means measured or explicitly owner-authorized assumed protected item dimensions/weight or package usable capacity, sealed outer dimensions, tare and permitted gross weight, used to validate a complete cart with a reference that preserves its assumed/measured provenance
+- **AND** Order Monetary Snapshot means immutable verified merchandise, delivery, VAT and total facts for the accepted order
+- **AND** Fiscal Document means the legally required receipt, invoice or credit issued through the approved fiscal process, distinct from a Stripe payment receipt or order confirmation
+- **AND** delegating calculation, fiscal issuance or filing to Stripe-connected services does not make Stripe the seller or prove remittance to AADE
+- **AND** existing StoreCart, CartLine, CartQuantity, Store Offer, Price Authority and Product Projection meanings remain unchanged.

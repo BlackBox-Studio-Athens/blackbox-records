@@ -29,8 +29,8 @@ Protected stock operations SHALL let staff put one Store Item variant on pre-ord
 #### Scenario: Release stage and physical pre-order are independent
 
 - **WHEN** staff edit Release stage or the linked Store Item's Pre-order toggle
-- **THEN** each control explains that Release stage describes music and Pre-order describes pending physical copies
-- **AND** changing Release stage does not start or end the physical pre-order; Released music can still have an open pre-order.
+- **THEN** each control explains that Release stage describes music only, and Pre-order and the zero-stock state describe physical copies
+- **AND** changing Release stage does not start or end the physical pre-order or change the zero-stock state; Released music can still have an open pre-order or read Coming Soon.
 
 #### Scenario: Invalid or stale input
 
@@ -40,7 +40,7 @@ Protected stock operations SHALL let staff put one Store Item variant on pre-ord
 #### Scenario: Stock was never recorded
 
 - **WHEN** staff start a pre-order for a variant with no stock record
-- **THEN** a zero-quantity stock record is created with the pre-order, and shoppers see the existing zero-stock label until copies are entered.
+- **THEN** a zero-quantity stock record is created with the pre-order, and shoppers see the zero-stock state, Sold Out by default, until copies are entered.
 
 ### Requirement: Pre-order copies are ordinary stock and payment is unchanged
 
@@ -55,7 +55,9 @@ Expected copies SHALL be recorded as the ordinary stock quantity. A pre-order SH
 #### Scenario: Copies run out
 
 - **WHEN** effective online stock of a pre-order item reaches zero
-- **THEN** it reads Sold Out or Out of Stock by the existing rule and cannot be bought.
+- **THEN** the pre-order closes for shoppers: it reads its zero-stock state, Coming Soon, Repressing or Sold Out, with no pre-order badge or Pre-order control, and leaves the Pre-orders filter and the home page
+- **AND** the pre-order stays open for staff, so its paid orders remain Awaiting Stock until staff press Copies arrived or switch Pre-order off
+- **AND** if copies are added while it is still open, it sells as a pre-order again with its Ship Estimate.
 
 #### Scenario: Shopper reads pre-order copy
 
@@ -503,8 +505,8 @@ Store listing cards SHALL retain the supplied 5 October pre-order lifecycle comp
 #### Scenario: Active pre-order copies become unavailable
 
 - **WHEN** an active pre-order has no buyable copies
-- **THEN** its actual Sold Out or Out of Stock badge is visible beside a genuinely disabled gray Pre-order control as in the approved reference
-- **AND** ordering remains unavailable and ordinary unavailable cards keep their existing purchase-slot status treatment.
+- **THEN** the card reads like any zero-stock card: its Coming Soon, Repressing or Sold Out chip beside the price, with no pre-order badge and no Pre-order control
+- **AND** this replaces the earlier approved reference with a disabled gray Pre-order control.
 
 #### Scenario: Card metadata is long or the viewport is narrow
 

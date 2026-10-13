@@ -830,15 +830,16 @@ Shell documents SHALL link a 180 px `/apple-touch-icon.png` and `/manifest.webma
 - **WHEN** a phone browser reads the page's icon and manifest links
 - **THEN** it receives the 180 px touch icon and a manifest with relative start URL and scope and `minimal-ui` display.
 
-### Requirement: Shared links use the configured site and the product image
+### Requirement: Shared links use the configured site and the brand card
 
-The canonical link and `og:url` SHALL be built from the configured site and the request pathname, and a Store Item page SHALL use its product image and alt text as the sharing image.
+The canonical link and `og:url` SHALL be built from the configured site and the request pathname. Every shell document SHALL use the configured 1200 × 630 JPEG brand card as `og:image` and `twitter:image`, with its type, width, height and alt text, while the title and description stay page-specific.
 
 #### Scenario: Visitor shares a Store Item from a phone
 
 - **WHEN** a Store Item page is loaded
 - **THEN** its canonical link and `og:url` are the configured site plus the item's pathname
-- **AND** its `og:image` is a 1200 px JPEG of the product image.
+- **AND** its `og:image` is the absolute brand card URL with `og:image:type` `image/jpeg`, `og:image:width` 1200 and `og:image:height` 630
+- **AND** its `og:title` names the item.
 
 ### Requirement: Public text fields are 16 px on phones
 

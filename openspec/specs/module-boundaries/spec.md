@@ -335,13 +335,13 @@ The public web app SHALL expose one Lenis runtime through its existing module la
 
 ### Requirement: Staff frontend is composed of closed feature modules
 
-The `staff-frontend` composition root SHALL consume closed `staff-*` modules for the shared UI primitives, platform helpers, order, publication, shell, stock and content features. Each module MUST declare its root, task inputs and test target in its own Nx `project.json`, and module dependencies MUST stay acyclic.
+The `staff-frontend` composition root SHALL consume closed `staff-*` modules for the shared UI primitives, platform helpers, order, stats, publication, shell, stock and content features. Each module MUST declare its root, task inputs and test target in its own Nx `project.json`, and module dependencies MUST stay acyclic.
 
 #### Scenario: Staff modules are layered
 
 - **WHEN** boundary validation runs
-- **THEN** layering runs `staff-ui` ← `staff-platform` ← {`staff-orders`, `staff-publication`} ← {`staff-shell`, `staff-stock`} ← `staff-content` ← `staff-frontend`
-- **AND** `staff-ui` has no staff dependencies, `staff-platform` may use `staff-ui`, and `staff-orders` and `staff-publication` may use `staff-ui` and `staff-platform`
+- **THEN** layering runs `staff-ui` ← `staff-platform` ← {`staff-orders`, `staff-stats`, `staff-publication`} ← {`staff-shell`, `staff-stock`} ← `staff-content` ← `staff-frontend`
+- **AND** `staff-ui` has no staff dependencies, `staff-platform` may use `staff-ui`, and `staff-orders`, `staff-stats` and `staff-publication` may use `staff-ui` and `staff-platform`
 - **AND** `staff-shell` and `staff-stock` may use `staff-ui`, `staff-platform` and `staff-publication`
 - **AND** `staff-content` may use `staff-ui`, `staff-platform`, `staff-publication` and `staff-stock`
 - **AND** `staff-frontend` may use every staff module, and declares them as implicit Nx dependencies because Astro imports are invisible to static analysis.

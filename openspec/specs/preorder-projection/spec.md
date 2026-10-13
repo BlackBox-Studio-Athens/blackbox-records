@@ -1,6 +1,7 @@
 # preorder-projection Specification
 
 ## Purpose
+
 Lets public pages render open pre-orders in their first HTML response, by having commerce publish the current set of buyable pre-orders to the public renderer whenever that set changes.
 
 ## Requirements

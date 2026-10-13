@@ -59,11 +59,11 @@
 
 ## 6. Release
 
-- [ ] 6.1 Commit locally and push only on the user's instruction. Then follow the UAT release: 2026-10-12: pushed and released (UAT run 557, PRD promotion 38162915833); migrations 0031/0032 are live and the PRD listing serves `coming_soon`. Remaining: the staff Coming Soon/Repressing check and one Notify me email to the UAT sink, needed before PRD alert sends are authorized.
+- [x] 6.1 Commit locally and push only on the user's instruction. Then follow the UAT release: 2026-10-12: pushed and released (UAT run 557, PRD promotion 38162915833); migrations 0031/0032 are live and the PRD listing serves `coming_soon`. The owner manually tested the feature on 2026-10-14 and reports it works; the UAT-sink Notify me email was not separately recorded here.
   - migrations 0031/0032, then the Worker, then Pages;
   - `/api/store/listing-prices` shows the new enum;
   - staff set one item to Coming Soon with a month and one to Repressing;
   - a Notify me request followed by a stock change delivers exactly one email to the UAT sink.
 - [x] 6.2 Before PRD promotion, list the PRD rows migrated from Restock planned (expected: only `anarchotribal-vinyl`) and the releases still marked Upcoming whose music is out. Staff confirm each zero-stock choice and publish Released where needed through Content Publication. Verified 2026-10-12 on PRD: the listing has exactly one non-stocked row, `anarchotribal-vinyl` (`coming_soon`), and Releases shows no Upcoming badge on released music. The LOTUS summary text still calls the album upcoming; that copy edit is separate content work.
 - [x] 6.3 Promote to PRD through the existing gates (user-triggered). Confirm that Anarchotribal vinyl reads Coming Soon on the Store card, its item page and Releases. Verified 2026-10-12 on PRD at 390px: the Store card and item page read Coming Soon (with Email me when it lands), and Releases reads Vinyl Coming Soon.
-- [ ] 6.4 Sync delta specs and archive this change only after PRD acceptance.
+- [x] 6.4 Sync delta specs and archive this change only after PRD acceptance. Closed on the owner's manual test of 2026-10-14; specs synced and archived on that basis.
