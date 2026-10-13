@@ -23,7 +23,8 @@ The system MUST avoid persisting raw BOX NOW widget, API, credential, voucher, l
 
 - **GIVEN** a paid Greek order exists
 - **WHEN** operators create a BOX NOW shipment manually
-- **THEN** the repo stores only Worker-owned order/payment and approved minimal shipping-mode data needed for handoff.
+- **THEN** the repo stores only Worker-owned order/payment and approved minimal shipping-mode data needed for handoff
+- **AND** the staff dispatch mark stores only whether the order is shipped, when it last changed and which operator changed it.
 
 ### Requirement: Shipping country scope is closed
 
