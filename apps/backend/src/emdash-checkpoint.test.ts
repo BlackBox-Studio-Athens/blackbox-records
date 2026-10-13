@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cms, orders, cmsAsset, nativeRuntime } = vi.hoisted(() => ({
+const { cms, orders, cmsAsset, nativeRuntime, pushPreorders } = vi.hoisted(() => ({
   cms: vi.fn(),
   orders: vi.fn(),
+  pushPreorders: vi.fn(async () => {}),
   cmsAsset: vi.fn(),
   nativeRuntime: { handleContentGet: vi.fn() },
 }));
@@ -21,6 +22,7 @@ vi.mock('emdash/middleware', () => ({
   withEmDashRuntime: (callback: (runtime: typeof nativeRuntime) => unknown) => callback(nativeRuntime),
 }));
 vi.mock('./index', () => ({ CommerceRuntime: class {}, default: { scheduled: orders } }));
+vi.mock('./interfaces/http/routes/preorder-projection-push', () => ({ pushPreorderProjection: pushPreorders }));
 vi.mock('./cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(new Error('Unauthorized')) }));
 
 import worker, { CmsRuntime } from './cms-worker';
@@ -480,6 +482,21 @@ describe('EmDash checkpoint composition', () => {
       expect(cms).toHaveBeenCalledTimes(failed === 'binding' ? 0 : 1);
     },
   );
+
+  it('pushes the open pre-order projection on every scheduled run', async () => {
+    cms.mockReset().mockResolvedValue(undefined);
+    orders.mockReset().mockResolvedValue(undefined);
+    pushPreorders.mockClear();
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      CMS_RUNTIME: { getByName: () => ({ runMaintenance: cms }) },
+    } as unknown as Parameters<typeof worker.scheduled>[1];
+
+    await worker.scheduled({ scheduledTime: 1234 } as ScheduledController, bindings);
+    await worker.scheduled({ scheduledTime: 5678 } as ScheduledController, bindings);
+    expect(pushPreorders).toHaveBeenCalledTimes(2);
+    expect(pushPreorders).toHaveBeenCalledWith(bindings);
+  });
 
   it.each([
     'https://alias.example/_emdash/api/content/posts',

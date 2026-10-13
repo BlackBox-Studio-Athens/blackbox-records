@@ -89,6 +89,9 @@ const {
   })),
 }));
 
+const { mockSchedulePreorderProjectionPush } = vi.hoisted(() => ({ mockSchedulePreorderProjectionPush: vi.fn() }));
+vi.mock('./preorder-projection-push', () => ({ schedulePreorderProjectionPush: mockSchedulePreorderProjectionPush }));
+
 vi.mock('./stripe-webhook-services', () => ({
   createStripeWebhookServices: () => ({
     applyNonPaidCheckoutReconciliation: mockApplyNonPaidCheckoutReconciliation,
@@ -657,5 +660,21 @@ describe('Stripe webhook routes', () => {
       }),
     );
     expect(mockMarkCatalogEventSucceeded).toHaveBeenCalledWith('evt_price_created');
+  });
+
+  it.each([
+    ['paid finalization', () => createStripeEventPayload('checkout.session.completed'), 1],
+    ['a catalog price update', () => createStripeCatalogPriceEventPayload('price.updated'), 1],
+    ['an ignored event', () => createStripeEventPayload('payment_intent.succeeded'), 0],
+  ] as const)('pushes the open pre-order projection after %s', async (_case, payloadFor, pushes) => {
+    mockSchedulePreorderProjectionPush.mockClear();
+    const payload = payloadFor();
+    const response = await createHttpApp().request(
+      'http://backend.test/api/stripe/webhooks',
+      { method: 'POST', body: payload, headers: { 'stripe-signature': createSignatureHeader(payload) } },
+      testBindings,
+    );
+    expect(response.status).toBe(200);
+    expect(mockSchedulePreorderProjectionPush).toHaveBeenCalledTimes(pushes);
   });
 });

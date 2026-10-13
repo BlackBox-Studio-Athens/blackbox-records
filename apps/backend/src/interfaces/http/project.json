@@ -19,7 +19,8 @@
         "./contracts/public-contracts.ts",
         "./routes/register-public-routes.ts",
         "./routes/register-internal-routes.ts",
-        "./app.ts"
+        "./app.ts",
+        "./routes/preorder-projection-push.ts"
       ],
       "namedInterfaces": {
         "public-contracts": "./contracts/public-contracts.ts"

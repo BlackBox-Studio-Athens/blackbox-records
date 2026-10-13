@@ -11,9 +11,15 @@ import { registerInternalStockRoutes } from '../stock/register-internal-stock-ro
 import { registerInternalAnalyticsRoutes } from './register-internal-analytics-routes';
 import { registerInternalStoreStatsRoutes } from './register-internal-store-stats-routes';
 import { registerInternalSearchStatsRoutes } from './register-internal-search-stats-routes';
+import { schedulePreorderProjectionPush } from './preorder-projection-push';
 
 export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocument: () => object): void {
   app.use('/api/internal/*', operatorAccessMiddleware());
+  // Stock, pre-order and price writes can change the open pre-orders that public pages render.
+  app.use('/api/internal/variants/*', async (context, next) => {
+    await next();
+    if (!['GET', 'HEAD'].includes(context.req.method) && context.res.ok) schedulePreorderProjectionPush(context);
+  });
   const internalDiscoveryLinks = [
     apiLink({ href: '/api/internal/', rel: 'self' }),
     apiLink({ href: '/api/internal/openapi.json', rel: 'service-desc' }),

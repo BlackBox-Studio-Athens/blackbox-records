@@ -113,6 +113,10 @@ export default {
     const results = await Promise.allSettled([
       import('./index').then(({ default: commerce }) => commerce.scheduled(controller, bindings)),
       Promise.resolve().then(() => bindings.CMS_RUNTIME.getByName('editorial').runMaintenance()),
+      // Backstop for missed pushes, exact-date closing and an emptied renderer; it never rejects.
+      import('./interfaces/http/routes/preorder-projection-push').then(({ pushPreorderProjection }) =>
+        pushPreorderProjection(bindings),
+      ),
     ]);
     const failures = results.filter((result) => result.status === 'rejected');
     if (failures.length)

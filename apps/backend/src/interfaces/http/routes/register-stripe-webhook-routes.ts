@@ -17,6 +17,7 @@ import {
   StripeWebhookReconciliationError,
 } from './stripe-webhook-acknowledgement';
 import { createStripeWebhookServices } from './stripe-webhook-services';
+import { schedulePreorderProjectionPush } from './preorder-projection-push';
 
 export function registerStripeWebhookRoutes(app: AppOpenApi): void {
   app.post('/api/stripe/webhooks', async (context) => {
@@ -49,6 +50,8 @@ export function registerStripeWebhookRoutes(app: AppOpenApi): void {
         },
         () => acknowledgeVerifiedStripeWebhookEvent(event, services),
       );
+      // Paid finalization takes copies and catalog events change prices; either can change open pre-orders.
+      if (!acknowledgement.ignored) schedulePreorderProjectionPush(context);
 
       return jsonNoStore(context.json(acknowledgement, 200));
     } catch (error) {
