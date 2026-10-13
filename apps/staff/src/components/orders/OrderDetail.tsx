@@ -142,11 +142,12 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
           <OrderStatusLabel status={order.status} />
         </div>
         <div>
-          <span className="order-eyebrow">Fulfillment data</span>
-          <span className={`order-status ${fulfillment.kind === 'current' ? 'order-status--paid' : ''}`}>
+          {/* Derived from saved order data; dispatch lives in the private dispatch record. */}
+          <span className="order-eyebrow">Shipping details</span>
+          <span className="order-status">
             <ClipboardCheck size={19} aria-hidden="true" />
             {fulfillment.kind === 'current'
-              ? 'Complete'
+              ? 'Recorded'
               : fulfillment.kind === 'incomplete'
                 ? 'Incomplete'
                 : 'Unavailable'}
