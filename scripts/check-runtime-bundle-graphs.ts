@@ -50,8 +50,9 @@ const staffRouteDocuments = {
   // 7 October 2026 for the zero-stock state control (593 Brotli bytes over; openspec/changes/add-coming-soon-availability).
   stock: { document: 'stock/index.html', javascriptBudgetBytes: 153 * 1024 },
   // Raised 1 KiB on 12 October 2026 for the shell's Stats navigation entry (67 Brotli bytes over;
-  // openspec/changes/add-site-analytics).
-  orders: { document: 'orders/index.html', javascriptBudgetBytes: 127 * 1024 },
+  // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved dispatch controls
+  // (131,497 Brotli bytes; add-order-dispatch-marking).
+  orders: { document: 'orders/index.html', javascriptBudgetBytes: 129 * 1024 },
   // Recharts stays out of this eager graph: StatsCharts (about 88 KiB Brotli) is a dynamic import. The approved
   // readability redesign adds page/source names, brand marks and the summary sentence (about 5.3 KiB Brotli;
   // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved Store and Google
