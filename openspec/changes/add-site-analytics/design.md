@@ -54,6 +54,8 @@ Successful snapshots use the named Workers Cache API cache `site-analytics-v2` t
 
 ## Response contract
 
+The upstream request uses `redirect: "manual"`. Workerd rejects `redirect: "error"` during Request construction, before any HTTP response; the original fetch stub hid this runtime incompatibility. Manual mode never follows a redirect or forwards the token to another origin, and the existing non-2xx check returns the safe upstream HTTP failure. Regression tests construct a native workerd Request for both ranges and cover 301, 302, 303, 307 and 308 rejection.
+
 `GET /api/internal/analytics?range=7d|30d` requires `range`; a missing, empty or other value returns HTTP 400 `invalid_request`. The existing verified Access JWT is required on hosted requests; Local retains the existing loopback-only operator bypass. HTTP 200 returns exactly this JSON shape:
 
 ```typescript

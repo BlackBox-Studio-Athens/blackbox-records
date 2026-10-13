@@ -1,5 +1,13 @@
 # Analytics backend prerequisite evidence
 
+## Stats 503 redirect-mode correction — 2026-10-13
+
+The owner authorized investigating the remaining 503 and pushing the fix through UAT and PRD after every gate passes, with no credential, setting or launch-control changes. Work started from clean primary `main` at `5733540d4fa3cca15fda388f4a090e08221d0e96`; `pnpm openspec:guard` passed.
+
+The existing successful-response tests replaced `fetch` before native Request construction. Adding native workerd Request construction to the route's upstream test reproduced HTTP 503 for both 7d and 30d, `analytics_read_failed` with `upstream_network` and no upstream status. The runtime throws a TypeError because it accepts only `follow` or `manual` redirect modes. This matches the prior PRD signature. See [Cloudflare's Request implementation](https://github.com/cloudflare/workerd/blob/main/src/workerd/api/http.c%2B%2B) and `.codex-artifacts/stats-503-20261013/regression-before.log` (seven new cases failed; the existing 254 HTTP tests passed).
+
+The production correction changes only `redirect: 'error'` to `redirect: 'manual'`. The existing non-2xx check rejects redirects, preserving the credential boundary and safe response. Tests cover native Request construction for both supported ranges and rejection of 301/302/303/307/308 with no follow-up fetch. No query fields, bindings, credentials, cache behavior or response contracts change. The reproduced cause needs no additional production diagnostics. Hosted resolution and task 4.2 remain pending release verification.
+
 Initial backend implementation run: 2026-10-12. Product Environment: Local. Primary checkout on `main`; that run performed no worktree creation, commit, push, hosted request, deployment or promotion. Unrelated uncommitted `launch-switch-day` work is preserved. Later owner-authorized Cloudflare setup and current task 2.1/2.2 acceptance are recorded separately in [owner-setup.md](owner-setup.md).
 
 ## Scope and result

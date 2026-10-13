@@ -154,7 +154,7 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
         const filter = { datetime_geq: start.toISOString(), datetime_lt: now.toISOString() };
         const upstream = await fetch('https://api.cloudflare.com/client/v4/graphql', {
           method: 'POST',
-          redirect: 'error',
+          redirect: 'manual',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query,

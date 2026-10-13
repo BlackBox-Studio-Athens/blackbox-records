@@ -69,3 +69,9 @@ The backend SHALL serve `GET /api/internal/analytics` behind the existing Access
 - **WHEN** an upstream HTTP, GraphQL, timeout, network, JSON, body-size or response-shape failure occurs
 - **THEN** the existing request-correlated event identifies a fixed safe failure category and the upstream HTTP status when available
 - **AND** logs and client responses contain no credentials, raw provider bodies or arbitrary exception messages.
+
+#### Scenario: The analytics provider redirects
+
+- **WHEN** the GraphQL endpoint responds with a redirect
+- **THEN** the Worker rejects the response using the existing safe upstream HTTP failure
+- **AND** it does not follow the redirect or forward its authorization header to the redirect target.

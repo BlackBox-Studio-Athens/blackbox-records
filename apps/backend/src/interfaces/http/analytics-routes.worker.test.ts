@@ -40,6 +40,43 @@ afterEach(() => {
 });
 
 describe('protected analytics read', () => {
+  it.each(['7d', '30d'])('constructs a valid workerd upstream request for %s', async (range) => {
+    let requestError: unknown;
+    const upstream = vi.fn().mockImplementation((url: string, init: RequestInit) => {
+      try {
+        const request = new Request(url, init);
+        expect(request.redirect).toBe('manual');
+        expect(request.headers.get('Authorization')).toBe(`Bearer ${secret}`);
+      } catch (error) {
+        requestError = error;
+        throw error;
+      }
+      return Promise.resolve(Response.json(liveFixture));
+    });
+    vi.stubGlobal('fetch', upstream);
+    const response = await read(range);
+    expect(requestError).toBeUndefined();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ status: 'ok', range });
+    expect(upstream).toHaveBeenCalledOnce();
+  });
+
+  it.each([301, 302, 303, 307, 308])('rejects an upstream %s redirect without following it', async (status) => {
+    const log = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const upstream = vi.fn().mockImplementation((url: string, init: RequestInit) => {
+      expect(new Request(url, init).redirect).toBe('manual');
+      return Promise.resolve(new Response(null, { status, headers: { Location: 'https://other.example/' } }));
+    });
+    vi.stubGlobal('fetch', upstream);
+    const response = await read();
+    expect(response.status).toBe(503);
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'analytics_read_failed', safeReason: 'upstream_http', upstreamStatus: status }),
+    );
+    expect(upstream).toHaveBeenCalledOnce();
+    expect(JSON.stringify([await response.json(), log.mock.calls])).not.toContain(secret);
+  });
+
   it.each(['', '1d', '90d', '7D', '7d%20', '30'])('rejects unsupported range %s before fetching', async (range) => {
     const upstream = vi.fn();
     vi.stubGlobal('fetch', upstream);
