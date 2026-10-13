@@ -27,7 +27,7 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 - [x] 3.2 [Claude or Codex] Add `MusicAlbum` data to release pages and `MusicGroup` data to artist pages through the same helper; unit-test with and without tracklist, artist and links.
   - Content has no release type field, so `albumReleaseType` is omitted.
 
-- [x] 3.3 [Claude or Codex] Correct the MusicAlbum label relationship to nested MusicRelease, omit synthetic SKU from Product JSON-LD, and verify stock/pre-order/no-price rules with focused tests. All 12 affected test projects passed; see [validation.md](validation.md#structured-data-corrections--2026-10-13). External checks of this source remain part of 5.2 after a separately authorized release.
+- [x] 3.3 [Claude or Codex] Correct the MusicAlbum label relationship to nested MusicRelease, omit synthetic SKU from Product JSON-LD, and verify stock/pre-order/no-price rules with focused tests. All 12 affected test projects passed; see [validation.md](validation.md#structured-data-corrections--2026-10-13). The authorized correction release also passes both external validators for five genuine PRD URL cases; the sold-out case remains part of 5.2.
 
 ## 4. Owner
 
@@ -42,5 +42,5 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 - [x] 5.1 [Claude or Codex] Run focused tests, strict OpenSpec validation and `pnpm validate`; record evidence.
   - [Validation note](validation.md).
 - [ ] 5.2 [Claude or Codex] After promotion (on `pages.dev` before switch day, on the apex after): run Rich Results Test and Schema Markup Validator on one in-stock and one pre-order item, one sold-out item (expect no `Product` data), one release, one artist and Home; record results.
-  - PRD release `be69cd6e` / run 565: both validators checked the in-stock item, release, artist and Home. The live listing has no pre-order or sold-out item; the release also has a non-error MusicAlbum `recordLabel` warning. Full matrix and screenshots are in [validation.md](validation.md#task-52-external-schema-validators); this task remains unchecked.
+  - Correction release `1ea39f31` / run 566, promoted by PRD run 16: both validators passed the in-stock item, a genuine pre-order item, release, artist and Home. Schema.org reports 0 errors / 0 warnings for all five; Google's SKU warning is gone, with optional shipping/return-policy warnings remaining. The current listing has no sold-out item, so this task remains unchecked. See the [updated matrix and screenshots](validation.md#correction-release-and-external-validators--2026-10-13).
 - [ ] 5.3 [Claude or Codex] After switch day, confirm in Search Console that the submitted sitemap's URL count matches the generated sitemap; archive this change.
