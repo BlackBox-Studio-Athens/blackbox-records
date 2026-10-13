@@ -40,6 +40,7 @@ export const getInternalApiDescriptionRoute = createRoute({
 const internalContractModules = [
   [getInternalApiDiscoveryRoute.path, getInternalApiDescriptionRoute.path],
   [
+    '/api/internal/orders/checkout-sessions/{checkoutSessionId}/dispatch',
     '/api/internal/orders/search',
     '/api/internal/orders',
     '/api/internal/orders/checkout-sessions/{checkoutSessionId}',

@@ -4,6 +4,7 @@ import { expect, it, vi } from 'vitest';
 import { PrismaOrderStateRepository, createPrismaClient } from './';
 import { PrismaStockRepository } from './prisma-stock-repository';
 import { athensToday } from '../../../domain/commerce';
+import { D1OrderDispatchRepository } from '../d1-order-dispatch-repository';
 
 it('returns an empty awaiting page without querying orders when there are no open cycles', async () => {
   const prisma = createPrismaClient(env);
@@ -199,6 +200,36 @@ it('searches all matching orders before cursor pagination, including email filte
     for (const q of ['search-a@example.com', 'pi_search_a', 'cs_test_search_a', 'search-order-a']) {
       expect((await orders.listRecent({ limit: 1, status: null, q }))[0]?.id).toBe('search-order-a');
     }
+  } finally {
+    await prisma.$disconnect();
+  }
+});
+
+it('lists paid orders without a current shipped mark', async () => {
+  const prisma = createPrismaClient(env);
+  const orders = new PrismaOrderStateRepository(prisma);
+  const dispatches = new D1OrderDispatchRepository(env.COMMERCE_DB);
+  const createdAt = new Date('2026-10-13T00:00:00Z');
+  try {
+    await prisma.checkoutOrder.createMany({
+      data: (['open', 'shipped', 'undone', 'unpaid'] as const).map((suffix) => ({
+        id: `dispatch-order-${suffix}`,
+        storeItemSlug: 'dispatch-title',
+        variantId: 'variant_dispatch',
+        checkoutExpiresAt: createdAt,
+        createdAt,
+        status: suffix === 'unpaid' ? ('not_paid' as const) : ('paid' as const),
+        statusUpdatedAt: createdAt,
+        recipientName: 'Dispatch Customer',
+      })),
+    });
+    const mark = { shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at: createdAt };
+    await dispatches.set({ ...mark, orderId: 'dispatch-order-shipped' });
+    await dispatches.set({ ...mark, orderId: 'dispatch-order-undone' });
+    await dispatches.set({ ...mark, orderId: 'dispatch-order-undone', shipped: false, expectedShipped: true });
+    const ids = (await orders.listRecent({ limit: 25, q: 'Dispatch Customer', notShipped: true })).map(({ id }) => id);
+    expect(ids.sort()).toEqual(['dispatch-order-open', 'dispatch-order-undone']);
+    await expect(orders.listRecent({ limit: 25, notShipped: true, status: 'not_paid' })).resolves.toEqual([]);
   } finally {
     await prisma.$disconnect();
   }

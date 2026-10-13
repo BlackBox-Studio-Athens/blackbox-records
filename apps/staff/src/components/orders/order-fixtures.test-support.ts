@@ -19,6 +19,7 @@ export const exampleOrder: InternalOrder = {
   acceptedDeliveryAmountMinor: null,
   acceptedParcelTier: null,
   shippingLocker: null,
+  dispatch: { shippedAt: null, updatedAt: null, updatedBy: null },
   deliveries: [
     {
       kind: 'ops_fulfillment',

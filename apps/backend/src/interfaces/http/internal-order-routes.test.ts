@@ -18,6 +18,7 @@ const HOSTED_ENV = {
 const mockDisconnect = vi.fn(async () => {});
 const mockReadCheckoutOrder = vi.fn();
 const mockReadRecentCheckoutOrders = vi.fn();
+const mockSetDispatch = vi.fn();
 const mockCreateInternalOrderServices = vi.fn();
 
 function expectNoStoreCacheControl(response: Response): void {
@@ -32,6 +33,7 @@ vi.mock('../../application/commerce/orders/internal-order-services', () => ({
       disconnect: mockDisconnect,
       readCheckoutOrder: mockReadCheckoutOrder,
       readRecentCheckoutOrders: mockReadRecentCheckoutOrders,
+      setDispatch: mockSetDispatch,
     };
   },
 }));
@@ -299,6 +301,7 @@ describe('internal order routes', () => {
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
       deliveries: [],
+      dispatch: { shippedAt: null, updatedAt: null, updatedBy: null },
       fulfillment: { kind: 'unavailable' },
       needsReviewAt: '2026-04-25T11:05:00.000Z',
       needsReviewReason: 'stock_unavailable',
@@ -363,5 +366,86 @@ describe('internal order routes', () => {
       error: 'Checkout order not found.',
       requestId: expect.any(String),
     });
+  });
+
+  describe('dispatch', () => {
+    const url = 'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_paid/dispatch';
+    const request = (headers: Record<string, string> = { origin: 'http://127.0.0.1', 'x-blackbox-request': '1' }) =>
+      createHttpApp().request(
+        url,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json', ...headers },
+          body: JSON.stringify({ shipped: true, expectedShipped: false }),
+        },
+        LOCAL_ENV,
+      );
+
+    it('records the mark with the operator and returns the order', async () => {
+      const dispatch = {
+        orderId: 'order',
+        shippedAt: '2026-10-13T10:00:00.000Z',
+        updatedAt: '2026-10-13T10:00:00.000Z',
+        updatedBy: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+      };
+      mockSetDispatch.mockResolvedValueOnce({
+        kind: 'updated',
+        read: { order: currentPaidCheckoutOrder(), deliveries: [], awaitingStock: false, dispatch },
+      });
+      const response = await request();
+      expect(response.status).toBe(200);
+      expectNoStoreCacheControl(response);
+      expect(await response.json()).toMatchObject({
+        dispatch: { shippedAt: dispatch.shippedAt, updatedAt: dispatch.updatedAt, updatedBy: dispatch.updatedBy },
+      });
+      expect(mockSetDispatch).toHaveBeenCalledWith('cs_test_paid', {
+        shipped: true,
+        expectedShipped: false,
+        operatorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+        at: expect.any(Date),
+      });
+    });
+
+    it.each([
+      ['conflict', 409, 'dispatch_conflict'],
+      ['not_ready', 409, 'dispatch_not_ready'],
+      ['not_found', 404, 'not_found'],
+    ])('maps %s to %i', async (kind, status, code) => {
+      mockSetDispatch.mockResolvedValueOnce({ kind });
+      const response = await request();
+      expect(response.status).toBe(status);
+      expect(await response.json()).toMatchObject({ code });
+    });
+
+    it('refuses cross-origin or unmarked requests before constructing services', async () => {
+      expect((await request({ origin: 'https://evil.example', 'x-blackbox-request': '1' })).status).toBe(403);
+      expect((await request({ origin: 'http://127.0.0.1' })).status).toBe(403);
+      expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+    });
+
+    it('rejects an unchanged mark', async () => {
+      const response = await createHttpApp().request(
+        url,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json', origin: 'http://127.0.0.1', 'x-blackbox-request': '1' },
+          body: JSON.stringify({ shipped: true, expectedShipped: true }),
+        },
+        LOCAL_ENV,
+      );
+      expect(response.status).toBe(400);
+      expect(mockSetDispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  it('passes the not-shipped filter to the order search', async () => {
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([]);
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/orders/search?dispatch=not_shipped',
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(200);
+    expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith(expect.objectContaining({ notShipped: true }));
   });
 });

@@ -10,7 +10,7 @@ const emptyRead = <T>(): ReadState<T> => ({ data: null, readAt: null, loading: f
 
 export function createOrderWorkspace(
   api: Pick<ReturnType<typeof createInternalOrderApi>, 'list' | 'detail'> &
-    Partial<Pick<ReturnType<typeof createInternalOrderApi>, 'search'>>,
+    Partial<Pick<ReturnType<typeof createInternalOrderApi>, 'search' | 'setDispatch'>>,
 ) {
   let state = {
     denied: false,
@@ -18,6 +18,7 @@ export function createOrderWorkspace(
     query: '',
     notification: '' as '' | 'pending' | 'needs_review',
     awaitingStock: false,
+    notShipped: false,
     nextCursor: null as string | null,
     cursor: undefined as string | undefined,
     selected: false,
@@ -41,6 +42,7 @@ export function createOrderWorkspace(
         query: '',
         notification: '',
         awaitingStock: false,
+        notShipped: false,
         cursor: undefined,
         nextCursor: null,
         list: emptyRead(),
@@ -55,7 +57,7 @@ export function createOrderWorkspace(
   const message = (error: unknown) =>
     error instanceof InternalOrderApiError ? error.message : 'Orders could not be read. Please try again.';
 
-  return {
+  const workspace = {
     getSnapshot: () => state,
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -73,6 +75,7 @@ export function createOrderWorkspace(
       notification = state.notification,
       cursor?: string,
       awaitingStock = state.awaitingStock,
+      notShipped = state.notShipped,
     ) {
       if (state.denied) return;
       const request = ++listRequest;
@@ -80,7 +83,8 @@ export function createOrderWorkspace(
         status === state.status &&
         query === state.query &&
         notification === state.notification &&
-        awaitingStock === state.awaitingStock
+        awaitingStock === state.awaitingStock &&
+        notShipped === state.notShipped
           ? state.list
           : emptyRead<InternalOrder[]>();
       publish({
@@ -88,6 +92,7 @@ export function createOrderWorkspace(
         query,
         notification,
         awaitingStock,
+        notShipped,
         cursor,
         nextCursor: null,
         list: { ...previous, loading: true, error: null },
@@ -99,6 +104,7 @@ export function createOrderWorkspace(
               ...(query ? { q: query } : {}),
               ...(notification ? { notification } : {}),
               ...(awaitingStock ? { awaitingStock: 'true' as const } : {}),
+              ...(notShipped ? { dispatch: 'not_shipped' as const } : {}),
               ...(cursor ? { cursor } : {}),
             })
           : { items: await api.list(status || undefined), nextCursor: null };
@@ -127,6 +133,22 @@ export function createOrderWorkspace(
         publish({ detail: { ...previous, loading: false, error: message(error) } });
       }
     },
+    /** Returns an error message, or null once the changed order is shown. */
+    async setDispatch(shipped: boolean): Promise<string | null> {
+      const session = state.session;
+      if (state.denied || !session || !api.setDispatch) return 'Reload this order and try again.';
+      try {
+        const data = await api.setDispatch(session, { shipped, expectedShipped: !shipped });
+        detailRequest++;
+        if (state.session === session)
+          publish({ detail: { data, readAt: new Date().toISOString(), loading: false, error: null } });
+        return null;
+      } catch (error) {
+        if (denied(error)) return null;
+        if (error instanceof InternalOrderApiError && error.status === 409) void workspace.lookup(session);
+        return message(error);
+      }
+    },
     inspectUnbound(order: InternalOrder) {
       if (state.denied) return;
       detailRequest++;
@@ -141,4 +163,5 @@ export function createOrderWorkspace(
       publish({ selected: false, session: null, detail: emptyRead() });
     },
   };
+  return workspace;
 }

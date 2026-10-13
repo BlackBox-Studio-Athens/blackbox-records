@@ -10,7 +10,9 @@ export class InternalOrderApiError extends Error {
         ? 'Access required. Sign in with an allowed staff account, then reload this page.'
         : status === 404
           ? 'No order found for this Checkout Session. This does not mean a payment never occurred.'
-          : 'Orders could not be read. Please try again. If this continues, check staff access and the operations runbook.',
+          : status === 409
+            ? 'Another operator changed this order, or it is not ready to ship. The order has been refreshed.'
+            : 'Orders could not be read. Please try again. If this continues, check staff access and the operations runbook.',
     );
     this.name = 'InternalOrderApiError';
   }
@@ -34,6 +36,10 @@ export function createInternalOrderApi(baseUrl = '') {
   const list = client.path('/api/internal/orders').method('get').create();
   const search = client.path('/api/internal/orders/search').method('get').create();
   const detail = client.path('/api/internal/orders/checkout-sessions/{checkoutSessionId}').method('get').create();
+  const setDispatch = client
+    .path('/api/internal/orders/checkout-sessions/{checkoutSessionId}/dispatch')
+    .method('put')
+    .create();
   const init = { cache: 'no-store', credentials: 'same-origin' } as const;
 
   async function read<T>(request: () => Promise<{ data: T }>): Promise<T> {
@@ -54,6 +60,7 @@ export function createInternalOrderApi(baseUrl = '') {
       status?: OrderStatus;
       notification?: 'pending' | 'needs_review';
       awaitingStock?: 'true';
+      dispatch?: 'not_shipped';
     }) {
       return read(() => search({ limit: 25, ...query }, init));
     },
@@ -66,6 +73,11 @@ export function createInternalOrderApi(baseUrl = '') {
       const order = await read(() => detail({ checkoutSessionId }, init));
       if (!order || typeof order !== 'object' || !order.fulfillment) throw new InternalOrderApiError(0);
       return order;
+    },
+    async setDispatch(checkoutSessionId: string, change: { shipped: boolean; expectedShipped: boolean }) {
+      return read(() =>
+        setDispatch({ checkoutSessionId, ...change }, { ...init, headers: { 'X-Blackbox-Request': '1' } }),
+      );
     },
   };
 }

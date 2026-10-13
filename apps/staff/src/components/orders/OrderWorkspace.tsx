@@ -61,6 +61,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         filter,
         params.get('cursor') ?? undefined,
         params.get('awaitingStock') === 'true',
+        params.get('dispatch') === 'not_shipped',
       );
     };
     followUrl();
@@ -115,6 +116,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     if (state.query) params.set('q', state.query);
     if (state.notification) params.set('notification', state.notification);
     if (state.awaitingStock) params.set('awaitingStock', 'true');
+    if (state.notShipped) params.set('dispatch', 'not_shipped');
     if (state.cursor) params.set('cursor', state.cursor);
     writeStaffLocation(`/orders/${params.size ? `?${params}` : ''}`, {
       pages: [...previousCursors.map((cursor) => cursor ?? ''), state.cursor ?? ''],
@@ -130,6 +132,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     state.query,
     state.notification,
     state.awaitingStock,
+    state.notShipped,
     state.cursor,
     state.list.data,
     state.list.loading,
@@ -137,7 +140,16 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
   const read = state.selected ? state.detail : state.list;
   const orders = state.list.data ?? [];
   useStaffRead(
-    ['orders', state.session, state.status, state.query, state.notification, state.awaitingStock, state.cursor],
+    [
+      'orders',
+      state.session,
+      state.status,
+      state.query,
+      state.notification,
+      state.awaitingStock,
+      state.notShipped,
+      state.cursor,
+    ],
     () =>
       state.selected && state.session
         ? workspace.lookup(state.session)
@@ -201,19 +213,41 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       </header>
       {!state.selected && (
         <div className="order-toolbar">
-          <label className="col-span-full">
-            <span className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={state.awaitingStock}
-                onChange={(event) => {
-                  setPreviousCursors([]);
-                  void workspace.loadList(state.status, search, notification, undefined, event.target.checked);
-                }}
-              />
-              Awaiting stock
-            </span>
-          </label>
+          <div className="col-span-full flex flex-wrap gap-x-6 gap-y-2">
+            <label>
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={state.awaitingStock}
+                  onChange={(event) => {
+                    setPreviousCursors([]);
+                    void workspace.loadList(state.status, search, notification, undefined, event.target.checked);
+                  }}
+                />
+                Awaiting stock
+              </span>
+            </label>
+            <label>
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={state.notShipped}
+                  onChange={(event) => {
+                    setPreviousCursors([]);
+                    void workspace.loadList(
+                      state.status,
+                      search,
+                      notification,
+                      undefined,
+                      state.awaitingStock,
+                      event.target.checked,
+                    );
+                  }}
+                />
+                Not shipped
+              </span>
+            </label>
+          </div>
           <label>
             Payment status
             <select
@@ -298,7 +332,12 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         </div>
       )}
       {state.selected ? (
-        state.detail.data && <OrderDetail order={state.detail.data} />
+        state.detail.data && (
+          <OrderDetail
+            order={state.detail.data}
+            onSetDispatch={state.session ? (shipped) => workspace.setDispatch(shipped) : undefined}
+          />
+        )
       ) : (
         <section aria-label="Recent orders" aria-busy={state.list.loading}>
           <div className="my-4 flex gap-2">
@@ -348,7 +387,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                         onClick={() => inspect(order)}
                         className="order-row"
                         data-staff-row={order.checkoutSessionId ?? `${order.variantId}:${order.createdAt}`}
-                        aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}${order.awaitingStock ? ', Awaiting stock' : ''}`}
+                        aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}${order.status === 'paid' ? (order.dispatch.shippedAt ? ', Shipped' : ', Not shipped') : ''}${order.awaitingStock ? ', Awaiting stock' : ''}`}
                       >
                         <span className="order-row-created">
                           <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time>
@@ -357,6 +396,11 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                               ? order.fulfillment.lines.map((line) => line.displayName).join(', ')
                               : order.storeItemSlug}
                           </small>
+                          {order.status === 'paid' && (
+                            <span className={`order-status ${order.dispatch.shippedAt ? 'order-status--paid' : ''}`}>
+                              {order.dispatch.shippedAt ? 'Shipped' : 'Not shipped'}
+                            </span>
+                          )}
                           {order.awaitingStock && <span className="order-status">Awaiting stock</span>}
                         </span>
                         <span>
@@ -399,9 +443,11 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               <Inbox size={32} aria-hidden="true" />
               <h2>No matching orders</h2>
               <p>
-                {state.awaitingStock
-                  ? 'No orders awaiting stock match these filters. Try another filter or clear filters to see all orders.'
-                  : 'Try a different name, email, reference or filter.'}
+                {state.notShipped
+                  ? 'No unshipped paid orders match these filters. Try another filter or clear filters to see all orders.'
+                  : state.awaitingStock
+                    ? 'No orders awaiting stock match these filters. Try another filter or clear filters to see all orders.'
+                    : 'Try a different name, email, reference or filter.'}
               </p>
               <Button
                 variant="outline"
@@ -409,7 +455,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                   setSearch('');
                   setNotification('');
                   setPreviousCursors([]);
-                  void workspace.loadList('', '', '', undefined, false);
+                  void workspace.loadList('', '', '', undefined, false, false);
                 }}
               >
                 <X aria-hidden="true" />
@@ -422,8 +468,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       <footer className="order-footer">
         <LockKeyhole size={15} aria-hidden="true" />
         <span>
-          Private order facts. Refunds, resends, customer contact and dispatch remain in the Commerce operations
-          runbook.
+          Private order facts. Refunds, resends and customer contact remain in the Commerce operations runbook.
         </span>
       </footer>
     </div>

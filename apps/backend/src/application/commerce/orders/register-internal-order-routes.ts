@@ -118,6 +118,11 @@ const checkoutOrderSchema = z
     checkoutSessionId: z.string().nullable(),
     createdAt: z.string().datetime(),
     deliveries: z.array(paidOrderDeliverySchema),
+    dispatch: z.object({
+      shippedAt: z.string().datetime().nullable(),
+      updatedAt: z.string().datetime().nullable(),
+      updatedBy: z.string().nullable(),
+    }),
     fulfillment: paidOrderFulfillmentSchema,
     monetaryPolicyReference: z.string().nullable(),
     taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).nullable().optional(),
@@ -199,6 +204,7 @@ const searchOrdersRoute = createRoute({
       q: z.string().trim().max(200).optional(),
       notification: z.enum(['pending', 'needs_review']).optional(),
       awaitingStock: z.literal('true').optional(),
+      dispatch: z.literal('not_shipped').optional(),
       cursor: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z~[A-Za-z0-9_-]{1,128}$/)
@@ -223,7 +229,72 @@ const searchOrdersRoute = createRoute({
   tags: ['Internal Orders'],
 });
 
+const setOrderDispatchRoute = createRoute({
+  method: 'put',
+  path: '/api/internal/orders/checkout-sessions/{checkoutSessionId}/dispatch',
+  operationId: 'setInternalOrderDispatch',
+  description: 'Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1.',
+  request: {
+    params: checkoutSessionParamsSchema,
+    headers: z.object({ origin: z.string().optional(), 'x-blackbox-request': z.string().optional() }),
+    body: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: z
+            .object({ shipped: z.boolean(), expectedShipped: z.boolean() })
+            .refine((body) => body.shipped !== body.expectedShipped, 'Dispatch must change.')
+            .openapi('InternalOrderDispatchChange'),
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: checkoutOrderSchema } },
+      description: 'The order with its recorded dispatch mark.',
+    },
+    ...operatorAccessErrorResponses,
+    403: { content: problemContent, description: 'Same-origin operator request required.' },
+    404: { content: problemContent, description: 'Checkout order not found.' },
+    409: {
+      content: problemContent,
+      description: 'The order is not a complete paid order, or another operator changed its dispatch mark.',
+    },
+  },
+  tags: ['Internal Orders'],
+});
+
 export function registerInternalOrderRoutes(app: AppOpenApi): void {
+  app.openapi(setOrderDispatchRoute, async (context) => {
+    if (
+      context.req.header('origin') !== new URL(context.req.url).origin ||
+      context.req.header('x-blackbox-request') !== '1'
+    )
+      return jsonError(context, { code: 'forbidden', message: 'Same-origin operator request required.', status: 403 });
+    const services = createInternalOrderServices(context.env);
+    try {
+      const result = await services.setDispatch(context.req.valid('param').checkoutSessionId, {
+        ...context.req.valid('json'),
+        operatorEmail: context.get('operatorIdentity').email,
+        at: new Date(),
+      });
+      if (result.kind === 'updated') return jsonNoStore(context.json(toCheckoutOrderResponse(result.read), 200));
+      if (result.kind === 'not_found')
+        return jsonError(context, { code: 'not_found', message: 'Checkout order not found.', status: 404 });
+      return jsonError(context, {
+        code: result.kind === 'conflict' ? 'dispatch_conflict' : 'dispatch_not_ready',
+        message:
+          result.kind === 'conflict'
+            ? 'Another operator changed this order. Refresh and check again.'
+            : 'Only paid orders with complete shipping details can be marked shipped.',
+        status: 409,
+      });
+    } finally {
+      await services.disconnect();
+    }
+  });
+
   app.openapi(searchOrdersRoute, async (context) => {
     const services = createInternalOrderServices(context.env);
     try {
@@ -238,6 +309,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
         ...(query.q ? { q: query.q } : {}),
         ...(query.notification ? { notification: query.notification } : {}),
         ...(query.awaitingStock ? { awaitingStock: true } : {}),
+        ...(query.dispatch ? { notShipped: true } : {}),
         ...(createdAt && id ? { cursor: { createdAt: new Date(createdAt), id } } : {}),
       });
       const page = results.slice(0, limit);
@@ -317,6 +389,11 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
       status: delivery.status,
       updatedAt: delivery.updatedAt.toISOString(),
     })),
+    dispatch: {
+      shippedAt: read.dispatch?.shippedAt ?? null,
+      updatedAt: read.dispatch?.updatedAt ?? null,
+      updatedBy: read.dispatch?.updatedBy ?? null,
+    },
     fulfillment: toPaidFulfillmentResponse(order),
     monetaryPolicyReference: order.monetaryPolicyReference ?? null,
     taxCollectionMode: resolveTaxCollectionMode(order.monetaryPolicyReference),

@@ -75,6 +75,7 @@ export type {
   ClaimedAvailabilityAlert,
 } from './availability-alert-repository';
 export type { OperatorStockRepository } from './operator-stock-repository';
+export type { OrderDispatch, OrderDispatchRepository } from './order-dispatch-repository';
 export type {
   OrderWithdrawal,
   OrderWithdrawalRepository,

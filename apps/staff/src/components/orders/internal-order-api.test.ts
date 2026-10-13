@@ -56,4 +56,16 @@ describe('Protected order reads', () => {
     await expect(createInternalOrderApi().list()).rejects.toBeInstanceOf(InternalOrderApiError);
     await expect(createInternalOrderApi().detail('cs_example')).rejects.toBeInstanceOf(InternalOrderApiError);
   });
+  it('sends a marked same-origin PUT to change dispatch', async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => Response.json(exampleOrder));
+    vi.stubGlobal('fetch', fetcher);
+    await expect(
+      createInternalOrderApi().setDispatch('cs_example', { shipped: true, expectedShipped: false }),
+    ).resolves.toEqual(exampleOrder);
+    const [url, init] = fetcher.mock.calls[0]!;
+    expect(url).toBe('/api/internal/orders/checkout-sessions/cs_example/dispatch');
+    expect(init).toMatchObject({ method: 'PUT', credentials: 'same-origin' });
+    expect(new Headers(init?.headers).get('x-blackbox-request')).toBe('1');
+    expect(JSON.parse(String(init?.body))).toEqual({ shipped: true, expectedShipped: false });
+  });
 });

@@ -316,7 +316,7 @@ describe('Awaiting-stock orders', () => {
       });
       const html = render();
       expect(html).toContain('<span class="order-status">Awaiting stock</span>');
-      expect(html).toContain('Paid, Awaiting stock"');
+      expect(html).toContain('Paid, Not shipped, Awaiting stock"');
       expect(html.includes('checked=""')).toBe(value === 'true');
       vi.mocked(React.useEffect).mock.calls[2]?.[0]();
       expect(writeStaffLocation).toHaveBeenLastCalledWith(
@@ -387,5 +387,59 @@ describe('Awaiting-stock orders', () => {
     const released = renderToStaticMarkup(<OrderDetail order={{ ...order, awaitingStock: false }} />);
     expect(released).not.toContain('Hold this order');
     expect(released).toContain(text);
+  });
+});
+
+describe('Order dispatch', () => {
+  const noop = async () => null;
+  it('shows the dispatch mark and offers the matching control only for complete paid orders', () => {
+    const open = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
+    expect(open).toContain('Not shipped');
+    expect(open).toContain('Mark shipped');
+    expect(open).not.toContain('private dispatch record');
+    const shipped = renderToStaticMarkup(
+      <OrderDetail
+        order={{
+          ...exampleOrder,
+          dispatch: {
+            shippedAt: '2026-10-13T10:00:00.000Z',
+            updatedAt: '2026-10-13T10:00:00.000Z',
+            updatedBy: 'ops@example.com',
+          },
+        }}
+        onSetDispatch={noop}
+      />,
+    );
+    expect(shipped).toContain('by ops@example.com');
+    expect(shipped).toContain('Mark not shipped');
+    expect(shipped).not.toContain('Mark shipped<');
+    for (const order of [
+      { ...exampleOrder, status: 'needs_review' as const },
+      { ...exampleOrder, fulfillment: { kind: 'unavailable' as const } },
+    ])
+      expect(renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />)).not.toContain('Mark shipped');
+    expect(renderToStaticMarkup(<OrderDetail order={exampleOrder} />)).not.toContain('Mark shipped');
+  });
+
+  it('sends the not-shipped filter and keeps it while paging', async () => {
+    const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: null }));
+    const workspace = createOrderWorkspace({ ...api(), search });
+    await workspace.loadList('', '', '', undefined, false, true);
+    expect(search).toHaveBeenLastCalledWith({ dispatch: 'not_shipped' });
+    await workspace.loadList('', '', '', 'next');
+    expect(search).toHaveBeenLastCalledWith({ dispatch: 'not_shipped', cursor: 'next' });
+  });
+
+  it('shows the saved order after a mark and refreshes after a conflict', async () => {
+    const shipped = { ...exampleOrder, dispatch: { ...exampleOrder.dispatch, shippedAt: '2026-10-13T10:00:00.000Z' } };
+    const client = { ...api(), setDispatch: vi.fn(async () => shipped) };
+    const workspace = createOrderWorkspace(client);
+    await workspace.lookup('cs_test_example');
+    await expect(workspace.setDispatch(true)).resolves.toBeNull();
+    expect(client.setDispatch).toHaveBeenCalledWith('cs_test_example', { shipped: true, expectedShipped: false });
+    expect(workspace.getSnapshot().detail.data).toBe(shipped);
+    client.setDispatch.mockRejectedValueOnce(new InternalOrderApiError(409));
+    await expect(workspace.setDispatch(false)).resolves.toContain('Another operator changed this order');
+    expect(client.detail).toHaveBeenCalledTimes(2);
   });
 });

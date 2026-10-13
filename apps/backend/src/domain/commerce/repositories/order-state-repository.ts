@@ -280,6 +280,7 @@ export type ListRecentCheckoutOrdersInput = {
   q?: string;
   cursor?: { createdAt: Date; id: string };
   notification?: 'pending' | 'needs_review';
+  notShipped?: boolean;
 };
 
 export interface OrderStateRepository {

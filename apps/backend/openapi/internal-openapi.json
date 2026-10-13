@@ -202,6 +202,36 @@
               ]
             }
           },
+          "dispatch": {
+            "type": "object",
+            "properties": {
+              "shippedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "updatedBy": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "shippedAt",
+              "updatedAt",
+              "updatedBy"
+            ]
+          },
           "fulfillment": {
             "oneOf": [
               {
@@ -671,6 +701,7 @@
           "checkoutSessionId",
           "createdAt",
           "deliveries",
+          "dispatch",
           "fulfillment",
           "monetaryPolicyReference",
           "acceptedDeliveryAmountMinor",
@@ -695,6 +726,21 @@
           "paid",
           "not_paid",
           "needs_review"
+        ]
+      },
+      "InternalOrderDispatchChange": {
+        "type": "object",
+        "properties": {
+          "shipped": {
+            "type": "boolean"
+          },
+          "expectedShipped": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shipped",
+          "expectedShipped"
         ]
       },
       "SiteAnalytics": {
@@ -2506,6 +2552,114 @@
         }
       }
     },
+    "/api/internal/orders/checkout-sessions/{checkoutSessionId}/dispatch": {
+      "put": {
+        "operationId": "setInternalOrderDispatch",
+        "description": "Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1.",
+        "tags": [
+          "Internal Orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "checkoutSessionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InternalOrderDispatchChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The order with its recorded dispatch mark.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalCheckoutOrder"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout order not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The order is not a complete paid order, or another operator changed its dispatch mark.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/orders/search": {
       "get": {
         "operationId": "searchInternalOrders",
@@ -2561,6 +2715,17 @@
             },
             "required": false,
             "name": "awaitingStock",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "not_shipped"
+              ]
+            },
+            "required": false,
+            "name": "dispatch",
             "in": "query"
           },
           {

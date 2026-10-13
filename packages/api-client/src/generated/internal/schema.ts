@@ -132,6 +132,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/orders/checkout-sessions/{checkoutSessionId}/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1. */
+        put: operations["setInternalOrderDispatch"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/orders/search": {
         parameters: {
             query?: never;
@@ -578,6 +595,13 @@ export type components = {
                 /** Format: date-time */
                 updatedAt: string;
             }[];
+            dispatch: {
+                /** Format: date-time */
+                shippedAt: string | null;
+                /** Format: date-time */
+                updatedAt: string | null;
+                updatedBy: string | null;
+            };
             fulfillment: {
                 /** @enum {string} */
                 kind: "unavailable";
@@ -675,6 +699,10 @@ export type components = {
             /** Format: date-time */
             updatedAt: string;
             variantId: string;
+        };
+        InternalOrderDispatchChange: {
+            expectedShipped: boolean;
+            shipped: boolean;
         };
         /** @enum {string} */
         InternalOrderStatus: "pending_payment" | "paid" | "not_paid" | "needs_review";
@@ -1346,11 +1374,86 @@ export interface operations {
             };
         };
     };
+    setInternalOrderDispatch: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string;
+                "x-blackbox-request"?: string;
+            };
+            path: {
+                checkoutSessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalOrderDispatchChange"];
+            };
+        };
+        responses: {
+            /** @description The order with its recorded dispatch mark. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalCheckoutOrder"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Checkout order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description The order is not a complete paid order, or another operator changed its dispatch mark. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
     searchInternalOrders: {
         parameters: {
             query?: {
                 awaitingStock?: "true";
                 cursor?: string;
+                dispatch?: "not_shipped";
                 limit?: number;
                 notification?: "pending" | "needs_review";
                 q?: string;

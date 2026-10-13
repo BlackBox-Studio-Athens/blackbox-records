@@ -207,7 +207,7 @@
 }
 .order-facts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 1rem;
 }
 .order-facts > div {
@@ -221,6 +221,13 @@
 }
 .order-facts .order-status {
   font-size: 1rem;
+}
+.order-dispatch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 .order-notice {
   display: flex;
@@ -443,6 +450,7 @@
   }
   .order-facts > div {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;

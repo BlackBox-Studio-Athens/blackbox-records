@@ -273,6 +273,16 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
   public async listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]> {
     const openPreorders = input.awaitingStock ? await new PrismaStockRepository(this.prisma).listOpenPreorders() : [];
     if (input.awaitingStock && (openPreorders.length === 0 || (input.status && input.status !== 'paid'))) return [];
+    if (input.notShipped && input.status && input.status !== 'paid') return [];
+    // shortcut: D1 caps bound parameters near 100, so a backlog above that needs a SQL join instead.
+    const notShippedIds = input.notShipped
+      ? (
+          await this.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+            `SELECT "id" FROM "CheckoutOrder" AS o WHERE "status" = 'paid' AND NOT EXISTS
+              (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = o."id" AND "shippedAt" IS NOT NULL)`,
+          )
+        ).map(({ id }) => id)
+      : [];
     // ponytail: D1's 100 parameters fit about 40 open cycles; use a SQL join if that ceiling matters.
     const records = await this.prisma.checkoutOrder.findMany({
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -282,6 +292,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
         ...(input.status ? { status: input.status } : {}),
         ...(input.notification ? { deliveries: { some: { status: input.notification } } } : {}),
         AND: [
+          ...(input.notShipped ? [{ status: 'paid' as const, id: { in: notShippedIds } }] : []),
           ...(input.awaitingStock
             ? [
                 {

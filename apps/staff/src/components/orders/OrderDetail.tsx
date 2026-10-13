@@ -8,9 +8,20 @@ import {
   Mail,
   MapPin,
   Package,
+  Truck,
   UserRound,
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { Button } from '../ui/button';
 import type { InternalOrder, OrderStatus } from './internal-order-api';
 
@@ -31,7 +42,7 @@ const reviewGuidance: Record<string, string> = {
   line_mismatch:
     'Check the saved items, quantities, amounts and tax against the payment. Hold normal fulfillment while the mismatch is reviewed.',
   incomplete_fulfillment:
-    'Verify the recipient, Greek shipping address and contact details. Keep any verified correction in the private dispatch record.',
+    'Verify the recipient, Greek shipping address and contact details. Keep any verified correction in the private exception record.',
   incomplete_paid_fulfillment:
     'Paid fulfillment data is incomplete. Verify the original payment and shipping details before packing.',
 };
@@ -124,10 +135,81 @@ function orderShipEstimateText(estimate: OrderShipEstimate): string {
     : `around ${estimate.part ? `${estimate.part} ` : ''}${formatted}`;
 }
 
-export default function OrderDetail({ order }: { order: InternalOrder }) {
+function DispatchControl({
+  order,
+  onSetDispatch,
+}: {
+  order: InternalOrder;
+  onSetDispatch: (shipped: boolean) => Promise<string | null>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [confirmUndo, setConfirmUndo] = useState(false);
+  const [message, setMessage] = useState('');
+  const shipped = Boolean(order.dispatch.shippedAt);
+  async function change(next: boolean) {
+    setBusy(true);
+    setMessage('');
+    const error = await onSetDispatch(next);
+    setBusy(false);
+    setConfirmUndo(false);
+    setMessage(error ?? (next ? 'Marked shipped.' : 'Marked not shipped.'));
+  }
+  return (
+    <div className="order-dispatch">
+      {shipped ? (
+        <Button variant="outline" disabled={busy} onClick={() => setConfirmUndo(true)}>
+          Mark not shipped
+        </Button>
+      ) : (
+        <Button disabled={busy} onClick={() => void change(true)}>
+          <Truck aria-hidden="true" />
+          {busy ? 'Saving…' : 'Mark shipped'}
+        </Button>
+      )}
+      <span role="status">{message}</span>
+      <AlertDialog
+        open={confirmUndo}
+        onOpenChange={(open) => {
+          if (!busy) setConfirmUndo(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mark this order as not shipped?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Use this only to correct a mistake. The order returns to the Not shipped list and another operator may
+              ship it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Keep shipped</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={(event) => {
+                event.preventDefault();
+                void change(false);
+              }}
+            >
+              {busy ? 'Saving…' : 'Mark not shipped'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+export default function OrderDetail({
+  order,
+  onSetDispatch,
+}: {
+  order: InternalOrder;
+  onSetDispatch?: ((shipped: boolean) => Promise<string | null>) | undefined;
+}) {
   const fulfillment = order.fulfillment;
   const attention = notificationStatus(order);
   const reviewReason = order.needsReviewReason ?? (fulfillment.kind === 'incomplete' ? fulfillment.reason : null);
+  const { dispatch } = order;
   return (
     <>
       {order.awaitingStock && (
@@ -142,7 +224,7 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
           <OrderStatusLabel status={order.status} />
         </div>
         <div>
-          {/* Derived from saved order data; dispatch lives in the private dispatch record. */}
+          {/* Derived from saved order data; staff record dispatch separately below. */}
           <span className="order-eyebrow">Shipping details</span>
           <span className="order-status">
             <ClipboardCheck size={19} aria-hidden="true" />
@@ -154,17 +236,25 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
           </span>
         </div>
         <div>
+          <span className="order-eyebrow">Dispatch</span>
+          <span className={`order-status ${dispatch.shippedAt ? 'order-status--paid' : ''}`}>
+            <Truck size={19} aria-hidden="true" />
+            {dispatch.shippedAt ? 'Shipped' : 'Not shipped'}
+          </span>
+          {dispatch.updatedAt && (
+            <small className="order-muted">
+              {dispatch.shippedAt ? 'Marked' : 'Undone'} {formatOrderTime(dispatch.updatedAt)} by {dispatch.updatedBy}
+            </small>
+          )}
+        </div>
+        <div>
           <span className="order-eyebrow">Notifications</span>
           {attention ? <OrderStatusLabel status={attention} /> : <span>No notifications recorded</span>}
         </div>
       </div>
-      <p className="order-notice">
-        <Package aria-hidden="true" size={21} />
-        <span>
-          Check the private dispatch record before packing. Complete paid data does not tell you whether a parcel has
-          been dispatched.
-        </span>
-      </p>
+      {onSetDispatch && order.status === 'paid' && fulfillment.kind === 'current' && (
+        <DispatchControl order={order} onSetDispatch={onSetDispatch} />
+      )}
       {(order.status === 'needs_review' || fulfillment.kind === 'incomplete') && (
         <section className="order-review" aria-labelledby="review-heading">
           <h2 id="review-heading">

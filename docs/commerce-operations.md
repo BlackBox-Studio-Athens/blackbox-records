@@ -60,7 +60,7 @@ The server supports a short compatibility bridge when COMMERCE_IDEMPOTENCY_KEYS_
 
 ## Staff order workspace
 
-Open `/orders/` on the protected staff hostname, or choose Orders beside Stock. The workspace is read-only and uses the same Access identity as stock operations. The root landing page still opens Stock.
+Open `/orders/` on the protected staff hostname, or choose Orders beside Stock. The workspace is read-only except for the dispatch mark, and uses the same Access identity as stock operations. The root landing page still opens Stock.
 
 Deploy the staff artifact through `.github/workflows/pages.yml` (staff assets ship inside the combined CMS Worker of every release). The hosted staff build clears `PUBLIC_BACKEND_BASE_URL` so both workspaces call same-origin `/api/internal/*` through the existing Access session. The shared release also rebuilds staff after the public build to prevent the public Worker URL from leaking into the staff artifact.
 
@@ -68,9 +68,9 @@ The list requests the latest 100 orders by creation time, across all payment sta
 
 To inspect an older order, enter its exact Checkout Session in “Find a Checkout Session”. A session-bound detail can be reopened at `/orders/?checkoutSessionId=<encoded-value>`. Rows without a session remain inspectable for that visit but have no permanent detail link; return to and refresh the list to read them again. Not found is not proof that no payment occurred.
 
-Full-page detail separates payment, shipping-details completeness (derived automatically from saved order data, not a dispatch status) and notifications. Historical null amounts are unknown. Delivered email is neither parcel dispatch nor proof of reading. Consult the private dispatch record before packing, even when paid data is complete. References and timeline expand within the protected detail.
+Full-page detail separates payment, shipping-details completeness (derived automatically from saved order data, not a dispatch status), dispatch and notifications. Historical null amounts are unknown. Delivered email is neither parcel dispatch nor proof of reading. Orders is the dispatch record: check the Dispatch tile before packing, even when paid data is complete. The Not shipped filter lists paid orders still to send. References and timeline expand within the protected detail.
 
-Use Refresh for a new read. Failed refreshes show stale data and the last successful read time with Retry; a failed new query does not show old results as its answer. Access denial clears private list and detail data and requires signing in again. Do not copy personal order facts into public evidence. The workspace stores no order payload in browser storage and has no refund, resend, contact, dispatch or stock-write controls; the manual procedures below retain their existing owners.
+Use Refresh for a new read. Failed refreshes show stale data and the last successful read time with Retry; a failed new query does not show old results as its answer. Access denial clears private list and detail data and requires signing in again. Do not copy personal order facts into public evidence. The workspace stores no order payload in browser storage and has no refund, resend, contact or stock-write controls; the manual procedures below retain their existing owners.
 
 ## Failed webhook delivery and resend
 
@@ -90,13 +90,13 @@ Protected reads expose `needsReviewReason` and `stripePaymentIntentId`. New reas
 3. An authorized operator performs any refund in Stripe Dashboard and records its result in the private exception record. A refund does not restock goods automatically: reconcile actual returned physical stock separately through `/stock/`.
 4. Preserve the terminal order and its original payment correlation/reason. Do not reopen it, bulk rewrite immutable paid history, create normal fulfillment delivery for it, or use webhook resend as a way to force fulfillment. Record resolution outside the immutable order facts.
 
-For incomplete or suspect historical shipping, record whether customer contact/manual correction is needed before fulfillment acceptance. Retain the original stored snapshot and keep any verified correction in the private manual dispatch record.
+For incomplete or suspect historical shipping, record whether customer contact/manual correction is needed before fulfillment acceptance. Retain the original stored snapshot and keep any verified correction in the private exception record.
 
 ## Paid delivery and manual dispatch
 
 1. Verify paid persisted order state and complete collected Greek recipient/address plus shopper contact. Check shopper confirmation and ops fulfillment delivery summaries; investigate exhausted attempts. Scheduled outbox recovery owns transient email failures and does not authorize another stock decrement or payment.
 2. Confirm the Greek BOX NOW destination with the customer where needed, then create the shipment manually in the authorized partner portal. No BOX NOW credentials or raw portal payloads belong in this repository.
-3. Before dispatch, check the private dispatch record by order reference. Record operator, date, verified destination, and shipment handoff once so another operator cannot ship twice. A rehearsal is not evidence of a physical shipment.
+3. Before dispatch, open the order in Orders and check that it shows Not shipped. After the shipment handoff, choose Mark shipped; Orders records the operator and time and refuses a second mark, so another operator cannot ship twice. Use Mark not shipped only to correct a mistake. Keep any verified destination correction in the private exception record. A rehearsal is not evidence of a physical shipment.
 4. For returns, verify actual receipt before recording a stock delta or recount. Use current revision/state and reassess any stale-count conflict.
 
 ## Rehearsal evidence

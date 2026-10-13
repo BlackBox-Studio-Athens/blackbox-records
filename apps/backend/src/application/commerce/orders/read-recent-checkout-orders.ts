@@ -7,6 +7,7 @@ export type ReadRecentCheckoutOrdersQuery = {
   q?: string;
   cursor?: { createdAt: Date; id: string };
   notification?: 'pending' | 'needs_review';
+  notShipped?: boolean;
 };
 
 export function readRecentCheckoutOrders(
