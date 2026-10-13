@@ -4,13 +4,14 @@ artist: ouranopithecus
 date: 2026-06-06
 summary: >-
   Ouranopithecus' ten-track Anarchotribal is out with BlackBox Records,
-  carrying the Athens trio's psychedelic and punk influences.
+  Underground Union, Patari Records and B-Otherside Records, carrying the
+  Athens trio's psychedelic and punk influences.
 image: ../releases/anarchotribal-cover.webp
 image_alt: Cover artwork for Anarchotribal by Ouranopithecus
 section_label: Releases
 ---
 
-Ouranopithecus released _Anarchotribal_ on June 6, 2026 with BlackBox Records. The ten-track album is available digitally on Bandcamp; Vinyl is the label edition.
+Ouranopithecus released _Anarchotribal_ on June 6, 2026 with BlackBox Records, Underground Union, Patari Records and B-Otherside Records. The ten-track album is available digitally on Bandcamp; Vinyl is the label edition.
 
 Track sequence:
 

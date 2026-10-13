@@ -10,7 +10,8 @@ tidal_url: https://tidal.com/album/526716850
 summary: >-
   Ouranopithecus' ten-track album channels the Athens trio's psychedelic and
   punk influences. Recorded at Atavo and Buduzi Studios, it was produced by
-  the band and Marios Adamopoulos and released with BlackBox Records. Digital
+  the band and Marios Adamopoulos and co-released by BlackBox Records,
+  Underground Union, Patari Records and B-Otherside Records. Digital
   availability is confirmed by Bandcamp; Vinyl is the label edition.
 formats:
   - Vinyl
@@ -48,6 +49,6 @@ credits:
     name: Voltas and Ouranopithecus
   - role: Original front and back cover photography by
     name: Edward S. Curtis
-  - role: Released by
-    name: BlackBox Records
+  - role: Co-released by
+    name: BlackBox Records, Underground Union, Patari Records and B-Otherside Records
 ---
