@@ -540,10 +540,11 @@ The system SHALL select up to two native physical editions for the featured rows
 
 #### Scenario: Visitor waits for current offers
 
-- **GIVEN** accepted editorial priorities select two native physical editions
-- **WHEN** Releases first renders and live offers are pending, ready or failed
-- **THEN** their featured roles and the remaining catalog order stay fixed
-- **AND** neutral edition links remain available until confirmed offers establish buying eligibility
+- **GIVEN** the rendered open pre-order projection lists a featured edition
+- **WHEN** Releases first paints
+- **THEN** that edition already shows its Pre-order badge, Pre-order action, price, shipping estimate and terms link from the HTML
+- **AND** editions the projection does not list show their neutral edition links until the live offer read confirms another state
+- **AND** featured roles and the remaining catalog order stay fixed while the live read is pending, ready or failed
 - **AND** every release appears once
 
 #### Scenario: An offer changes availability
@@ -552,6 +553,12 @@ The system SHALL select up to two native physical editions for the featured rows
 - **THEN** its current physical badge, price and action reflect the authoritative offer
 - **AND** its artwork, heading role and placement remain stable
 - **AND** digital availability remains independently derived from accepted timing
+
+#### Scenario: The live offer read fails
+
+- **WHEN** the browser's offer read fails after a projected pre-order rendered
+- **THEN** the rendered pre-order presentation remains
+- **AND** buying still reaches the Store Item page and its authoritative offer check
 
 ### Requirement: Releases presents featured records as stacked twin rows
 

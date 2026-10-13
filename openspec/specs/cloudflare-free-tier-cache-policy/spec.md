@@ -175,12 +175,12 @@ The hosted public site SHALL keep Worker invocations per page view within a budg
 
 ### Requirement: Published HTML is reused across renderer hibernation
 
-The hosted renderer SHALL keep rendered published HTML reusable when its Durable Object hibernates, and SHALL let browsers and the edge revalidate it without re-downloading unchanged pages, while every reuse remains bound to one release and accepted snapshot.
+The hosted renderer SHALL keep rendered published HTML reusable when its Durable Object hibernates, and SHALL let browsers and the edge revalidate it without re-downloading unchanged pages, while every reuse remains bound to one release, accepted snapshot and open pre-order projection identity.
 
 #### Scenario: The renderer wakes after hibernation
 
 - **WHEN** a request reaches the public renderer object after it has hibernated
-- **THEN** a page already rendered for the current release, snapshot and path is served from the object's persisted storage without a snapshot parse or render
+- **THEN** a page already rendered for the current release, snapshot, projection and path is served from the object's persisted storage without a snapshot parse or render
 - **AND** stored pages are evicted least-recently-used by byte size within a declared limit
 - **AND** a pointer refresh in progress is shared by concurrent requests, which keep serving the current snapshot meanwhile.
 
@@ -188,7 +188,14 @@ The hosted renderer SHALL keep rendered published HTML reusable when its Durable
 
 - **WHEN** a browser or the edge revalidates a published page with `If-None-Match`
 - **THEN** the gateway forwards that header beside `Accept`, and only those two headers
-- **AND** the renderer answers 304 when the weak ETag for the release, snapshot and path still matches.
+- **AND** the renderer answers 304 when the weak ETag for the release, snapshot, projection and path still matches.
+
+#### Scenario: The open pre-order projection changes
+
+- **WHEN** the renderer accepts a projection with a new identity
+- **THEN** no reuse path serves a page rendered from the previous projection beyond the documented edge window
+- **AND** the renderer retires persisted pages from the previous projection and purges publication-tagged pages through the existing default-entrypoint purge
+- **AND** an unchanged projection causes no retirement, purge or storage write.
 
 #### Scenario: A publication is activated
 

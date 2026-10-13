@@ -304,7 +304,8 @@ The web-editorial module SHALL expose ReleaseCatalogPresentation.tsx to web-page
 #### Scenario: Cached Releases claims are neutral before insertion
 
 - **WHEN** app-shell captures an enriched Releases page for a cached return
-- **THEN** its snapshot uses the same neutral presentation factory to reset purchase actions, physical badges and shipping estimates
+- **THEN** its snapshot uses the shared presentation factory to reset purchase actions, physical badges and shipping estimates to the state the page's HTML rendered from the open pre-order projection
+- **AND** browser-read enrichment is never carried into the snapshot
 - **AND** the live page and snapshot layout remain intact
 - **AND** the restored connector makes a fresh offer read before asserting buying availability
 

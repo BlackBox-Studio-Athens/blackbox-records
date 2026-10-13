@@ -324,25 +324,30 @@ When staff change the Ship Estimate of an open pre-order, each Awaiting Stock or
 
 ### Requirement: The home page presents current pre-orders
 
-The home page SHALL show a Pre-orders section after its existing introduction and above News only while fresh listing data reports a buyable label-release pre-order. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent.
+The home page SHALL show a Pre-orders section after its existing introduction and above News only while the rendered open pre-order projection lists a label-release pre-order. The section SHALL be in the page's HTML response, never inserted after paint. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent.
 
 #### Scenario: Pre-orders exist
 
-- **WHEN** at least one release-sourced Store Item is a buyable pre-order
-- **THEN** the section presents current releases as successive chapters with badges and price, links to each Store Item page and to the Store with the Pre-orders filter on
+- **WHEN** the projection lists at least one release-sourced Store Item
+- **THEN** the Home HTML contains the section, presenting current releases as successive chapters with badges and price, links to each Store Item page and to the Store with the Pre-orders filter on
 - **AND** the existing Home introduction remains unchanged, the feature precedes News, and a single release has no dead next-release link.
+
+#### Scenario: Home is painted
+
+- **WHEN** a shopper loads Home directly or through the persistent shell
+- **THEN** the Pre-orders section is present or absent from first paint
+- **AND** the browser makes no listing or candidate read to decide whether the section appears, and no section appears or disappears after paint.
 
 #### Scenario: Initial Home data read fails temporarily
 
-- **WHEN** the first listing or published-candidate read fails while Home remains mounted
-- **THEN** the showcase starts with page loading and retries the complete read once after 250ms, beginning with fresh stock and price authority
-- **AND** eligible chapters render without requiring a document refresh, including return through the persistent shell
-- **AND** a valid empty/non-buyable response or a second failed read renders no shopping content and creates no recurring polling.
+- **WHEN** the renderer cannot use a stored projection while rendering Home
+- **THEN** Home renders without the section, as for no pre-orders
+- **AND** the browser starts no listing read, retry or recurring polling to insert it later; the next projection push restores it on a later page load.
 
 #### Scenario: Shopper leaves during retry backoff
 
-- **WHEN** Home unmounts or its candidate URL changes before retry
-- **THEN** its existing abort signal clears the retry timer and prevents another request or late state update.
+- **WHEN** Home unmounts or the shopper navigates away during or after first paint
+- **THEN** no pre-order listing or candidate request, retry timer or late state update remains to cancel.
 
 #### Scenario: A release has prepared original-file footage
 
@@ -401,23 +406,28 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 
 #### Scenario: No pre-orders or a failed read
 
-- **WHEN** no buyable pre-order exists or the fresh read fails
-- **THEN** the section is absent and News follows the hero as today
-- **AND** cached artwork never establishes price, stock, buying eligibility or a new publication.
+- **WHEN** the projection lists no release-sourced pre-order, or the renderer holds no projection
+- **THEN** the Home HTML has no section and News follows the hero as today
+- **AND** cached artwork never establishes price, stock or buying eligibility; pressing a pre-order link still reaches the Store Item page and its authoritative offer read.
 
 ### Requirement: Release pages label a release on pre-order
 
-Where a release links to its own Store Item, the release page and the Releases feature SHALL label that link Pre-order and show the pre-order badges while the item is a buyable pre-order. Layout SHALL NOT change.
+Where a release links to its own Store Item, the release page and the Releases feature SHALL label that link Pre-order and show the pre-order badges while the item is a buyable pre-order. The label and badges SHALL be in the page's HTML response. Layout SHALL NOT change.
 
 #### Scenario: The Store Item is a pre-order
 
-- **WHEN** fresh listing data reports the linked item as a buyable pre-order
-- **THEN** the link reads Pre-order and the badges appear beside it.
+- **WHEN** the rendered projection lists the linked item
+- **THEN** the HTML link reads Pre-order and the badges appear beside it from first paint.
 
 #### Scenario: It is not, or the read fails
 
-- **WHEN** the item is ordinary, unavailable, or the read fails
+- **WHEN** the item is not listed, or the renderer holds no projection
 - **THEN** the existing link label and layout remain.
+
+#### Scenario: The live offer differs from the rendered projection
+
+- **WHEN** the browser's offer read reports a different state for the linked item than the rendered HTML
+- **THEN** the label and badges follow the live offer without changing layout.
 
 ### Requirement: Pre-order presentation stays within the visual language
 
@@ -480,22 +490,6 @@ The canonical return screen SHALL match the approved Return reference with Order
 
 - **WHEN** the paid return is viewed at 1280px or 390px
 - **THEN** its reference layout, Inter body/metadata, Veneer heading and Bebas action render without overflow and preserve keyboard access, persistent shell/player and the checkout-scoped header.
-
-### Requirement: Published showcase data follows accepted publication identity
-
-The public pre-order showcase JSON SHALL reuse bounded cached editorial data associated with the accepted publication snapshot and SHALL participate in the existing publication freshness and invalidation contract. It SHALL NOT infer stock, prices or buying eligibility from that cache, or expose private drafts.
-
-#### Scenario: The accepted release gains, changes or removes a clip
-
-- **WHEN** a publication containing a release clip change is accepted and confirmed
-- **THEN** the release page and showcase SHALL reflect the same accepted clip data within the existing publication freshness bound
-- **AND** repeated unchanged reads reuse the cached response while a previous snapshot's response cannot be treated as current indefinitely.
-
-#### Scenario: Publication invalidation is interrupted
-
-- **WHEN** the accepted pointer refresh or required hosted cache purge cannot be confirmed
-- **THEN** publication confirmation retains its existing recoverable pending/error behavior
-- **AND** private content, failed publication data and stale responses never establish a new confirmed publication.
 
 ### Requirement: Store cards match the approved pre-order lifecycle references
 
