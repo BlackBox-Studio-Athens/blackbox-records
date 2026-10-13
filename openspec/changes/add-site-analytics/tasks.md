@@ -4,11 +4,11 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 ## 1. Search engines and visit measurement
 
-- [ ] 1.1 [Owner] Add `blackboxrecordsathens.com` as a Domain property in Google Search Console and verify it through Cloudflare DNS.
-- [ ] 1.2 [Owner] In Bing Webmaster Tools, import the verified property from Search Console.
-- [ ] 1.3 [Owner] Turn on Crawler Hints (Cloudflare → Caching → Configuration).
+- [x] 1.1 [Owner] Add `blackboxrecordsathens.com` as a Domain property in Google Search Console and verify it through Cloudflare DNS. Evidence: 2026-10-13, Google confirmed Domain ownership after one apex DNS-only TXT addition; [owner setup](owner-setup.md#pre-launch-dashboard-steps--2026-10-13).
+- [x] 1.2 [Owner] In Bing Webmaster Tools, import the verified property from Search Console. Evidence: 2026-10-13, owner-approved read-only import added only BlackBox with zero sitemaps; Bing explicitly confirms existing Google verification and no separate code needed; [screenshot](../../../.codex-artifacts/owner-setup/bing-verified.jpg).
+- [x] 1.3 [Owner] Turn on Crawler Hints (Cloudflare → Caching → Configuration). Evidence: 2026-10-13, the Free zone's Crawler Hints switch was already On; verified without changing it or accepting terms; [screenshot](../../../.codex-artifacts/owner-setup/crawler-hints-on.jpg).
 - [x] 1.4 [Owner] Turn on Web Analytics automatic setup for `blackboxrecordsathens.com` (Cloudflare → Analytics & Logs → Web Analytics); note the site tag for 2.2. Evidence: signed-in Chrome setup now enables normal automatic collection, including EU visitors; site tag recorded in [owner setup](owner-setup.md).
-- [ ] 1.5 [Owner] Add a Cloudflare Web Analytics paragraph to the privacy notice in staff and publish it.
+- [x] 1.5 [Owner] Add a Cloudflare Web Analytics paragraph to the privacy notice in staff and publish it. Evidence: 2026-10-13, exact wording/date approved privately, then separately approved and published through Review changes; staff confirms On the website and PRD `/privacy/` contains the paragraph; [public screenshot](../../../.codex-artifacts/owner-setup/privacy-public.jpg).
 - [ ] 1.6 [Claude or Codex] After switch day, confirm the apex HTML carries the beacon, in-shell navigation counts page views and no analytics cookie is set; record evidence.
 
 ## 2. Analytics read
