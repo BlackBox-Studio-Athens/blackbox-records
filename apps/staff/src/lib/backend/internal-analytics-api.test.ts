@@ -85,3 +85,49 @@ describe('createInternalAnalyticsApi', () => {
     await expect(api.readAnalytics('7d')).rejects.toMatchObject({ status: 0, requestId: undefined });
   });
 });
+
+describe('store and search reads', () => {
+  const figures = { checkoutsStarted: 2, paidOrders: 1, itemsSold: 1, paidTotalMinor: 2800, deliveryMinor: 300 };
+  const store = {
+    range: '7d',
+    generatedAt: '2026-10-12T14:00:00.000Z',
+    currencyCode: 'EUR',
+    current: figures,
+    previous: figures,
+  };
+  const search = {
+    range: '30d',
+    generatedAt: null,
+    status: 'not_configured',
+    latestDate: null,
+    totals: { clicks: 0, impressions: 0, position: null },
+    topQueries: [],
+  };
+
+  it('reads each source from its own protected path', async () => {
+    const fetcher = vi.fn<typeof fetch>(async (url) =>
+      Response.json(String(url).includes('store-stats') ? store : search),
+    );
+    const api = createInternalAnalyticsApi({ backendBaseUrl: 'http://127.0.0.1:8787', fetcher });
+    await expect(api.readStoreStats('7d')).resolves.toEqual(store);
+    await expect(api.readSearchStats('30d')).resolves.toEqual(search);
+    expect(fetcher).toHaveBeenCalledWith('http://127.0.0.1:8787/api/internal/store-stats?range=7d', {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    expect(fetcher).toHaveBeenCalledWith('http://127.0.0.1:8787/api/internal/search-stats?range=30d', {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+  });
+
+  it('rejects a 200 that is not store or search figures with its own message', async () => {
+    const api = createInternalAnalyticsApi({ fetcher: async () => new Response('<html>Sign in</html>') });
+    await expect(api.readStoreStats('7d')).rejects.toMatchObject({
+      message: 'Store figures are temporarily unavailable. Try again.',
+    });
+    await expect(api.readSearchStats('7d')).rejects.toMatchObject({
+      message: 'Search figures are temporarily unavailable. Try again.',
+    });
+  });
+});

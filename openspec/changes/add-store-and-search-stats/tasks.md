@@ -18,11 +18,11 @@ Read-only inspection and the owner's decision to leave MFA unchanged are recorde
 
 ## 3. Staff Stats
 
-- [ ] 3.1 [Claude] Present a shape brief and two visual options for the Store and Google search sections and the visit-to-order rate; wait for the owner's choice.
-- [ ] 3.2 [Claude] Implement the chosen sections with independent loading, failure, stale and not-set-up states; add the client reads.
-- [ ] 3.3 [Claude] Focused staff tests and a browser check at phone and desktop widths with stubbed contracts.
+- [x] 3.1 [Claude] Present a shape brief and two visual options for the Store and Google search sections and the visit-to-order rate; wait for the owner's choice. Evidence: two options at 390/1280 px on the real Stats page with stubbed figures; the owner chose Option 2, Visits first ([design](design.md#staff-stats)).
+- [x] 3.2 [Claude] Implement the chosen sections with independent loading, failure, stale and not-set-up states; add the client reads. Evidence: [validation](validation.md#staff-stats-sections--2026-10-13).
+- [x] 3.3 [Claude] Focused staff tests and a browser check at phone and desktop widths with stubbed contracts. Evidence: seven staff projects pass; 390/1280 px screenshots with ok and degraded sources ([validation](validation.md#staff-stats-sections--2026-10-13)).
 
 ## 4. Acceptance
 
-- [ ] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence.
+- [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed, `mode: local`: `.codex-artifacts/validation/2026-10-13T14-51-02-769Z-40900-86c58c/summary.json`.
 - [ ] 4.2 [Claude or Codex] Release through UAT and PRD. On PRD Stats, the store figures match the Orders page for the same window, and search shows data or its empty state. UAT shows search as not set up.

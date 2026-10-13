@@ -1,12 +1,11 @@
-import type { SiteAnalytics } from '../../lib/backend/internal-analytics-api';
-import { formatCount, formatDay } from './stats-format';
+import type { SiteAnalytics, StoreStats } from '../../lib/backend/internal-analytics-api';
+import { formatCount, formatDay, formatEuro, formatRate, plural } from './stats-format';
 import { deviceNames, mergeDevices, mergeSources } from './stats-labels';
 
 /** Sentence parts; strings are plain text and `{ strong }` parts are emphasised figures. */
 export type SummaryPart = string | { strong: string };
 
-const rangeWords = (range: SiteAnalytics['range']) => (range === '7d' ? 'the last 7 days' : 'the last 30 days');
-const plural = (count: number, word: string) => `${formatCount(count)} ${Math.round(count) === 1 ? word : `${word}s`}`;
+export const rangeWords = (range: SiteAnalytics['range']) => (range === '7d' ? 'the last 7 days' : 'the last 30 days');
 const joinAnd = (items: string[]) =>
   items.length < 3 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 const tied = <T>(rows: T[], value: (row: T) => number) => {
@@ -44,6 +43,29 @@ export function summarySentence(data: SiteAnalytics): SummaryPart[] {
       parts.push(direct ? ', level with visits that had no referring site.' : '.');
     }
   }
+  return parts;
+}
+
+/**
+ * The store clause of the summary. Checkouts are a separate count, not a funnel: an order can be paid in
+ * the range for a checkout started before it. The rate needs both orders and visits.
+ */
+export function storeSentence(store: StoreStats['current'], visits: number | null): SummaryPart[] {
+  const parts: SummaryPart[] = store.paidOrders
+    ? [
+        { strong: plural(store.paidOrders, 'order') },
+        ' paid, ',
+        { strong: formatEuro(store.paidTotalMinor) },
+        ' in total.',
+      ]
+    : ['No orders paid.'];
+  if (store.checkoutsStarted) parts.push(' ', { strong: plural(store.checkoutsStarted, 'checkout') }, ' started.');
+  if (store.paidOrders && visits)
+    parts.push(
+      ' About ',
+      { strong: `${formatRate((store.paidOrders / visits) * 100)} paid orders per 100 visits` },
+      '.',
+    );
   return parts;
 }
 

@@ -54,8 +54,9 @@ const staffRouteDocuments = {
   orders: { document: 'orders/index.html', javascriptBudgetBytes: 127 * 1024 },
   // Recharts stays out of this eager graph: StatsCharts (about 88 KiB Brotli) is a dynamic import. The approved
   // readability redesign adds page/source names, brand marks and the summary sentence (about 5.3 KiB Brotli;
-  // openspec/changes/add-site-analytics).
-  stats: { document: 'stats/index.html', javascriptBudgetBytes: 126 * 1024 },
+  // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved Store and Google
+  // search sections (129,971 Brotli bytes; openspec/changes/add-store-and-search-stats).
+  stats: { document: 'stats/index.html', javascriptBudgetBytes: 128 * 1024 },
   calendar: { document: 'calendar/index.html', javascriptBudgetBytes: 176128 },
 };
 const staffHtmlBudgetBytes = 24576;

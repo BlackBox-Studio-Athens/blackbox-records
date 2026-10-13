@@ -42,3 +42,34 @@ The selected acceptance rows are commerce reads, boundaries/tooling and runtime 
 - `InternalApiComponents['schemas']['SearchStats']` and `InternalApiOperations['readSearchStats']`, for `GET /api/internal/search-stats` with the same required range.
 
 The response shapes match [design.md](design.md). Both return `no-store` with a per-request `X-Request-Id`; failures use the existing problem schema. Google setup is pending, so the real environment will return `not_configured` until an owner-approved setup supplies both bindings. The additive paid-date index must be applied by the ordinary migration step before a later authorized release.
+
+## Staff Stats sections — 2026-10-13
+
+The owner chose Option 2, Visits first, from `.codex-artifacts/design/staff-stats-store-search/index.html`.
+
+**What changed:**
+
+- `apps/staff/src/lib/backend/internal-analytics-api.ts` adds `readStoreStats` and `readSearchStats`. They share one read path with source-specific failure messages, and each rejects a 200 that is not its figures, such as an Access sign-in page.
+- `createStatsWorkspace` is now generic over a reader. Stats keeps one instance each for visits, store and search, so each loads, keeps stale figures and retries on its own. A 401 or 403 from any of them shows Access required.
+- The summary adds the store clause and the per-100-visits rate. Store opens the rail; Google search sits under the visits chart.
+- The Store heading reuses the inlined shopping-bag icon, so Stock's shared chunks stay unchanged. The Stats eager budget rose 2 KiB to 128 KiB (129,971 Brotli bytes).
+
+**Checks:**
+
+- `pnpm test apps/staff/src/components/stats` and `pnpm test apps/staff/src/lib/backend/internal-analytics-api.test.ts` passed all seven affected staff projects. New cases cover:
+  - the store clause and rate
+  - the store comparison, including the new, same, none and no-order cases
+  - search figures, the provisional latest day, and its not-set-up and empty states
+  - a failing source next to working ones
+  - visits failing while store and search still show
+  - denial from any source
+  - both client paths and their 200 rejection
+- `pnpm build:staff` passed route isolation and the bundle budgets.
+
+**Browser check.** playwright-cli (isolated headless Chromium) against the built staff output, with all three internal reads stubbed to contract-shaped responses:
+
+- At 390 and 1280 px, the document height equals the viewport (only `main` scrolls) and there is no horizontal overflow.
+- With store returning 503 and search `not_configured`, Store shows its message, `Reference: req_store_1` and Retry; search reads "Search figures aren't available here yet."; visits stay intact.
+- The only console 404 is the shell's `/_emdash/api/blackbox/workspace` change count, which a static preview cannot serve.
+
+Screenshots: `.codex-artifacts/design/staff-stats-store-search/final/stats-ok-1280.png`, `stats-ok-390.png`, `stats-degraded-1280.png`.

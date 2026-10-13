@@ -96,6 +96,17 @@ The sections follow the design approval gate:
 2. Claude presents two visual options at 390 and 1280 px, keeping the approved "A · Summary sentence" direction, Recharts through shadcn Chart and Lucide icons.
 3. Implementation starts only after the owner picks one, which is then recorded here.
 
+**Owner decision, 2026-10-13: Option 2, Visits first.** The options canvas is `.codex-artifacts/design/staff-stats-store-search/index.html`.
+
+- **Summary sentence:** adds a store clause (paid orders, paid total, checkouts started) and, when orders and visits are above 0, "About N paid orders per 100 visits."
+- **Store section:** opens the rail with three parts.
+  - A lead sentence comparing the paid total with the period before.
+  - Two HTML bars for the paid total: the period before in a dark neutral and the range in a light neutral. Violet stays reserved for visits.
+  - Orders paid, items sold and checkouts started, each with a change marker: a Lucide trend icon plus a signed number, "new" when the period before was 0, and "same" when equal. Colour never carries the meaning alone.
+- **Google search section:** sits under the visits chart in the main column. A lead sentence with clicks, impressions and average position, then a table of search term, clicks, times shown and position.
+- **Notes:** each section carries its own. Paid totals include delivery and do not subtract Stripe refunds. Google hides rare searches, and its latest day can still change.
+- **Phone order:** the rail follows the main column, so Store appears after Top pages. The owner accepted this.
+
 ## Not included
 
 - Per-item sales rankings and daily order charts.
