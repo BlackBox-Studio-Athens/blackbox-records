@@ -24,7 +24,7 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
 - [x] 2.6 [Claude or Codex] Fix the demonstrated workerd redirect-mode incompatibility, verify native Request construction and redirect rejection, then release through every UAT/PRD gate and complete the live Stats comparison in 4.2. Evidence: `24cacf78`, release 567 and PRD promotion 17 passed; both live ranges return 200/ok. See [validation](validation.md#stats-503-redirect-mode-correction--2026-10-13).
 
-- [ ] 2.7 [Claude or Codex] Correct 30-day adaptive sampling with consecutive seven-day windows aligned to 7d, merge daily/breakdown metrics, invalidate old caches with v3, and verify overlapping PRD days after the authorized release. Focused Worker regressions pass; [evidence](validation.md#thirty-day-window-correction--2026-10-13).
+- [x] 2.7 [Claude or Codex] Correct 30-day adaptive sampling with consecutive seven-day windows aligned to 7d, merge daily/breakdown metrics, invalidate old caches with v3, and verify overlapping PRD days after the authorized release. `eeed383c`, release 568 and PRD promotion 18 passed; all seven shared UTC days match, including 17 visits / 17 page views on 9 October. [Evidence](validation.md#thirty-day-window-correction--2026-10-13).
 
 ## 3. Staff Stats page
 
