@@ -1,11 +1,10 @@
 import * as React from 'react';
 import type { Tracklist } from '@blackbox/content-model';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
-import { buttonVariants } from '@/components/ui/button';
 import {
   physicalBadgeState,
+  releaseActionClassName,
   releasePresentation,
-  RELEASE_DETAIL_LINK_CLASS,
   type Listing,
   type ReleasePresentationEntry,
 } from './release-presentation';
@@ -15,14 +14,17 @@ export default function ReleaseStoreLink({
   className,
   releaseDate,
   physicalFormat,
+  projected,
 }: {
   href: string;
   className: string;
   releaseDate?: string | undefined;
   physicalFormat?: Tracklist['format'] | null | undefined;
+  /** The rendered projection's record; a live read replaces it only when it succeeds. */
+  projected?: Listing | undefined;
 }) {
   const slug = href.split('/').filter(Boolean).at(-1);
-  const [record, setRecord] = React.useState<Listing>();
+  const [record, setRecord] = React.useState(projected);
   React.useEffect(() => {
     const controller = new AbortController();
     void readPublicStoreListingPrices(controller.signal)
@@ -40,16 +42,8 @@ export default function ReleaseStoreLink({
     edition: physicalFormat && slug ? { kind: 'native', format: physicalFormat, storeSlug: slug } : { kind: 'none' },
   };
   const presentation = releasePresentation(entry, record);
-  const buyable = presentation.state === 'preorder' || presentation.state === 'available';
   const physicalState = physicalBadgeState(presentation);
-  const actionClassName = !physicalFormat
-    ? className
-    : buyable
-      ? buttonVariants({
-          size: 'lg',
-          className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
-        })
-      : RELEASE_DETAIL_LINK_CLASS;
+  const actionClassName = physicalFormat ? releaseActionClassName(presentation) : className;
 
   return (
     <>

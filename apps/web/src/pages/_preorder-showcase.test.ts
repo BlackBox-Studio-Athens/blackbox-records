@@ -56,9 +56,14 @@ vi.mock('@/lib/catalog-data', () => ({
     catalog.hasArtist ? [{ id: 'sidus', data: { slug: catalog.artistSlug, image: catalog.photo } }] : [],
 }));
 
-import { GET } from './preorder-showcase.json';
+import { preorderShowcaseItems } from './_preorder-showcase';
 
-describe('published pre-order showcase response', () => {
+const projected = [
+  { storeItemSlug: 'lotus-vinyl', displayPrice: '€28.00', shipEstimate: { kind: 'date' as const, date: '2026-12-04' } },
+];
+const items = () => preorderShowcaseItems(projected);
+
+describe('Home pre-order showcase items', () => {
   beforeEach(() => {
     catalog.clips = [];
     catalog.artistSlug = 'sidus';
@@ -69,18 +74,26 @@ describe('published pre-order showcase response', () => {
     vi.clearAllMocks();
   });
 
-  it('leaves cache policy to the publication-aware renderer and reflects clip additions, replacements and removal', async () => {
-    const before = await GET();
-    expect(before.headers.get('Content-Type')).toBe('application/json');
-    expect(before.headers.get('Cache-Control')).toBeNull();
-    expect(await before.json()).toEqual([
+  it('lists only projected release items, with the projected price and estimate, and prepares nothing without one', async () => {
+    expect(await preorderShowcaseItems([])).toEqual([]);
+    expect(await preorderShowcaseItems([{ ...projected[0]!, storeItemSlug: 'other-vinyl' }])).toEqual([]);
+    expect(getImage).not.toHaveBeenCalled();
+    expect(await items()).toEqual([
+      expect.objectContaining({
+        slug: 'lotus-vinyl',
+        displayPrice: '€28.00',
+        shipEstimate: { kind: 'date', date: '2026-12-04' },
+      }),
+    ]);
+  });
+
+  it('reflects clip additions, replacements and removal from the accepted snapshot', async () => {
+    expect(await items()).toEqual([
       expect.objectContaining({ artistPath: '/artists/sidus/', firstClipId: null, clips: [] }),
     ]);
 
     catalog.clips = [{ title: 'Embrace The Void', youtube_video_id: 'MOA5YZDOR6A' }];
-    const after = await GET();
-    expect(after.headers.get('Cache-Control')).toBeNull();
-    expect(await after.json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         firstClipId: 'MOA5YZDOR6A',
         clips: [
@@ -96,14 +109,14 @@ describe('published pre-order showcase response', () => {
     ]);
 
     catalog.clips = [{ title: 'Replacement', youtube_video_id: 'abcdefghijk' }];
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         firstClipId: 'abcdefghijk',
         clips: [{ id: 'abcdefghijk', title: 'Replacement', posterUrl: null, backgroundVideoUrl: null }],
       }),
     ]);
     catalog.clips = [];
-    expect(await (await GET()).json()).toEqual([expect.objectContaining({ firstClipId: null, clips: [] })]);
+    expect(await items()).toEqual([expect.objectContaining({ firstClipId: null, clips: [] })]);
   });
 
   it('associates prepared media only by accepted official video ID, independent of title and artist slug', async () => {
@@ -112,7 +125,7 @@ describe('published pre-order showcase response', () => {
       { title: 'Revised official title', youtube_video_id: 'MOA5YZDOR6A' },
       { title: 'Embrace The Void', youtube_video_id: 'abcdefghijk' },
     ];
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         artistPath: '/artists/renamed-artist/',
         clips: [
@@ -131,7 +144,7 @@ describe('published pre-order showcase response', () => {
     catalog.artistSlug = 'sidus';
     catalog.clips = [{ title: 'Embrace The Void', youtube_video_id: 'abcdefghijk' }];
     vi.clearAllMocks();
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         clips: [{ id: 'abcdefghijk', title: 'Embrace The Void', posterUrl: null, backgroundVideoUrl: null }],
       }),
@@ -142,7 +155,7 @@ describe('published pre-order showcase response', () => {
   it('projects accepted original artwork through existing profiles without upscaling small sources', async () => {
     catalog.cover.width = catalog.cover.height = 1440;
     catalog.photo.width = 3000;
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         coverUrl: '/accepted-cover.webp?width=720&format=webp',
         coverSrcSet: '/accepted-cover.webp?width=360&format=webp 360w, /accepted-cover.webp?width=720&format=webp 720w',
@@ -160,7 +173,7 @@ describe('published pre-order showcase response', () => {
 
     catalog.cover.width = catalog.cover.height = 600;
     catalog.photo.width = 960;
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         coverUrl: '/accepted-cover.webp?width=600&format=webp',
         artistPhotoUrl: '/accepted-artist.webp?width=960&format=webp',
@@ -168,7 +181,7 @@ describe('published pre-order showcase response', () => {
     ]);
 
     catalog.hasArtist = false;
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         artistPath: null,
         coverUrl: '/accepted-cover.webp?width=600&format=webp',
@@ -184,7 +197,7 @@ describe('published pre-order showcase response', () => {
       { title: 'Embrace The Void', youtube_video_id: 'MOA5YZDOR6A' },
       { title: 'Equilibrium - Live at Fuzz Club Athens', youtube_video_id: 'abcdefghijk' },
     ];
-    expect(await (await GET()).json()).toEqual([
+    expect(await items()).toEqual([
       expect.objectContaining({
         firstClipId: 'Cl7rWCTGEqY',
         clips: [

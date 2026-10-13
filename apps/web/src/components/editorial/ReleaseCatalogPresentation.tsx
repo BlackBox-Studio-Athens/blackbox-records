@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
-import { buttonVariants } from '@/components/ui/button';
 import {
+  releaseActionClassName,
   releasePresentation,
   releaseCardSelector,
-  RELEASE_DETAIL_LINK_CLASS,
   readReleaseEntry,
   renderReleasePresentation,
   type Listing,
@@ -47,24 +46,14 @@ export function connectReleaseCatalogPresentation(root: HTMLElement, read = read
         entry,
         entry.edition.kind === 'native' ? bySlug.get(entry.edition.storeSlug) : undefined,
       );
-      renderReleasePresentation(
-        card,
-        entry,
-        presentation,
-        presentation.state === 'preorder' || presentation.state === 'available'
-          ? buttonVariants({
-              size: 'lg',
-              className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
-            })
-          : RELEASE_DETAIL_LINK_CLASS,
-      );
+      renderReleasePresentation(card, entry, presentation, releaseActionClassName(presentation));
     }
   }
 
-  apply([]);
+  // The HTML already shows the projected pre-orders; only a successful live read changes a card.
   void read(controller.signal)
     .then(apply)
-    .catch(() => apply([]));
+    .catch(() => {});
   return () => controller.abort();
 }
 

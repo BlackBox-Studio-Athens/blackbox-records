@@ -810,29 +810,9 @@ async function crateRun(page: Page, cdp: CDPSession, tracePath: string) {
   };
 }
 
-async function homeShowcaseFixture(page: Page) {
-  const candidates = JSON.parse(await readFile(join(buildDirectory, 'preorder-showcase.json'), 'utf8')) as Array<{
-    slug: string;
-    [key: string]: unknown;
-  }>;
-  const candidate = candidates[0];
-  if (homeShowcase === 'populated' && !candidate) throw new Error('Built Home has no preorder candidate.');
-  const showcase = homeShowcase === 'populated' && candidate ? [candidate] : [];
-  await page.route('**/api/store/listing-prices*', (route) => {
-    if (new URL(route.request().url()).searchParams.get('scope') !== 'preorders') return route.fallback();
-    return route.fulfill({
-      json: showcase.map((item) => ({
-        storeItemSlug: item.slug,
-        presentationState: 'ready',
-        availabilityState: 'stocked',
-        displayPrice: '€28.00',
-        preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
-      })),
-    });
-  });
-  if (homeShowcase === 'populated')
-    await page.route('**/preorder-showcase.json', (route) => route.fulfill({ json: [candidates[0]] }));
-  return { state: homeShowcase, candidateSlug: candidate?.slug ?? null, chapterCount: showcase.length };
+// Home's pre-order chapters are in the built HTML: build with BLACKBOX_PREORDER_PROJECTION to measure 'populated'.
+async function homeShowcaseFixture(_page: Page) {
+  return { state: homeShowcase };
 }
 
 type HomeProbeEvent = {
@@ -1046,7 +1026,7 @@ async function homeInputRun(page: Page, cdp: CDPSession, tracePrefix: string) {
   if (!early.pointer.coarse || early.pointer.hover || !firstScrollEvent)
     throw new Error('Home early input did not run as a touch scroll.');
   if (early.showcaseRendered !== (homeShowcase === 'populated'))
-    throw new Error('Home showcase fixture did not render its declared state.');
+    throw new Error('Home showcase did not render its declared state; check BLACKBOX_PREORDER_PROJECTION.');
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await page.waitForTimeout(1000);
   const first = await inputProfileRun(page, cdp, `${tracePrefix}-first.trace.json`, 'first');

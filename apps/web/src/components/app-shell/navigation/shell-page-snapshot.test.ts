@@ -228,9 +228,13 @@ function createSnapshotDocument() {
 }
 
 describe('shell page snapshots', () => {
-  it.each(['Pre-order vinyl', 'Buy vinyl'])(
-    'neutralizes an enriched %s snapshot without changing the live cards or layout',
-    (actionName) => {
+  it.each([
+    ['Pre-order vinyl', false],
+    ['Buy vinyl', false],
+    ['Buy vinyl', true],
+  ] as const)(
+    'restores the rendered state of an enriched %s snapshot (projected pre-order: %s) without changing the live cards or layout',
+    (actionName, projected) => {
       const makeCard = () => {
         const purchase = {
           textContent: actionName,
@@ -269,6 +273,15 @@ describe('shell page snapshots', () => {
             releasePhysicalFormat: 'vinyl',
             releaseStoreSlug: 'edition',
             releaseSourceOrder: '0',
+            ...(projected
+              ? {
+                  releaseProjected: JSON.stringify({
+                    storeItemSlug: 'edition',
+                    displayPrice: '€28.00',
+                    shipEstimate: null,
+                  }),
+                }
+              : {}),
           },
           ownerDocument: { createElement: () => ({ textContent: '', className: '' }) },
           querySelector: (selector: string) => fields[selector as keyof typeof fields] ?? null,
@@ -312,6 +325,17 @@ describe('shell page snapshots', () => {
       expect(live.badges.children[0]?.textContent).toBe(
         actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
       );
+      expect(cloned.card.dataset.releaseRole).toBe('lead');
+      expect(snapshot?.mainClassName).toBe('releases-page-layout');
+      if (projected) {
+        // The HTML rendered the projected pre-order; the browser's Buy enrichment is not carried into the snapshot.
+        expect(fragmentHtml(snapshot?.mainContent)).toContain('Pre-order vinyl');
+        expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(/Buy vinyl|Vinyl available|€25\.00/);
+        expect(cloned.purchase.className).toContain('preorder-action');
+        expect(cloned.price).toEqual({ textContent: '€28.00', hidden: false });
+        expect(cloned.terms.inert).toBe(false);
+        return;
+      }
       expect(fragmentHtml(snapshot?.mainContent)).toContain('Vinyl edition');
       // Before the offer is read again the card carries only its digital badge.
       expect(fragmentHtml(snapshot?.mainContent)).toContain('Digital out now');

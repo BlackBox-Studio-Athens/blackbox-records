@@ -186,6 +186,28 @@ describe('ReleaseStoreLink', () => {
     expect(result.rendered).toBe(result.initial);
   });
 
+  it('renders a projected pre-order in the server HTML and keeps it when the live read fails', async () => {
+    read.mockRejectedValue(new Error('offline'));
+    const server = markup({ projected: ready });
+    expect(server).toContain('preorder-action');
+    expect(server).toContain('>Pre-order vinyl</a>');
+    expect(server).toContain('Pre-order · out 16 Oct 2026');
+    hooks.listing = ready;
+    const result = await hydrate({ projected: ready });
+    expect(result.initial).toBe(server);
+    expect(result.rendered).toBe(server);
+  });
+
+  it('follows a live offer that differs from the projected pre-order without changing layout', async () => {
+    read.mockResolvedValue([{ ...ready, preorder: null }]);
+    hooks.listing = ready;
+    const result = await hydrate({ projected: ready });
+    expect(result.initial).toContain('>Pre-order vinyl</a>');
+    expect(result.rendered).toContain('purchase-action');
+    expect(result.rendered).toContain('>Buy vinyl</a>');
+    expect(result.rendered).not.toContain('Pre-order ·');
+  });
+
   it('ignores a response arriving after unmount', async () => {
     let resolve!: (records: Listing[]) => void;
     read.mockReturnValue(

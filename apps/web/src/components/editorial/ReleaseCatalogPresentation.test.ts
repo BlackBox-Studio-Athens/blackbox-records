@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { selectReleaseMerchandisingEntries } from './ReleaseCatalogPresentation';
+import { connectReleaseCatalogPresentation, selectReleaseMerchandisingEntries } from './ReleaseCatalogPresentation';
 import {
   neutralReleasePresentation,
   releasePresentation,
   renderReleasePresentation,
+  sanitizeReleaseCatalogPresentation,
   type ReleasePresentationEntry,
 } from './release-presentation';
 type Listing = NonNullable<Parameters<typeof releasePresentation>[1]>;
@@ -325,5 +326,87 @@ describe('Releases physical merchandising', () => {
     expect(attributes.get('aria-label')).toBe('Vinyl edition, LOTUS');
     expect(price).toEqual({ textContent: '', hidden: true });
     expect(terms.inert).toBe(true);
+  });
+});
+
+describe('Releases first paint from the open pre-order projection', () => {
+  const projected = {
+    storeItemSlug: 'lotus-vinyl',
+    displayPrice: '€28.00',
+    shipEstimate: { kind: 'month', month: '2099-11', part: null },
+  };
+  // A card as the HTML rendered it: the projected pre-order, with the item it was rendered from.
+  function renderedCard(withProjection = true) {
+    const label = { textContent: withProjection ? 'Pre-order vinyl' : 'Vinyl edition' };
+    const action = {
+      className: withProjection ? 'preorder-action' : 'release-detail-link',
+      querySelector: () => label,
+      setAttribute: () => {},
+    };
+    const price = { textContent: withProjection ? '€28.00' : '', hidden: !withProjection };
+    const shipping = { textContent: '', hidden: true };
+    const terms = { inert: !withProjection };
+    let badges: string[] = [];
+    const fields: Record<string, unknown> = {
+      '[data-release-purchase]': action,
+      '[data-release-price]': price,
+      '[data-release-terms]': terms,
+      '[data-release-shipping]': shipping,
+      '[data-release-badges]': {
+        replaceChildren: (...children: { textContent: string }[]) => {
+          badges = children.map((child) => child.textContent);
+        },
+      },
+    };
+    const card = {
+      dataset: {
+        releaseId: 'lotus',
+        releaseRole: 'lead',
+        releaseName: 'LOTUS',
+        releaseStoreSlug: 'lotus-vinyl',
+        releasePhysicalFormat: 'vinyl',
+        ...(withProjection ? { releaseProjected: JSON.stringify(projected) } : {}),
+      },
+      ownerDocument: { createElement: () => ({ textContent: '', className: '', dataset: {} }) },
+      querySelector: (selector: string) => fields[selector] ?? null,
+    } as unknown as HTMLElement;
+    const root = { querySelectorAll: () => [card] } as unknown as HTMLElement;
+    return { root, label, action, price, terms, badges: () => badges };
+  }
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('keeps the rendered pre-order until a live read succeeds, and when it fails', async () => {
+    const { root, label, action, price } = renderedCard();
+    connectReleaseCatalogPresentation(root, () => Promise.reject(new Error('offline')));
+    await settle();
+    expect(label.textContent).toBe('Pre-order vinyl');
+    expect(action.className).toBe('preorder-action');
+    expect(price).toEqual({ textContent: '€28.00', hidden: false });
+  });
+
+  it('follows a live offer that differs from the projection', async () => {
+    const { root, label, action, terms, badges } = renderedCard();
+    connectReleaseCatalogPresentation(root, async () => [{ ...record('lotus-vinyl'), availabilityState: 'sold_out' }]);
+    await settle();
+    expect(label.textContent).toBe('Vinyl edition');
+    expect(action.className).toBe('release-detail-link');
+    expect(terms.inert).toBe(true);
+    expect(badges()).toContain('Vinyl Sold Out');
+  });
+
+  it('restores the projected pre-order, not browser enrichment, for a cached return', () => {
+    const projectedCard = renderedCard();
+    projectedCard.label.textContent = 'Buy vinyl';
+    sanitizeReleaseCatalogPresentation(projectedCard.root);
+    expect(projectedCard.label.textContent).toBe('Pre-order vinyl');
+    expect(projectedCard.action.className).toContain('preorder-action');
+    expect(projectedCard.terms.inert).toBe(false);
+
+    const neutralCard = renderedCard(false);
+    neutralCard.label.textContent = 'Pre-order vinyl';
+    sanitizeReleaseCatalogPresentation(neutralCard.root);
+    expect(neutralCard.label.textContent).toBe('Vinyl edition');
+    expect(neutralCard.action.className).toBe('release-detail-link');
+    expect(neutralCard.price).toEqual({ textContent: '', hidden: true });
   });
 });

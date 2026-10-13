@@ -1,86 +1,48 @@
 import { useEffect, useRef, useState } from 'react';
-import type { StorePreorderShowcaseCandidate } from './preorder-showcase-schema';
-import type { PublicApiComponents } from '@blackbox/api-client/public';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
 import InternationalOrderNotice from './cart/InternationalOrderNotice';
-import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-config';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 
-export type { StorePreorderShowcaseCandidate };
-type ListingRecord = PublicApiComponents['schemas']['PublicStoreListingPrice'];
-type ShowcaseItem = StorePreorderShowcaseCandidate & { displayPrice: string; shipEstimate: ShipEstimate | null };
+// Home builds these at render from the accepted snapshot; only Store Items the open pre-order projection lists appear.
+export type StorePreorderShowcaseCandidate = {
+  slug: string;
+  title: string;
+  artist: string;
+  artistPath?: string | null | undefined;
+  option: string;
+  storePath: string;
+  releaseDate: string | null;
+  coverUrl: string;
+  coverSrcSet?: string | undefined;
+  firstClipId: string | null;
+  clips?:
+    | {
+        id: string;
+        title: string;
+        posterUrl: string | null;
+        backgroundVideoUrl?: string | null | undefined;
+        backgroundVideoDesktopUrl?: string | null | undefined;
+      }[]
+    | undefined;
+  artistPhotoUrl: string | null;
+  artistPhotoSrcSet?: string | undefined;
+  summary?: string | null | undefined;
+  trackCount?: number | null | undefined;
+  recording?: string | null | undefined;
+  listen?: { releaseId: string; bandcampEmbedUrl: string | null; tidalEmbedUrl: string | null } | null | undefined;
+};
+export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & {
+  displayPrice: string;
+  shipEstimate: ShipEstimate | null;
+};
+type ShowcaseItem = StorePreorderShowcaseItem;
 
-export async function loadStorePreorderShowcase(candidatesUrl: string, signal?: AbortSignal): Promise<ShowcaseItem[]> {
-  for (let attempt = 0; attempt < 2 && !signal?.aborted; attempt += 1) {
-    try {
-      const listingResponse = await fetch(
-        `${getPublicBackendBaseUrl() ?? ''}/api/store/listing-prices?scope=preorders`,
-        {
-          cache: 'no-store',
-          headers: { accept: 'application/json' },
-          signal: signal ?? null,
-        },
-      );
-      if (!listingResponse.ok) throw new Error('Could not read pre-orders.');
-      const records: ListingRecord[] = await listingResponse.json();
-      const stocked = records.filter(
-        (record) => record.presentationState === 'ready' && record.availabilityState === 'stocked' && record.preorder,
-      );
-      if (stocked.length === 0 || signal?.aborted) return [];
-
-      // Only a buyable pre-order loads the validators and candidates (no Zod or Pages read on an empty Home); the two
-      // then load together.
-      const [{ candidatesSchema, nonEmpty, shipEstimateSchema }, candidatesResponse] = await Promise.all([
-        import('./preorder-showcase-schema'),
-        fetch(candidatesUrl, {
-          headers: { accept: 'application/json' },
-          signal: signal ?? null,
-        }),
-      ]);
-      if (!candidatesResponse.ok) throw new Error('Could not read pre-order candidates.');
-      const candidates = candidatesSchema.parse(await candidatesResponse.json());
-      if (signal?.aborted) return [];
-
-      return candidates.flatMap((candidate) => {
-        const record = stocked.find((item) => item.storeItemSlug === candidate.slug);
-        return record?.presentationState === 'ready' && record.preorder
-          ? [
-              {
-                ...candidate,
-                displayPrice: nonEmpty.parse(record.displayPrice),
-                shipEstimate: shipEstimateSchema.parse(record.preorder.shipEstimate),
-              },
-            ]
-          : [];
-      });
-    } catch {
-      if (attempt === 1 || signal?.aborted) return [];
-      await new Promise<void>((resolve) => {
-        const timer = setTimeout(finish, 250);
-        function finish() {
-          clearTimeout(timer);
-          signal?.removeEventListener('abort', finish);
-          resolve();
-        }
-        signal?.addEventListener('abort', finish, { once: true });
-      });
-    }
-  }
-  return [];
-}
-
-export default function StorePreorderShowcase({
-  candidatesUrl,
-  storeUrl,
-}: {
-  candidatesUrl: string;
-  storeUrl: string;
-}) {
-  const [items, setItems] = useState<ShowcaseItem[]>([]);
+// The section is in the server HTML or absent; hydration adds only media and viewing behavior.
+export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [watching, setWatching] = useState<string | null>(null);
   const [playerSession, setPlayerSession] = useState(false);
@@ -88,16 +50,6 @@ export default function StorePreorderShowcase({
   const [desktopVideo, setDesktopVideo] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(true);
   const section = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setItems([]);
-    setWatching(null);
-    void loadStorePreorderShowcase(candidatesUrl, controller.signal).then((next) => {
-      if (!controller.signal.aborted) setItems(next);
-    });
-    return () => controller.abort();
-  }, [candidatesUrl]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -335,8 +287,10 @@ function PreorderChapter({
       ))}
     </div>
   );
+  // The shell owns this trigger's session state, label and disabled flag and may set them before hydration.
   const listen = item.listen && (
     <button
+      suppressHydrationWarning
       type="button"
       className="music-listen-trigger release-card-listen-trigger music-listen-trigger--standalone music-listen-trigger--tone-neutral home-preorders__listen"
       data-music-listen-trigger-variant="standalone"
@@ -350,7 +304,9 @@ function PreorderChapter({
       data-music-streaming-service-embedded-player-tidal-embed-url={item.listen.tidalEmbedUrl ?? undefined}
     >
       <MusicEqualizer />
-      <span data-music-listen-label>Listen</span>
+      <span data-music-listen-label suppressHydrationWarning>
+        Listen
+      </span>
     </button>
   );
   const purchase = (

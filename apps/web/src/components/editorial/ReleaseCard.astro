@@ -7,7 +7,13 @@ import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
-import { neutralReleasePresentation, physicalBadgeState, RELEASE_DETAIL_LINK_CLASS } from './release-presentation';
+import {
+  physicalBadgeState,
+  projectedListing,
+  releaseActionClassName,
+  releasePresentation,
+} from './release-presentation';
+import { readOpenPreorders } from '@/lib/open-preorders';
 import { createArtistDetailPath, createReleaseDetailPath, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { formatMonthYear } from '@/utils/content';
@@ -84,8 +90,11 @@ const detailPath = createReleaseDetailPath(release);
 const presentationEntry = getReleasePresentationEntry(release, commerceLink);
 const physicalFormat = presentationEntry.edition.kind !== 'none' ? presentationEntry.edition.format : undefined;
 const storeSlug = presentationEntry.edition.kind === 'native' ? presentationEntry.edition.storeSlug : undefined;
-const neutralPresentation = neutralReleasePresentation(presentationEntry);
-const neutralPhysicalState = physicalBadgeState(neutralPresentation);
+// The HTML carries the open pre-order projection; the live offer read only corrects it.
+const projected =
+  isReleaseShowcase && storeSlug ? readOpenPreorders().find((item) => item.storeItemSlug === storeSlug) : undefined;
+const presentation = releasePresentation(presentationEntry, projected && projectedListing(projected));
+const physicalState = physicalBadgeState(presentation);
 // A native edition's Store path is the one destination the artwork and the edition action share, together with
 // their hover and focus feedback; without one the artwork keeps the release detail link and nothing is shared.
 const editionHref = isReleaseShowcase && commerceLink?.isNativeStoreLink ? commerceLink.href : undefined;
@@ -121,6 +130,7 @@ const dataAttributes = embeddedPlayerData
     isReleaseShowcase && (!commerceLink || commerceLink.isNativeStoreLink) ? physicalFormat : undefined
   }
   data-release-edition-link={editionHref ? true : undefined}
+  data-release-projected={projected ? JSON.stringify(projected) : undefined}
   {...dataAttributes}
 >
   {!isReleaseShowcase && (
@@ -147,7 +157,7 @@ const dataAttributes = embeddedPlayerData
     >
       <ArtworkTag
         href={isReleaseShowcase ? (editionHref ?? detailPath) : undefined}
-        aria-label={editionHref ? `${release.data.title}, ${neutralPresentation.action}` : undefined}
+        aria-label={editionHref ? `${release.data.title}, ${presentation.action}` : undefined}
         tabindex={isReleaseShowcase ? -1 : undefined}
         data-release-artwork={isReleaseShowcase ? true : undefined}
         data-astro-prefetch={isReleaseShowcase ? true : undefined}
@@ -261,33 +271,35 @@ const dataAttributes = embeddedPlayerData
           )}
           {release.data.formats?.length && <p class="release-card-formats">{release.data.formats.join(' / ')}</p>}
           <div class="flex flex-wrap gap-2" data-release-badges>
-            {neutralPresentation.badges.map((badge, index) => (
+            {presentation.badges.map((badge, index) => (
               <span
-                class="store-item-card__release-status"
+                class={badge.startsWith('Pre-order') ? 'preorder-badge' : 'store-item-card__release-status'}
                 data-availability-state={
-                  neutralPhysicalState && index === neutralPresentation.badges.length - 1
-                    ? neutralPhysicalState
-                    : undefined
+                  physicalState && index === presentation.badges.length - 1 ? physicalState : undefined
                 }
               >
                 {badge}
               </span>
             ))}
           </div>
-          <p class="text-sm text-muted-foreground" data-release-shipping hidden></p>
+          <p class="text-sm text-muted-foreground" data-release-shipping hidden={!presentation.shipping}>
+            {presentation.shipping}
+          </p>
           <div class="release-card-actions" data-release-actions>
             {editionHref ? (
               <>
-                <p class="release-card-price" data-release-price hidden></p>
+                <p class="release-card-price" data-release-price hidden={!presentation.price}>
+                  {presentation.price}
+                </p>
                 <a
-                  class={RELEASE_DETAIL_LINK_CLASS}
+                  class={releaseActionClassName(presentation)}
                   href={editionHref}
-                  aria-label={`${neutralPresentation.action}, ${release.data.title}`}
+                  aria-label={`${presentation.action}, ${release.data.title}`}
                   data-astro-prefetch
                   data-release-purchase
                 >
                   {!isPrincipal && <StoreBuyIcon formatGroup={buyIconFormatGroup} />}
-                  <span data-release-purchase-label>{neutralPresentation.action}</span>
+                  <span data-release-purchase-label>{presentation.action}</span>
                 </a>
               </>
             ) : (
@@ -310,7 +322,7 @@ const dataAttributes = embeddedPlayerData
               href={createProjectRelativeUrl('/terms/')}
               data-astro-prefetch
               data-release-terms
-              inert
+              inert={presentation.state !== 'preorder'}
             >
               Pre-order &amp; delivery information
             </a>

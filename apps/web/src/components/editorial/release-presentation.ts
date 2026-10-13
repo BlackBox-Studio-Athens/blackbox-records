@@ -1,5 +1,7 @@
 import { DIGITAL_RELEASE_BADGE, type ReleaseBadge, type Tracklist } from '@blackbox/content-model';
 import type { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
+import { buttonVariants } from '@/components/ui/button';
+import type { OpenPreorder } from '@/lib/open-preorders';
 import { isReleaseOutNow } from '@/lib/release-feature';
 import { availabilityLabel, expectedMonthText, isNotifiable } from '@/platform/lib/availability-copy';
 import { preorderBadges, shipEstimateText } from '@/platform/lib/preorder-estimate';
@@ -114,6 +116,32 @@ export function releasePresentation(
 // The non-buyable edition action is a bracketed text link; Buy and Pre-order keep their buttons.
 export const RELEASE_DETAIL_LINK_CLASS = 'release-detail-link';
 
+export function releaseActionClassName(presentation: ReleasePresentation) {
+  return presentation.state === 'preorder' || presentation.state === 'available'
+    ? buttonVariants({
+        size: 'lg',
+        className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
+      })
+    : RELEASE_DETAIL_LINK_CLASS;
+}
+
+// The rendered projection lists only ready, stocked, open pre-orders: the listing record those always produce.
+export function projectedListing({ storeItemSlug, displayPrice, shipEstimate }: OpenPreorder): Listing {
+  return {
+    availabilityState: 'stocked',
+    displayPrice,
+    preorder: { shipEstimate },
+    presentationState: 'ready',
+    storeItemSlug,
+  };
+}
+
+// SSR writes the projected pre-order a card rendered with, so a cached return restores that HTML state.
+export function readProjectedListing(card: HTMLElement): Listing | undefined {
+  const projected = card.dataset.releaseProjected;
+  return projected ? projectedListing(JSON.parse(projected)) : undefined;
+}
+
 // The zero-stock state a presentation's physical badge (its last badge) carries, for the shared tone.
 export function physicalBadgeState(
   presentation: ReleasePresentation,
@@ -185,9 +213,11 @@ export function renderReleasePresentation(
   if (terms) terms.inert = presentation.state !== 'preorder';
 }
 
+// Browser-read enrichment never enters the snapshot: each card returns to the state its HTML rendered.
 export function sanitizeReleaseCatalogPresentation(root: ParentNode) {
   root.querySelectorAll<HTMLElement>(releaseCardSelector).forEach((card) => {
     const entry = readReleaseEntry(card);
-    renderReleasePresentation(card, entry, neutralReleasePresentation(entry));
+    const presentation = releasePresentation(entry, readProjectedListing(card));
+    renderReleasePresentation(card, entry, presentation, releaseActionClassName(presentation));
   });
 }

@@ -109,14 +109,16 @@ describe('Releases page layout', () => {
     );
   });
 
-  it('shows the price and pre-order terms only after the offer read', () => {
+  it('renders the price, pre-order terms and action from the open pre-order projection, else hides them', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
-    expect(card).toContain('<p class="release-card-price" data-release-price hidden></p>');
+    expect(card).toMatch(/releasePresentation\(presentationEntry, projected && projectedListing\(projected\)\)/);
+    expect(card).toContain('data-release-projected={projected ? JSON.stringify(projected) : undefined}');
+    expect(card).toMatch(/<p class="release-card-price" data-release-price hidden=\{!presentation\.price\}>/);
     expect(card).toMatch(
-      /\{isPrincipal && editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert/s,
+      /\{isPrincipal && editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert=\{presentation\.state !== 'preorder'\}/s,
     );
-    expect(card).toContain('<span data-release-purchase-label>{neutralPresentation.action}</span>');
-    expect(card).toContain('aria-label={`${neutralPresentation.action}, ${release.data.title}`}');
+    expect(card).toContain('<span data-release-purchase-label>{presentation.action}</span>');
+    expect(card).toContain('aria-label={`${presentation.action}, ${release.data.title}`}');
     expect(card).toMatch(/\{!isPrincipal && <StoreBuyIcon formatGroup=\{buyIconFormatGroup\} \/>\}/);
   });
 

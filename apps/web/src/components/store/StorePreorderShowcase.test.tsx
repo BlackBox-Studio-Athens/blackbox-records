@@ -1,35 +1,12 @@
-import * as React from 'react';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { PublicApiComponents } from '@blackbox/api-client/public';
 import StorePreorderShowcase, {
-  loadStorePreorderShowcase,
   type StorePreorderShowcaseCandidate,
+  type StorePreorderShowcaseItem,
 } from './StorePreorderShowcase';
 
-type Listing = PublicApiComponents['schemas']['PublicStoreListingPrice'];
-type ReadyListing = Extract<Listing, { presentationState: 'ready' }>;
-type Items = Awaited<ReturnType<typeof loadStorePreorderShowcase>>;
-const rendered = vi.hoisted(() => {
-  const items: Items = [];
-  return { active: false, items };
-});
-
 vi.mock('astro:config/client', () => ({ base: '/blackbox-records/', site: undefined }));
-
-vi.mock('react', async (importOriginal) => {
-  const actual = await importOriginal<typeof React>();
-  return {
-    ...actual,
-    useState: (initial: unknown) => {
-      if (rendered.active && Array.isArray(initial)) {
-        rendered.active = false;
-        return actual.useState(rendered.items);
-      }
-      return actual.useState(initial);
-    },
-  };
-});
 
 const clip: StorePreorderShowcaseCandidate = {
   slug: 'clip-vinyl',
@@ -65,208 +42,60 @@ const cover: StorePreorderShowcaseCandidate = {
   clips: [],
   artistPhotoUrl: null,
 };
-const props = { candidatesUrl: '/blackbox-records/preorder-showcase.json', storeUrl: '/blackbox-records/store/' };
+const storeUrl = '/blackbox-records/store/';
 
-function ready(slug: string, overrides: Partial<ReadyListing> = {}): ReadyListing {
+// Home passes server-built items: accepted candidates the open pre-order projection lists, with its price and estimate.
+function item(
+  candidate: StorePreorderShowcaseCandidate,
+  overrides: Partial<Pick<StorePreorderShowcaseItem, 'displayPrice' | 'shipEstimate'>> = {},
+): StorePreorderShowcaseItem {
   return {
-    storeItemSlug: slug,
-    presentationState: 'ready',
-    availabilityState: 'stocked',
+    ...candidate,
     displayPrice: '€28.00',
-    preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+    shipEstimate: { kind: 'month', month: '2026-10', part: null },
     ...overrides,
   };
 }
 
-function stubReads(records: Listing[], candidates: StorePreorderShowcaseCandidate[]) {
-  const fetchRequest = vi
-    .fn<typeof fetch>()
-    .mockResolvedValueOnce(Response.json(records))
-    .mockResolvedValueOnce(Response.json(candidates));
-  vi.stubGlobal('fetch', fetchRequest);
-  return fetchRequest;
-}
-
-function render() {
-  rendered.active = true;
-  return <StorePreorderShowcase {...props} />;
+function render(items: StorePreorderShowcaseItem[]) {
+  return <StorePreorderShowcase items={items} storeUrl={storeUrl} />;
 }
 
 beforeEach(() => {
-  vi.stubEnv('PUBLIC_BACKEND_BASE_URL', '');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-03T12:00:00Z'));
 });
 afterEach(() => {
-  rendered.active = false;
-  rendered.items = [];
   vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
   vi.useRealTimers();
 });
 
-describe('StorePreorderShowcase reads', () => {
-  it('performs one fresh narrowed read before static candidates and keeps only matching stocked ready preorders', async () => {
-    const records: Listing[] = [
-      ready(clip.slug),
-      ready(photo.slug),
-      ready(cover.slug, { availabilityState: 'sold_out' }),
-      ready('ordinary', { preorder: null }),
-      {
-        storeItemSlug: 'unavailable',
-        presentationState: 'unavailable',
-        availabilityState: 'stocked',
-        preorder: { shipEstimate: null },
-      },
-    ];
-    const fetchRequest = stubReads(records, [photo, cover, clip]);
-    const controller = new AbortController();
-    const items = await loadStorePreorderShowcase(props.candidatesUrl, controller.signal);
-    expect(items.map((item) => item.slug)).toEqual([photo.slug, clip.slug]);
-    expect(items[0]?.displayPrice).toBe('€28.00');
-    expect(items[0]?.shipEstimate).toEqual({ kind: 'month', month: '2026-10', part: null });
-    expect(fetchRequest).toHaveBeenCalledTimes(2);
-    expect(fetchRequest).toHaveBeenNthCalledWith(1, '/api/store/listing-prices?scope=preorders', {
-      cache: 'no-store',
-      headers: { accept: 'application/json' },
-      signal: controller.signal,
-    });
-    expect(fetchRequest).toHaveBeenNthCalledWith(2, props.candidatesUrl, {
-      headers: { accept: 'application/json' },
-      signal: controller.signal,
-    });
+describe('StorePreorderShowcase first paint', () => {
+  it('renders no section without projected pre-orders', () => {
+    expect(renderToStaticMarkup(render([]))).toBe('');
   });
 
-  it.each([
-    { name: 'empty', records: [] },
-    { name: 'ordinary', records: [ready(clip.slug, { preorder: null })] },
-    { name: 'sold out', records: [ready(clip.slug, { availabilityState: 'sold_out' })] },
-    { name: 'coming soon', records: [ready(clip.slug, { availabilityState: 'coming_soon' })] },
-    { name: 'unavailable', records: [ready(clip.slug, { availabilityState: 'unavailable' })] },
-  ])('does not read candidates without a buyable preorder ($name)', async ({ records }) => {
-    const fetchRequest = stubReads(records, [clip]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    expect(renderToStaticMarkup(render())).toBe('');
-    expect(fetchRequest).toHaveBeenCalledTimes(1);
-  });
-
-  it('uses the existing configured backend URL', async () => {
-    vi.stubEnv('PUBLIC_BACKEND_BASE_URL', 'https://api.example.invalid/');
-    const fetchRequest = stubReads([], []);
-    await loadStorePreorderShowcase(props.candidatesUrl);
-    expect(fetchRequest.mock.calls[0]?.[0]).toBe(
-      'https://api.example.invalid/api/store/listing-prices?scope=preorders',
-    );
-  });
-
-  it.each(['listing-http', 'listing-network', 'candidate-http'])(
-    'recovers from a first %s failure with fresh availability',
-    async (failure) => {
-      const fetchRequest = vi.fn<typeof fetch>();
-      if (failure === 'candidate-http') fetchRequest.mockResolvedValueOnce(Response.json([ready(clip.slug)]));
-      if (failure === 'listing-network') fetchRequest.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-      else fetchRequest.mockResolvedValueOnce(new Response('', { status: 503 }));
-      fetchRequest
-        .mockResolvedValueOnce(Response.json([ready(clip.slug)]))
-        .mockResolvedValueOnce(Response.json([clip]));
-      vi.stubGlobal('fetch', fetchRequest);
-      expect((await loadStorePreorderShowcase(props.candidatesUrl)).map((item) => item.slug)).toEqual([clip.slug]);
-      expect(fetchRequest).toHaveBeenCalledTimes(failure === 'candidate-http' ? 4 : 3);
-    },
-  );
-
-  it('does not reuse an eligible price read after a candidate failure when copies become unavailable', async () => {
-    const fetchRequest = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(Response.json([ready(clip.slug)]))
-      .mockResolvedValueOnce(new Response('', { status: 503 }))
-      .mockResolvedValueOnce(Response.json([ready(clip.slug, { availabilityState: 'sold_out' })]));
+  it('puts the chapters, price and estimate in the server markup without a browser read', () => {
+    const fetchRequest = vi.fn<typeof fetch>();
     vi.stubGlobal('fetch', fetchRequest);
-    expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
-    expect(fetchRequest).toHaveBeenCalledTimes(3);
-  });
-
-  it('cancels retry backoff on unmount without another request', async () => {
-    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
-    const controller = new AbortController();
-    const fetchRequest = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'));
-    vi.stubGlobal('fetch', fetchRequest);
-    const pending = loadStorePreorderShowcase(props.candidatesUrl, controller.signal);
-    await Promise.resolve();
-    expect(vi.getTimerCount()).toBe(1);
-    controller.abort();
-    expect(await pending).toEqual([]);
-    expect(vi.getTimerCount()).toBe(0);
-    expect(fetchRequest).toHaveBeenCalledTimes(1);
-  });
-
-  it.each(['listing-http', 'listing-network', 'listing-json', 'candidate-http', 'candidate-network', 'candidate-json'])(
-    'renders nothing after bounded retries of a persistent %s failure',
-    async (failure) => {
-      const fetchRequest = vi.fn<typeof fetch>(async (url) => {
-        if (failure === 'listing-http') return new Response('', { status: 503 });
-        if (failure === 'listing-network') throw new TypeError('Failed to fetch');
-        if (failure === 'listing-json') return new Response('invalid json');
-        if (url !== props.candidatesUrl) return Response.json([ready(clip.slug)]);
-        if (failure === 'candidate-http') return new Response('', { status: 503 });
-        if (failure === 'candidate-network') throw new TypeError('Failed to fetch');
-        return Response.json({ invalid: 'candidates' });
-      });
-      vi.stubGlobal('fetch', fetchRequest);
-      rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-      expect(renderToStaticMarkup(render())).toBe('');
-      expect(fetchRequest).toHaveBeenCalledTimes(failure.startsWith('listing') ? 2 : 4);
-    },
-  );
-
-  it.each([{ candidates: [] }, { candidates: [photo] }])(
-    'renders nothing without matching candidates (%j)',
-    async ({ candidates }) => {
-      stubReads([ready(clip.slug)], candidates);
-      rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-      expect(renderToStaticMarkup(render())).toBe('');
-    },
-  );
-
-  it.each([
-    { ...clip, storePath: 'javascript:alert(1)' },
-    { ...clip, artistPath: 'javascript:alert(1)' },
-    { ...clip, artistPath: '//external.example/artist/' },
-    { ...clip, artistPath: '/\\external.example/artist/' },
-    { ...clip, coverUrl: '//external.example/cover.webp' },
-    { ...clip, coverSrcSet: '/clip-360.webp 360w, //external.example/cover.webp 720w' },
-    { ...clip, artistPhotoSrcSet: 'javascript:alert(1) 800w' },
-    { ...clip, firstClipId: 'not-a-video-id' },
-    { ...clip, clips: [{ id: '01234567890', title: 'Video', posterUrl: '//external.example/poster.webp' }] },
-    {
-      ...clip,
-      clips: [{ id: 'MOA5YZDOR6A', title: 'Video', posterUrl: null, backgroundVideoUrl: 'javascript:alert(1)' }],
-    },
-  ])('rejects malformed candidate inputs', async (candidate) => {
-    stubReads([ready(clip.slug)], [candidate]);
-    expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
-  });
-
-  it('starts no reads when already cancelled', async () => {
-    const controller = new AbortController();
-    const fetchRequest = stubReads([ready(clip.slug)], [clip]);
-    controller.abort();
-    expect(await loadStorePreorderShowcase(props.candidatesUrl, controller.signal)).toEqual([]);
+    const html = renderToStaticMarkup(render([item(clip), item(photo, { displayPrice: '€31.50' })]));
+    expect(html).toContain('id="preorders"');
+    expect(html.match(/<article /g)).toHaveLength(2);
+    expect(html).toContain('€28.00');
+    expect(html).toContain('€31.50');
+    expect(html.toLowerCase()).toContain('around october 2026');
     expect(fetchRequest).not.toHaveBeenCalled();
+    // Hydration adds media behavior only: the island has no listing, candidate or retry read to start.
+    const source = readFileSync(new URL('./StorePreorderShowcase.tsx', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/fetch\(|listing-prices|preorder-showcase\.json|setTimeout\(/);
   });
 });
 
 describe('StorePreorderShowcase presentation', () => {
-  it('adds no markup before hydration', () => {
-    expect(renderToStaticMarkup(<StorePreorderShowcase {...props} />)).toBe('');
-  });
-
   it.each([clip, photo, cover])(
     'renders the $slug chapter with truthful terms and a real Store Item link',
-    async (candidate) => {
-      const fetchRequest = stubReads([ready(candidate.slug)], [candidate]);
-      rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-      const html = renderToStaticMarkup(render());
+    (candidate) => {
+      const html = renderToStaticMarkup(render([item(candidate)]));
       expect(html.includes('home-preorders__video-poster')).toBe(Boolean(candidate.firstClipId));
       expect(html.includes('home-preorders__band-photo')).toBe(
         !candidate.firstClipId && Boolean(candidate.artistPhotoUrl),
@@ -295,55 +124,44 @@ describe('StorePreorderShowcase presentation', () => {
       expect(html).not.toContain('mailto:orders@blackboxrecordsathens.com');
       expect(html).not.toContain('Deliver to Greece');
       expect(html).not.toContain('Next pre-order:');
-      expect(fetchRequest).toHaveBeenCalledTimes(2);
     },
   );
 
-  it('presents only the background video as text while keeping explicit Watch available', async () => {
-    stubReads([ready(clip.slug)], [clip]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+  it('presents only the background video as text while keeping explicit Watch available', () => {
+    const html = renderToStaticMarkup(render([item(clip)]));
     expect(html).toContain('<span class="home-preorders__clip" aria-current="true">First official video</span>');
     expect(html).not.toMatch(/<button[^>]*home-preorders__clip/);
     expect(html).not.toContain('Second official video');
     expect(html).toContain('Watch full video');
   });
 
-  it('never repeats the sleeve as a missing or artwork-based video poster', async () => {
+  it('never repeats the sleeve as a missing or artwork-based video poster', () => {
     const candidate = {
       ...clip,
       artistPhotoUrl: null,
       clips: [{ id: 'MOA5YZDOR6A', title: 'Video', posterUrl: clip.coverUrl }],
     };
-    stubReads([ready(clip.slug, { preorder: { shipEstimate: null } })], [candidate]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+    const html = renderToStaticMarkup(render([item(candidate, { shipEstimate: null })]));
     expect(html.split(`src="${clip.coverUrl}"`)).toHaveLength(2);
     expect(html).not.toContain('home-preorders__video-poster');
     expect(html).toContain('Vinyl ships at a date to be confirmed');
     expect(html).toContain('Watch full video');
   });
 
-  it('shows a released album shipping estimate once rather than repeating its badge', async () => {
-    stubReads([ready(clip.slug)], [{ ...clip, releaseDate: '2020-01-01' }]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+  it('shows a released album shipping estimate once rather than repeating its badge', () => {
+    const html = renderToStaticMarkup(render([item({ ...clip, releaseDate: '2020-01-01' })]));
     expect(html).toContain('Digital out now');
     expect(html.match(/around October 2026/g)).toHaveLength(1);
   });
 
-  it('leaves an artist without an accepted profile path as plain text', async () => {
-    stubReads([ready(photo.slug)], [{ ...photo, artistPath: null }]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+  it('leaves an artist without an accepted profile path as plain text', () => {
+    const html = renderToStaticMarkup(render([item({ ...photo, artistPath: null })]));
     expect(html).toContain('<p class="home-preorders__artist">Clip band</p>');
     expect(html).not.toContain('home-preorders__artist-link');
   });
 
-  it('renders successive chapters and next links instead of a release selector', async () => {
-    const fetchRequest = stubReads([ready(clip.slug), ready(photo.slug), ready(cover.slug)], [clip, photo, cover]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+  it('renders successive chapters and next links instead of a release selector', () => {
+    const html = renderToStaticMarkup(render([item(clip), item(photo), item(cover)]));
     expect(html.match(/<article /g)).toHaveLength(3);
     expect(html.indexOf(clip.title)).toBeLessThan(html.indexOf(photo.title));
     expect(html.indexOf(photo.title)).toBeLessThan(html.indexOf(cover.title));
@@ -356,10 +174,9 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('<iframe');
     expect(html).toContain('src="/photo-band.webp"');
     expect(html).toContain(`href="${photo.storePath}"`);
-    expect(fetchRequest).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps prepared native footage muted and source-free before visibility', async () => {
+  it('keeps prepared native footage muted and source-free before visibility', () => {
     const native = {
       ...clip,
       firstClipId: 'MOA5YZDOR6A',
@@ -372,9 +189,7 @@ describe('StorePreorderShowcase presentation', () => {
         },
       ],
     };
-    stubReads([ready(native.slug)], [native]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+    const html = renderToStaticMarkup(render([item(native)]));
     expect(html).toMatch(/<video[^>]*muted=""[^>]*playsInline=""[^>]*preload="none"/i);
     expect(html).not.toContain('src="/silent-loop.mp4"');
     expect(html).toContain('src="/video-poster.webp"');
@@ -383,36 +198,30 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('<iframe');
   });
 
-  it('shows withheld terms and an Digital out now badge with a past release', async () => {
-    stubReads([ready(cover.slug, { preorder: { shipEstimate: null } })], [{ ...cover, releaseDate: '2026-06-09' }]);
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
+  it('shows withheld terms and an Digital out now badge with a past release', () => {
+    const html = renderToStaticMarkup(render([item({ ...cover, releaseDate: '2026-06-09' }, { shipEstimate: null })]));
     expect(html).toContain('Digital out now');
     expect(html).toContain('To be confirmed');
     expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).not.toContain('Release date');
   });
 
-  it('offers responsive cover and band-photo candidates sized to their slots', async () => {
+  it('offers responsive cover and band-photo candidates sized to their slots', () => {
     const coverSrcSet =
       'https://images.blackboxrecordsathens.com/cdn-cgi/image/width=360,format=webp/https://blackbox-records-web.pages.dev/media/content/a 360w, /clip-720.webp 720w';
-    stubReads(
-      [ready(photo.slug)],
-      [{ ...photo, coverSrcSet, artistPhotoSrcSet: '/band-800.webp 800w, /band-1800.webp 1800w' }],
+    const html = renderToStaticMarkup(
+      render([item({ ...photo, coverSrcSet, artistPhotoSrcSet: '/band-800.webp 800w, /band-1800.webp 1800w' })]),
     );
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
     expect(html).toContain(
       `srcSet="${coverSrcSet}" sizes="(max-width: 50rem) 13.75rem, (max-width: 62.5rem) 17.5rem, 21.25rem"`,
     );
     expect(html).toContain('srcSet="/band-800.webp 800w, /band-1800.webp 1800w" sizes="100vw"');
   });
 
-  it('presents the no-video release identity and delegates Listen to the shell', async () => {
-    stubReads(
-      [ready(photo.slug)],
-      [
-        {
+  it('presents the no-video release identity and delegates Listen to the shell', () => {
+    const html = renderToStaticMarkup(
+      render([
+        item({
           ...photo,
           summary: 'A six-track debut.',
           trackCount: 6,
@@ -422,11 +231,9 @@ describe('StorePreorderShowcase presentation', () => {
             bandcampEmbedUrl: 'https://bandcamp.com/EmbeddedPlayer/album=1/',
             tidalEmbedUrl: null,
           },
-        },
-      ],
+        }),
+      ]),
     );
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
     expect(html).toMatch(/<h3[^>]*>Photo album<\/h3>/);
     expect(html).toContain('A six-track debut.');
     expect(html).toContain('<dt>Tracks</dt><dd>6</dd>');
@@ -435,13 +242,10 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('<iframe');
   });
 
-  it('shows an exact ship date and no release date without inventing one', async () => {
-    stubReads(
-      [ready(cover.slug, { preorder: { shipEstimate: { kind: 'date', date: '2026-10-20' } } })],
-      [{ ...cover, releaseDate: null }],
+  it('shows an exact ship date and no release date without inventing one', () => {
+    const html = renderToStaticMarkup(
+      render([item({ ...cover, releaseDate: null }, { shipEstimate: { kind: 'date', date: '2026-10-20' } })]),
     );
-    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const html = renderToStaticMarkup(render());
     expect(html).toContain('On 20 October 2026');
     expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).toContain('To be confirmed');

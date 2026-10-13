@@ -10,6 +10,8 @@ import { SwipeRowDots } from '@/components/ui/swipe-row-dots';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
+import { readOpenPreorders } from '@/lib/open-preorders';
+import { preorderShowcaseItems } from './_preorder-showcase';
 
 const artistProfiles = await listArtistRosterProfiles();
 const newsArticles = await listNewsArticles();
@@ -18,16 +20,16 @@ const featuredArtistProfiles = artistProfiles.slice(0, 3);
 const homeContent = await getHomeContent();
 const homeNews = homeContent.news;
 const homeArtists = homeContent.artists;
+// Pre-orders are in this HTML or absent; nothing is inserted after paint.
+const preorderItems = await preorderShowcaseItems(readOpenPreorders());
 ---
 
 <SiteLayout pageTitle="Home" pageDescription="BlackBox Records home." mainClass="!pt-0">
   <HomeHero tagline={homeContent.hero.tagline} image={homeContent.hero.image} imageAlt={homeContent.hero.image_alt} />
 
-  <StorePreorderShowcase
-    client:idle
-    candidatesUrl={createProjectRelativeUrl('/preorder-showcase.json')}
-    storeUrl={createProjectRelativeUrl('/store/')}
-  />
+  {preorderItems.length > 0 && (
+    <StorePreorderShowcase client:idle items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />
+  )}
 
   {homeNews && latestNewsArticles.length > 0 && (
     <section class="home-news-section layout-container mt-16" id="news">

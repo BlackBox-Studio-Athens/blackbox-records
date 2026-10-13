@@ -8,7 +8,7 @@
         "webTests",
         "^default",
         "{workspaceRoot}/apps/web/src/pages/index.astro",
-        "{workspaceRoot}/apps/web/src/pages/preorder-showcase.json.ts",
+        "{workspaceRoot}/apps/web/src/pages/_preorder-showcase.ts",
         "{workspaceRoot}/apps/web/src/pages/sitemap.xml.ts",
         "{workspaceRoot}/apps/web/src/styles/**/*",
         "{workspaceRoot}/apps/web/public/**/*",
@@ -53,7 +53,8 @@
         "./components/Header.astro",
         "./components/icons/SocialIcon.astro",
         "./lib/exact-first-search.ts",
-        "./lib/item-availability.ts"
+        "./lib/item-availability.ts",
+        "./lib/open-preorders.ts"
       ],
       "namedInterfaces": {},
       "dependsOn": [

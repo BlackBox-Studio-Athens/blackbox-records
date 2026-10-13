@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildPreorderShowcaseCandidates } from './preorder-showcase';
 
@@ -147,15 +147,14 @@ describe('pre-order showcase candidates', () => {
     });
   });
 
-  it('mounts the island between Hero and News and lets the endpoint inherit the static or published runtime', () => {
+  it('renders the island between Hero and News only with projected items, and publishes no candidate route', () => {
     const home = readFileSync(new URL('../pages/index.astro', import.meta.url), 'utf8');
-    const endpoint = readFileSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url), 'utf8');
-    const sitemap = readFileSync(new URL('../pages/sitemap.xml.ts', import.meta.url), 'utf8');
     expect(home.indexOf('<HomeHero')).toBeLessThan(home.indexOf('<StorePreorderShowcase'));
     expect(home.indexOf('<StorePreorderShowcase')).toBeLessThan(home.indexOf('id="news"'));
-    expect(home).toContain('client:load');
-    expect(home).toContain("createProjectRelativeUrl('/preorder-showcase.json')");
-    expect(endpoint).not.toMatch(/export\s+const\s+prerender\s*=\s*true/);
-    expect(sitemap).not.toContain('preorder-showcase.json');
+    expect(home).toMatch(
+      /preorderItems\.length > 0 && \(\s*<StorePreorderShowcase client:idle items=\{preorderItems\}/,
+    );
+    expect(home).toContain("from '@/lib/open-preorders'");
+    expect(existsSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url))).toBe(false);
   });
 });
