@@ -496,9 +496,9 @@ The Releases page SHALL retain one accessible level-one heading named Releases w
 - **AND** assistive technology can identify the remaining catalog by its More releases heading
 - **AND** record order, purchase actions and listening behavior remain intact
 
-### Requirement: Vinyl visuals remain static
+### Requirement: Vinyl release visuals remain static
 
-The public site SHALL NOT render decorative sliding or rotating vinyl records or animate vinyl Buy icons. Release artwork SHALL remain complete without a record behind its sleeve. Vinyl Buy icons SHALL retain their existing appearance as stationary artwork. CD and cassette effects and Grid/Crate browsing SHALL retain their existing behavior.
+The public site SHALL NOT render decorative sliding or rotating vinyl records. Release artwork SHALL remain complete without a record behind its sleeve. Vinyl Buy icons SHALL keep the same single label flick as CD and cassette Buy icons. CD and cassette effects and Grid/Crate browsing SHALL retain their existing behavior.
 
 #### Scenario: Visitor engages vinyl artwork or an edition action
 
@@ -510,7 +510,7 @@ The public site SHALL NOT render decorative sliding or rotating vinyl records or
 #### Scenario: Visitor engages a vinyl Buy icon
 
 - **WHEN** a visitor hovers, focuses or presses Buy for a vinyl item or another item using the vinyl mark
-- **THEN** the vinyl icon remains stationary with its existing appearance
+- **THEN** the vinyl label turns once while the light, record and plus stay still, unless reduced motion is requested
 - **AND** buying and cart behavior remain unchanged
 
 ### Requirement: Releases orders featured records and the remaining catalog editorially

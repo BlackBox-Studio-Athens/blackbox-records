@@ -1,0 +1,4 @@
+<!-- rotate-origin: 7.5 7.5 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="currentColor">
+  <path d="M6.25 6H8.75V6.75H6.25ZM6.25 7.75H6.75V8.5H7V9H6.25ZM8 8H8.75V8.25H8ZM8 8.75H8.5V9H8Z" fill="#202020"/>
+</svg>
