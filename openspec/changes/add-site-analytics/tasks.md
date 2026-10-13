@@ -22,7 +22,7 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 
-- [ ] 2.6 [Claude or Codex] Fix the demonstrated workerd redirect-mode incompatibility, verify native Request construction and redirect rejection, then release through every UAT/PRD gate and complete the live Stats comparison in 4.2.
+- [x] 2.6 [Claude or Codex] Fix the demonstrated workerd redirect-mode incompatibility, verify native Request construction and redirect rejection, then release through every UAT/PRD gate and complete the live Stats comparison in 4.2. Evidence: `24cacf78`, release 567 and PRD promotion 17 passed; both live ranges return 200/ok. See [validation](validation.md#stats-503-redirect-mode-correction--2026-10-13).
 
 ## 3. Staff Stats page
 
@@ -33,5 +33,5 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 ## 4. Acceptance
 
 - [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed after the readability redesign; see [validation.md](validation.md). Committed as `0995c185` and `aa5dfac6`.
-- [ ] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.
-  - Retested after correction release `1ea39f31` / run 566 and PRD promotion 16. Stats still returns HTTP 503; reference `28d62f39-69db-4c3e-8910-bf1415c1da2c` matches `analytics_read_failed` with `safeReason: upstream_network`, no upstream HTTP status, and HTTP completion in 184 ms. Cloudflare reports 0 visits / 0 page views for the complete UTC day 2026-10-12 with apex-host and bot filters; Stats has no figures to compare. Explorer proved the query fields and filters separately. Exact Worker exception, successful Worker-secret execution and parity remain unverified; see [validation.md](validation.md#correction-release-and-live-diagnosis--2026-10-13).
+- [x] 4.2 After promotion, open Stats on PRD staff and compare one day's figures with the Cloudflare dashboard.
+  - Passed on `24cacf78491c54e826807764b1cf7b156cd61821` / release 567 / PRD promotion 17. Both 7d and 30d return HTTP 200 with `status: ok` through the existing Worker secret. Stats and Cloudflare both report 0 visits / 0 page views for the complete UTC day 2026-10-12, filtered to the apex and excluding bots; no mismatch. Screenshots, response identities and cache timestamps are in [validation](validation.md#stats-503-redirect-mode-correction--2026-10-13). The earlier 503 is resolved by the supported manual redirect mode.
