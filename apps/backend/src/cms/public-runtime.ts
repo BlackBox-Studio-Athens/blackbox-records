@@ -3,7 +3,7 @@ import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { isCmsCollection, type ContentSnapshot } from '@blackbox/content-model';
 import { z } from 'zod';
-import { publishedContext } from './published-reader';
+import { publishedContext, type PublishedPreorders } from './published-reader';
 import { readBoundedText } from './preview-content';
 import { previewRenderContent, previewRenderSchema } from './preview-render-contract';
 import {
@@ -14,7 +14,13 @@ import {
   type PublicationEnvironment,
 } from './published-storage';
 import { notFound, PublicMedia, publicMediaBase } from './public-media';
-import { invalidatePublicPublication, publicInvalidationPath, publicPublicationTags } from './public-publication-cache';
+import {
+  acceptPublicPreorderProjection,
+  invalidatePublicPublication,
+  publicInvalidationPath,
+  publicPublicationTags,
+} from './public-publication-cache';
+import { PublicPreorderStore, publicPreorderProjectionPath } from './public-preorder-projection';
 import {
   PublicRenderCache,
   publicPageEtag,
@@ -44,6 +50,19 @@ export default {
         context.cache,
         env.PRODUCT_ENVIRONMENT,
       );
+    // Previews and publication validation render the same open pre-orders as public pages.
+    if (path === publicPreorderProjectionPath)
+      return acceptPublicPreorderProjection(
+        request,
+        (projection, identity) =>
+          Promise.all(
+            ['public-v2', 'publication-v2'].map((name) =>
+              env.PUBLIC_SITE_RUNTIME.getByName(name, { locationHint: 'eeur' }).setPreorders(projection, identity),
+            ),
+          ),
+        context.cache,
+        env.PRODUCT_ENVIRONMENT,
+      );
     if (/(?:^|\/)(?:assets|_astro)\//.test(path) || /^\/favicon[^/]*$/.test(path) || path === '/robots.txt')
       return env.ASSETS.fetch(request);
     if (path === '/_image') return context.exports.PublicImageRenderer.fetch(request);
@@ -68,6 +87,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
     (work) => this.ctx.waitUntil(work),
   );
   private pages: PublicRenderCache | undefined;
+  private openPreorders: PublicPreorderStore | undefined;
   private media = new PublicMedia(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT, {
     sourceOrigin: this.env.PUBLIC_IMAGE_SOURCE_ORIGIN ?? '',
     transformationOrigin: this.env.PUBLIC_IMAGE_TRANSFORM_ORIGIN,
@@ -77,18 +97,41 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
     return (this.pages ??= new PublicRenderCache(this.ctx.storage.sql));
   }
 
+  // Without a usable stored projection, pages render with no pre-order claims.
+  private preorders(): { projection: PublishedPreorders | null; identity: string } {
+    try {
+      return (
+        (this.openPreorders ??= new PublicPreorderStore(this.ctx.storage.sql)).read() ?? {
+          projection: null,
+          identity: 'none',
+        }
+      );
+    } catch {
+      console.warn('Public pre-order projection unavailable');
+      return { projection: null, identity: 'none' };
+    }
+  }
+
+  /** Stores a changed projection; the next request's cache key retires pages rendered from the previous one. */
+  async setPreorders(projection: PublishedPreorders, identity: string) {
+    return (this.openPreorders ??= new PublicPreorderStore(this.ctx.storage.sql)).write(projection, identity);
+  }
+
   async invalidatePublication(pointer: PublicationPointer) {
     const accepted = publicationPointerSchema.parse(pointer);
     await this.selection.invalidate(accepted);
     try {
-      this.renderCache().retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${accepted.snapshotSha256}/`);
+      this.renderCache().retain(
+        `${PUBLIC_RELEASE_IDENTITY.sha}/${accepted.snapshotSha256}/${this.preorders().identity}/`,
+      );
     } catch {
       console.warn('Public render cache unavailable');
     }
   }
 
-  private async render(request: Request, snapshot: ContentSnapshot) {
-    return publishedContext.run({ snapshot, mediaBase: publicMediaBase(new URL(request.url)) }, async () => {
+  private async render(request: Request, snapshot: ContentSnapshot, preorders: PublishedPreorders | null) {
+    const mediaBase = publicMediaBase(new URL(request.url));
+    return publishedContext.run({ snapshot, mediaBase, preorders }, async () => {
       const state = new FetchState(request);
       const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
       return asset ?? finalize(state, await astro(state));
@@ -111,7 +154,12 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         )
           return new Response('Forbidden', { status: 403 });
         const response = await publishedContext.run(
-          { snapshot: previewRenderContent(input), mediaBase: '', images: input.images },
+          {
+            snapshot: previewRenderContent(input),
+            mediaBase: '',
+            images: input.images,
+            preorders: this.preorders().projection,
+          },
           async () => {
             const state = new FetchState(new Request(target));
             const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
@@ -199,7 +247,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
             paths.push(`${PUBLIC_BASE_PATH}store/`);
         }
         for (const path of new Set(paths)) {
-          const response = await this.render(new Request(new URL(path, url)), snapshot);
+          const response = await this.render(new Request(new URL(path, url)), snapshot, this.preorders().projection);
           if (!response.ok) {
             await response.body?.cancel();
             throw new Error('Candidate could not render.');
@@ -207,7 +255,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           await readBoundedText(response.body, 4 * 1024 * 1024);
         }
         for (const path of withdrawnPaths) {
-          const response = await this.render(new Request(new URL(path, url)), snapshot);
+          const response = await this.render(new Request(new URL(path, url)), snapshot, this.preorders().projection);
           await response.body?.cancel();
           if (response.status !== 404) throw new Error('Withdrawn product route is still available.');
         }
@@ -237,14 +285,15 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           },
           { headers: { 'Cache-Control': 'no-store', 'X-Content-SHA256': pointer.snapshotSha256 } },
         );
-      const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${url.origin}${url.pathname}`;
+      const preorders = this.preorders();
+      const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${preorders.identity}/${url.origin}${url.pathname}`;
       // Unversioned Local builds share the zero SHA; retained HTML would reference a previous build's assets.
       const versioned = PUBLIC_RELEASE_IDENTITY.sha !== '0'.repeat(40);
       let cached;
       try {
         if (versioned && !url.search) {
           const pages = this.renderCache();
-          pages.retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/`);
+          pages.retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${preorders.identity}/`);
           cached = pages.get(key);
         }
       } catch {
@@ -258,14 +307,11 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
       }
       const { snapshot, pointer: selectedPointer } = await this.selection.content();
       // A refresh may have completed while reading the cache; render and identity must use the same snapshot.
-      const renderKey = `${PUBLIC_RELEASE_IDENTITY.sha}/${selectedPointer.snapshotSha256}/${url.origin}${url.pathname}`;
-      const response = await this.render(new Request(url, { method: 'GET' }), snapshot);
+      const renderKey = `${PUBLIC_RELEASE_IDENTITY.sha}/${selectedPointer.snapshotSha256}/${preorders.identity}/${url.origin}${url.pathname}`;
+      const response = await this.render(new Request(url, { method: 'GET' }), snapshot, preorders.projection);
       const headers = new Headers(response.headers);
       const contentType = headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
-      // Only this editorial JSON follows accepted content; prices and other JSON are never reusable here.
-      const publishedResponse =
-        contentType === 'text/html' || (path === '/preorder-showcase.json' && contentType === 'application/json');
-      if (!publishedResponse) {
+      if (contentType !== 'text/html') {
         if (contentType === 'application/json' || response.status !== 200 || url.search || headers.has('Set-Cookie'))
           headers.set('Cache-Control', 'no-store');
         return new Response(request.method === 'HEAD' ? null : response.body, {
@@ -294,8 +340,12 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         );
       }
       const body = await readBoundedText(response.body, 4 * 1024 * 1024);
-      // Activation can retire this render while its body is being read, after the edge purge.
-      if (cacheable && (await this.selection.selected()).pointer.snapshotSha256 !== selectedPointer.snapshotSha256) {
+      // Activation or a pushed projection can retire this render while its body is being read, after the edge purge.
+      if (
+        cacheable &&
+        ((await this.selection.selected()).pointer.snapshotSha256 !== selectedPointer.snapshotSha256 ||
+          this.preorders().identity !== preorders.identity)
+      ) {
         cacheable = false;
         headers.set('Cache-Control', 'no-store');
         for (const header of ['ETag', 'Last-Modified', 'Cache-Tag']) headers.delete(header);

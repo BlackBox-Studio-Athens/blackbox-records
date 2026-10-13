@@ -116,6 +116,7 @@ export default defineConfig({
     resolve: {
       alias: [
         { find: '@/lib/content-reader', replacement: local('src/cms/published-reader.ts') },
+        { find: '@/lib/open-preorders', replacement: local('src/cms/published-preorders.ts') },
         { find: '@', replacement: local('../web/src') },
       ],
     },

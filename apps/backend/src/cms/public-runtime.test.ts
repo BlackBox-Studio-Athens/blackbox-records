@@ -5,6 +5,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 import { publicInvalidationPath, publicPublicationTags } from './public-publication-cache';
+import { publicPreorderIdentity, publicPreorderProjectionPath } from './public-preorder-projection';
 
 it.each(['uat', 'local'] as const)(
   'runs %s invalidation through the default handler and real workerd',
@@ -26,7 +27,7 @@ it.each(['uat', 'local'] as const)(
         export { PublicImageRenderer } from './public-runtime';
         export class TestPublicSiteRuntime extends PublicSiteRuntime {
           seed(snapshot) {
-            this.renderCache().put('${release}/' + snapshot + '/http://site.invalid/', {
+            this.renderCache().put('${release}/' + snapshot + '/none/http://site.invalid/', {
               body: 'Persisted ' + snapshot, status: 200,
               headers: [['Content-Type', 'text/html'], ['Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=30'], ['ETag', 'W/"' + snapshot + '"']],
             });
@@ -207,20 +208,17 @@ it.each(['uat', 'local'] as const)(
   30_000,
 );
 
-it('reuses the showcase endpoint through the public gateway and retires accepted HTML/JSON together', async () => {
+it('reuses published HTML through the public gateway and retires it on publication or projection change', async () => {
   const require = createRequire(createRequire(import.meta.url).resolve('wrangler/package.json'));
   const { Miniflare, convertV4MiniflareOptions } = require('miniflare');
   const { build } = require('esbuild');
   const release = 'c'.repeat(40);
   const reader = JSON.stringify(fileURLToPath(new URL('./published-reader.ts', import.meta.url)));
-  const endpoint = JSON.stringify(
-    fileURLToPath(new URL('../../../web/src/pages/preorder-showcase.json.ts', import.meta.url)),
-  );
-  // Run the real endpoint and candidate builder. Only Astro dispatch, image processing
-  // and catalog projection are fixtures; they read the production accepted context.
+  const preorders = JSON.stringify(fileURLToPath(new URL('./published-preorders.ts', import.meta.url)));
+  // Only Astro dispatch is a fixture; Home reads the production accepted context and pushed projection.
   const fixtures: Record<string, string> = {
-    'astro/fetch': `import { GET } from ${endpoint};
-      import { getCollection } from ${reader};
+    'astro/fetch': `import { getCollection } from ${reader};
+      import { readOpenPreorders } from ${preorders};
       export const renders = {};
       let signalPause;
       export const paused = new Promise(resolve => { signalPause = resolve; });
@@ -229,8 +227,10 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
       export async function astro(state) {
         const url = new URL(state.request.url);
         renders[url.pathname] = (renders[url.pathname] ?? 0) + 1;
-        if (url.pathname.endsWith('/preorder-showcase.json')) {
-          const response = await GET();
+        if (url.pathname === '/') {
+          const [record] = await getCollection('releases');
+          const response = new Response('<html><head></head><body>' + JSON.stringify(record.data.clips ?? []) + '|' +
+            JSON.stringify(readOpenPreorders()) + '</body></html>', {headers: {'Content-Type': 'text/html'}});
           const headers = new Headers(response.headers);
           if (url.hostname === 'private.invalid') headers.set('Cache-Control', 'private, max-age=60');
           if (url.hostname === 'no-store.invalid') headers.set('Cache-Control', 'no-store');
@@ -255,18 +255,6 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
       }`,
     '@astrojs/cloudflare/fetch':
       'export function cf() {} export function finalize(state, response) { return response; }',
-    'astro:assets': "export async function getImage() { return {src: '/_astro/image.webp'}; }",
-    '@/lib/catalog-data': `import { getCollection, publishedContext } from ${reader};
-      export const listReleaseCatalog = () => getCollection('releases');
-      export const listArtistProfiles = () => getCollection('artists');
-      export async function listStoreItems() {
-        const [record] = await listReleaseCatalog();
-        return publishedContext.getStore().snapshot.storeItems.map(item => ({
-          sourceKind: item.sourceKind, sourceId: item.sourceId, slug: item.storeItemSlug,
-          title: record.data.title, subtitle: 'Sidus', metadata: ['October 2026', 'Vinyl'],
-          storePath: '/store/' + item.storeItemSlug + '/', embeddedPlayerData: null,
-        }));
-      }`,
   };
   const compiled = await build({
     stdin: {
@@ -278,15 +266,17 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
           keys() { return this.ctx.storage.sql.exec('SELECT key FROM public_render_cache ORDER BY key').toArray(); }
           restart() { this.ctx.abort(); }
         }
+        let purges = 0;
         export default { async fetch(request, env, ctx) {
           const runtime = env.PUBLIC_SITE_RUNTIME.getByName('public-v2');
           const path = new URL(request.url).pathname;
-          if (path === '/__test/stats') return Response.json({renders, keys: await runtime.keys()});
+          if (path === '/__test/stats') return Response.json({renders, purges, keys: await runtime.keys()});
           if (path === '/__test/restart') return runtime.restart();
           if (path === '/__test/paused') { await paused; return new Response('Paused'); }
           if (path === '/__test/resume') { resume(); return new Response('Resumed'); }
           const context = new Proxy(ctx, {get(target, name) {
             return name === 'cache' ? {async purge() {
+              purges++;
               return {success: !request.headers.has('X-Test-Reject-Purge'), errors: []};
             }} : Reflect.get(target, name, target);
           }});
@@ -306,7 +296,7 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     },
     plugins: [
       {
-        name: 'accepted-endpoint-fixture',
+        name: 'accepted-render-fixture',
         setup(builder: {
           onResolve(
             options: { filter: RegExp },
@@ -317,18 +307,12 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
             callback: (args: { path: string }) => { contents: string; loader: string; resolveDir: string },
           ): void;
         }) {
-          builder.onResolve(
-            {
-              filter:
-                /^(astro\/fetch|@astrojs\/cloudflare\/fetch|astro:assets|@\/lib\/catalog-data|@\/lib\/preorder-showcase)$|\.jpg$|\.mp4\?url$/,
-            },
-            ({ path }) =>
-              path === '@/lib/preorder-showcase'
-                ? { path: fileURLToPath(new URL('../../../web/src/lib/preorder-showcase.ts', import.meta.url)) }
-                : { path, namespace: 'fixture' },
-          );
+          builder.onResolve({ filter: /^(astro\/fetch|@astrojs\/cloudflare\/fetch)$/ }, ({ path }) => ({
+            path,
+            namespace: 'fixture',
+          }));
           builder.onLoad({ filter: /.*/, namespace: 'fixture' }, ({ path }) => ({
-            contents: fixtures[path] ?? "export default '/poster.jpg';",
+            contents: fixtures[path]!,
             loader: 'js',
             resolveDir: dirname(fileURLToPath(import.meta.url)),
           }));
@@ -352,12 +336,7 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     const { createPublicGateway } = await import(
       new URL('../../../../scripts/pages-public-gateway.mjs', import.meta.url).href
     );
-    const gateway = createPublicGateway([
-      '^/preorder-showcase\\.json$',
-      '^/releases/lotus/$',
-      '^/private/$',
-      '^/other\\.json$',
-    ]);
+    const gateway = createPublicGateway(['^/$', '^/releases/lotus/$', '^/private/$', '^/other\\.json$']);
     const read = (path: string, options?: RequestInit) =>
       gateway.fetch(new Request(`http://site.invalid${path}`, options), {
         PUBLIC_SITE: {
@@ -366,6 +345,10 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
         },
       });
     const stats = async () => (await worker.dispatchFetch('http://site.invalid/__test/stats')).json();
+    const home = async (response: Response) => {
+      const [, clips, projected] = /<body>(.*)\|(.*)<\/body>/.exec(await response.text())!;
+      return { clips: JSON.parse(clips!), preorders: JSON.parse(projected!) };
+    };
     const snapshot = async (clipId: string | null, generation: number) => {
       const json = JSON.stringify({
         schemaVersion: 1,
@@ -426,21 +409,21 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
         headers: { 'Content-Type': 'application/json', ...(reject ? { 'X-Test-Reject-Purge': '1' } : {}) },
       });
     };
-    expect((await read('/preorder-showcase.json')).status).toBe(503);
+    expect((await read('/')).status).toBe(503);
     const old = await snapshot(null, 1);
     expect((await activate(old)).status).toBe(200);
-    const head = await read('/preorder-showcase.json', { method: 'HEAD' });
+    const head = await read('/', { method: 'HEAD' });
     expect(head.status).toBe(200);
     expect(await head.text()).toBe('');
     const etag = head.headers.get('ETag')!;
     expect(etag).toMatch(/^W\/"[a-f0-9]{64}"$/);
     expect(head.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=30, stale-while-revalidate=30');
-    const initial = await read('/preorder-showcase.json');
+    const initial = await read('/');
     expect(initial.headers.get('X-Content-SHA256')).toBe(old.snapshotSha256);
     expect(initial.headers.get('Cache-Tag')).toBe(publicPublicationTags(release, old.snapshotSha256).join(','));
-    expect(await initial.json()).toEqual([expect.objectContaining({ firstClipId: null, clips: [] })]);
+    expect(await home(initial)).toEqual({ clips: [], preorders: [] });
     for (const method of ['GET', 'HEAD']) {
-      const conditional = await read('/preorder-showcase.json', {
+      const conditional = await read('/', {
         method,
         headers: { 'If-None-Match': `"other", ${etag.slice(2)}`, Cookie: 'draft=1', Authorization: 'private' },
       });
@@ -448,10 +431,10 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
       expect(await conditional.text()).toBe('');
       expect(conditional.headers.get('ETag')).toBe(etag);
     }
-    expect((await stats()).renders['/preorder-showcase.json']).toBe(1);
+    expect((await stats()).renders['/']).toBe(1);
     await worker.dispatchFetch('http://site.invalid/__test/restart').catch(() => {});
-    expect((await read('/preorder-showcase.json')).headers.get('ETag')).toBe(etag);
-    expect((await stats()).renders['/preorder-showcase.json']).toBe(1);
+    expect((await read('/')).headers.get('ETag')).toBe(etag);
+    expect((await stats()).renders['/']).toBe(1);
     const html = await read('/releases/lotus/');
     const htmlEtag = html.headers.get('ETag')!;
     expect((await read('/releases/lotus/', { headers: { 'If-None-Match': htmlEtag } })).status).toBe(304);
@@ -459,18 +442,16 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
 
     const next = await snapshot('MOA5YZDOR6A', 2);
     // A staged manifest alone is private, including an uncached query-bearing read.
-    expect(await (await read('/preorder-showcase.json?draft=1')).json()).toEqual([
-      expect.objectContaining({ firstClipId: null }),
-    ]);
+    expect((await home(await read('/?draft=1'))).clips).toEqual([]);
     await worker.dispatchFetch('http://site.invalid/__test/restart').catch(() => {});
     const rejected = await activate(next, true);
     expect(rejected.status).toBe(503);
     expect(rejected.headers.get('Cache-Control')).toBe('private, no-store');
     expect((await stats()).keys).toEqual([]);
-    const changed = await read('/preorder-showcase.json', { headers: { 'If-None-Match': etag } });
+    const changed = await read('/', { headers: { 'If-None-Match': etag } });
     expect(changed.status).toBe(200);
     expect(changed.headers.get('ETag')).not.toBe(etag);
-    expect(await changed.json()).toEqual([expect.objectContaining({ firstClipId: 'MOA5YZDOR6A' })]);
+    expect((await home(changed)).clips[0].youtube_video_id).toBe('MOA5YZDOR6A');
     const changedHtml = await read('/releases/lotus/', { headers: { 'If-None-Match': htmlEtag } });
     expect(changedHtml.status).toBe(200);
     expect(await changedHtml.text()).toContain('MOA5YZDOR6A');
@@ -479,7 +460,7 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
       beforeRetry.keys.every(({ key }: { key: string }) => key.startsWith(`${release}/${next.snapshotSha256}/`)),
     ).toBe(true);
     expect((await activate(next)).status).toBe(200);
-    await read('/preorder-showcase.json');
+    await read('/');
     expect((await stats()).renders).toEqual(beforeRetry.renders);
 
     for (const [clipId, generation] of [
@@ -488,9 +469,9 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     ] as const) {
       const pointer = await snapshot(clipId, generation);
       expect((await activate(pointer)).status).toBe(200);
-      const previousTag = await read('/preorder-showcase.json', { headers: { 'If-None-Match': etag } });
+      const previousTag = await read('/', { headers: { 'If-None-Match': etag } });
       expect(previousTag.status).toBe(200);
-      expect(await previousTag.json()).toEqual([expect.objectContaining({ firstClipId: clipId })]);
+      expect((await home(previousTag)).clips[0]?.youtube_video_id ?? null).toBe(clipId);
       const page = await read('/releases/lotus/');
       expect(page.headers.get('X-Content-SHA256')).toBe(pointer.snapshotSha256);
       expect(await page.text()).toBe(
@@ -520,14 +501,12 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
       expect(preview.headers.get('Cache-Control')).toBe('private, no-store');
       expect(await preview.text()).toContain('MOA5YZDOR6A');
     }
-    expect(await (await read('/preorder-showcase.json')).json()).toEqual([
-      expect.objectContaining({ firstClipId: null, clips: [] }),
-    ]);
+    expect((await home(await read('/'))).clips).toEqual([]);
     const warm = await stats();
     for (const path of [
       '/other.json',
       '/private/',
-      '/preorder-showcase.json?query=1',
+      '/?query=1',
       '/api/store/listing-prices',
       '/content-version.json',
       '/release.json',
@@ -538,7 +517,7 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     }
     for (const host of ['private', 'no-store', 'cookie', 'error']) {
       for (let repeat = 0; repeat < 2; repeat++) {
-        const response = await worker.dispatchFetch(`http://${host}.invalid/preorder-showcase.json`, {
+        const response = await worker.dispatchFetch(`http://${host}.invalid/`, {
           headers: { 'If-None-Match': '*' },
         });
         expect(response.status).toBe(host === 'error' ? 500 : 200);
@@ -548,8 +527,8 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     }
     const after = await stats();
     expect(after.keys).toEqual(warm.keys);
-    expect(after.renders['/preorder-showcase.json'] - warm.renders['/preorder-showcase.json']).toBe(9);
-    const inFlight = worker.dispatchFetch('http://paused.invalid/preorder-showcase.json', {
+    expect(after.renders['/'] - warm.renders['/']).toBe(9);
+    const inFlight = worker.dispatchFetch('http://paused.invalid/', {
       headers: { 'If-None-Match': '*' },
     });
     await worker.dispatchFetch('http://site.invalid/__test/paused');
@@ -563,20 +542,99 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
     expect(retired.status).toBe(200);
     expect(retired.headers.get('Cache-Control')).toBe('no-store');
     for (const header of ['ETag', 'Last-Modified', 'Cache-Tag']) expect(retired.headers.get(header)).toBeNull();
-    expect(await retired.json()).toEqual([expect.objectContaining({ firstClipId: null })]);
+    expect((await home(retired)).clips).toEqual([]);
     expect((await stats()).keys).toEqual([]);
-    const current = await read('/preorder-showcase.json');
+    const current = await read('/');
     expect(current.headers.get('X-Content-SHA256')).toBe(replacement.snapshotSha256);
-    expect(await current.json()).toEqual([expect.objectContaining({ firstClipId: 'MOA5YZDOR6A' })]);
+    expect((await home(current)).clips[0].youtube_video_id).toBe('MOA5YZDOR6A');
     expect(
       (
-        await read('/preorder-showcase.json', {
+        await read('/', {
           method: 'HEAD',
           headers: { 'If-None-Match': current.headers.get('ETag')! },
         })
       ).status,
     ).toBe(304);
-    console.log('Published showcase cache seam:', JSON.stringify(after));
+    console.log('Published HTML cache seam:', JSON.stringify(after));
+
+    // The open pre-order projection arrives privately, binds HTML reuse, and purges only when it changes.
+    const push = (body: unknown) =>
+      worker.dispatchFetch(`http://site.invalid${publicPreorderProjectionPath}`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    const projection = {
+      items: [
+        {
+          storeItemSlug: 'lotus-vinyl',
+          displayPrice: '€28.00',
+          shipEstimate: { kind: 'month' as const, month: '2026-11', part: null },
+        },
+      ],
+    };
+    const identity = await publicPreorderIdentity(projection);
+    const unprojected = (await stats()).purges;
+    for (const invalid of [
+      { items: [{ ...projection.items[0], storeItemSlug: 'Lotus Vinyl' }] },
+      { items: 'lotus-vinyl' },
+      { items: [], padding: 'x'.repeat(70_000) },
+    ])
+      expect((await push(invalid)).status).toBe(400);
+    const gatewayCalls: string[] = [];
+    const gatewayBindings = { PUBLIC_SITE: { fetch: (request: Request) => (gatewayCalls.push(request.url), null) } };
+    expect(
+      (
+        await gateway.fetch(
+          new Request(`http://site.invalid${publicPreorderProjectionPath}`, {
+            method: 'POST',
+            body: JSON.stringify(projection),
+            headers: { 'Content-Type': 'application/json' },
+          }),
+          gatewayBindings,
+        )
+      ).status,
+    ).toBe(405);
+    expect(
+      (await gateway.fetch(new Request(`http://site.invalid${publicPreorderProjectionPath}`), gatewayBindings)).status,
+    ).toBe(404);
+    expect(gatewayCalls).toEqual([]);
+    expect((await stats()).purges).toBe(unprojected);
+    const unprojectedEtag = current.headers.get('ETag')!;
+    const accepted = await push(projection);
+    expect(accepted.status).toBe(200);
+    expect(await accepted.json()).toEqual({ changed: true, identity });
+    expect((await stats()).purges).toBe(unprojected + 1);
+    const projected = await read('/', { headers: { 'If-None-Match': unprojectedEtag } });
+    expect(projected.status).toBe(200);
+    const projectedEtag = projected.headers.get('ETag')!;
+    expect(projectedEtag).not.toBe(unprojectedEtag);
+    expect((await home(projected)).preorders).toEqual(projection.items);
+    expect(
+      (await stats()).keys.every(({ key }: { key: string }) =>
+        key.startsWith(`${release}/${replacement.snapshotSha256}/${identity}/`),
+      ),
+    ).toBe(true);
+    const projectedRenders = (await stats()).renders['/'];
+    expect(await (await push(projection)).json()).toEqual({ changed: false, identity });
+    expect((await stats()).purges).toBe(unprojected + 1);
+    await worker.dispatchFetch('http://site.invalid/__test/restart').catch(() => {});
+    expect((await read('/', { headers: { 'If-None-Match': projectedEtag } })).status).toBe(304);
+    expect((await home(await read('/'))).preorders).toEqual(projection.items);
+    expect((await stats()).renders['/']).toBe(projectedRenders);
+    const projectedPreview = await worker.dispatchFetch('http://site.invalid/__publication/preview', {
+      method: 'POST',
+      body: JSON.stringify({
+        context,
+        generation: 2,
+        parentOrigin: 'http://staff.invalid',
+        path: '/',
+        content: { records: candidate.records, storeItems: candidate.storeItems },
+        images: { image: { src: `/_preview/media/${context}/image`, width: 1, height: 1, format: 'png' } },
+      }),
+    });
+    expect(projectedPreview.status).toBe(200);
+    expect(await projectedPreview.text()).toContain('lotus-vinyl');
   } finally {
     await worker.dispose();
   }

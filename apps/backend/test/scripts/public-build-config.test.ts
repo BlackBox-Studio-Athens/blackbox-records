@@ -50,6 +50,14 @@ describe('hosted public build module overrides', () => {
     expect(exportNames(backend('src/cms/published-reader.ts'))).toEqual(expect.arrayContaining(owner));
   });
 
+  it('replaces the open pre-order reader with the published projection reader', () => {
+    expect(specifiers).toContain('@/lib/open-preorders');
+    expect(localPaths).toContain('src/cms/published-preorders.ts');
+    expect(exportNames(backend('src/cms/published-preorders.ts'))).toEqual(
+      exportNames(backend('../web/src/lib/open-preorders.ts')),
+    );
+  });
+
   it('inlines purchase information only for the hosted browser reader', () => {
     const flag = (path: string) =>
       /export const inlinesPurchaseInformation = (true|false);/.exec(readFileSync(path, 'utf8'))?.[1];
