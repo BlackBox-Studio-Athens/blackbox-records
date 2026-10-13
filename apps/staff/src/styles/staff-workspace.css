@@ -56,6 +56,8 @@
   border-bottom: 1px solid var(--border);
 }
 .staff-shell-main > main {
+  /* Contains visually hidden text; anchored to body, it would extend the page and scroll it too. */
+  position: relative;
   flex: 1;
   min-height: 0;
   min-width: 0;

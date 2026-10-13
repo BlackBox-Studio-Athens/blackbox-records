@@ -1,5 +1,11 @@
 # Analytics backend prerequisite evidence
 
+## Stats page double scroll — 2026-10-13
+
+On PRD the Stats area and the whole page both scrolled. The cause was the visually hidden page-view text in each ranked row. It is absolutely positioned and had no positioned ancestor inside the scrolling `main`, so it anchored to `body` and extended the document. At 390 px the document was 2174 px tall inside an 844 px shell. The fix adds `position: relative` to `.staff-shell-main > main` in `apps/staff/src/styles/staff-workspace.css`. That also covers the same hidden-text pattern on other staff pages.
+
+playwright-cli (isolated headless Chromium) was run against the rebuilt staff output with `/api/internal/analytics` stubbed to a 30-day response. At 390, 1280 and 1440 px the document height equals the viewport and only `main` scrolls. Empty Stats, Overview, Orders, Stock and Calendar also keep a non-scrolling document. `pnpm validate` passed, `mode: local`: `.codex-artifacts/validation/2026-10-13T11-57-38-697Z-44464-9cf352/summary.json`. Live confirmation follows the next release.
+
 ## Stats 503 redirect-mode correction — 2026-10-13
 
 The owner authorized investigating the remaining 503 and pushing the fix through UAT and PRD after every gate passes, with no credential, setting or launch-control changes. Work started from clean primary `main` at `5733540d4fa3cca15fda388f4a090e08221d0e96`; `pnpm openspec:guard` passed.

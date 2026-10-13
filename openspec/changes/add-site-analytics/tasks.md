@@ -29,6 +29,7 @@ Backend-only evidence and remaining acceptance: [validation.md](validation.md).
 - [x] 3.1 [Claude] Present visual options for the Stats page and wait for the owner's choice. Evidence: three-option canvas checked at 390/1280 px; owner chose C with Recharts via shadcn Chart and approved the dependency ([design](design.md#staff-stats)).
 - [x] 3.2 [Claude] Implement the chosen page and its staff navigation entry, with loading, failure, stale-data and empty states; add the internal API client. Evidence: `/stats/` in the new `staff-stats` module, Stats nav after Orders, lazy Recharts chunk, `staff-platform` analytics client; Worker requests removed after owner review; approved summary-sentence readability redesign ([validation](validation.md#staff-stats-page)).
 - [x] 3.3 [Claude] Focused staff tests and a browser check at phone and desktop widths. Evidence: client, store, view, navigation, shell and backend analytics tests pass; stubbed Local staff screenshots at 390/1280 px and header checks at 1280–1920 px ([validation](validation.md#staff-stats-page)).
+- [x] 3.4 [Claude] Stop the page scrolling together with the Stats area. Evidence: the shell's scrolling `main` now contains visually hidden row text; at 390/1280/1440 px the document no longer scrolls ([validation](validation.md#stats-page-double-scroll--2026-10-13)).
 
 ## 4. Acceptance
 
