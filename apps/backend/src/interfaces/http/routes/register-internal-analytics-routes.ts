@@ -30,46 +30,50 @@ const rumRow = z.object({
 });
 const breakdownRows = z.array(rumRow.extend({ dimensions: z.object({ value: z.string().max(4096) }) })).max(100);
 const graphqlErrorsSchema = z.object({ errors: z.array(z.unknown()).min(1) });
+const windowSchema = z.object({
+  daily: z.array(rumRow.extend({ dimensions: z.object({ date: z.string().date() }) })).max(7),
+  topPaths: breakdownRows,
+  topReferrers: breakdownRows,
+  topCountries: breakdownRows,
+  deviceTypes: breakdownRows,
+});
 const upstreamSchema = z
   .object({
     errors: z.array(z.unknown()).nullish(),
     data: z.object({
       viewer: z.object({
-        accounts: z
-          .array(
-            z.object({
-              daily: z.array(rumRow.extend({ dimensions: z.object({ date: z.string().date() }) })).max(31),
-              topPaths: breakdownRows,
-              topReferrers: breakdownRows,
-              topCountries: breakdownRows,
-              deviceTypes: breakdownRows,
-            }),
-          )
-          .length(1),
+        accounts: z.array(z.object({}).catchall(z.unknown())).length(1),
       }),
     }),
   })
   .refine((value) => !value.errors?.length);
 
-const query = `query SiteAnalytics($accountTag: string!, $rumFilter: AccountRumPageloadEventsAdaptiveGroupsFilter_InputObject!) {
-  viewer { accounts(filter: {accountTag: $accountTag}) {
-    daily: rumPageloadEventsAdaptiveGroups(limit: 31, filter: $rumFilter, orderBy: [date_ASC]) {
+function query(windows: number) {
+  const suffixes = Array.from({ length: windows }, (_, index) => (index === 0 ? '' : String(index)));
+  return `query SiteAnalytics($accountTag: string!, ${suffixes.map((suffix) => `$rumFilter${suffix}: AccountRumPageloadEventsAdaptiveGroupsFilter_InputObject!`).join(', ')}) {
+  viewer { accounts(filter: {accountTag: $accountTag}) { ${suffixes
+    .map(
+      (suffix) => `
+    daily${suffix}: rumPageloadEventsAdaptiveGroups(limit: 7, filter: $rumFilter${suffix}, orderBy: [date_ASC]) {
       count sum { visits } dimensions { date }
     }
-    topPaths: rumPageloadEventsAdaptiveGroups(limit: 10, filter: $rumFilter, orderBy: [count_DESC]) {
+    topPaths${suffix}: rumPageloadEventsAdaptiveGroups(limit: 25, filter: $rumFilter${suffix}, orderBy: [count_DESC]) {
       count sum { visits } dimensions { value: requestPath }
     }
-    topReferrers: rumPageloadEventsAdaptiveGroups(limit: 10, filter: $rumFilter, orderBy: [count_DESC]) {
+    topReferrers${suffix}: rumPageloadEventsAdaptiveGroups(limit: 25, filter: $rumFilter${suffix}, orderBy: [count_DESC]) {
       count sum { visits } dimensions { value: refererHost }
     }
-    topCountries: rumPageloadEventsAdaptiveGroups(limit: 10, filter: $rumFilter, orderBy: [count_DESC]) {
+    topCountries${suffix}: rumPageloadEventsAdaptiveGroups(limit: 25, filter: $rumFilter${suffix}, orderBy: [count_DESC]) {
       count sum { visits } dimensions { value: countryName }
     }
-    deviceTypes: rumPageloadEventsAdaptiveGroups(limit: 100, filter: $rumFilter, orderBy: [count_DESC]) {
+    deviceTypes${suffix}: rumPageloadEventsAdaptiveGroups(limit: 100, filter: $rumFilter${suffix}, orderBy: [count_DESC]) {
       count sum { visits } dimensions { value: deviceType }
     }
-  } }
+  `,
+    )
+    .join('\n')} } }
 }`;
+}
 
 class AnalyticsReadFailure extends Error {
   constructor(
@@ -136,11 +140,11 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
       start.setUTCDate(start.getUTCDate() - days + 1);
       // Isolate environments/sites and UTC windows; cache only data, never identity or request IDs.
       const cacheKey = new Request(
-        `https://staff.blackboxrecordsathens.com/__analytics-cache/v2/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/v3/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
       );
       let cache: Cache | undefined;
       try {
-        cache = await caches.open('site-analytics-v2');
+        cache = await caches.open('site-analytics-v3');
         const cached = await cache.match(cacheKey);
         if (cached) return jsonNoStore(context.json(responseSchema.parse(await cached.json()), 200));
       } catch {
@@ -151,16 +155,30 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
       let signal: AbortSignal | undefined;
       try {
         signal = AbortSignal.timeout(10000);
-        const filter = { datetime_geq: start.toISOString(), datetime_lt: now.toISOString() };
+        // Use the identical newest seven UTC days for both ranges to avoid wider-window sampling.
+        const windows = [];
+        let end = now;
+        for (let remaining = days; remaining > 0; remaining -= 7) {
+          const begin = new Date(end);
+          begin.setUTCHours(0, 0, 0, 0);
+          begin.setUTCDate(begin.getUTCDate() - Math.min(remaining, 7) + (windows.length === 0 ? 1 : 0));
+          windows.push({ datetime_geq: begin.toISOString(), datetime_lt: end.toISOString() });
+          end = begin;
+        }
         const upstream = await fetch('https://api.cloudflare.com/client/v4/graphql', {
           method: 'POST',
           redirect: 'manual',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            query,
+            query: query(windows.length),
             variables: {
               accountTag,
-              rumFilter: { ...filter, siteTag, requestHost: 'blackboxrecordsathens.com', bot: 0 },
+              ...Object.fromEntries(
+                windows.map((filter, index) => [
+                  `rumFilter${index === 0 ? '' : index}`,
+                  { ...filter, siteTag, requestHost: 'blackboxrecordsathens.com', bot: 0 },
+                ]),
+              ),
             },
           }),
           signal,
@@ -174,27 +192,47 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
         if (graphqlErrorsSchema.safeParse(body).success) throw new AnalyticsReadFailure('upstream_graphql');
         const parsed = upstreamSchema.safeParse(body);
         if (!parsed.success) throw new AnalyticsReadFailure('upstream_invalid_shape');
-        const data = parsed.data.data.viewer.accounts[0]!;
+        const account = parsed.data.data.viewer.accounts[0]!;
+        const data = windows.map((_, index) => {
+          const suffix = index === 0 ? '' : String(index);
+          const window = windowSchema.safeParse(
+            Object.fromEntries(Object.keys(windowSchema.shape).map((key) => [key, account[`${key}${suffix}`]])),
+          );
+          if (!window.success) throw new AnalyticsReadFailure('upstream_invalid_shape');
+          return window.data;
+        });
+        const dailyRows = data.flatMap((window) => window.daily);
         const daily = Array.from({ length: days }, (_, index) => {
           const date = new Date(start.getTime() + index * 86400000).toISOString().slice(0, 10);
-          const rows = data.daily.filter((row) => row.dimensions.date === date);
+          const rows = dailyRows.filter((row) => row.dimensions.date === date);
           return {
             date,
             visits: rows.reduce((sum, row) => sum + row.sum.visits, 0),
             pageViews: rows.reduce((sum, row) => sum + row.count, 0),
           };
         });
-        const breakdown = (rows: z.infer<typeof breakdownRows>) =>
-          rows.map((row) => ({ value: row.dimensions.value, visits: row.sum.visits, pageViews: row.count }));
+        const breakdown = (key: 'topPaths' | 'topReferrers' | 'topCountries' | 'deviceTypes') => {
+          const merged = new Map<string, { value: string; visits: number; pageViews: number }>();
+          for (const row of data.flatMap((window) => window[key])) {
+            const value = row.dimensions.value;
+            const counts = merged.get(value) ?? { value, visits: 0, pageViews: 0 };
+            counts.visits += row.sum.visits;
+            counts.pageViews += row.count;
+            merged.set(value, counts);
+          }
+          return [...merged.values()]
+            .sort((a, b) => b.visits - a.visits)
+            .slice(0, key === 'deviceTypes' ? undefined : 10);
+        };
         const result = responseSchema.parse({
           range,
           generatedAt: now.toISOString(),
           status: 'ok',
           daily,
-          topPaths: breakdown(data.topPaths).map(({ value, ...counts }) => ({ path: value, ...counts })),
-          topReferrers: breakdown(data.topReferrers).map(({ value, ...counts }) => ({ host: value, ...counts })),
-          topCountries: breakdown(data.topCountries).map(({ value, ...counts }) => ({ country: value, ...counts })),
-          deviceTypes: breakdown(data.deviceTypes).map(({ value, ...counts }) => ({ deviceType: value, ...counts })),
+          topPaths: breakdown('topPaths').map(({ value, ...counts }) => ({ path: value, ...counts })),
+          topReferrers: breakdown('topReferrers').map(({ value, ...counts }) => ({ host: value, ...counts })),
+          topCountries: breakdown('topCountries').map(({ value, ...counts }) => ({ country: value, ...counts })),
+          deviceTypes: breakdown('deviceTypes').map(({ value, ...counts }) => ({ deviceType: value, ...counts })),
         });
         try {
           await cache?.put(cacheKey, Response.json(result, { headers: { 'Cache-Control': 'public, max-age=900' } }));

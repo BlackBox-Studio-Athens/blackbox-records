@@ -17,8 +17,20 @@ const read = (range = '7d', requestId = 'analytics-test') =>
     bindings,
   );
 
+function windowFixture(init: RequestInit, source = fixture) {
+  const result = structuredClone(source);
+  const account: Record<string, unknown> = result.data.viewer.accounts[0]!;
+  const { variables } = JSON.parse(String(init.body));
+  for (const name of Object.keys(variables)) {
+    if (!/^rumFilter\d+$/.test(name)) continue;
+    for (const key of Object.keys(source.data.viewer.accounts[0]!))
+      account[`${key}${name.slice('rumFilter'.length)}`] = [];
+  }
+  return result;
+}
+
 beforeEach(async () => {
-  cache = await caches.open('site-analytics-v2');
+  cache = await caches.open('site-analytics-v3');
   vi.spyOn(caches, 'open').mockResolvedValue(cache);
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-12T12:00:00.000Z'));
@@ -40,6 +52,115 @@ afterEach(() => {
 });
 
 describe('protected analytics read', () => {
+  it.each(['2026-10-13T12:00:00.000Z', '2027-01-01T00:00:00.000Z'])(
+    'aligns consecutive windows with the seven-day query at %s',
+    async (timestamp) => {
+      vi.setSystemTime(new Date(timestamp));
+      const upstream = vi.fn().mockImplementation((url: string, init: RequestInit) => {
+        expect(new Request(url, init).redirect).toBe('manual');
+        return Promise.resolve(Response.json(windowFixture(init)));
+      });
+      vi.stubGlobal('fetch', upstream);
+      expect((await read('7d')).status).toBe(200);
+      expect((await read('30d')).status).toBe(200);
+      expect(upstream).toHaveBeenCalledTimes(2);
+      const seven = JSON.parse(upstream.mock.calls[0]![1].body as string);
+      const thirty = JSON.parse(upstream.mock.calls[1]![1].body as string);
+      expect(thirty.variables.rumFilter).toEqual(seven.variables.rumFilter);
+      const newestFields =
+        /(?:daily|topPaths|topReferrers|topCountries|deviceTypes): rumPageloadEventsAdaptiveGroups\([^)]*\)\s*\{[^}]*\}[^}]*\}/g;
+      expect(thirty.query.match(newestFields)).toEqual(seven.query.match(newestFields));
+      expect(seven.query.match(newestFields)).toHaveLength(5);
+      const filters = Object.entries(thirty.variables)
+        .filter(([key]) => key.startsWith('rumFilter'))
+        .map(([, value]) => value) as Array<{ datetime_geq: string; datetime_lt: string }>;
+      expect(filters).toHaveLength(5);
+      expect(Object.keys(seven.variables)).toEqual(['accountTag', 'rumFilter']);
+      const midnight = new Date(timestamp);
+      midnight.setUTCHours(0, 0, 0, 0);
+      const expectedOffsets = [6, 13, 20, 27, 29];
+      filters.forEach((filter, index) => {
+        expect(filter.datetime_geq).toBe(
+          new Date(midnight.getTime() - expectedOffsets[index]! * 86400000).toISOString(),
+        );
+        expect(filter.datetime_lt).toBe(index === 0 ? timestamp : filters[index - 1]!.datetime_geq);
+        expect(new Date(filter.datetime_lt).getTime() - new Date(filter.datetime_geq).getTime()).toBeLessThanOrEqual(
+          7 * 86400000,
+        );
+      });
+      expect(new Date(filters[4]!.datetime_lt).getTime() - new Date(filters[4]!.datetime_geq).getTime()).toBe(
+        2 * 86400000,
+      );
+      expect(thirty.query.match(/limit: 25/g)).toHaveLength(15);
+      expect(thirty.query.match(/limit: 100/g)).toHaveLength(5);
+    },
+  );
+
+  it('merges dates and every breakdown key, ranks by visits and retains all devices', async () => {
+    vi.setSystemTime(new Date('2026-10-13T12:00:00.000Z'));
+    const row = (value: string, visits: number, count = visits) => ({ dimensions: { value }, sum: { visits }, count });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, init: RequestInit) => {
+        expect(new Request(url, init).method).toBe('POST');
+        const result = windowFixture(init);
+        const account: Record<string, unknown> = result.data.viewer.accounts[0]!;
+        for (let index = 0; index < 5; index++) {
+          const suffix = index === 0 ? '' : String(index);
+          account[`daily${suffix}`] =
+            index === 0
+              ? [
+                  { dimensions: { date: '2026-10-09' }, sum: { visits: 12 }, count: 12 },
+                  { dimensions: { date: '2026-10-09' }, sum: { visits: 5 }, count: 7 },
+                ]
+              : [
+                  {
+                    dimensions: { date: ['2026-09-30', '2026-09-23', '2026-09-16', '2026-09-14'][index - 1] },
+                    sum: { visits: index + 1 },
+                    count: index + 2,
+                  },
+                ];
+          for (const key of ['topPaths', 'topReferrers', 'topCountries', 'deviceTypes']) {
+            account[`${key}${suffix}`] = [
+              row('shared', index + 1, 10),
+              ...Array.from({ length: 12 }, (_, item) => row(`key-${item}`, 12 - item, item + 100)),
+            ];
+          }
+        }
+        return Promise.resolve(Response.json(result));
+      }),
+    );
+    const response = await read('30d');
+    expect(response.status).toBe(200);
+    const result = await response.json<{
+      daily: unknown[];
+      topPaths: unknown[];
+      topReferrers: unknown[];
+      topCountries: unknown[];
+      deviceTypes: unknown[];
+    }>();
+    expect(result.daily).toHaveLength(30);
+    expect(result.daily).toContainEqual({ date: '2026-10-09', visits: 17, pageViews: 19 });
+    expect(result.daily[0]).toEqual({ date: '2026-09-14', visits: 5, pageViews: 6 });
+    for (const [key, dimension] of [
+      ['topPaths', 'path'],
+      ['topReferrers', 'host'],
+      ['topCountries', 'country'],
+      ['deviceTypes', 'deviceType'],
+    ] as const) {
+      expect(result[key]).toHaveLength(key === 'deviceTypes' ? 13 : 10);
+      expect(result[key][0]).toEqual({ [dimension]: 'key-0', visits: 60, pageViews: 500 });
+    }
+    expect(result.deviceTypes).toContainEqual({ deviceType: 'shared', visits: 15, pageViews: 50 });
+  });
+
+  it('rejects a missing older window without caching a partial 30-day snapshot', async () => {
+    const put = vi.spyOn(cache, 'put');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(fixture)));
+    expect((await read('30d')).status).toBe(503);
+    expect(put).not.toHaveBeenCalled();
+  });
+
   it.each(['7d', '30d'])('constructs a valid workerd upstream request for %s', async (range) => {
     let requestError: unknown;
     const upstream = vi.fn().mockImplementation((url: string, init: RequestInit) => {
@@ -51,7 +172,7 @@ describe('protected analytics read', () => {
         requestError = error;
         throw error;
       }
-      return Promise.resolve(Response.json(liveFixture));
+      return Promise.resolve(Response.json(windowFixture(init, liveFixture)));
     });
     vi.stubGlobal('fetch', upstream);
     const response = await read(range);
@@ -92,7 +213,9 @@ describe('protected analytics read', () => {
   });
 
   it.each(['7d', '30d'])('maps the recorded GraphQL shape and fills UTC days for %s', async (range) => {
-    const upstream = vi.fn().mockImplementation(() => Promise.resolve(Response.json(fixture)));
+    const upstream = vi
+      .fn()
+      .mockImplementation((_url: string, init: RequestInit) => Promise.resolve(Response.json(windowFixture(init))));
     vi.stubGlobal('fetch', upstream);
     const response = await read(range);
     expect(response.status).toBe(200);
@@ -121,13 +244,13 @@ describe('protected analytics read', () => {
     expect(url).toBe('https://api.cloudflare.com/client/v4/graphql');
     expect(init.headers.Authorization).toBe(`Bearer ${secret}`);
     const request = JSON.parse(init.body);
-    expect(request.variables).toEqual({
+    expect(request.variables).toMatchObject({
       accountTag: bindings.CLOUDFLARE_ACCOUNT_ID,
       rumFilter: {
         siteTag: 'test-site',
         requestHost: 'blackboxrecordsathens.com',
         bot: 0,
-        datetime_geq: range === '7d' ? '2026-10-06T00:00:00.000Z' : '2026-09-13T00:00:00.000Z',
+        datetime_geq: '2026-10-06T00:00:00.000Z',
         datetime_lt: '2026-10-12T12:00:00.000Z',
       },
     });
@@ -140,8 +263,8 @@ describe('protected analytics read', () => {
     vi.setSystemTime(new Date('2026-10-13T12:00:00.000Z'));
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockImplementation(() => {
-        const bytes = new TextEncoder().encode(JSON.stringify(liveFixture));
+      vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+        const bytes = new TextEncoder().encode(JSON.stringify(windowFixture(init, liveFixture)));
         return Promise.resolve(
           new Response(
             new ReadableStream({
@@ -175,7 +298,9 @@ describe('protected analytics read', () => {
   });
 
   it('uses the real Workers Cache API for 15 minutes without caching request identity', async () => {
-    const upstream = vi.fn().mockImplementation(() => Promise.resolve(Response.json(fixture)));
+    const upstream = vi
+      .fn()
+      .mockImplementation((_url: string, init: RequestInit) => Promise.resolve(Response.json(windowFixture(init))));
     vi.stubGlobal('fetch', upstream);
     const put = vi.spyOn(cache, 'put');
     const first = await read('7d', 'first-read');
@@ -187,7 +312,7 @@ describe('protected analytics read', () => {
     expect(stored.headers.get('Cache-Control')).toBe('public, max-age=900');
     expect(stored.headers.has('X-Request-Id')).toBe(false);
     expect((key as Request).url).not.toContain(secret);
-    expect(new URL((key as Request).url).pathname).toContain('/__analytics-cache/v2/');
+    expect(new URL((key as Request).url).pathname).toContain('/__analytics-cache/v3/');
     await read('30d');
     expect(upstream).toHaveBeenCalledTimes(2);
     bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = 'another-site';
@@ -198,12 +323,12 @@ describe('protected analytics read', () => {
     expect(upstream).toHaveBeenCalledTimes(4);
   });
 
-  it('does not serve a snapshot from the earlier unfiltered cache', async () => {
+  it.each(['v1', 'v2'])('does not serve a snapshot from the earlier %s cache', async (version) => {
     vi.mocked(caches.open).mockRestore();
-    const oldCache = await caches.open('site-analytics-v1');
+    const oldCache = await caches.open(`site-analytics-${version}`);
     await oldCache.put(
       new Request(
-        `https://staff.blackboxrecordsathens.com/__analytics-cache/v1/LOCAL/${bindings.CLOUDFLARE_ACCOUNT_ID}/test-site/2026-10-12?range=7d`,
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/${version}/LOCAL/${bindings.CLOUDFLARE_ACCOUNT_ID}/test-site/2026-10-12?range=7d`,
       ),
       Response.json(
         {
@@ -224,7 +349,7 @@ describe('protected analytics read', () => {
     vi.stubGlobal('fetch', upstream);
     expect(await (await read()).json()).toMatchObject({ status: 'ok' });
     expect(upstream).toHaveBeenCalledOnce();
-    expect(open).toHaveBeenCalledExactlyOnceWith('site-analytics-v2');
+    expect(open).toHaveBeenCalledExactlyOnceWith('site-analytics-v3');
   });
 
   it('returns configured empty traffic separately from missing configuration', async () => {

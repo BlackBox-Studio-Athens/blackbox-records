@@ -64,6 +64,14 @@ The backend SHALL serve `GET /api/internal/analytics` behind the existing Access
 - **THEN** every GraphQL group filters the configured site to `requestHost: "blackboxrecordsathens.com"` and `bot: 0`
 - **AND** cached data from the previous unfiltered query is not reused.
 
+#### Scenario: Thirty-day traffic uses the same recent sampling window
+
+- **WHEN** an authenticated caller requests thirty days of traffic
+- **THEN** the Worker queries consecutive windows of at most seven UTC days with the newest bounds and fields equal to the seven-day query
+- **AND** the oldest partial window completes the thirty-day range without gaps or overlapping bounds
+- **AND** daily rows merge by date and breakdown rows merge by key, with at most ten top paths, referrers and countries ranked by visits and all device groups retained
+- **AND** snapshots from earlier full-window cache versions are not reused.
+
 #### Scenario: A failed analytics read is diagnosed
 
 - **WHEN** an upstream HTTP, GraphQL, timeout, network, JSON, body-size or response-shape failure occurs
