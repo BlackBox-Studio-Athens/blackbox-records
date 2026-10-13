@@ -38,7 +38,15 @@ The renderer's default entrypoint receives the push. It forwards the push to the
 ### 2. Projection shape and identity
 
 ```json
-{ "items": [{ "storeItemSlug": "lotus-vinyl", "displayPrice": "€28.00", "shipEstimate": { "kind": "month", "month": "2026-11", "part": null } }] }
+{
+  "items": [
+    {
+      "storeItemSlug": "lotus-vinyl",
+      "displayPrice": "€28.00",
+      "shipEstimate": { "kind": "month", "month": "2026-11", "part": null }
+    }
+  ]
+}
 ```
 
 Items are sorted by slug. The identity is the SHA-256 of the canonical JSON. A new pure function in `application/commerce` derives the projection from the `readStoreListingPrices(..., 'preorders')` output. The filter is `presentationState === 'ready' && availabilityState === 'stocked' && preorder`, which is the rule the Home showcase applies today. The listing read and the projection therefore cannot disagree.
