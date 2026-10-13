@@ -854,6 +854,195 @@
           "deviceTypes"
         ]
       },
+      "StoreStats": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d"
+            ]
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "currencyCode": {
+            "type": "string",
+            "enum": [
+              "EUR"
+            ]
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "checkoutsStarted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "paidOrders": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "itemsSold": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "paidTotalMinor": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "deliveryMinor": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "checkoutsStarted",
+              "paidOrders",
+              "itemsSold",
+              "paidTotalMinor",
+              "deliveryMinor"
+            ]
+          },
+          "previous": {
+            "type": "object",
+            "properties": {
+              "checkoutsStarted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "paidOrders": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "itemsSold": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "paidTotalMinor": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "deliveryMinor": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "checkoutsStarted",
+              "paidOrders",
+              "itemsSold",
+              "paidTotalMinor",
+              "deliveryMinor"
+            ]
+          }
+        },
+        "required": [
+          "range",
+          "generatedAt",
+          "currencyCode",
+          "current",
+          "previous"
+        ]
+      },
+      "SearchStats": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d"
+            ]
+          },
+          "generatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_configured"
+            ]
+          },
+          "latestDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "clicks": {
+                "type": "number",
+                "minimum": 0
+              },
+              "impressions": {
+                "type": "number",
+                "minimum": 0
+              },
+              "position": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "clicks",
+              "impressions",
+              "position"
+            ]
+          },
+          "topQueries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                },
+                "clicks": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "impressions": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "position": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "query",
+                "clicks",
+                "impressions",
+                "position"
+              ]
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "range",
+          "generatedAt",
+          "status",
+          "latestDate",
+          "totals",
+          "topQueries"
+        ]
+      },
       "InventoryPage": {
         "type": "object",
         "properties": {
@@ -2729,6 +2918,136 @@
           },
           "503": {
             "description": "Analytics or operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/store-stats": {
+      "get": {
+        "operationId": "readStoreStats",
+        "tags": [
+          "Internal analytics"
+        ],
+        "summary": "Read started checkouts and paid order figures for two UTC periods.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d"
+              ]
+            },
+            "required": true,
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authoritative store figures.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Range must be 7d or 30d.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Store figures or operator authentication are temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/search-stats": {
+      "get": {
+        "operationId": "readSearchStats",
+        "tags": [
+          "Internal analytics"
+        ],
+        "summary": "Read Google search totals and top queries.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d"
+              ]
+            },
+            "required": true,
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search snapshot or not configured.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Range must be 7d or 30d.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Search figures or operator authentication are temporarily unavailable.",
             "content": {
               "application/problem+json": {
                 "schema": {

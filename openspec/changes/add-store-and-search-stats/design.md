@@ -24,6 +24,10 @@ Both routes follow `GET /api/internal/analytics` (see `add-site-analytics` desig
 
 `GET /api/internal/store-stats?range=7d|30d` reads D1 through the orders module's repository seam. Aggregate queries read only the two windows' rows. No cache is used, because D1 is the authority and the reads are small.
 
+Implementation uses the existing `orders` root export and `internal-order-services.ts`, with one parameterized aggregate per window in `PrismaOrderStateRepository`. The creation-date and order-line indexes already exist; migration `0034_checkout_order_paid_at_index.sql` adds the missing `paidAt` index so paid-order reads do not scan historical orders. No order fields or records change. The query plan is checked in workerd; each request makes two aggregate queries, with line reads only for the matching paid orders. The existing module entrypoints and allowed dependencies remain sufficient, so no boundary metadata change is needed.
+
+`start-checkout.ts` creates the Stripe session before `bindCheckoutSession` or `recoverCheckoutSession` writes its ID. Sessionless holds keep a null ID. Recovery also writes an ID only when the provider has returned an existing session, including an ambiguous-creation recovery. `checkoutSessionId IS NOT NULL` therefore marks a checkout that reached Stripe; a sessionless stock hold is excluded.
+
 ```typescript
 type StoreStats = {
   range: '7d' | '30d';
@@ -58,7 +62,11 @@ type StoreFigures = {
 
   Search Console days follow Pacific Time, and the newest days are provisional.
 
+  All three queries use the selected UTC window's `YYYY-MM-DD` start and current date labels; Google interprets those inclusive labels in Pacific Time. The date query requests up to 30 rows, enough for either range, and selects the greatest returned date rather than treating the requested end date as proof of data.
+
 - **Cache.** One hour in the Workers Cache API, keyed by environment, site, UTC day and range.
+
+  The named cache is `search-stats-v1`. Only successful data snapshots are cached, preserving `generatedAt`; each caller receives a fresh request ID and `no-store`. Missing configuration and failures are never cached. Token reuse is isolate-local, keyed by environment and a SHA-256 credential digest, and stops 60 seconds before expiry. Authentication failures discard the token. All upstream requests use `redirect: "manual"`, a shared 10-second deadline including body reads, a 128 KiB cap per response and no automatic retry. OAuth 400/401/403 and query 401/403 use `upstream_auth`; other HTTP/network failures use `upstream_http`; malformed or oversized responses use `upstream_invalid_shape`. PRD's site var is committed to Wrangler so releases preserve it; Local/mock/mock-api/UAT stay blank.
 
 ```typescript
 type SearchStats = {

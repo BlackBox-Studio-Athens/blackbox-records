@@ -1,9 +1,6 @@
-import {
-  readCheckoutOrder,
-  readRecentCheckoutOrders,
-  type PaidOrderDeliverySummary,
-  type ReadRecentCheckoutOrdersQuery,
-} from './';
+import { readCheckoutOrder, isAwaitingStock } from './read-checkout-order';
+import { readRecentCheckoutOrders, type ReadRecentCheckoutOrdersQuery } from './read-recent-checkout-orders';
+import type { PaidOrderDeliverySummary } from './paid-order-delivery';
 import type { CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
 import type { AppBindings } from '../../../platform/env';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
@@ -12,7 +9,6 @@ import {
   PrismaOrderStateRepository,
   PrismaStockRepository,
 } from '../../../infrastructure/persistence/prisma';
-import { isAwaitingStock } from './read-checkout-order';
 
 export type InternalOrderRead = {
   awaitingStock: boolean;
@@ -28,6 +24,7 @@ export function createInternalOrderServices(bindings: AppBindings) {
 
   return {
     disconnect: async () => prisma.$disconnect(),
+    readStoreFigures: (start: Date, end: Date) => orders.readStoreFigures(start, end),
     readCheckoutOrder: async (checkoutSessionId: string): Promise<InternalOrderRead | null> => {
       const order = await readCheckoutOrder(orders, checkoutSessionId);
       if (!order) return null;
@@ -50,4 +47,21 @@ export function createInternalOrderServices(bindings: AppBindings) {
       }));
     },
   };
+}
+
+export async function readStoreStats(bindings: AppBindings, range: '7d' | '30d', now: Date) {
+  const days = range === '7d' ? 7 : 30;
+  const start = new Date(now);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - days + 1);
+  const previousStart = new Date(start);
+  previousStart.setUTCDate(previousStart.getUTCDate() - days);
+  const services = createInternalOrderServices(bindings);
+  try {
+    const current = await services.readStoreFigures(start, now);
+    const previous = await services.readStoreFigures(previousStart, start);
+    return { range, generatedAt: now.toISOString(), currencyCode: 'EUR' as const, current, previous };
+  } finally {
+    await services.disconnect();
+  }
 }

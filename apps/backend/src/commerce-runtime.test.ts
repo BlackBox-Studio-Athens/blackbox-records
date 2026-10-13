@@ -50,6 +50,8 @@ describe('free-tier commerce execution', () => {
       CLOUDFLARE_ANALYTICS_API_TOKEN: 'test-analytics-A',
       CLOUDFLARE_ACCOUNT_ID: 'test-account-A',
       CLOUDFLARE_WEB_ANALYTICS_SITE_TAG: 'test-site-A',
+      GOOGLE_SEARCH_CONSOLE_SITE: 'sc-domain:test-site-A.example',
+      GOOGLE_SEARCH_CONSOLE_CREDENTIALS: 'generated-test-credentials-A',
     } as const;
     const b = {
       PRODUCT_ENVIRONMENT: 'PRD',
@@ -82,6 +84,10 @@ describe('free-tier commerce execution', () => {
         CLOUDFLARE_ACCOUNT_ID: 'CLOUDFLARE_ACCOUNT_ID' in config ? config.CLOUDFLARE_ACCOUNT_ID : undefined,
         CLOUDFLARE_WEB_ANALYTICS_SITE_TAG:
           'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG' in config ? config.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG : undefined,
+        GOOGLE_SEARCH_CONSOLE_SITE:
+          'GOOGLE_SEARCH_CONSOLE_SITE' in config ? config.GOOGLE_SEARCH_CONSOLE_SITE : undefined,
+        GOOGLE_SEARCH_CONSOLE_CREDENTIALS:
+          'GOOGLE_SEARCH_CONSOLE_CREDENTIALS' in config ? config.GOOGLE_SEARCH_CONSOLE_CREDENTIALS : undefined,
       });
       expect(received.COMMERCE_DB).toBe(env.COMMERCE_DB);
       expect(received.FLAGS).toBe(env.FLAGS);

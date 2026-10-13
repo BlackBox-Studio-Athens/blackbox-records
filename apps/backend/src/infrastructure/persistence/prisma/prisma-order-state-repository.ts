@@ -188,6 +188,33 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
 export class PrismaOrderStateRepository implements OrderStateRepository {
   public constructor(private readonly prisma: PrismaOrderStateClient) {}
 
+  public async readStoreFigures(start: Date, end: Date) {
+    const [figures] = await this.prisma.$queryRawUnsafe<
+      Array<{
+        checkoutsStarted: number;
+        paidOrders: number;
+        itemsSold: number;
+        paidTotalMinor: number;
+        deliveryMinor: number;
+      }>
+    >(
+      `SELECT
+        (SELECT COUNT(*) FROM "CheckoutOrder"
+          WHERE "createdAt" >= ? AND "createdAt" < ? AND "checkoutSessionId" IS NOT NULL) AS "checkoutsStarted",
+        COUNT(*) AS "paidOrders",
+        COALESCE(SUM((SELECT SUM("quantity") FROM "CheckoutOrderLine" WHERE "orderId" = paid."id")), 0) AS "itemsSold",
+        COALESCE(SUM("amountTotalMinor"), 0) AS "paidTotalMinor",
+        COALESCE(SUM("acceptedDeliveryAmountMinor"), 0) AS "deliveryMinor"
+      FROM "CheckoutOrder" AS paid WHERE "paidAt" >= ? AND "paidAt" < ?`,
+      start,
+      end,
+      start,
+      end,
+    );
+    if (!figures) throw new Error('Order aggregate returned no row.');
+    return figures;
+  }
+
   public async createPending(input: CreatePendingCheckoutOrderInput): Promise<CheckoutOrderRecord> {
     const createdAt = input.createdAt ?? new Date();
     const record = await this.prisma.checkoutOrder.create({

@@ -31,6 +31,39 @@ const wranglerConfigText = `
 const requiredResendSecrets = ['RESEND_API_KEY', 'RESEND_NEWSLETTER_TOPIC_ID'];
 
 describe('runtime config verification', () => {
+  it('keeps Search Console optional and reports only binding presence', () => {
+    const names = ['GOOGLE_SEARCH_CONSOLE_CREDENTIALS', 'GOOGLE_SEARCH_CONSOLE_SITE'];
+    for (const secretNames of [requiredResendSecrets, null]) {
+      const absent = verifyRuntimeConfig({ environment: 'PRD', secretNames, wranglerConfigText });
+      expect(absent.categories.filter((category) => names.includes(category.name))).toEqual(
+        names.map((name) => expect.objectContaining({ name, status: 'not_applicable' })),
+      );
+    }
+    const configured = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: [...requiredResendSecrets, 'GOOGLE_SEARCH_CONSOLE_CREDENTIALS'],
+      wranglerConfigText: wranglerConfigText.replace(
+        '"PRODUCT_ENVIRONMENT": "PRD",',
+        '"PRODUCT_ENVIRONMENT": "PRD", "GOOGLE_SEARCH_CONSOLE_SITE": "sc-domain:private.example",',
+      ),
+    });
+    expect(configured.categories.filter((category) => names.includes(category.name))).toEqual(
+      names.map((name) => expect.objectContaining({ name, status: 'present' })),
+    );
+    expect(configured.issues).toEqual([]);
+    expect(formatRuntimeConfigVerificationReport(configured)).not.toContain('private.example');
+    const blank = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText: wranglerConfigText.replace(
+        '"PRODUCT_ENVIRONMENT": "PRD",',
+        '"PRODUCT_ENVIRONMENT": "PRD", "GOOGLE_SEARCH_CONSOLE_SITE": "   ",',
+      ),
+    });
+    expect(blank.categories.filter((category) => names.includes(category.name))).toEqual(
+      names.map((name) => expect.objectContaining({ name, status: 'not_applicable' })),
+    );
+  });
   it('keeps absent analytics optional and reports configured bindings without values', () => {
     const disabled = verifyRuntimeConfig({
       environment: 'PRD',

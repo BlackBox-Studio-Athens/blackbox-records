@@ -232,6 +232,7 @@ model CheckoutOrder {
   @@index([idempotencyEnvironment, idempotencyKeyDigest])
   @@index([status, createdAt])
   @@index([createdAt, id])
+  @@index([paidAt])
 }
 
 model CheckoutOrderLine {

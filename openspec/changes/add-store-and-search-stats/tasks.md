@@ -4,13 +4,17 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 ## 1. Backend reads
 
-- [ ] 1.1 [Claude or Codex] Add `GET /api/internal/store-stats?range=7d|30d` to the [design](design.md#store-stats) contract, reading D1 through the orders module. Worker tests cover window edges, the previous period, every order status, null amounts, quantity sums, invalid range and Access rejection.
-- [ ] 1.2 [Claude or Codex] Add `GET /api/internal/search-stats?range=7d|30d` to the [design](design.md#search-stats) contract. Cover WebCrypto JWT signing, token reuse, the one-hour cache and safe failures. Register `GOOGLE_SEARCH_CONSOLE_SITE` and `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` in runtime-config verification. Worker tests use a generated test key and native workerd Requests, and prove no key, JWT or token appears in responses or logs.
-- [ ] 1.3 [Claude or Codex] Regenerate the internal contracts (`pnpm generate:api`); update `docs/worker-observability.md` for the new events and module-boundary metadata if entrypoints change.
+- [x] 1.1 [Claude or Codex] Add `GET /api/internal/store-stats?range=7d|30d` to the [design](design.md#store-stats) contract, reading D1 through the orders module. Worker tests cover window edges, the previous period, every order status, null amounts, quantity sums, invalid range and Access rejection.
+- [x] 1.2 [Claude or Codex] Add `GET /api/internal/search-stats?range=7d|30d` to the [design](design.md#search-stats) contract. Cover WebCrypto JWT signing, token reuse, the one-hour cache and safe failures. Register `GOOGLE_SEARCH_CONSOLE_SITE` and `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` in runtime-config verification. Worker tests use a generated test key and native workerd Requests, and prove no key, JWT or token appears in responses or logs.
+- [x] 1.3 [Claude or Codex] Regenerate the internal contracts (`pnpm generate:api`); update `docs/worker-observability.md` for the new events and module-boundary metadata if entrypoints change.
+
+Backend completion evidence: [validation.md](validation.md). The existing orders root and HTTP entrypoints remain sufficient; no module-boundary metadata changed.
 
 ## 2. Google access
 
 - [ ] 2.1 [Owner] Confirm or create a Google Cloud service account with the Search Console API enabled and no project roles. Add it to `sc-domain:blackboxrecordsathens.com` as a Restricted user, store its JSON key as the PRD Worker secret `GOOGLE_SEARCH_CONSOLE_CREDENTIALS`, then delete the downloaded key.
+
+Read-only inspection and the owner's decision to leave MFA unchanged are recorded in [owner-setup.md](owner-setup.md). Google Cloud access is blocked, so this task remains incomplete.
 
 ## 3. Staff Stats
 

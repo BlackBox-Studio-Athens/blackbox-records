@@ -45,7 +45,7 @@ const internalContractModules = [
     '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
     '/api/internal/order-withdrawals',
   ],
-  ['/api/internal/analytics'],
+  ['/api/internal/analytics', '/api/internal/store-stats', '/api/internal/search-stats'],
   [
     '/api/internal/inventory',
     '/api/internal/variants',

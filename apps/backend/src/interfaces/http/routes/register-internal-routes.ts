@@ -9,6 +9,8 @@ import { registerInternalPublicationRoutes } from './register-internal-publicati
 import { registerInternalWithdrawalRoutes } from './register-withdrawal-routes';
 import { registerInternalStockRoutes } from '../stock/register-internal-stock-routes';
 import { registerInternalAnalyticsRoutes } from './register-internal-analytics-routes';
+import { registerInternalStoreStatsRoutes } from './register-internal-store-stats-routes';
+import { registerInternalSearchStatsRoutes } from './register-internal-search-stats-routes';
 
 export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocument: () => object): void {
   app.use('/api/internal/*', operatorAccessMiddleware());
@@ -19,6 +21,8 @@ export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocume
     apiLink({ href: '/api/internal/variants', rel: 'variants' }),
     apiLink({ href: '/api/internal/orders', rel: 'orders' }),
     apiLink({ href: '/api/internal/analytics', rel: 'analytics' }),
+    apiLink({ href: '/api/internal/store-stats', rel: 'store-stats' }),
+    apiLink({ href: '/api/internal/search-stats', rel: 'search-stats' }),
     apiLink({ href: '/api/internal/order-withdrawals', rel: 'order-withdrawals' }),
   ];
 
@@ -32,6 +36,8 @@ export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocume
   registerInternalOrderRoutes(app);
   registerInternalWithdrawalRoutes(app);
   registerInternalAnalyticsRoutes(app);
+  registerInternalStoreStatsRoutes(app);
+  registerInternalSearchStatsRoutes(app);
   registerInternalStockRoutes(app);
   registerInternalPriceRoutes(app);
   registerInternalSetupRoutes(app);

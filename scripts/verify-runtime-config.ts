@@ -27,6 +27,8 @@ export type RuntimeConfigCategory = {
     | 'CLOUDFLARE_ANALYTICS_API_TOKEN'
     | 'CLOUDFLARE_ACCOUNT_ID'
     | 'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG'
+    | 'GOOGLE_SEARCH_CONSOLE_SITE'
+    | 'GOOGLE_SEARCH_CONSOLE_CREDENTIALS'
     | 'COMMERCE_DB'
     | 'FLAGS'
     | 'LOCAL_OPERATOR_EMAIL'
@@ -150,6 +152,7 @@ export function verifyRuntimeConfig(input: {
     classifyWranglerTextPresence('COMMERCE_DB', environmentBlock, /"binding"\s*:\s*"COMMERCE_DB"/),
     ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
     ...classifyAnalyticsRuntimeConfig(environmentBlock, input.secretNames),
+    ...classifySearchStatsRuntimeConfig(environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
     classifyPrdLaunchApproval(productEnvironmentProfile),
     classifyPrdCatalogCronPresence(productEnvironmentProfile, environmentBlock),
@@ -299,7 +302,11 @@ function classifyWorkerConfigPresence(
 function classifySecretPresence(
   name: Extract<
     RuntimeConfigCategory['name'],
-    'CLOUDFLARE_ANALYTICS_API_TOKEN' | 'RESEND_API_KEY' | 'STRIPE_SECRET_KEY' | 'STRIPE_WEBHOOK_SECRET'
+    | 'CLOUDFLARE_ANALYTICS_API_TOKEN'
+    | 'GOOGLE_SEARCH_CONSOLE_CREDENTIALS'
+    | 'RESEND_API_KEY'
+    | 'STRIPE_SECRET_KEY'
+    | 'STRIPE_WEBHOOK_SECRET'
   >,
   secretNames: readonly string[] | null,
 ): RuntimeConfigCategory {
@@ -334,6 +341,28 @@ function classifyAnalyticsRuntimeConfig(
           ...category,
           status: 'not_applicable',
           detail: `Optional analytics ${category.status}; the endpoint returns not_configured until all three bindings are set.`,
+        },
+  );
+}
+
+function classifySearchStatsRuntimeConfig(
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
+): RuntimeConfigCategory[] {
+  return [
+    classifySecretPresence('GOOGLE_SEARCH_CONSOLE_CREDENTIALS', secretNames),
+    classifyWranglerTextPresence(
+      'GOOGLE_SEARCH_CONSOLE_SITE',
+      environmentBlock,
+      /"GOOGLE_SEARCH_CONSOLE_SITE"\s*:\s*"[^"\s][^"]*"/,
+    ),
+  ].map((category) =>
+    category.status === 'present'
+      ? category
+      : {
+          ...category,
+          status: 'not_applicable' as const,
+          detail: `Optional search ${category.status}; the endpoint returns not_configured until both bindings are set.`,
         },
   );
 }

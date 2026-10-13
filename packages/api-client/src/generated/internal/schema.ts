@@ -148,6 +148,40 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/search-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Google search totals and top queries. */
+        get: operations["readSearchStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internal/store-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read started checkouts and paid order figures for two UTC periods. */
+        get: operations["readStoreStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/variants": {
         parameters: {
             query?: never;
@@ -770,6 +804,27 @@ export type components = {
             stock: components["schemas"]["InternalStockState"];
             variantId: string;
         };
+        SearchStats: {
+            /** Format: date-time */
+            generatedAt: string | null;
+            /** Format: date */
+            latestDate: string | null;
+            /** @enum {string} */
+            range: "7d" | "30d";
+            /** @enum {string} */
+            status: "ok" | "not_configured";
+            topQueries: {
+                clicks: number;
+                impressions: number;
+                position: number;
+                query: string;
+            }[];
+            totals: {
+                clicks: number;
+                impressions: number;
+                position: number | null;
+            };
+        };
         SetShowLowStockBody: {
             expectedRevision: number | null;
             showLowStock: boolean;
@@ -828,6 +883,28 @@ export type components = {
                 pageViews: number;
                 visits: number;
             }[];
+        };
+        StoreStats: {
+            /** @enum {string} */
+            currencyCode: "EUR";
+            current: {
+                checkoutsStarted: number;
+                deliveryMinor: number;
+                itemsSold: number;
+                paidOrders: number;
+                paidTotalMinor: number;
+            };
+            /** Format: date-time */
+            generatedAt: string;
+            previous: {
+                checkoutsStarted: number;
+                deliveryMinor: number;
+                itemsSold: number;
+                paidOrders: number;
+                paidTotalMinor: number;
+            };
+            /** @enum {string} */
+            range: "7d" | "30d";
         };
     };
     responses: never;
@@ -1316,6 +1393,104 @@ export interface operations {
                 };
             };
             /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readSearchStats: {
+        parameters: {
+            query: {
+                range: "7d" | "30d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Search snapshot or not configured. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchStats"];
+                };
+            };
+            /** @description Range must be 7d or 30d. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Search figures or operator authentication are temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readStoreStats: {
+        parameters: {
+            query: {
+                range: "7d" | "30d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authoritative store figures. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreStats"];
+                };
+            };
+            /** @description Range must be 7d or 30d. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Store figures or operator authentication are temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;

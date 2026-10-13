@@ -21,6 +21,7 @@ Stats shows site visits only. Label members also want to see in one place whethe
 - **Backend:** two internal routes, one PRD var (`GOOGLE_SEARCH_CONSOLE_SITE`), one PRD secret (`GOOGLE_SEARCH_CONSOLE_CREDENTIALS`) and regenerated internal contracts.
 - **Owner setup:** a Google Cloud service account with Search Console API access, added to the Search Console property as a Restricted user.
 - **Staff:** the Stats page and its client.
-- **No changes to:** shopper-facing code, D1 schema, cookies or dependencies.
+- **Persistence:** one additive `paidAt` index keeps paid-order aggregation within its window; no D1 fields, records or shopper writes change.
+- **No changes to:** shopper-facing code, cookies or dependencies.
 
 Cloudflare stays on Free.
