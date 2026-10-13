@@ -76,6 +76,8 @@ jobs:
         with:
           browsers: chromium firefox
       - name: Build Local production fixture for end-to-end tests
+        env:
+          BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
         run: pnpm build:web
       - name: Run the whole end-to-end suite
         env:
@@ -109,6 +111,8 @@ jobs:
         with:
           browsers: webkit
       - name: Build Local production fixture for end-to-end tests
+        env:
+          BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
         run: pnpm build:web
       - name: Run the WebKit phone project
         env:

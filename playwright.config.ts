@@ -36,7 +36,8 @@ export default defineConfig({
   reporter: [['list'], ['json', { outputFile: `${artifacts}/summary.json` }]],
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   webServer: {
-    env: { BLACKBOX_E2E: '1' },
+    // Home and Releases render open pre-orders from this projection, as the hosted renderer does from commerce.
+    env: { BLACKBOX_E2E: '1', BLACKBOX_PREORDER_PROJECTION: path.join(__dirname, 'e2e', 'preorder-projection.json') },
     // Reuses whatever already serves this checkout's URL (site:dev:bg or the full stack); otherwise runs astro dev for
     // this run only. Plain node, not `pnpm site:dev`: pnpm runs its script in another process group, which Playwright's
     // teardown does not stop, so on Linux the run never exits after the last test.

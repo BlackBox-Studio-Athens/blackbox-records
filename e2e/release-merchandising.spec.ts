@@ -1,5 +1,7 @@
 import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
+// The e2e build renders Releases from e2e/preorder-projection.json: Disintegration vinyl is an open pre-order.
+
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
 
@@ -28,7 +30,7 @@ test('release backdrop dismissal restores mouse-wheel scrolling', async ({ page 
   }
 });
 
-test('Releases keeps SSR roles and square artwork while offers resolve on direct and shell entry', async ({
+test('Releases keeps SSR roles, the projected pre-order and square artwork while offers resolve on direct and shell entry', async ({
   page,
 }, testInfo) => {
   let respond: (() => Promise<void>) | undefined;
@@ -53,6 +55,15 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
     ['anarchotribal', 'supporting'],
     ['caregivers', 'catalog'],
   ]);
+  // The projected pre-order is in the HTML response; the other editions stay neutral until the offer read.
+  const lead = html.slice(
+    html.indexOf('data-release-id="disintegration"'),
+    html.indexOf('data-release-id="anarchotribal"'),
+  );
+  expect(lead).toContain('data-release-projected=');
+  expect(lead).toContain('Pre-order vinyl');
+  expect(lead).toContain('€28.00');
+  expect(html.match(/data-release-projected=/g)).toHaveLength(1);
   await page.goto('releases/');
   await waitForShell(page);
   const roles = () =>
@@ -63,8 +74,12 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
       );
   await expect.poll(() => Boolean(respond)).toBe(true);
   expect(await roles()).toEqual(serverRoles);
-  await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  await expect(page.locator('.purchase-action')).toHaveCount(0);
   await respond!();
+  await expect(page.locator('[data-release-id="caregivers"] .purchase-action')).toHaveCount(1);
   await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
     'Pre-order vinyl',
   );
@@ -105,8 +120,12 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Releases', exact: true }).click();
   await expect.poll(() => Boolean(respond)).toBe(true);
   expect(await roles()).toEqual(serverRoles);
-  await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  await expect(page.locator('.purchase-action')).toHaveCount(0);
   await respond!();
+  await expect(page.locator('[data-release-id="caregivers"] .purchase-action')).toHaveCount(1);
   await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
     'Pre-order vinyl',
   );
@@ -611,7 +630,7 @@ test('Releases keeps native destinations distinct from inert copy and status', a
 });
 
 for (const result of ['unavailable', 'failed'] as const) {
-  test(`cached Releases returns neutral before a ${result} fresh offer read`, async ({ page }) => {
+  test(`cached Releases returns its rendered pre-order before a ${result} fresh offer read`, async ({ page }) => {
     let freshRead = false;
     let respond: (() => Promise<void>) | undefined;
     await page.route('**/api/store/listing-prices*', (route) => {
@@ -663,10 +682,11 @@ for (const result of ['unavailable', 'failed'] as const) {
     freshRead = true;
     await page.goBack();
     await expect.poll(() => Boolean(respond)).toBe(true);
+    // The snapshot restores what the HTML rendered: the projected pre-order, without the browser's Buy enrichment.
     await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
-      'Vinyl edition',
+      'Pre-order vinyl',
     );
-    await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+    await expect(page.locator('.purchase-action')).toHaveCount(0);
     expect(
       await page
         .locator('[data-release-id]')
@@ -676,14 +696,20 @@ for (const result of ['unavailable', 'failed'] as const) {
       () => (window as Window & { restoredReleaseActions?: string[] }).restoredReleaseActions,
     );
     expect(inserted).toBeDefined();
-    expect(inserted?.some((action) => /^(Buy|Pre-order) /.test(action))).toBe(false);
+    expect(inserted?.some((action) => /^Buy /.test(action))).toBe(false);
+    expect(inserted).toContain('Pre-order vinyl');
     await respond!();
     const badges = page.locator('[data-release-id="disintegration"] [data-release-badges]');
-    if (result === 'failed') await expect(badges).not.toContainText('Vinyl');
-    else await expect(badges.locator('[data-availability-state="sold_out"]')).toHaveText('Vinyl Sold Out');
-    await expect(page.locator('.purchase-action, .preorder-action, .preorder-badge')).toHaveCount(0);
-    await expect(page.locator('[data-release-terms]:not([inert])')).toHaveCount(0);
-    if (result === 'failed') await expect(page.locator('[data-release-price]:visible')).toHaveCount(0);
+    if (result === 'failed') {
+      // A failed read keeps the rendered pre-order; buying still reaches the authoritative Store Item offer.
+      await expect(page.locator('[data-release-id="disintegration"] .preorder-action')).toHaveText('Pre-order vinyl');
+      await expect(page.locator('.purchase-action')).toHaveCount(0);
+      await expect(page.locator('[data-release-id="disintegration"] [data-release-price]')).toHaveText('€28.00');
+    } else {
+      await expect(badges.locator('[data-availability-state="sold_out"]')).toHaveText('Vinyl Sold Out');
+      await expect(page.locator('.purchase-action, .preorder-action, .preorder-badge')).toHaveCount(0);
+      await expect(page.locator('[data-release-terms]:not([inert])')).toHaveCount(0);
+    }
     expect(await sentinelIntact(page)).toBe(true);
   });
 }
