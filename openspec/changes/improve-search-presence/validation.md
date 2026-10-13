@@ -1,5 +1,13 @@
 # Search presence acceptance
 
+## Organization policy fallback — 2026-10-13
+
+The owner authorized this release's push and PRD code promotion, preserving launch controls. Work began on clean primary `main` at `70b22e08`, retaining the existing scroll fix `5cc3b112` and Stats proposal unchanged; `pnpm openspec:guard` passed.
+
+`createOrganizationStructuredData` preserves all existing Organization facts and publishes the real Greece-only return policy with a full-terms link for the sealed-recording exception. Shipping uses shared `deliveryQuantityBands`, not copied tariffs, and the Google-supported [collection-point fulfillment type](https://developers.google.com/search/docs/appearance/structured-data/shipping-policy). No handling or transit speed is invented. SiteLayout uses `serializeStructuredData`, escaping `<` in content that could close an inline script. The existing Organization type is retained.
+
+Focused `pnpm test apps/web/src/platform/lib/structured-data.test.ts` passed all selected affected projects. The regression asserts exact return-policy fields, shared item-count/rate bands, preserved facts and safe serialized output. `pnpm validate` passed 27 selected tasks in Local mode: [summary](../../../.codex-artifacts/validation/2026-10-13T12-31-57-339Z-45920-dffa93/summary.json). Strict OpenSpec validation passed. Selected acceptance: structured data/platform integration and repository checks; visible shell/player behavior, commerce state and publication are unchanged. Final source-bound local checks and hosted Home validator results are recorded below after release. Task 5.2's missing genuine sold-out case is unchanged.
+
 Work is on canonical main in `C:/Users/SVall/WebstormProjects/blackbox-records`, uncommitted above `8d4796413e2e135934cfc9a3037d1505e3f49f24`. The OpenSpec guard passed before edits. Product Environment: Local only.
 
 ## Acceptance rows

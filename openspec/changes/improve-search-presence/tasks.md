@@ -29,10 +29,12 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 - [x] 3.3 [Claude or Codex] Correct the MusicAlbum label relationship to nested MusicRelease, omit synthetic SKU from Product JSON-LD, and verify stock/pre-order/no-price rules with focused tests. All 12 affected test projects passed; see [validation.md](validation.md#structured-data-corrections--2026-10-13). The authorized correction release also passes both external validators for five genuine PRD URL cases; the sold-out case remains part of 5.2.
 
+- [x] 3.4 [Claude or Codex] Add the Organization shipping/returns fallback from the published terms and shared delivery quantity bands, serialize it safely, and test exact policies and escaping. See [validation](validation.md#organization-policy-fallback--2026-10-13); hosted Home validators follow promotion.
+
 ## 4. Owner
 
-- [ ] 4.1 [Owner] After `add-site-analytics` 1.1, set Greece-only shipping and the 14-day return policy in Search Console's shipping and returns settings. If they are not offered, tell Claude or Codex to add them to the `Organization` data instead.
-  - 2026-10-13: the verified Domain property's Settings page offers no Shipping and returns controls. No policy was saved; task remains unchecked. Recorded the dashboard evidence and real published terms for the Organization structured-data follow-up in [validation](validation.md#owner-shipping-and-returns-dashboard-check--2026-10-13).
+- [x] 4.1 [Owner] After `add-site-analytics` 1.1, set Greece-only shipping and the 14-day return policy in Search Console's shipping and returns settings. If they are not offered, tell Claude or Codex to add them to the `Organization` data instead.
+  - 2026-10-13: Search Console offered no Shipping and returns settings. The owner authorized the Organization fallback, implemented by task 3.4; no dashboard policy was changed. [Dashboard evidence](validation.md#owner-shipping-and-returns-dashboard-check--2026-10-13).
 - [ ] 4.2 [Owner] Create a Google Business Profile for BlackBox Records with the site URL and the public Athens location details you choose to show.
 - [ ] 4.3 [Owner] Point the website link on Bandcamp, Instagram, Facebook, Discogs and Spotify for Artists to the apex, and ask each label artist to link the label or their release page.
 - [ ] 4.4 [Owner] Optional, after 5.2 passes: enable Merchant Center free listings from the site's structured data.

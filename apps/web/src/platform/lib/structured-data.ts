@@ -1,4 +1,4 @@
-import type { PublicApiComponents } from '@blackbox/api-client/public';
+import { deliveryQuantityBands, type PublicApiComponents } from '@blackbox/api-client/public';
 
 type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 
@@ -42,6 +42,53 @@ export function serializeStructuredData(entity: Entity) {
 
 export function createWebSiteStructuredData(name: string, url: string): Entity {
   return { '@context': context, '@type': 'WebSite', name, url };
+}
+
+export function createOrganizationStructuredData(
+  organization: {
+    name: string;
+    url: string;
+    logo: string;
+    description: string;
+    foundingDate: string;
+    address: { addressLocality: string; addressCountry: string };
+    sameAs: string[];
+  },
+  termsUrl: string,
+): Entity {
+  return {
+    '@context': context,
+    '@type': 'Organization',
+    ...organization,
+    address: { '@type': 'PostalAddress', ...organization.address },
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'GR',
+      returnPolicyCountry: 'GR',
+      returnPolicyCategory: `${context}/MerchantReturnFiniteReturnWindow`,
+      merchantReturnDays: 14,
+      returnMethod: `${context}/ReturnByMail`,
+      refundType: `${context}/FullRefund`,
+      customerRemorseReturnFees: `${context}/ReturnFeesCustomerResponsibility`,
+      itemDefectReturnFees: `${context}/FreeReturn`,
+      // The full terms carry the sealed-recording exception, which schema.org cannot express.
+      merchantReturnLink: termsUrl,
+    },
+    hasShippingService: {
+      '@type': 'ShippingService',
+      fulfillmentType: `${context}/FulfillmentTypeCollectionPoint`,
+      shippingConditions: deliveryQuantityBands.map((band, index) => ({
+        '@type': 'ShippingConditions',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'GR' },
+        numItems: {
+          '@type': 'QuantitativeValue',
+          minValue: index === 0 ? 1 : deliveryQuantityBands[index - 1]!.maxUnits! + 1,
+          ...(band.maxUnits === null ? {} : { maxValue: band.maxUnits }),
+        },
+        shippingRate: { '@type': 'MonetaryAmount', currency: 'EUR', value: band.amountMinor / 100 },
+      })),
+    },
+  };
 }
 
 /** Null unless the offer shows a fixed price, so markup never disagrees with the page. */

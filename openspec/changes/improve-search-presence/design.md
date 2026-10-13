@@ -31,7 +31,7 @@ The Store Item price and availability are read in the browser by `StoreOfferPric
   - `PreOrder` with `availabilityStarts` set to the release date for pre-orders
 - No script when the page shows no price or the offer read fails, so markup never disagrees with the page. The Worker returns no price for any offer that is not ready (sold out, Coming soon, Repressing, unavailable, catalog drift), and a pay-what-you-want price shows no amount, so these publish nothing. An `OutOfStock` offer would need a price the page does not show.
 
-Shipping (Greece only) and the 14-day withdrawal policy are set once in Search Console's shipping and returns settings (task 4.1) rather than repeated per item. If Search Console does not offer those settings for this property, `hasMerchantReturnPolicy` and `shippingDetails` move to the `Organization` data.
+Search Console offers no shipping and returns settings for the verified property (task 4.1). The Organization fallback (task 3.4) therefore publishes `hasMerchantReturnPolicy` and `hasShippingService`, rather than repeating policies per item. The Greece-only 14-day mail-return policy distinguishes buyer-paid change-of-mind returns from free defect returns and links to the absolute `/terms/` URL for the sealed-recording exception. BOX NOW collection-point shipping uses one `ShippingConditions` per shared `deliveryQuantityBands` band, with item-count bounds and EUR charges. No handling or transit speed is asserted because the published terms provide none. Google's [shipping-policy documentation](https://developers.google.com/search/docs/appearance/structured-data/shipping-policy) supports `FulfillmentTypeCollectionPoint` for customer pickup.
 
 ## `WebSite` and music entities
 
@@ -44,7 +44,7 @@ All of these are server-rendered from accepted content.
   - `track` from the tracklist when present
 - **Artist pages:** `MusicGroup` with `name`, `url`, `image`, `genre` and `sameAs` from the artist's links.
 
-One helper module in `apps/web` builds these objects, and each page passes its own data. `Organization` stays in `SiteLayout.astro`.
+One helper module in `apps/web` builds these objects, and each page passes its own data. `SiteLayout.astro` passes the existing Organization facts to `createOrganizationStructuredData` and emits them through `serializeStructuredData`, which escapes `<` in inline JSON.
 
 `recordLabel` belongs on `MusicRelease`, not directly on `MusicAlbum` ([Schema.org](https://schema.org/recordLabel)). The nested release preserves the label credit without asserting an unsupported album property. Ratings, reviews, shipping and returns are not invented to silence optional validator warnings.
 

@@ -17,7 +17,11 @@ import {
 } from '@/platform/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';
-import { createWebSiteStructuredData, serializeStructuredData } from '@/platform/lib/structured-data';
+import {
+  createOrganizationStructuredData,
+  createWebSiteStructuredData,
+  serializeStructuredData,
+} from '@/platform/lib/structured-data';
 
 interface Props {
   pageTitle?: string;
@@ -147,21 +151,23 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
     <script
       is:inline
       type="application/ld+json"
-      set:html={JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Organization',
-        name: orgName,
-        url: orgUrl,
-        logo: orgLogo,
-        description: siteConfig.description,
-        foundingDate: String(labelSettings.established_year),
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: labelSettings.location.locality,
-          addressCountry: labelSettings.location.country,
-        },
-        sameAs,
-      })}
+      set:html={serializeStructuredData(
+        createOrganizationStructuredData(
+          {
+            name: orgName,
+            url: orgUrl,
+            logo: orgLogo,
+            description: siteConfig.description,
+            foundingDate: String(labelSettings.established_year),
+            address: {
+              addressLocality: labelSettings.location.locality,
+              addressCountry: labelSettings.location.country,
+            },
+            sameAs,
+          },
+          createAbsoluteSiteUrl('/terms/'),
+        ),
+      )}
     />
     {pageEntity && <script is:inline type="application/ld+json" set:html={serializeStructuredData(pageEntity)} />}
     <link rel="preload" href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />

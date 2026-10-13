@@ -1,9 +1,10 @@
-import type { PublicApiComponents } from '@blackbox/api-client/public';
+import { deliveryQuantityBands, type PublicApiComponents } from '@blackbox/api-client/public';
 import { describe, expect, it } from 'vitest';
 
 import {
   createMusicAlbumStructuredData,
   createMusicGroupStructuredData,
+  createOrganizationStructuredData,
   createProductStructuredData,
   createWebSiteStructuredData,
   serializeStructuredData,
@@ -41,6 +42,55 @@ function soldOut(state: 'coming_soon' | 'repressing' | 'sold_out' | 'unavailable
 }
 
 describe('structured data', () => {
+  it('preserves Organization facts with the published Greece return and quantity-based locker policies', () => {
+    const facts = {
+      name: 'BlackBox </script>',
+      url: 'https://example.test/',
+      logo: 'https://example.test/logo.png',
+      description: 'Independent label',
+      foundingDate: '2012',
+      address: { addressLocality: 'Athens', addressCountry: 'GR' },
+      sameAs: ['https://example.test/social'],
+    };
+    const organization = createOrganizationStructuredData(facts, 'https://example.test/terms/');
+    expect(organization).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      ...facts,
+      address: { '@type': 'PostalAddress', ...facts.address },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'GR',
+        returnPolicyCountry: 'GR',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 14,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        refundType: 'https://schema.org/FullRefund',
+        customerRemorseReturnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+        itemDefectReturnFees: 'https://schema.org/FreeReturn',
+        merchantReturnLink: 'https://example.test/terms/',
+      },
+      hasShippingService: {
+        '@type': 'ShippingService',
+        fulfillmentType: 'https://schema.org/FulfillmentTypeCollectionPoint',
+        shippingConditions: deliveryQuantityBands.map((band, index) => ({
+          '@type': 'ShippingConditions',
+          shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'GR' },
+          numItems: {
+            '@type': 'QuantitativeValue',
+            minValue: index === 0 ? 1 : deliveryQuantityBands[index - 1]!.maxUnits! + 1,
+            ...(band.maxUnits === null ? {} : { maxValue: band.maxUnits }),
+          },
+          shippingRate: { '@type': 'MonetaryAmount', currency: 'EUR', value: band.amountMinor / 100 },
+        })),
+      },
+    });
+    const serialized = serializeStructuredData(organization);
+    expect(serialized).not.toContain('<');
+    expect(serialized).toContain('\\u003c/script>');
+    expect(JSON.parse(serialized)).toEqual(organization);
+  });
+
   it('describes an in-stock offer with the displayed price', () => {
     expect(createProductStructuredData(ready, product)).toEqual({
       '@context': 'https://schema.org',
