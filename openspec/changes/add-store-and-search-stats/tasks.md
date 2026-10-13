@@ -25,4 +25,4 @@ Read-only inspection and the owner's decision to leave MFA unchanged are recorde
 ## 4. Acceptance
 
 - [x] 4.1 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence. Evidence: strict validation and `pnpm validate` passed, `mode: local`: `.codex-artifacts/validation/2026-10-13T14-51-02-769Z-40900-86c58c/summary.json`.
-- [ ] 4.2 [Claude or Codex] Release through UAT and PRD. On PRD Stats, the store figures match the Orders page for the same window, and search shows data or its empty state. UAT shows search as not set up.
+- [x] 4.2 [Claude or Codex] Release through UAT and PRD. On PRD Stats, the store figures match the Orders page for the same window, and search shows data or its empty state. UAT shows search as not set up. Evidence: [release acceptance](validation.md#uat-and-prd-release-acceptance--2026-10-13), UAT run 569 / PRD promotion 19; both exact UTC windows match the complete unpaid PRD Orders list. Nonzero PRD paid totals remain unverified; Google access remains owner task 2.1.

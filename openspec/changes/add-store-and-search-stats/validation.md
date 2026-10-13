@@ -73,3 +73,55 @@ The owner chose Option 2, Visits first, from `.codex-artifacts/design/staff-stat
 - The only console 404 is the shell's `/_emdash/api/blackbox/workspace` change count, which a static preview cannot serve.
 
 Screenshots: `.codex-artifacts/design/staff-stats-store-search/final/stats-ok-1280.png`, `stats-ok-390.png`, `stats-degraded-1280.png`.
+
+## UAT and PRD release acceptance — 2026-10-13
+
+Task **4.2 is complete for the current PRD data**. The owner authorized this main push, UAT release, PRD promotion and evidence push only. This was a software release, with no launch script, DNS, Holding Page, catalog, checkout-switch, content publication or Stripe changes. Google access remains pending owner task **2.1**; its absent credentials secret is expected.
+
+### Source and release gates
+
+- Released source: `60447078b2f58364926eade31d1cb87475973f80`, containing backend commit `6dbc883648c88aa0e569c290b1a474f71e4ed76a` and the Staff Stats commit. The working tree was clean before the push. `pnpm build:web` passed before pushing, including route isolation and bundle budgets.
+- [Release BlackBox run 569](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38419976034), ID `38419976034`, attempt 1: **all 12 jobs passed**. This includes lint, typecheck, tests, the content-free UAT build, four public e2e shards, WebKit, both Chromium/Firefox staff previews, and `deploy-uat` with identity verification and static smoke. No gate was weakened or waived; no repair or rerun was needed.
+- After that run succeeded, `gh workflow run promote-prd.yml` dispatched [PRD promotion 19](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38421260379), ID `38421260379`, attempt 1: **passed**. It rebuilt the successful UAT source and verified both Worker and hosted PRD identities.
+- A subsequent read of PRD `release.json` returned SHA `60447078b2f58364926eade31d1cb87475973f80`, `runId: 38419976034`, `runNumber: 569`, and runtime publication mode. The promotion log records matching `verify-worker` and `verify-hosted` results at 15:22:48 and 15:22:51 UTC.
+
+### Migration and binding evidence
+
+`deploy-uat` applied `0034_checkout_order_paid_at_index.sql` successfully at **15:16:57 UTC**. The PRD promotion applied the same migration successfully at **15:21:57 UTC**. An independent read-only PRD migration-history list confirmed its `applied_at` as `2026-10-13 15:21:57`:
+
+```sql
+SELECT name, applied_at FROM d1_migrations ORDER BY id DESC LIMIT 3
+```
+
+The remote D1 result reported `success: true`, three rows read, zero rows written, zero changes and `changed_db: false`. No separate migration apply was run locally against a hosted environment.
+
+The owner's signed-in BlackBox Chrome profile supplied a before/after PRD Worker settings comparison. All pre-existing variable values and encrypted-secret entries were preserved; no secret value was opened or printed. Names-only evidence confirms:
+
+- `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_WEB_ANALYTICS_SITE_TAG` remain present as variables.
+- `CLOUDFLARE_ANALYTICS_API_TOKEN` remains present as an encrypted secret.
+- `GOOGLE_SEARCH_CONSOLE_SITE` is newly present and nonempty after this deployment.
+- `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` remains absent, as expected pending owner task 2.1.
+- The six resource bindings and their targets are unchanged: `CMS_DB`, `CMS_RUNTIME`, `COMMERCE_DB`, `COMMERCE_RUNTIME`, `MEDIA`, and `PUBLIC_SITE`. The pre-existing checkout and launch variable values were also preserved without edits.
+
+### Signed-in browser acceptance
+
+PRD `https://staff.blackboxrecordsathens.com/stats/` was checked in the owner's BlackBox Chrome profile with both range controls. Visits rendered **17 visits** in each range, with the daily chart and supporting sections intact. Search displayed **“Search figures aren't available here yet.”** without an error. The normal page requests for analytics, Store and Search returned HTTP 200; the inspected Search response was `not_configured`.
+
+The Orders page showed a complete list of **four orders**, all **Not paid**. Its normal search response had `nextCursor: null` and every order's `paidAt` was null. Inspecting the page's own received responses established the exact Store windows without copying customer details:
+
+| Range | UTC start, inclusive       | UTC end, exclusive (`generatedAt`) | Orders / Stats paid orders | Orders / Stats paid total | Orders / Stats items sold |
+| ----- | -------------------------- | ---------------------------------- | -------------------------- | ------------------------- | ------------------------- |
+| 7d    | `2026-10-07T00:00:00.000Z` | `2026-10-13T15:26:08.197Z`         | 0 / 0                      | €0 / €0                   | 0 / 0                     |
+| 30d   | `2026-09-14T00:00:00.000Z` | `2026-10-13T15:25:25.978Z`         | 0 / 0                      | €0 / €0                   | 0 / 0                     |
+
+Both comparisons passed; Stats also reported four checkouts started in each window. **Limitation:** PRD has no paid order, so nonzero paid-order totals and quantities remain unverified against live PRD orders. No fixture, payment or order mutation was made to manufacture acceptance. The prior workerd tests cover those nonzero cases; UAT's separate data rendered five paid orders, €828.01 and 36 items during this check.
+
+Only the Stats workspace scrolled in both PRD ranges. At the owner's 983 px viewport height, document height stayed 983 px with document scroll position 0 and header top 0. The 867 px `main` had 1523 px of content and its scroll position changed under keyboard scrolling (to approximately 28 px during the 30d smooth scroll and 656 px at the end of the 7d scroll). Neither range had horizontal document overflow.
+
+UAT `https://staff-uat.blackboxrecordsathens.com/stats/` opened through the existing Access session, with the UAT marker. Search displayed the same not-set-up message without an error. UAT Visits appropriately remained unconfigured; UAT Store read its own test data independently. This does not establish Google API/provider acceptance, which still requires owner task 2.1.
+
+Evidence is retained under `.codex-artifacts/store-search-release-20261013/`: `push-run.json`, `uat-deploy.log`, `prd-run.json`, `prd-deploy.log`, `prd-release.json`, `prd-migrations.json`, `bindings.json`, `store-comparison.json`, `scroll.json`, PRD 7d/30d text and screenshots, and UAT text and screenshot. The browser check reused the owner's existing sign-in and ordinary page reads; additional infrastructure checks were one bounded read-only D1 history query and one PRD release-identity GET. Temporary acceptance tabs were closed, and the owner's PRD Stats tab was left open.
+
+### Evidence-note validation
+
+Strict change validation and `pnpm validate` passed for the evidence and task-state edits: **10 selected tasks**, `mode: local`, `status: passed`, with matching before/after source fingerprints. The final source-bound summary, fingerprint and documentation commit are recorded in `.codex-artifacts/store-search-release-20261013/completion.json`. The released application source remains the SHA above; the subsequent Markdown-only push is excluded from the deployment workflow by its existing path filters.
