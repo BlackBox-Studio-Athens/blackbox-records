@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { productSafetyContentSchema } from './product-safety';
 import { validArtistLink } from './artist-fields';
 import {
   createArtistsContentSchema,
@@ -139,6 +140,7 @@ export const cmsBodySchema = z.array(
 export const cmsContentSchemas = {
   artists: createArtistsContentSchema(image).omit({ slug: true }).extend({ body: cmsBodySchema.optional() }),
   releases: createReleasesContentSchema(image, { artist: mediaId }).extend({
+    product_safety: productSafetyContentSchema.optional(),
     body: cmsBodySchema.optional(),
     release_date: z.iso.date().optional(),
   }),
@@ -146,7 +148,10 @@ export const cmsContentSchemas = {
     body: cmsBodySchema.optional(),
     date: z.iso.date(),
   }),
-  distro: createDistroContentSchema(image).extend({ release_date: z.iso.date().optional() }),
+  distro: createDistroContentSchema(image).extend({
+    release_date: z.iso.date().optional(),
+    product_safety: productSafetyContentSchema.optional(),
+  }),
   distro_page: distroPageContentSchema,
   navigation: navigationContentSchema,
   socials: socialsContentSchema,

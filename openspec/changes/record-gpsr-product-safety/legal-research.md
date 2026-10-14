@@ -1,0 +1,19 @@
+# GPSR evidence, checked 14 October 2026
+
+Official sources, not a legal ruling for BlackBox's facts:
+
+- [Regulation (EU) 2023/988, current consolidation dated 29 May 2026](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02023R0988-20260529), Articles 3(6)-(11), 9, 12, 13, 16, 19, 51 and 52. Manufacturer status includes commissioning manufacture and marketing under one's own name/trademark; Article 13 also assigns that role to own-name placement. Importer and distributor are distinct roles. Article 19 requires visible manufacturer name and postal/electronic contact, non-EU manufacturer's EU responsible-person details, product identification including picture/type/identifier, and applicable safety information. Article 51 concerns GPSD-conforming products first placed before 13 December 2024. Release date alone does not establish this. Unknown identity is not an exemption.
+- [Commission business guidelines, C/2025/6233](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=OJ:C_202506233), sections 2.1 and 3.1. The transition explanation distinguishes existing physical-product labelling from offers made after applicability; do not turn old stock into an automatic Article 19 waiver. Electronic contact can be email or a direct-contact website section; a generic homepage is insufficient. Instructions may be unnecessary when the product can be used safely without them, requiring an actual assessment. This patch's Greek text field is a conservative Greece-market implementation choice, not a language-detection claim.
+- [Greek Ministry of Development GPSR announcement](https://www.mindev.gov.gr/έκδοση-του-κανονισμού-εε-2023-988-του-ευρωπα/), 31 July 2023, identifies the regulation and its applicability from 13 December 2024. This national notice is context, not a product-specific exemption or current legal-role determination.
+
+EUR-Lex search returned the current consolidated text and relevant provisions; direct HTML/PDF opens encountered its anti-bot page. Research used official indexed text, not third-party summaries. The Commission guidance is explanatory; the regulation controls. Physical packaging, risk analysis and distributor checks remain outside a website data-field implementation.
+
+## Supplier and owner evidence needed
+
+1. For each actual physical edition/batch, what name/trademark markets the product and who commissioned manufacture? Supply packaging photographs and the supplier's role statement. Identify whether BlackBox is manufacturer, importer or distributor; do not substitute the pressing plant for the answer.
+2. Obtain the legal manufacturer's name, full postal address and email/direct-contact page, and evidence of EU establishment. For a non-EU manufacturer, identify the Article 16 responsible person, their EU country, postal/electronic contacts and evidence of their role/mandate. A seller address alone is insufficient evidence of that role.
+3. Match the catalogue/edition/batch identifier, physical type and current product photograph to the exact offer. Confirm whether variants differ materially and require separate safety records.
+4. Obtain applicable warnings/instructions and a verified Greek version, or a documented reason no warnings/instructions are necessary. Do not invent CE marks, certificates, hazard statements or safety guarantees for records.
+5. If invoking transition, obtain evidence of the specific stock's first EU-market placement and GPSD conformity. A digital/music release year or a newly imported/repressed copy does not prove the transition facts. Refer uncertain cases for product-specific legal assessment before marking the offer verified.
+
+Owner fact retained only as context: all existing own releases were dunk-pressed. No contacts, legal role, certification or catalogue-wide default has been inferred from that statement. No supplier has been contacted.

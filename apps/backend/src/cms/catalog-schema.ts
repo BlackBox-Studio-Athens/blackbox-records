@@ -62,6 +62,15 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
     }
   }
   for (const collection of ['releases', 'distro']) {
+    const safety = await registry.getField(collection, 'product_safety');
+    if (!safety)
+      await registry.createField(collection, {
+        slug: 'product_safety',
+        label: 'Product safety',
+        type: 'json',
+        required: false,
+      });
+    else if (safety.type !== 'json') throw new Error(`Unexpected field type: ${collection}.product_safety`);
     const existing = await registry.getField(collection, 'tracklist');
     if (!existing)
       await registry.createField(collection, { slug: 'tracklist', label: 'Tracklist', type: 'json', required: false });

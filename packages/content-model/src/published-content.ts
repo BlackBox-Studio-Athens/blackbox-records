@@ -1,6 +1,7 @@
 import { contentMediaIds, normalizeEditorialBody, sourceCollectionNames } from './emdash-content';
 import { parseContentSnapshot, type ContentSnapshot } from './content-snapshot';
 import { projectProseFields } from './prose';
+import { productSafetyOfferInformation } from './product-safety';
 
 /** Render input can contain transient editor records; only saved snapshots carry revisions. */
 export type PublicContent = Pick<ContentSnapshot, 'media' | 'storeItems'> & {
@@ -94,6 +95,11 @@ export function publishedCollection(
     .filter((record) => sourceCollectionNames[record.collection as keyof typeof sourceCollectionNames] === collection)
     .map((record) => {
       const { body, ...editorial } = projectProseFields(record.collection, record.data);
+      if (record.collection === 'releases' || record.collection === 'distro') {
+        const safety = productSafetyOfferInformation(editorial.product_safety);
+        if (safety) editorial.product_safety = safety;
+        else delete editorial.product_safety;
+      }
       const data = field(editorial) as Record<string, unknown>;
       if (record.collection === 'artists') {
         data.slug = record.slug;

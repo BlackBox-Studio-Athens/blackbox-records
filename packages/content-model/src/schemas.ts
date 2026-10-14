@@ -1,4 +1,5 @@
 import { tracklistSchema } from './tracklist';
+import { productSafetyOfferSchema } from './product-safety';
 import { artistCountriesSchema, parseArtistCountries, validArtistLink } from './artist-fields';
 import { z } from 'zod';
 import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
@@ -118,6 +119,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
         }),
       )
       .optional(),
+    product_safety: productSafetyOfferSchema.optional(),
   });
 }
 
@@ -161,6 +163,7 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
     format: z.string().optional(),
     release_date: z.coerce.date().optional(),
     order: z.number().int().nonnegative(),
+    product_safety: productSafetyOfferSchema.optional(),
   });
 }
 

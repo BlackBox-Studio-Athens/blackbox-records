@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { describe, test } from 'node:test';
 import {
   parseArtistCountries,
   formatArtistCountries,
@@ -10,6 +10,10 @@ import {
   normalizeEditorialBody,
   normalizeVideoUrl,
   proseSchema,
+  getProductSafetyIssues,
+  productSafetyContentSchema,
+  productSafetyOfferInformation,
+  productSafetyOfferSchema,
 } from '@blackbox/content-model';
 
 test('editorial images retain presentation without native delivery metadata and reject unsafe links', () => {
@@ -515,4 +519,209 @@ test('structured issues cover URLs, email, dates, enums, arrays, media, and rela
   );
   assert.ok(paths('news', { ...news, image: null }).includes('image'));
   assert.ok(paths('releases', { ...releases, artist: '' }).includes('artist'));
+});
+
+describe('GPSR product safety', () => {
+  const verified = () => ({
+    review_status: 'verified',
+    operator_role: 'distributor',
+    product_type: '12-inch vinyl record',
+    product_identifier: 'TEST-001 / first edition',
+    manufacturer: {
+      name: 'Fixture manufacturer',
+      postal_address: 'Fixture address, Athens, Greece',
+      electronic_address: 'manufacturer@example.com',
+      establishment: 'eu',
+    },
+    safety_information: { status: 'provided', text_el: 'Δοκιμαστικές οδηγίες χρήσης.' },
+    evidence: {
+      reference: 'fixture-evidence-001',
+      checked_on: '2026-10-14',
+      notes: 'Fixture role, contact and safety evidence.',
+    },
+  });
+  const source = {
+    title: 'Fixture album',
+    group: 'Vinyl 12-inch',
+    artist_or_label: 'Fixture artist',
+    image: { id: 'cover' },
+    image_alt: 'Fixture cover',
+    summary: 'Fixture description',
+    order: 0,
+  };
+  const release = {
+    title: 'Fixture album',
+    artist: 'artist',
+    cover_image: { id: 'cover' },
+    cover_image_alt: 'Fixture cover',
+    release_stage: 'upcoming',
+  };
+
+  test('GPSR is additive for legacy records and incomplete private work never claims readiness', () => {
+    for (const [collection, data] of [
+      ['distro', source],
+      ['releases', release],
+    ]) {
+      for (const product_safety of [
+        undefined,
+        null,
+        { review_status: 'incomplete', manufacturer: { name: 'Unverified supplier' } },
+      ]) {
+        assert.deepEqual(validateCmsContent(collection, { ...data, product_safety }), []);
+        assert.deepEqual(validateCmsDraft(collection, { ...data, product_safety }), []);
+        assert.ok(getProductSafetyIssues(product_safety).length);
+        assert.equal(productSafetyOfferInformation(product_safety), undefined);
+      }
+      assert.deepEqual(validateCmsDraft(collection, { product_safety: { review_status: 'verified' } }), []);
+      assert.ok(validateCmsContent(collection, { ...data, product_safety: { review_status: 'verified' } }).length);
+      assert.deepEqual(validateCmsContent(collection, { ...data, product_safety: verified() }), []);
+    }
+  });
+
+  test('verification requires product identity, economic-operator contacts, role and evidence', () => {
+    const data = verified();
+    assert.deepEqual(getProductSafetyIssues(data), []);
+    for (const key of ['product_type', 'product_identifier', 'manufacturer', 'operator_role', 'evidence']) {
+      const incomplete = { ...data };
+      delete incomplete[key];
+      assert.ok(
+        getProductSafetyIssues(incomplete).some((issue) => issue.path.includes(key)),
+        key,
+      );
+      assert.equal(productSafetyContentSchema.safeParse(incomplete).success, false);
+    }
+    for (const key of ['name', 'postal_address', 'electronic_address', 'establishment']) {
+      const incomplete = { ...data, manufacturer: { ...data.manufacturer } };
+      delete incomplete.manufacturer[key];
+      assert.ok(
+        getProductSafetyIssues(incomplete).some((issue) => issue.path.includes(key)),
+        key,
+      );
+    }
+    for (const key of ['reference', 'checked_on', 'notes']) {
+      const incomplete = { ...data, evidence: { ...data.evidence } };
+      delete incomplete.evidence[key];
+      assert.ok(
+        getProductSafetyIssues(incomplete).some((issue) => issue.path.includes(key)),
+        key,
+      );
+    }
+  });
+
+  test('non-EU manufacturers require a verified EU responsible person without replacing the manufacturer', () => {
+    const data = verified();
+    data.manufacturer.establishment = 'non_eu';
+    assert.ok(getProductSafetyIssues(data).some((issue) => issue.path.includes('responsible_person')));
+    data.responsible_person = {
+      name: 'Fixture responsible person',
+      postal_address: 'Fixture EU address',
+      electronic_address: 'https://responsible.example/contact',
+      eu_country: 'GR',
+    };
+    assert.deepEqual(getProductSafetyIssues(data), []);
+    assert.equal(productSafetyOfferInformation(data).manufacturer.name, 'Fixture manufacturer');
+    for (const eu_country of ['GB', 'US', 'ZZ', ''])
+      assert.ok(
+        getProductSafetyIssues({ ...data, responsible_person: { ...data.responsible_person, eu_country } }).length,
+      );
+    for (const key of ['name', 'postal_address', 'electronic_address', 'eu_country']) {
+      const responsible_person = { ...data.responsible_person };
+      delete responsible_person[key];
+      assert.ok(getProductSafetyIssues({ ...data, responsible_person }).length);
+    }
+  });
+
+  test('an empty safety assessment cannot become an evidenced no-warning decision', () => {
+    const data = verified();
+    for (const safety_information of [
+      undefined,
+      {},
+      { status: 'provided' },
+      { status: 'provided', text_el: '  ' },
+      { status: 'none' },
+    ])
+      assert.ok(getProductSafetyIssues({ ...data, safety_information }).length);
+    assert.deepEqual(getProductSafetyIssues({ ...data, safety_information: { status: 'not_required' } }), []);
+    assert.ok(
+      getProductSafetyIssues({ ...data, safety_information: { status: 'not_required', text_el: 'Warning' } }).length,
+    );
+    assert.ok(getProductSafetyIssues({ ...data, evidence: { ...data.evidence, checked_on: '2026-02-30' } }).length);
+    assert.ok(getProductSafetyIssues({ ...data, first_placed_on_eu_market: '2024-02-30' }).length);
+  });
+
+  test('contacts reject unsafe values and neither pressing context nor age provides an exemption', () => {
+    const data = verified();
+    for (const electronic_address of ['javascript:alert(1)', 'http://example.com/contact', 'not an address']) {
+      const unsafe = { manufacturer: { electronic_address } };
+      assert.ok(validateCmsDraft('distro', { product_safety: unsafe }).length);
+      assert.ok(getProductSafetyIssues({ ...data, manufacturer: { ...data.manufacturer, electronic_address } }).length);
+    }
+    assert.ok(validateCmsDraft('distro', { product_safety: { pressing_plant: 'dunk' } }).length);
+    const incomplete = { review_status: 'incomplete', first_placed_on_eu_market: '2020-01-01' };
+    assert.ok(getProductSafetyIssues(incomplete).length);
+    assert.equal(productSafetyOfferInformation(incomplete), undefined);
+    assert.equal(productSafetyContentSchema.parse({}).manufacturer, undefined);
+  });
+
+  test('accepted snapshot projection preserves private evidence but exposes only verified offer data', () => {
+    const snapshot = parseContentSnapshot(
+      JSON.stringify({
+        schemaVersion: 1,
+        environment: 'local',
+        records: [{ collection: 'distro', id: 'album', slug: 'album', revisionId: 'baseline', data: source }],
+        media: [
+          {
+            id: 'cover',
+            sha256: 'a'.repeat(64),
+            filename: 'cover.jpg',
+            mimeType: 'image/jpeg',
+            size: 12,
+            width: 100,
+            height: 100,
+          },
+        ],
+      }),
+      'local',
+    );
+    const data = { ...source, product_safety: { ...verified(), first_placed_on_eu_market: '2020-01-01' } };
+    const candidate = replacePublishedRecord(
+      snapshot,
+      { ...snapshot.records[0], revisionId: 'new', data },
+      snapshot.media,
+    );
+    assert.equal(publishedCollection(snapshot, 'distro', '/media')[0].data.product_safety, undefined);
+    assert.deepEqual(candidate.records[0].data.product_safety.evidence, data.product_safety.evidence);
+    const projected = publishedCollection(candidate, 'distro', '/media')[0].data.product_safety;
+    assert.equal(productSafetyOfferSchema.safeParse(projected).success, true);
+    assert.deepEqual(Object.keys(projected).sort(), [
+      'manufacturer',
+      'product_identifier',
+      'product_type',
+      'safety_information',
+    ]);
+    assert.equal(JSON.stringify(projected).includes('fixture-evidence-001'), false);
+    const partial = replacePublishedRecord(
+      snapshot,
+      {
+        ...snapshot.records[0],
+        revisionId: 'partial',
+        data: { ...source, product_safety: { review_status: 'incomplete' } },
+      },
+      snapshot.media,
+    );
+    assert.equal(publishedCollection(partial, 'distro', '/media')[0].data.product_safety, undefined);
+    assert.throws(
+      () =>
+        replacePublishedRecord(
+          snapshot,
+          {
+            ...snapshot.records[0],
+            revisionId: 'invalid',
+            data: { ...source, product_safety: { review_status: 'verified' } },
+          },
+          snapshot.media,
+        ),
+      /Invalid snapshot content/,
+    );
+  });
 });
