@@ -16,3 +16,11 @@
 - [ ] 3.2 [Owner] Confirm the retention criteria, review practice, relevant provider settings/agreement evidence and analytics basis identified in `handover.md`.
 - [ ] 3.3 [Claude/Owner] Review the exact saved CMS revision against the accepted snapshot; publish only under separate authority and record content identity/readback.
 - [ ] 3.4 After separately authorized Holding release, verify the four actual redirects, destination documents and 404 shop paths. Preserve switch-day retirement/rollback compatibility; no deployment is authorized here.
+
+## 4. Delegated minimal operating decisions
+
+- [x] 4.1 Select the prospective review cadence, case-handling and purpose-specific retention procedure in `operations.md`; distinguish adoption from actual execution and preserve unknown statutory/account facts.
+- [x] 4.2 Defer automatic optional analytics in public gateway HTML/304 headers while preserving cache/private/no-store rules, images and approved UI; reconcile the analytics specification and cover conditional/private/error cases.
+- [x] 4.3 Complete source-bound final validation and local commit; record any failed build or unrun native/hosted acceptance without marking it passed.
+
+Task 3.2's routine policy choices are delegated and selected. Its account/statutory evidence portion remains open; no renewed owner questionnaire is required to choose a workflow. Tasks 3.3-3.4 remain separate content/release acceptance.

@@ -23,7 +23,19 @@ Checked clean source `de14a9f9f99e0fdbc444bc1ecd98fce20fd8fd48` without UI/runti
 
 No new product blocker was reproduced in these checks. R1-R4 remain closed. OpenSpec tasks that also require real content/publication, normal-size readability, actual browser zoom, physical-device or assistive-technology evidence remain open. Existing source-bound backend/projection tests are reused; no full suite or provider request is implied.
 
-### Specific owner inputs still needed
+## Autonomous follow-through, 14 October 2026
+
+The owner delegated the remaining routine decisions and requested a simple local commit. Do not restart the earlier owner questionnaire. The coordinator selected the [minimal privacy procedure](../openspec/changes/clarify-privacy-and-holding-access/operations.md) and [product-safety adoption procedure](../openspec/changes/record-gpsr-product-safety/operations.md). The latter includes a populated source-only register for 3 Releases and 98 Distro records; it is not a live catalogue or verified manufacturer evidence.
+
+Prepared code now defers optional automatic analytics by adding `no-transform` to gateway HTML/304 responses, including HTML 404s, while preserving private/no-store/ETag/referrer rules and image delivery. No banner or other visible UI was changed. Staff historical analytics reads remain available. This is a local code change, not evidence that the hosted beacon has stopped. Reconcile any future privacy wording with actual rollout; do not publish the earlier proposed analytics paragraph unchanged after measurement is deferred.
+
+**New acceptance finding R5:** canonical `pnpm --filter @blackbox/backend build:cms --env mock` fails at the unchanged Staff Stock bundle limit: 156,699 Brotli bytes versus 156,672, an excess of 27 bytes. Earlier `pnpm validate` passes did not run this build. Small API-parser and path-reuse reductions did not solve the measured excess and were fully reverted. Do not raise the limit or claim build acceptance. No UI optimization is included in this delivery; Claude owns that code. A future correction should remove at least the measured excess through behavior-preserving code reduction, keep the approved UI/limits, rerun the canonical build and then the native CMS acceptance. The attempted native CMS GPSR smoke extension is retained only as an unrun ignored patch, not committed as a passing test. No native CMS persistence/publication success is claimed.
+
+The final source checks and failed-build evidence are recorded in `.codex-artifacts/compliance-review-20261014/autonomous-closure/completion.json`. R1-R4 remain closed. Remaining external evidence and full release/publication acceptance stay explicit; delegated authority cannot fabricate manufacturer facts or account settings.
+
+### Evidence still required for full acceptance
+
+The list below records evidence to acquire during normal operations, not unanswered preferences or a request for the owner to design procedures. Routine decisions now follow the two operating documents above.
 
 1. **Retention practice:** name the person responsible and the actual review/deletion trigger or cadence for orders/delivery, returns/complaints, unsuccessful service inquiries, newsletter evidence/suppression, technical logs, mailboxes and backups. Ask the accountant to identify applicable record categories, periods and starting events; do not guess a universal period. State whether any legal hold applies.
 2. **Provider evidence:** confirm the actual Resend plan and message-log/contact/suppression settings; mailbox/backup providers and settings; applicable Cloudflare, Resend and Stripe agreement/DPA/transfer documentation. Supply redacted evidence references, not credentials. Existing public provider terms do not establish this account's configuration.

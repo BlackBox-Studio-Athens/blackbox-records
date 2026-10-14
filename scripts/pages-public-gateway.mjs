@@ -20,7 +20,7 @@ export function createPublicGateway(patterns) {
     }
     return new Response(request.method === 'HEAD' ? null : page.body, {
       status: 404,
-      headers: { 'Content-Type': type, 'Cache-Control': 'no-store' },
+      headers: { 'Content-Type': type, 'Cache-Control': 'no-store, no-transform' },
     });
   };
   return {
@@ -43,7 +43,19 @@ export function createPublicGateway(patterns) {
       const headers = new Headers({ Accept: request.headers.get('Accept') ?? '*/*' });
       const etag = request.headers.get('If-None-Match');
       if (etag !== null) headers.set('If-None-Match', etag);
-      return env.PUBLIC_SITE.fetch(new Request(request.url, { method: request.method, headers }));
+      const response = await env.PUBLIC_SITE.fetch(new Request(request.url, { method: request.method, headers }));
+      if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('text/html') && response.status !== 304)
+        return response;
+      // Defer optional automatic beacon injection until its terminal-access assessment is established.
+      const responseHeaders = new Headers(response.headers);
+      const cacheControl = responseHeaders.get('Cache-Control') || 'no-store';
+      if (!/\bno-transform\b/i.test(cacheControl))
+        responseHeaders.set('Cache-Control', `${cacheControl}, no-transform`);
+      return new Response(request.method === 'HEAD' ? null : response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
     },
   };
 }

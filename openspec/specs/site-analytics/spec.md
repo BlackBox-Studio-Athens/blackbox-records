@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Measure public visits to the production apex without cookies, verify the production domain with search engines, and let staff read site analytics without a Cloudflare login.
+Verify the production domain with search engines and let staff read existing aggregate site analytics without a Cloudflare login. Optional client-side measurement is deferred pending its data-protection assessment.
 
 ## Requirements
 
@@ -18,13 +18,25 @@ The production domain SHALL be verified in Google Search Console as a Domain pro
 
 ### Requirement: Visits are measured without cookies
 
-The production apex SHALL be measured by Cloudflare Web Analytics automatic setup. Measurement SHALL set no cookies and SHALL NOT require a consent banner. The published privacy notice SHALL name Cloudflare Web Analytics and state that it uses no cookies.
+The public Pages gateway SHALL append `no-transform` to HTML and conditional responses to prevent automatic optional beacon injection while the assessment is unresolved. It SHALL preserve existing cache, no-store, referrer and indexing restrictions; image/binary responses SHALL retain their existing behavior. No consent banner or replacement tracker is introduced. Existing staff aggregate reads and necessary delivery/security processing remain available. A claim that consent is unnecessary MUST be supported by the applicable GDPR and terminal-access assessment; cookie-free behavior alone does not establish that conclusion. Any later measurement activation requires an evidenced assessment and accurate coordinated privacy wording.
+
+#### Scenario: Cookie-free collection is assessed
+
+- **WHEN** the operator evaluates the configured analytics for publication acceptance
+- **THEN** the assessment distinguishes the GDPR legal basis from any applicable terminal-access consent requirement
+- **AND** missing assessment or account evidence remains unresolved rather than being inferred from the absence of cookies.
 
 #### Scenario: Visitor browses the production site
 
-- **WHEN** a visitor loads the apex and navigates between sections inside the shell
-- **THEN** each document and each in-shell navigation is counted as a page view
-- **AND** the browser holds no analytics cookie.
+- **WHEN** a visitor receives HTML through the public gateway
+- **THEN** its response includes `Cache-Control: no-transform` alongside the existing cache directives
+- **AND** the application adds no optional beacon script, including on checkout, email-preferences and HTML 404 replies.
+
+#### Scenario: Conditional or private HTML is returned
+
+- **WHEN** a document response is a conditional 304 or carries private/no-store restrictions
+- **THEN** the gateway preserves its status, ETag and privacy directives while retaining `no-transform`
+- **AND** deployment acceptance separately verifies that the actual edge response does not inject a beacon.
 
 ### Requirement: Staff can read site analytics without a Cloudflare login
 

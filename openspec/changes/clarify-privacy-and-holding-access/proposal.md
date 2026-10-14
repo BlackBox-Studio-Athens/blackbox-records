@@ -8,6 +8,7 @@ The 14 October audit found apex policy URLs returning 404 during Holding. The ac
 - Prepare narrow CMS paragraph replacements covering purpose-specific retention criteria, technical analytics and provider transfer roles. Preserve real controller and seller facts; distinguish implemented cleanup from operator policy.
 - Hand every rendered copy/link change to Claude Desktop. No Codex UI edits; Claude previews new Holding links before the owner's non-text UI approval.
 - Record owner/accountant inputs as privacy-publication acceptance gaps, without imposing new tax, checkout or launch gates.
+- Under the owner's later autonomous-work instruction, select a minimal prospective operating procedure and defer optional automatic analytics with `no-transform` on public gateway HTML/304 replies. Preserve visible UI, cache/privacy semantics and provider configuration; actual hosted effect waits for release.
 
 ## Capabilities
 
@@ -18,4 +19,4 @@ The 14 October audit found apex policy URLs returning 404 during Holding. The ac
 
 ## Impact
 
-Holding artifact preparation/checking, a scoped contract regression and its two exact `project.json` cache inputs; existing `purchase_information` CMS singleton and legal pages through Claude's handover. No API, database, cron, provider account, dependency or release change. Findings 3/4 remain with the consent sibling; seller telephone/registration, tax and future company transition remain outside this change.
+Holding artifact preparation/checking, public Pages gateway response policy and focused regressions; existing `purchase_information` CMS singleton and legal pages through Claude's handover; the site-analytics baseline and internal operating procedure. No API contract, database, cron, provider account, dependency or deployment change. Findings 3/4 remain with the consent sibling; seller telephone/registration, tax and future company transition remain outside this change.

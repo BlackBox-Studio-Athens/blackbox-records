@@ -143,7 +143,7 @@ test('unknown document paths get the static 404 page with one asset read and no 
   const page = await gateway.fetch(new Request('https://site.invalid/artistz/?fbclid=1', { headers: html }), env);
   assert.equal(page.status, 404);
   assert.equal(page.headers.get('Content-Type'), 'text/html; charset=utf-8');
-  assert.equal(page.headers.get('Cache-Control'), 'no-store');
+  assert.equal(page.headers.get('Cache-Control'), 'no-store, no-transform');
   assert.equal(await page.text(), '<!doctype html><title>404</title>');
   const head = await gateway.fetch(new Request('https://site.invalid/old/', { method: 'HEAD', headers: html }), env);
   assert.equal(head.status, 404);
@@ -173,4 +173,45 @@ test('a missing 404 asset falls back to the plain-text 404', async () => {
   assert.equal(response.status, 404);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(await response.text(), 'Not found');
+});
+
+test('HTML and conditional replies prevent automatic injection without weakening cache or privacy headers', async () => {
+  const gateway = createPublicGateway(['^/$', '^/email-preferences/$']);
+  for (const [path, method, status, cache] of [
+    ['/', 'GET', 200, 'public, max-age=0, s-maxage=30, stale-while-revalidate=30'],
+    ['/', 'HEAD', 200, 'public, max-age=0'],
+    ['/', 'GET', 304, 'public, max-age=0'],
+    ['/email-preferences/', 'GET', 200, 'private, no-store'],
+    ['/', 'GET', 503, 'no-store'],
+    ['/', 'GET', 200, 'no-store, no-transform'],
+  ]) {
+    const { env } = captureEnv();
+    env.PUBLIC_SITE.fetch = async () =>
+      new Response(status === 304 ? null : '<p>Unchanged HTML</p>', {
+        status,
+        headers: {
+          ...(status === 304 ? {} : { 'Content-Type': 'text/html; charset=utf-8' }),
+          'Cache-Control': cache,
+          'Referrer-Policy': 'no-referrer',
+          'X-Robots-Tag': 'noindex',
+          ETag: 'W/"same-content"',
+        },
+      });
+    const response = await gateway.fetch(new Request(`https://site.invalid${path}`, { method }), env);
+    assert.equal(response.status, status);
+    assert.equal(
+      response.headers.get('Cache-Control'),
+      cache.includes('no-transform') ? cache : `${cache}, no-transform`,
+    );
+    assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');
+    assert.equal(response.headers.get('X-Robots-Tag'), 'noindex');
+    assert.equal(response.headers.get('ETag'), 'W/"same-content"');
+    assert.equal(await response.text(), status === 304 || method === 'HEAD' ? '' : '<p>Unchanged HTML</p>');
+  }
+  const { env } = captureEnv();
+  env.PUBLIC_SITE.fetch = async () =>
+    new Response('image', { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' } });
+  const image = await gateway.fetch(new Request('https://site.invalid/_image?href=fixture'), env);
+  assert.equal(image.headers.get('Cache-Control'), 'public, max-age=300');
+  assert.equal(await image.text(), 'image');
 });

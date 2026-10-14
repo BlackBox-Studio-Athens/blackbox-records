@@ -16,6 +16,10 @@ The scoped regression executes the actual preparation/check scripts in a disposa
 
 After switch-day finalization, `pages.dev` may redirect back to the apex. The Holding artifact must then be retired/refreshed before any rollback to avoid a policy redirect loop. `launch-switch-day` already owns Holding retirement; this change does not execute it.
 
+## Delegated operational decisions, 14 October 2026
+
+After the local review, the owner asked Codex to handle remaining work with the simplest solution and commit locally. `operations.md` selects one manual monthly/case-closure review and the existing contact route, with purpose-specific retention criteria and a compact private case log. This is a new operating instruction, not evidence of historical practice or an active scheduled job. It requires no new provider or mass deletion. Optional automatic analytics are deferred in prepared code through `no-transform` on gateway HTML/304 responses, including HTML 404s. Existing private/no-store/ETag directives and binary image behavior are preserved; there is no banner, UI edit, provider mutation or live change. The analytics baseline now records that decision rather than an unestablished legal exemption. Account-specific agreements/settings, statutory periods, first review execution and accepted CMS revision/publication remain evidence gaps. Preserve the owner's launch/VAT choices and all rendered UI ownership.
+
 ## Approved Holding link (owner, 14 October 2026)
 
 Preview v3 approved one quiet muted PRIVACY link in a separate "Legal" navigation under the contact actions, linking `/privacy/` (served by the prepared 302). Terms is not linked from Holding because Holding sells nothing; the `/terms` redirects remain for saved URLs. `check-prd-holding.ts` accepts `/privacy/` as the only relative anchor and requires it; `scripts/holding-legal-routes.test.ts` covers both.
