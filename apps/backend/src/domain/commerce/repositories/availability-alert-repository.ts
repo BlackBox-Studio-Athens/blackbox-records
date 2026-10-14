@@ -8,6 +8,8 @@ export type AvailabilityAlertRequest = {
   email: string;
   consentCopyVersion: string;
   consentedAt: Date;
+  /** Public requests must have a delivered, live withdrawal capability in the same insert transaction. */
+  withdrawalRequired?: boolean;
 };
 
 export type ClaimedAvailabilityAlert = {
@@ -32,7 +34,9 @@ export type AvailabilityAlertDelivery = {
 };
 
 export interface AvailabilityAlertRepository {
-  /** Inserts or keeps one alert per variant and address; refuses a new address once the variant is at its cap. */
+  /** Final lease check immediately before submitting to the email provider. */
+  isCurrent(alert: ClaimedAvailabilityAlert): Promise<boolean>;
+  /** Inserts or keeps one alert per variant and address; at capacity returns busy for every address. */
   request(input: AvailabilityAlertRequest, pendingCap: number): Promise<'accepted' | 'cap_reached'>;
   /** Shoppers still waiting for the variant, including an alert being sent. */
   countWaiting(variantId: VariantId): Promise<number>;

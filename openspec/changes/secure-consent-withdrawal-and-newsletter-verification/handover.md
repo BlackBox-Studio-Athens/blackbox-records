@@ -1,0 +1,60 @@
+# Claude Desktop handover — consent findings 3 and 4
+
+Owner's latest instruction: Claude Desktop owns **all website UI changes, including text**. Codex has changed backend/data/contracts/tests only. Prepare a concrete preview and obtain explicit owner approval before non-text changes on main screens. Keep applicable Impeccable gates. No approval is requested by this document. No push, deploy, live emails, content publication or tax/launch changes are authorized.
+
+## Backend contract ready for integration
+
+Use the generated `@blackbox/api-client/public` fetcher against the environment's existing backend base URL. Never hardcode a hosted API origin.
+
+| Action                  | Request                                                                        | Response / handling                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request newsletter      | Existing `POST /api/newsletter/registrations`, `{email, consentAccepted:true}` | `200 {status:"registered", confirmationRequired:true}` means request accepted, **not subscribed**. The new flag is optional in generated types for older consumers, but this Worker always emits it. `400` invalid input; `503` generic unavailable.                                                                      |
+| Confirm newsletter      | `POST /api/newsletter/confirmations`, `{token}`                                | `200 {status:"confirmed"}` means mailbox confirmed and activation processed. Global unsubscribe/suppression remains respected; do not promise automatic reactivation. `400` invalid/expired/used link; `503` activation failed, request a fresh link after cooldown rather than repeatedly submitting the consumed token. |
+| Request alert           | Existing Store Item availability-alert POST, unchanged `{email, consent:true}` | Existing `200 {status:"requested"}`. The backend requests a management email before saving new work. Existing address/new address have the same success. When the variant is full both get the same `503`; no membership oracle at capacity.                                                                              |
+| Recover withdrawal link | `POST /api/availability-alerts/withdrawal-links`, `{email}`                    | `200 {status:"requested"}` for all addresses, regardless of pending alerts or recipient cooldown. `400` invalid email; `503` delivery unavailable or the shared link budget is exhausted.                                                                                                                                 |
+| Withdraw alerts         | `POST /api/availability-alerts/withdrawals`, `{token}`                         | `200 {status:"withdrawn"}` for valid, unknown, expired and used tokens. For valid tokens, removes **all pending alerts for that address**, including leased rows. `400` malformed input. Works without Resend credentials.                                                                                                |
+
+All tokens are 64 lowercase hex characters. POST bodies are strict: extra fields are refused. No API response contains email membership, tokens, Contact IDs, Topic IDs or provider diagnostics. No mutation on GET.
+
+## Exact website edit points
+
+- `apps/web/src/components/NewsletterSignupForm.tsx`: replace the hardcoded `Subscribed. Future BlackBox Records updates will go to that email.` success; preserve unchecked consent, clearing behavior, existing status/error regions, focus and layout. Proposed: **“Check your inbox to confirm your newsletter request within 24 hours.”** Initial response can be rate-limited silently; secondary help may say to wait and try later. Keep the existing generic unavailable error.
+- `apps/web/src/components/store/checkout/AvailabilityAlertForm.tsx`: `AVAILABILITY_ALERT_COPY.newsletterJoined` currently claims “You're also on the newsletter.” Replace with **“Check your inbox to confirm the newsletter request.”** Keep alert/newsletter consent separate and initially unticked. Add a clearly named management link in the existing fine print/success area: **“Manage availability alerts”**. Proposed fine-print addition: **“Withdraw pending alerts using the link we email you, or request a new link from Manage availability alerts.”** The current Cancel button closes the form; it is not consent withdrawal. Do not relabel it as withdrawal.
+- `apps/web/src/components/store/checkout/public-checkout-api.ts`: expose wrappers for the three new endpoints through the generated fetcher. Codex did not edit this UI-owned file.
+- Add `apps/web/src/pages/email-preferences.astro` and its appropriate owning component/module export. The backend emails link to `new URL('email-preferences/', EMAIL_BRAND_HOME_URL)` with `#action=newsletter&token=...` or `#action=availability-withdrawal&token=...`. Respect the Local `/blackbox-records/` base behavior when testing route construction. Existing environment email homes are hosted-style, so Local browser tests can navigate directly with a captured mock fragment.
+- Inspect the checkout newsletter consent presentation and privacy linkage for any copy claiming immediate subscription. The backend wraps checkout opt-ins too; no changes to checkout gates or order email are needed.
+
+## Preferences page behavior and security
+
+With a valid newsletter fragment, show **“Confirm newsletter request”** and an explicit **“Confirm”** button. After `200`: **“Your email address has been confirmed. Existing unsubscribe preferences remain in place.”** If users previously unsubscribed globally, direct them to their existing email preference flow/support without claiming this button reactivates it.
+
+With a withdrawal fragment, explain **“Stop all pending availability alerts for this email address.”** The explicit **“Withdraw pending alerts”** button posts the token. After `200`, use **“Withdrawal request processed. If this link was valid, pending alerts have been removed.”** Unknown/expired links get the same response, so do not guarantee cancellation for an invalid link. Always provide **“Request a new link”** and a labeled email field. No account, password or support conversation is required. Recovery success: **“If email delivery is available, you'll receive a link to manage pending alerts. If you've just requested one, use the email already sent or try again later.”**
+
+Before loading third-party scripts/embeds/analytics, read the fragment into memory and remove it with `history.replaceState`; never put tokens or addresses in query strings, persistent browser storage, console, telemetry or referrer. This page should omit third-party surfaces and be `noindex`, `no-store`, `Referrer-Policy: no-referrer`. Require explicit button submission; email scanners or page prefetch must not activate or withdraw automatically. Link lifetime is 24 hours for newsletter and at most twelve months for alert withdrawal. Delivery retries reuse one attempt for an hour; a successfully sent link suppresses further messages in that hour. Twenty new link sends per environment UTC day is a separate conservative operational cap. Token lifetime/caps are technical policies, not statutory retention periods.
+
+Preserve pre-mounted polite status and assertive error regions, atomic announcements, programmatic labels, invalid-state associations, visible focus, disabled/busy controls during submission and a keyboard-operable recovery path. Use safe generic network errors. Keep the persistent player alive during shell navigation; prefer the established route/overlay owner after reviewing how a no-embed preferences surface fits it.
+
+## Narrow CMS privacy amendment to prepare for review
+
+Edit the **actual published Privacy record**, preserving its 2026-10-13 controller and other real editorial information. Do not replace it with `apps/web/src/content/services/site.json` placeholders. Proposed targeted additions, conditional on the reviewed implementation being released:
+
+> Newsletter requests require email confirmation before activation. Pending confirmation tokens expire after 24 hours and their records are removed on the next successful maintenance pass. Confirmation does not override existing global unsubscribe preferences or provider suppression.
+>
+> You can withdraw all pending availability alerts using the management link sent to your email address, without an account, or request a new link from Manage availability alerts. Withdrawal removes queued requests and invalidates existing management links. An email already being processed may still arrive: withdrawal can commit after the final lease read and before or during provider submission. Deleted requests are never retried or recreated by stale delivery attempts. Alert requests remain subject to the existing maximum twelve-month retention. Management-link records are removed after expiry or when no alerts remain, after the one-hour request cooldown, on the next successful maintenance pass. Sending-limit counts contain no email addresses and are retained for thirty days.
+
+The privacy sibling must reconcile this new table with its retention/transparency changes. Keep this as a publication amendment for review, not a claim about current PRD. Use the existing saved revision → Review → Content Publication path; publication remains separately authorized.
+
+## Verification Claude owns
+
+- Update newsletter/alert form unit fixtures and expectations without weakening the unticked-consent checks.
+- Add focused preferences-page browser coverage: no auto-submit; explicit confirmation; successful/replayed/expired/wrong-purpose tokens; withdrawal recovery; unknown address; malformed input; provider/network failure; keyboard/focus/live-region behavior; 320/390px and desktop; no token leakage; shell/player continuity.
+- Follow `docs/agent-workflow.md` for scoped browser checks and final `pnpm validate`.
+- Parent reviews backend, reconciles migration `0036_email_consent_capabilities.sql` with sibling migrations, and combines the work. Do not release this backend alone with missing preferences UI or false “subscribed” copy.
+
+## Official sources and factual limits
+
+- [GDPR Article 7](https://eur-lex.europa.eu/eli/reg/2016/679/oj/eng): demonstrate consent and make withdrawal as easy as giving it.
+- [Greek DPA electronic marketing guidance](https://www.dpa.gr/el/enimerwtiko/thematikes_enotites/proothisiproiontwn/hlektronika_mesa_proothisi), [Directive 2/2011](https://www.dpa.gr/el/enimerwtiko/prakseisArxis/ilektroniki-sygkatathesi-sto-plaisio-toy-arthroy-11-toy-n-34712006): prior express consent and an easy/free objection path. Double opt-in is the selected mailbox anti-abuse measure; not a universal-law assertion.
+- [Resend Contact update](https://resend.com/docs/api-reference/contacts/update-contact), [create](https://resend.com/docs/api-reference/contacts/create-contact), [idempotency](https://resend.com/docs/dashboard/emails/idempotency-keys).
+
+Hosted delivery, inbox rendering, suppression behavior and actual published privacy amendments are not proven by Local mocks. No new legal business facts, provider settings, accepted DPAs, certifications or tax status are asserted. Item 6 is unchanged; item 7 future planning belongs to parent.

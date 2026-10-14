@@ -1,4 +1,36 @@
 export type paths = {
+    "/api/availability-alerts/withdrawal-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestAvailabilityWithdrawalLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/availability-alerts/withdrawals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["withdrawAvailabilityAlerts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/checkout/sessions": {
         parameters: {
             query?: never;
@@ -25,6 +57,22 @@ export type paths = {
         get: operations["getCheckoutState"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/newsletter/confirmations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmNewsletter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -345,6 +393,11 @@ export type components = {
             email: string;
         };
         NewsletterRegistrationResponse: {
+            /**
+             * @description Always returned by the current Worker; optional for older typed clients.
+             * @enum {boolean}
+             */
+            confirmationRequired?: true;
             /** @enum {string} */
             status: "registered";
         };
@@ -539,6 +592,92 @@ export type components = {
 };
 export type $defs = Record<string, never>;
 export interface operations {
+    requestAvailabilityWithdrawalLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Generic response independent of whether any alerts exist. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "requested";
+                    };
+                };
+            };
+            /** @description Invalid email. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Link delivery temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    withdrawAvailabilityAlerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description All pending alerts for a valid capability removed. Unknown, expired and used tokens return the same response. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "withdrawn";
+                    };
+                };
+            };
+            /** @description Invalid token shape. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
     createCheckoutSession: {
         parameters: {
             query?: never;
@@ -623,6 +762,53 @@ export interface operations {
             };
             /** @description Checkout is not configured. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmNewsletter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Mailbox confirmed and request processed; global unsubscribe preferences are preserved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "confirmed";
+                    };
+                };
+            };
+            /** @description Invalid, expired or already used confirmation. Request a new link. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Activation failed. Request a new confirmation; this token cannot be replayed. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

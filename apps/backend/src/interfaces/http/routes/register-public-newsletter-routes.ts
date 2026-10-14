@@ -26,6 +26,7 @@ export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
         context.json(
           {
             status: 'registered' as const,
+            confirmationRequired: true as const,
           },
           200,
         ),

@@ -95,7 +95,7 @@ describe('D1 availability alerts', () => {
     await expect(repository.countWaiting(variantId)).resolves.toBe(1);
     await expect(request(variantId, 'two@example.com', 2)).resolves.toBe('accepted');
     await expect(request(variantId, 'three@example.com', 2)).resolves.toBe('cap_reached');
-    await expect(request(variantId, 'two@example.com', 2)).resolves.toBe('accepted');
+    await expect(request(variantId, 'two@example.com', 2)).resolves.toBe('cap_reached');
     await expect(repository.countWaiting(variantId)).resolves.toBe(2);
     await expect(
       db

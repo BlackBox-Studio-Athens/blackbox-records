@@ -906,6 +906,7 @@ describe('public commerce routes', () => {
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       status: 'registered',
+      confirmationRequired: true,
     });
   });
 

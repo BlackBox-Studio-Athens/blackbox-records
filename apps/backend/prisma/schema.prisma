@@ -319,10 +319,31 @@ model AvailabilityAlert {
   updatedAt          DateTime
 
   @@unique([variantId, email])
+  @@index([email], map: "AvailabilityAlert_email")
   @@index([status, nextAttemptAt, createdAt])
 }
 
 model AvailabilityAlertSendDay {
   day       String @id
   sentCount Int    @default(0)
+}
+
+model EmailConsent {
+  id         String @id
+  tokenHash  String @unique
+  purpose    String
+  email      String
+  payload    String
+  createdAt  String
+  expiresAt  String
+  sentAt     String?
+  consumedAt String?
+
+  @@index([email, purpose, createdAt], map: "EmailConsent_recipient")
+  @@index([expiresAt], map: "EmailConsent_expiry")
+}
+
+model EmailConsentSendDay {
+  day           String @id
+  reservedCount Int
 }

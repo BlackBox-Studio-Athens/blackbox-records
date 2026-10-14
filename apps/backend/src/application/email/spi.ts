@@ -23,6 +23,8 @@ export type ProviderEmailMessage = {
 };
 
 export type ProviderNewsletterContact = {
+  /** Set only after the server consumes a mailbox confirmation capability. Never accepted from public input. */
+  ownershipVerified?: true;
   email: string;
   properties: Record<string, string | number | null>;
   segmentId: string | null;

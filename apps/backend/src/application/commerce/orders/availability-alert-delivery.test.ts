@@ -45,6 +45,7 @@ function setup(claims: AvailabilityAlertDelivery[], options: { budgetLeft?: numb
   let budgetLeft = options.budgetLeft ?? 40;
   const queue = [...claims];
   const repository = {
+    isCurrent: vi.fn<AvailabilityAlertRepository['isCurrent']>().mockResolvedValue(true),
     request: vi.fn<AvailabilityAlertRepository['request']>(),
     countWaiting: vi.fn<AvailabilityAlertRepository['countWaiting']>(),
     deleteExpired: vi.fn<AvailabilityAlertRepository['deleteExpired']>().mockResolvedValue(2),
@@ -65,6 +66,16 @@ function setup(claims: AvailabilityAlertDelivery[], options: { budgetLeft?: numb
 }
 
 describe('availability alert drain', () => {
+  it('does not send an alert withdrawn after its lease was claimed', async () => {
+    const { itemNames, provider, repository, run } = setup([delivery()]);
+    itemNames.mockImplementationOnce(async () => {
+      repository.isCurrent.mockResolvedValue(false);
+      return publishedNames['anarchotribal-vinyl']!;
+    });
+    await expect(run()).resolves.toMatchObject({ deliveredCount: 0, leaseLostCount: 1 });
+    expect(provider.sendEmail).not.toHaveBeenCalled();
+    expect(repository.reschedule).not.toHaveBeenCalled();
+  });
   it('expires old alerts, sends one email per due alert through the UAT sink and deletes it', async () => {
     const { provider, repository, run } = setup([delivery()]);
 

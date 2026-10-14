@@ -303,8 +303,66 @@ const newsletterRegistrationBodySchema = z
 const newsletterRegistrationResponseSchema = z
   .object({
     status: z.literal('registered'),
+    confirmationRequired: z
+      .literal(true)
+      .optional()
+      .describe('Always returned by the current Worker; optional for older typed clients.'),
   })
   .openapi('NewsletterRegistrationResponse');
+
+const emailConsentTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
+const emailConsentLinkSchema = z.object({ email: z.string().trim().max(320).email() }).strict();
+
+export const postNewsletterConfirmationRoute = createRoute({
+  method: 'post',
+  path: '/api/newsletter/confirmations',
+  operationId: 'confirmNewsletter',
+  request: { body: { required: true, content: { 'application/json': { schema: emailConsentTokenSchema } } } },
+  responses: {
+    200: {
+      description: 'Mailbox confirmed and request processed; global unsubscribe preferences are preserved.',
+      content: { 'application/json': { schema: z.object({ status: z.literal('confirmed') }) } },
+    },
+    400: { description: 'Invalid, expired or already used confirmation. Request a new link.', content: problemContent },
+    503: {
+      description: 'Activation failed. Request a new confirmation; this token cannot be replayed.',
+      content: problemContent,
+    },
+  },
+  tags: ['Newsletter'],
+});
+
+export const postAvailabilityWithdrawalLinkRoute = createRoute({
+  method: 'post',
+  path: '/api/availability-alerts/withdrawal-links',
+  operationId: 'requestAvailabilityWithdrawalLink',
+  request: { body: { required: true, content: { 'application/json': { schema: emailConsentLinkSchema } } } },
+  responses: {
+    200: {
+      description: 'Generic response independent of whether any alerts exist.',
+      content: { 'application/json': { schema: z.object({ status: z.literal('requested') }) } },
+    },
+    400: { description: 'Invalid email.', content: problemContent },
+    503: { description: 'Link delivery temporarily unavailable.', content: problemContent },
+  },
+  tags: ['Store'],
+});
+
+export const postAvailabilityWithdrawalRoute = createRoute({
+  method: 'post',
+  path: '/api/availability-alerts/withdrawals',
+  operationId: 'withdrawAvailabilityAlerts',
+  request: { body: { required: true, content: { 'application/json': { schema: emailConsentTokenSchema } } } },
+  responses: {
+    200: {
+      description:
+        'All pending alerts for a valid capability removed. Unknown, expired and used tokens return the same response.',
+      content: { 'application/json': { schema: z.object({ status: z.literal('withdrawn') }) } },
+    },
+    400: { description: 'Invalid token shape.', content: problemContent },
+  },
+  tags: ['Store'],
+});
 
 export const servicesInquiryBodySchema = z
   .object({
@@ -654,6 +712,9 @@ const publicContractModules = [
   postCheckoutSessionRoute,
   getCheckoutStateRoute,
   postNewsletterRegistrationRoute,
+  postNewsletterConfirmationRoute,
+  postAvailabilityWithdrawalLinkRoute,
+  postAvailabilityWithdrawalRoute,
   postServicesInquiryRoute,
   postWithdrawalRoute,
 ] as const;

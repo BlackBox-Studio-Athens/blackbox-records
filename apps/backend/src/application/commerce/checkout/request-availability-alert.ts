@@ -16,7 +16,7 @@ export function acceptsAvailabilityAlerts(offer: StoreOffer): boolean {
   return offer.catalogStatus === 'sold_out' && isAvailabilityAlertEligible(offer.availability.state);
 }
 
-/** Records one pending alert; a repeat request for the same address is the same success. */
+/** Records one pending alert; repeats succeed unless the variant is at its address-independent cap. */
 export async function requestAvailabilityAlert(
   offer: StoreOffer | null,
   alerts: Pick<AvailabilityAlertRepository, 'request'>,

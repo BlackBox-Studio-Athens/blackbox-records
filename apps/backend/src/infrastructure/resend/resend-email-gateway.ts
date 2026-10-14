@@ -36,10 +36,10 @@ export class ResendEmailGateway implements EmailProviderGateway {
   }
 
   public async registerNewsletterContact(contact: ProviderNewsletterContact): Promise<EmailProviderOperationResult> {
+    if (!contact.ownershipVerified) return { ok: false, reason: 'validation', retryable: false };
     const updateResult = await this.resend.contacts.update({
       email: contact.email,
       properties: contact.properties,
-      unsubscribed: false,
     });
 
     if (updateResult.error?.name === 'not_found') {
@@ -53,7 +53,6 @@ export class ResendEmailGateway implements EmailProviderGateway {
             subscription: 'opt_in',
           },
         ],
-        unsubscribed: false,
       });
 
       return mapResendResponse(createResult);

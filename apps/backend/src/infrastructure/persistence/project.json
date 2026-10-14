@@ -16,6 +16,7 @@
     "boundaries": {
       "status": "closed",
       "exports": [
+        "./d1-email-consent-repository.ts",
         "./d1-order-dispatch-repository.ts",
         "./d1-order-withdrawal-repository.ts",
         "./d1-availability-alert-repository.ts",
@@ -25,7 +26,7 @@
         "./prisma/index.ts"
       ],
       "namedInterfaces": {},
-      "dependsOn": ["commerce-domain", "backend-platform", "generated-prisma"],
+      "dependsOn": ["commerce-domain", "backend-platform", "generated-prisma", "email-application"],
       "workspaceInterfaces": {}
     }
   }

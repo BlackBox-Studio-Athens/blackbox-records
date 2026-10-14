@@ -46,15 +46,26 @@ const leaseGuardSql = `WHERE "id" = ? AND "status" = 'sending' AND "attemptCount
 export class D1AvailabilityAlertRepository implements AvailabilityAlertRepository {
   public constructor(private readonly db: D1Database) {}
 
+  public async isCurrent(alert: ClaimedAvailabilityAlert): Promise<boolean> {
+    return (
+      (await this.db
+        .prepare(`SELECT 1 FROM "AvailabilityAlert" ${leaseGuardSql}`)
+        .bind(...leaseParameters(alert))
+        .first()) !== null
+    );
+  }
+
   public async request(input: AvailabilityAlertRequest, pendingCap: number): Promise<'accepted' | 'cap_reached'> {
     const timestamp = input.consentedAt.toISOString();
-    const inserted = await this.db
+    const inserted = this.db
       .prepare(
         `INSERT INTO "AvailabilityAlert"
            ("id", "variantId", "email", "consentCopyVersion", "consentedAt", "status", "attemptCount",
             "nextAttemptAt", "leaseUntil", "createdAt", "updatedAt")
          SELECT ?, ?, ?, ?, ?, 'pending', 0, ?, NULL, ?, ?
          WHERE (SELECT COUNT(*) FROM "AvailabilityAlert" WHERE "variantId" = ?) < ?
+           AND (? = 0 OR EXISTS (SELECT 1 FROM "EmailConsent" WHERE "purpose" = 'availability-withdrawal'
+             AND "email" = ? AND "sentAt" IS NOT NULL AND "consumedAt" IS NULL AND "expiresAt" > ?))
          ON CONFLICT ("variantId", "email") DO NOTHING`,
       )
       .bind(
@@ -68,14 +79,19 @@ export class D1AvailabilityAlertRepository implements AvailabilityAlertRepositor
         timestamp,
         input.variantId,
         pendingCap,
+        input.withdrawalRequired ? 1 : 0,
+        input.email,
+        timestamp,
+      );
+    const existing = this.db
+      // At capacity, return the same busy outcome for existing and unknown addresses.
+      .prepare(
+        `SELECT 1 AS "found" FROM "AvailabilityAlert" WHERE "variantId" = ? AND "email" = ?
+        AND (SELECT COUNT(*) FROM "AvailabilityAlert" WHERE "variantId" = ?) < ?`,
       )
-      .run();
-    if (inserted.meta.changes === 1) return 'accepted';
-    const existing = await this.db
-      .prepare('SELECT 1 AS "found" FROM "AvailabilityAlert" WHERE "variantId" = ? AND "email" = ?')
-      .bind(input.variantId, input.email)
-      .first();
-    return existing ? 'accepted' : 'cap_reached';
+      .bind(input.variantId, input.email, input.variantId, pendingCap);
+    const [insertion, duplicate] = await this.db.batch([inserted, existing]);
+    return insertion!.meta.changes === 1 || duplicate!.results.length > 0 ? 'accepted' : 'cap_reached';
   }
 
   public async countWaiting(variantId: VariantId): Promise<number> {
@@ -188,11 +204,17 @@ export class D1AvailabilityAlertRepository implements AvailabilityAlertRepositor
   }
 
   public async delete(alert: ClaimedAvailabilityAlert): Promise<boolean> {
-    const result = await this.db
-      .prepare(`DELETE FROM "AvailabilityAlert" ${leaseGuardSql}`)
-      .bind(...leaseParameters(alert))
-      .run();
-    return result.meta.changes === 1;
+    const [result] = await this.db.batch([
+      this.db.prepare(`DELETE FROM "AvailabilityAlert" ${leaseGuardSql}`).bind(...leaseParameters(alert)),
+      // The final delivered alert must also remove its mailbox's now-unneeded management capabilities.
+      this.db
+        .prepare(
+          `DELETE FROM "EmailConsent" WHERE "purpose" = 'availability-withdrawal' AND "email" = ?
+        AND NOT EXISTS (SELECT 1 FROM "AvailabilityAlert" WHERE "email" = ?)`,
+        )
+        .bind(alert.email, alert.email),
+    ]);
+    return result!.meta.changes === 1;
   }
 }
 

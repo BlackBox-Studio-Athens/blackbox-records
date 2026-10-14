@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { env } from 'cloudflare:workers';
 
 import { createHttpApp } from './app';
 import { createEmailRuntimeServices } from '../../infrastructure/resend';
-import { ResendEmailGateway } from '../../infrastructure/resend';
 
 const localBindings = {
   CHECKOUT_RETURN_ORIGINS: 'http://127.0.0.1:4321,http://localhost:4321',
-  COMMERCE_DB: {} as D1Database,
+  COMMERCE_DB: env.COMMERCE_DB,
   EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
   EMAIL_BRAND_LOGO_URL: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   PRODUCT_ENVIRONMENT: 'LOCAL' as const,
@@ -20,6 +20,47 @@ const localBindings = {
 };
 
 describe('email runtime services', () => {
+  it('withdraws without provider credentials and keeps guessed tokens indistinguishable', async () => {
+    const app = createHttpApp();
+    const bindings = { COMMERCE_DB: env.COMMERCE_DB };
+    for (const token of ['a'.repeat(64), 'b'.repeat(64)]) {
+      const response = await app.request(
+        'http://backend.test/api/availability-alerts/withdrawals',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ token }),
+        },
+        bindings,
+      );
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      await expect(response.json()).resolves.toEqual({ status: 'withdrawn' });
+    }
+  });
+
+  it('rejects tokens in malformed or extra-field bodies without revealing state', async () => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/availability-alerts/withdrawals',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'a'.repeat(64), email: 'other@example.com' }),
+      },
+      { COMMERCE_DB: env.COMMERCE_DB },
+    );
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(await response.json())).not.toContain('other@example.com');
+  });
+
+  it('does not treat a GET as newsletter confirmation or alert withdrawal', async () => {
+    const app = createHttpApp();
+    for (const route of ['newsletter/confirmations', 'availability-alerts/withdrawals']) {
+      const response = await app.request(`http://backend.test/api/${route}`, {}, { COMMERCE_DB: env.COMMERCE_DB });
+      expect(response.status).toBe(404);
+    }
+  });
+
   it('uses a no-network email provider for local fake Resend config', async () => {
     const { provider } = createEmailRuntimeServices(localBindings);
 
@@ -54,7 +95,8 @@ describe('email runtime services', () => {
       RESEND_API_KEY: 're_real_local_test_key',
     });
 
-    expect(provider).toBeInstanceOf(ResendEmailGateway);
+    expect(typeof provider.registerNewsletterContact).toBe('function');
+    expect(typeof provider.sendEmail).toBe('function');
   });
 
   it('keeps real Resend gateway selection outside local even with mock-shaped keys', () => {
@@ -65,7 +107,8 @@ describe('email runtime services', () => {
       RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
     });
 
-    expect(provider).toBeInstanceOf(ResendEmailGateway);
+    expect(typeof provider.registerNewsletterContact).toBe('function');
+    expect(typeof provider.sendEmail).toBe('function');
   });
 
   it('lets the public newsletter route register locally without real Resend', async () => {
@@ -87,7 +130,7 @@ describe('email runtime services', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-    await expect(response.json()).resolves.toEqual({ status: 'registered' });
+    await expect(response.json()).resolves.toEqual({ status: 'registered', confirmationRequired: true });
   });
 
   it('lets the public Services inquiry route submit locally without real Resend', async () => {

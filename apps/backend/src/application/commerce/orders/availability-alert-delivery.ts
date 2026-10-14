@@ -89,6 +89,11 @@ export async function drainDueAvailabilityAlerts(input: {
     let sent = false;
     let retryable = true;
     let safeReason = 'provider_outcome_unknown';
+    // Withdrawal deletes pending and leased rows. A stale drain must not submit or recreate them.
+    if (!(await repository.isCurrent(alert))) {
+      summary.leaseLostCount += 1;
+      continue;
+    }
     try {
       const attempt = await sendAvailabilityAlertEmail({
         config: input.config,

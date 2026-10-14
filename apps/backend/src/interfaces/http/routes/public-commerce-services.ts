@@ -44,6 +44,7 @@ import { readStoreListingPrices } from '../../../application/commerce/checkout/r
 import { resolveTaxCollectionMode, type VariantId } from '../../../domain/commerce';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
+import { createEmailRuntimeServices } from '../../../infrastructure/resend';
 
 export async function readPublicStoreCapabilities(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const mode = resolveTaxCollectionMode(
@@ -172,7 +173,17 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
           productProjections,
           storeItemSlug,
         ),
-        new D1AvailabilityAlertRepository(bindings.COMMERCE_DB),
+        {
+          request: async (input, cap) => {
+            const runtime = createEmailRuntimeServices(bindings);
+            const result = await runtime.consent.requestAlertWithdrawal(input.email);
+            if (!result.ok) throw new AvailabilityAlertCapReachedError('Alert email is temporarily unavailable.');
+            return new D1AvailabilityAlertRepository(bindings.COMMERCE_DB).request(
+              { ...input, withdrawalRequired: true },
+              cap,
+            );
+          },
+        },
         { storeItemSlug, email, consentedAt: new Date() },
       ),
     readStoreListingPrices: async (scope?: 'preorders') => readStoreListingPrices(storeOfferSnapshots, scope),

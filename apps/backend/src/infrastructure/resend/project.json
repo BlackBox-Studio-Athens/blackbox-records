@@ -17,7 +17,7 @@
       "status": "closed",
       "exports": ["./index.ts"],
       "namedInterfaces": {},
-      "dependsOn": ["email-application", "backend-platform"],
+      "dependsOn": ["email-application", "backend-platform", "commerce-persistence"],
       "workspaceInterfaces": {}
     }
   }

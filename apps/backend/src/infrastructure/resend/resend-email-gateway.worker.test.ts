@@ -23,6 +23,21 @@ function failure(name: string, statusCode = 400) {
 }
 
 describe('ResendEmailGateway', () => {
+  it('rejects unverified contacts without any provider write', async () => {
+    const update = vi.fn();
+    const create = vi.fn();
+    const gateway = new ResendEmailGateway({ contacts: { update, create }, emails: { send: vi.fn() } } as never);
+    await expect(
+      gateway.registerNewsletterContact({
+        email: 'other@example.com',
+        properties: {},
+        segmentId: null,
+        topicId: 'topic',
+      }),
+    ).resolves.toEqual({ ok: false, reason: 'validation', retryable: false });
+    expect(update).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
   it('maps email send payloads to the SDK with idempotency options', async () => {
     const send = vi.fn(async () => success());
     const gateway = new ResendEmailGateway({
@@ -80,6 +95,7 @@ describe('ResendEmailGateway', () => {
 
     await expect(
       gateway.registerNewsletterContact({
+        ownershipVerified: true,
         email: 'uat-sink@ambkime.resend.app',
         properties: {
           consentSource: 'site-form',
@@ -94,7 +110,6 @@ describe('ResendEmailGateway', () => {
       properties: {
         consentSource: 'site-form',
       },
-      unsubscribed: false,
     });
     expect(updateTopics).toHaveBeenCalledWith({
       email: 'uat-sink@ambkime.resend.app',
@@ -120,6 +135,7 @@ describe('ResendEmailGateway', () => {
 
     await expect(
       gateway.registerNewsletterContact({
+        ownershipVerified: true,
         email: 'subscriber@example.com',
         properties: {
           consentSource: 'site-form',
@@ -136,7 +152,6 @@ describe('ResendEmailGateway', () => {
       },
       segments: undefined,
       topics: [{ id: 'topic_newsletter', subscription: 'opt_in' }],
-      unsubscribed: false,
     });
   });
 

@@ -1,4 +1,6 @@
 export { EmailConfigurationError } from './errors';
+export { createEmailConsentServices, hashEmailConsentToken } from './consent-capabilities';
+export type { EmailConsentRepository, EmailConsentRecord, EmailConsentPurpose } from './consent-capabilities';
 export { readEmailRuntimeConfig, UAT_RESEND_RECEIVING_SINK_EMAIL } from './config';
 export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';

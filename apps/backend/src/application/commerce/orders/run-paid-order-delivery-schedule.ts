@@ -10,6 +10,7 @@ import { createFeatureFlagReader, parseBooleanOverride } from '../checkout/featu
 import type { AppBindings } from '../../../platform/env';
 import { createBindingLogger, normalizeUnknownError } from '../../../platform/observability';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
+import { D1EmailConsentRepository } from '../../../infrastructure/persistence/d1-email-consent-repository';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
 import { D1OrderWithdrawalRepository } from '../../../infrastructure/persistence/d1-order-withdrawal-repository';
 import { drainWithdrawalDeliveries } from './order-withdrawal';
@@ -27,6 +28,8 @@ export async function runPaidOrderDeliverySchedule(
   let event = 'paid_order_delivery_schedule_outcome';
 
   try {
+    // Cleanup must still run when provider credentials are unavailable.
+    await new D1EmailConsentRepository(bindings.COMMERCE_DB).prune(scheduledAt);
     const emailRuntime = createEmailRuntimeServices(bindings);
     const orders = new PrismaOrderStateRepository(prisma);
     const results = await drainDuePaidOrderDeliveries({
