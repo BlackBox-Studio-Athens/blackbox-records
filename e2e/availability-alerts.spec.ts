@@ -3,6 +3,9 @@ import {
   expect,
   expectNoHorizontalOverflow,
   localRepresentativePaths,
+  plantSentinel,
+  press,
+  sentinelIntact,
   test,
   waitForIsland,
   waitForShell,
@@ -158,4 +161,70 @@ test('a paused item shows no status and no Notify me', async ({ page }) => {
   await expect(purchase.locator('[data-store-item-purchase-status]')).toHaveCount(0);
   await expect(purchase.getByRole('button', { name: 'Email me when it lands' })).toHaveCount(0);
   await expect(purchase).not.toContainText(/Unavailable|Out of Stock/);
+});
+
+test('manage alerts opens preferences in a new tab and keeps the player, document and cart', async ({
+  page,
+  context,
+  isMobile,
+}) => {
+  // Provider embeds are replaced by a local fixture, as in player-continuity.spec.ts.
+  await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  const cart = JSON.stringify({
+    lines: [
+      {
+        availabilityLabel: 'In stock',
+        image: null,
+        imageAlt: null,
+        optionLabel: 'Black Vinyl LP',
+        priceAmountMinor: 2800,
+        priceCurrencyCode: 'EUR',
+        priceDisplay: '€28.00',
+        priceKind: 'fixed',
+        storeItemSlug: 'caregivers-vinyl',
+        subtitle: 'BlackBox Records',
+        title: 'Caregivers',
+        variantId: 'caregivers-vinyl_standard',
+        quantity: 1,
+      },
+    ],
+  });
+  await page.addInitScript((value) => {
+    if (!localStorage.getItem('blackbox.storeCart.v2')) localStorage.setItem('blackbox.storeCart.v2', value);
+  }, cart);
+  const purchase = await openItem(page, zeroStockOffer('repressing'));
+  await plantSentinel(page);
+  const readCart = () => page.evaluate(() => localStorage.getItem('blackbox.storeCart.v2'));
+  const cartBefore = await readCart();
+
+  await press(page.locator('[data-music-streaming-service-embedded-player-trigger]').first(), isMobile);
+  const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
+  await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await press(page.getByRole('button', { name: 'Minimize player' }), isMobile);
+  const originalIframe = await iframe.elementHandle();
+
+  await press(purchase.getByRole('button', { name: 'Email me when it lands', exact: true }), isMobile);
+  const manage = purchase.getByRole('link', { name: 'manage alerts (opens in a new tab)', exact: true });
+  // The visible words are unchanged; the new-tab notice is for assistive technology only.
+  await expect(manage).toHaveText('manage alerts (opens in a new tab)');
+  await expect(manage.locator('.sr-only')).toHaveCSS('position', 'absolute');
+  await expect(manage).toHaveAttribute('target', '_blank');
+  await expect(manage).toHaveAttribute('rel', 'noopener noreferrer');
+  const [preferences] = await Promise.all([context.waitForEvent('page'), press(manage, isMobile)]);
+
+  await preferences.waitForLoadState();
+  await expect(preferences).toHaveURL(/\/email-preferences\/$/);
+  await expect(preferences.getByRole('heading', { name: 'Request a new link' })).toBeVisible();
+  // noopener: the preferences document cannot reach back into the shell.
+  expect(await preferences.evaluate(() => window.opener)).toBeNull();
+  await preferences.close();
+
+  expect(await sentinelIntact(page)).toBe(true);
+  expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
+  await expect(iframe).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Open player' })).toBeVisible();
+  expect(await readCart()).toBe(cartBefore);
 });

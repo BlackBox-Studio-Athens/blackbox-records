@@ -13,6 +13,7 @@ export const AVAILABILITY_ALERT_COPY = {
   optional: 'Optional:',
   fine: 'BlackBox Records uses your email only for what you ticked. Alert requests are kept for up to 12 months. Withdraw anytime from the link we email you, or',
   manage: 'manage alerts',
+  newTab: '(opens in a new tab)',
   send: 'Notify me',
   sending: 'Sending',
   cancel: 'Cancel',
@@ -261,8 +262,12 @@ export default function AvailabilityAlertForm({
         <a
           className="underline underline-offset-4"
           href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/email-preferences/`}
+          // A separate tab keeps the shell and its player; the token page stays an isolated document.
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {AVAILABILITY_ALERT_COPY.manage}
+          <span className="sr-only"> {AVAILABILITY_ALERT_COPY.newTab}</span>
         </a>
         . <PrivacyLink />
       </p>

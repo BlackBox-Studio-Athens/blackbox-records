@@ -7,14 +7,15 @@ export class D1EmailConsentRepository implements EmailConsentRepository {
 
   async reserve(record: EmailConsentRecord, day: string): Promise<EmailConsentRecord | null> {
     const recent = new Date(new Date(record.createdAt).getTime() - 60 * 60 * 1000).toISOString();
-    // One atomic batch reserves both a recipient attempt and one of twenty daily confirmation sends.
+    // One atomic batch reserves both a recipient attempt and one of twenty daily confirmation sends. Case variants
+    // share the cooldown; a reused unsent attempt keeps its own stored address and payload.
     await this.db.batch([
       this.db
         .prepare(
           `INSERT INTO "EmailConsent"
         ("id", "tokenHash", "purpose", "email", "payload", "createdAt", "expiresAt")
         SELECT ?, ?, ?, ?, ?, ?, ?
-        WHERE NOT EXISTS (SELECT 1 FROM "EmailConsent" WHERE "email" = ? AND "purpose" = ? AND "createdAt" > ?
+        WHERE NOT EXISTS (SELECT 1 FROM "EmailConsent" WHERE lower("email") = lower(?) AND "purpose" = ? AND "createdAt" > ?
           AND ("purpose" = 'newsletter' OR "consumedAt" IS NULL))
           AND COALESCE((SELECT "reservedCount" FROM "EmailConsentSendDay" WHERE "day" = ?), 0) < 20`,
         )
@@ -41,7 +42,7 @@ export class D1EmailConsentRepository implements EmailConsentRepository {
     ]);
     return this.db
       .prepare(
-        `SELECT * FROM "EmailConsent" WHERE "email" = ? AND "purpose" = ? AND "createdAt" > ?
+        `SELECT * FROM "EmailConsent" WHERE lower("email") = lower(?) AND "purpose" = ? AND "createdAt" > ?
           AND ("purpose" = 'newsletter' OR "consumedAt" IS NULL)
           AND (COALESCE((SELECT "reservedCount" FROM "EmailConsentSendDay" WHERE "day" = ?), 0) < 20 OR "id" = ?)
       ORDER BY "createdAt" DESC LIMIT 1`,

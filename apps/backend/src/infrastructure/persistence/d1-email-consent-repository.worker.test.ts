@@ -59,7 +59,8 @@ describe('D1 email consent capabilities', () => {
     const subscriber = contact();
     subscriber.email = `Fan-${crypto.randomUUID()}@example.com`;
     await expect(services.requestNewsletter(subscriber)).resolves.toEqual({ ok: true });
-    expect(provider.sendEmail.mock.calls[0]![0].to).toBe(subscriber.email.toLowerCase());
+    // Delivery uses the exact requested mailbox; local-part case belongs to the recipient host.
+    expect(provider.sendEmail.mock.calls[0]![0].to).toBe(subscriber.email);
     // A case variant shares the recipient cooldown instead of spending another daily send.
     await expect(services.requestNewsletter({ ...subscriber, email: subscriber.email.toUpperCase() })).resolves.toEqual(
       {
@@ -71,7 +72,7 @@ describe('D1 email consent capabilities', () => {
     const rawToken = token();
     expect(rawToken).toMatch(/^[a-f0-9]{64}$/);
     const record = await env.COMMERCE_DB.prepare('SELECT * FROM "EmailConsent" WHERE "email" = ?')
-      .bind(subscriber.email.toLowerCase())
+      .bind(subscriber.email)
       .first();
     expect(JSON.stringify(record)).not.toContain(rawToken);
     expect(record).toMatchObject({ tokenHash: await hashEmailConsentToken(rawToken), sentAt: now.toISOString() });
@@ -97,6 +98,23 @@ describe('D1 email consent capabilities', () => {
     await services.requestNewsletter(subscriber);
     expect(provider.sendEmail).toHaveBeenCalledTimes(2);
     expect(provider.registerNewsletterContact).not.toHaveBeenCalled();
+  });
+
+  it('retries an unsent attempt with its own address when a later request uses another case', async () => {
+    const { provider, services, token } = setup();
+    const subscriber = { ...contact(), email: `CaseSensitive-${crypto.randomUUID()}@Example.com` };
+    provider.sendEmail.mockRejectedValueOnce(new Error('unknown outcome'));
+    await services.requestNewsletter(subscriber);
+    await expect(services.requestNewsletter({ ...subscriber, email: subscriber.email.toLowerCase() })).resolves.toEqual(
+      { ok: true },
+    );
+    expect(provider.sendEmail).toHaveBeenCalledTimes(2);
+    expect(provider.sendEmail.mock.calls[1]![0]).toEqual(provider.sendEmail.mock.calls[0]![0]);
+    expect(provider.sendEmail.mock.calls[1]![0].to).toBe(subscriber.email);
+    await services.confirmNewsletter(token(1));
+    expect(provider.registerNewsletterContact).toHaveBeenCalledWith(
+      expect.objectContaining({ email: subscriber.email }),
+    );
   });
 
   it('leaves a failed activation consumed; an old link cannot re-subscribe on retry', async () => {

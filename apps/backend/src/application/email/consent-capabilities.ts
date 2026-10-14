@@ -72,9 +72,9 @@ export function createEmailConsentServices(input: {
         id,
         tokenHash: await hashEmailConsentToken(token),
         purpose,
-        // Case variants share one cooldown, so they cannot drain the shared daily send budget.
-        email: email.trim().toLowerCase(),
-        payload: JSON.stringify(contact ?? {}),
+        // Newsletter keeps the exact mailbox for delivery and activation; alerts are stored lowercased.
+        email: purpose === 'newsletter' ? email.trim() : email.trim().toLowerCase(),
+        payload: JSON.stringify(contact ? { ...contact, email: email.trim() } : {}),
         createdAt: requestedAt.toISOString(),
         expiresAt: expiresAt.toISOString(),
         sentAt: null,

@@ -513,7 +513,10 @@ describe('Notify me', () => {
     expect(html).toContain(NEWSLETTER_CONSENT_LABEL);
     expect(html).toContain(AVAILABILITY_ALERT_COPY.fine);
     // The management page takes no fragment here; only emailed links carry a capability.
-    expect(html).toMatch(/<a [^>]*href="[^"#]*\/email-preferences\/">manage alerts<\/a>\./);
+    // A new tab keeps the shell's player; the extra words are for assistive technology only.
+    expect(html).toMatch(
+      /<a [^>]*href="[^"#]*\/email-preferences\/" target="_blank" rel="noopener noreferrer">manage alerts<span class="sr-only"> \(opens in a new tab\)<\/span><\/a>\./,
+    );
     expect(html).toContain('>Notify me</button>');
     expect(html).toContain('site-button--link');
     expect(html).toContain('>Cancel</button>');
