@@ -366,26 +366,38 @@ body {
     gap: 2px;
   }
 
+  /* One slim line; the explanation truncates first on narrow screens. */
   .uat-site-banner {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 4px 16px;
-    padding: 4px 12px;
+    gap: 12px;
+    padding: 0 12px;
     background: oklch(88% 0.16 95);
     color: oklch(20% 0.02 95);
     font:
-      400 14px/1.5 Inter,
+      400 11px/1.2 Inter,
       system-ui,
       sans-serif;
+    white-space: nowrap;
+  }
+
+  .uat-site-banner > * {
+    flex-shrink: 0;
+  }
+
+  .uat-site-banner > span {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .uat-site-banner a {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    min-height: 36px;
+    min-height: 24px;
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -2867,6 +2879,25 @@ body {
         rgba(5, 5, 5, 0.82) 100%
       );
     pointer-events: none;
+  }
+
+  /* Footage is darker than the still, so the film hero keeps shade only where the tagline and header need it. */
+  .homepage-hero-section:has(.homepage-hero-section__film) .homepage-hero-section__shade-layer {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(5, 5, 5, 0.34) 0%,
+        rgba(5, 5, 5, 0.08) 20%,
+        rgba(5, 5, 5, 0.14) 55%,
+        rgba(5, 5, 5, 0.74) 100%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(5, 5, 5, 0.55) 0%,
+        rgba(5, 5, 5, 0.12) 42%,
+        rgba(5, 5, 5, 0) 68%,
+        rgba(5, 5, 5, 0.28) 100%
+      );
   }
 
   .homepage-hero-section__tagline-text {

@@ -2,7 +2,7 @@
 
 ### Requirement: Homepage hero film
 
-When prepared hero film files exist, the homepage hero SHALL play a silent looping film over its still image under the approved Home motion rules. The film SHALL be brightened grayscale baked into the files, SHALL never show the BlackBox Studio logo burned into the source footage, and SHALL leave the still as the hero's eager image and its fallback.
+When prepared hero film files exist, the homepage hero SHALL play a silent looping film over its still image under the approved Home motion rules. The film SHALL be high-contrast grayscale baked into the files, SHALL never show the BlackBox Studio logo burned into the source footage, and SHALL leave the still as the hero's eager image and its fallback.
 
 #### Scenario: Eligible visitor opens Home
 

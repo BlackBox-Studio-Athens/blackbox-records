@@ -32,3 +32,11 @@ Base commit `54132b781722ec9077bcc29b0401b7997376e423` on `main`, uncommitted. P
 - Committed as `51c556b856c0f06c1ec03723787a1a1b99e9e451` and pushed to `main` with the earlier unpushed `54132b78` (email branding), which the owner approved releasing together. PRD was not promoted.
 - [Release run 38619803357](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38619803357): every `deploy-uat` step passed, including deployed-release verification, the UAT static smoke and "Require UAT to still serve this run". The first attempt of e2e shard 4 failed `release-merchandising.spec.ts:525` in Firefox (the Music player dialog did not open after a Store Item document round trip), a path this change does not touch; it passed 3/3 locally in Firefox and the re-run of the failed shard passed, so the run concluded `success`. Logs: `.codex-artifacts/hero-video/uat-run-e2e4-failed.log`.
 - UAT (`https://blackbox-records-web-uat.pages.dev/`) is behind Cloudflare Access; the agent's connected Chrome was not signed in, so the hosted hero was not viewed by the agent. Owner review on UAT remains the hosted visual acceptance.
+
+## UAT review revision
+
+The owner found the first grade dark and hazy on UAT. The gamma lift flattened blacks and the approved still-photo shade (up to 92% black) sat over already dark footage. Revisions:
+
+- Grade `hqdn3d=1:1:2:2,hue=s=0,curves=master='0/0 0.06/0.03 0.2/0.26 0.45/0.62 0.75/0.9 1/1',unsharp=5:5:0.5` on Codex's unchanged crop/cadence intermediates. Landscape CRF 27, 3,870,044 bytes, SHA-256 `081db032c6827badc03d0819e370ca27e36472ced1c129045f06f79fff2f0a14`; portrait CRF 26, 1,873,449 bytes, SHA-256 `a50a5f778bb3b0c8a51ab82f667b0e738c5acb968209e1be805eeb60eced4865`. Crops are unchanged, so the logo proof still holds.
+- A hero containing the film (`:has(.homepage-hero-section__film)`) gets a lighter shade that darkens only the header band, the tagline side and the bottom edge. Reduced-motion still and both film sizes checked: `.codex-artifacts/hero-video/regrade/`.
+- The UAT review banner is now one 24 px line whose explanation truncates first (previously wrapped to about 80 px on phones); its text and the release marker check are unchanged.
