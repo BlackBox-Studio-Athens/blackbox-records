@@ -4,12 +4,40 @@
  * two of them without falling back to matrices.
  */
 import type { FlipHand, FlipMotion, RackHand, RackMotion } from './crate-model';
-import { DROP_MS, slotOf } from './crate-model';
+import {
+  DROP_MS,
+  RIFFLE_ARRIVE_MS,
+  RIFFLE_FALL_MS,
+  RIFFLE_MAX,
+  RIFFLE_SETTLE_MS,
+  riffleStarts,
+  slotOf,
+} from './crate-model';
 
+/** A cubic-bezier easing's control points. */
+export type Curve = readonly [number, number, number, number];
+export const cssCurve = (c: Curve) => `cubic-bezier(${c.join(', ')})`;
+const EASE_CURVE: Curve = [0.22, 1, 0.36, 1];
+const FALL_CURVE: Curve = [0.55, 0.06, 0.85, 0.4];
+const EASE_IN_CURVE: Curve = [0.32, 0, 0.67, 0];
+const LINEAR: Curve = [0, 0, 1, 1];
 /** The site's one curve, quint ease-out. */
-export const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+export const EASE = cssCurve(EASE_CURVE);
 /** Gravity: a falling sleeve speeds up until it lands. */
-export const FALL = 'cubic-bezier(0.55, 0.06, 0.85, 0.4)';
+export const FALL = cssCurve(FALL_CURVE);
+
+/** Where an easing stands at share `p` of its time, as the compositor computes it. */
+export function eased(c: Curve, p: number) {
+  const along = (a: number, b: number, t: number) => 3 * a * t * (1 - t) ** 2 + 3 * b * t * t * (1 - t) + t ** 3;
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 24; step += 1) {
+    const mid = (low + high) / 2;
+    if (along(c[0], c[2], mid) < p) low = mid;
+    else high = mid;
+  }
+  return along(c[1], c[3], (low + high) / 2);
+}
 
 /**
  * A flip bin, in stage pixels: sleeve size `w` × `h`; the viewpoint `H` above the hinge at distance `P`; sleeves
@@ -74,13 +102,8 @@ export interface Timing {
 
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 
-/**
- * The pose of sleeve `k` (k === count is the back board). `u` counts sleeves from the hand: 0 in hand, positive
- * stands further back, -1 leans on the pile, below -1 lies under it. A held sleeve's tip moves every `u` with it.
- */
-export function flipPose(hand: FlipHand, motion: FlipMotion | null, k: number, count: number, g: FlipGeometry): Pose {
-  const slot = slotOf(hand, count);
-  const u = k - slot - (motion?.kind === 'held' ? motion.tip : 0);
+/** `u` counts sleeves from the hand: 0 in hand, positive stands further back, -1 leans on the pile, below lies under it. */
+function poseAt(u: number, g: FlipGeometry): Pose {
   let z: number;
   let rx: number;
   let opacity: number;
@@ -101,14 +124,119 @@ export function flipPose(hand: FlipHand, motion: FlipMotion | null, k: number, c
     opacity = clamp(3 + u, 0, 1);
     shade = 0.85;
   }
-  let y = 0;
-  if (motion?.kind === 'still' && k < count) {
-    if (k === slot && motion.lean === 'front') rx = -g.tilt;
-    if (k === slot && motion.lean === 'hint') rx = -g.hint;
-    if (k === slot && motion.lean === 'lifted') y = -g.lift;
-    if (k === slot - 1 && motion.lean === 'pile') rx = -g.A + g.pileLift;
+  return { x: 0, y: 0, z, rx, ry: 0, s: 1, opacity, shade };
+}
+
+/** The pose of sleeve `k` (k === count is the back board). A held sleeve's tip moves every sleeve's `u` with it. */
+export function flipPose(hand: FlipHand, motion: FlipMotion | null, k: number, count: number, g: FlipGeometry): Pose {
+  const slot = slotOf(hand, count);
+  const pose = poseAt(k - slot - (motion?.kind === 'held' ? motion.tip : 0), g);
+  if (motion?.kind !== 'still' || k >= count) return pose;
+  if (k === slot && motion.lean === 'front') return { ...pose, rx: -g.tilt };
+  if (k === slot && motion.lean === 'hint') return { ...pose, rx: -g.hint };
+  if (k === slot && motion.lean === 'lifted') return { ...pose, y: -g.lift };
+  if (k === slot - 1 && motion.lean === 'pile') return { ...pose, rx: -g.A + g.pileLift };
+  return pose;
+}
+
+/** A pose a riffled sleeve reaches `at` milliseconds into the plan, eased from there to the next one by `ease`. */
+export interface RiffleFrame {
+  readonly at: number;
+  readonly pose: Pose;
+  readonly ease: Curve;
+}
+export interface RiffleTrack {
+  /** The sleeve, or the back board at k === count. */
+  readonly k: number;
+  /** Its place in the riffle: 0 is the first sleeve to leave the hand, negative ones already lie on the pile. */
+  readonly v: number;
+  readonly frames: readonly RiffleFrame[];
+  /** When a sleeve the hand passes lands on the pile; null for the rest. */
+  readonly lands: number | null;
+}
+export interface Riffle {
+  readonly duration: number;
+  /** A dig back plays the plan backwards. */
+  readonly reverse: boolean;
+  /** How many sleeves pass the hand. */
+  readonly n: number;
+  readonly tracks: readonly RiffleTrack[];
+}
+
+/**
+ * A dig past two or more sleeves as one planned riffle, so every sleeve moves once from where it is to where it ends.
+ * Sleeves leave the hand one after another and fall onto the pile, which gives under each one, while the stack behind
+ * steps up. A long dig riffles the sleeves in reach and the last few before the target; those between stay out of
+ * sight at both ends. It is planned from the lower slot, and a dig back plays it reversed: the top of the pile stands
+ * up first and pushes the rest back.
+ */
+export function flipRiffle(from: number, to: number, count: number, g: FlipGeometry): Riffle {
+  const dir = to > from ? 1 : -1;
+  const lo = Math.min(from, to);
+  const hi = Math.max(from, to);
+  const n = Math.min(hi - lo, RIFFLE_MAX);
+  // The sleeves in reach cover every one standing in sight, since no bin shows more than four behind the hand.
+  const near = RIFFLE_MAX - 3;
+  const starts = riffleStarts(n, dir).map((t) => t * g.tempo);
+  const lands = starts.map((t) => t + RIFFLE_FALL_MS * g.tempo);
+  const settle = RIFFLE_SETTLE_MS * g.tempo;
+  const arrive = RIFFLE_ARRIVE_MS * g.tempo;
+  const last = starts[n - 1]!;
+  const duration = last + Math.max(RIFFLE_FALL_MS * g.tempo + settle, arrive);
+  const tracks: RiffleTrack[] = [];
+  for (let v = -2; v <= n + g.peek; v += 1) {
+    const k = v < near ? lo + v : hi + v - n;
+    if (k < 0 || k > count) continue;
+    // Each point is a time, the sleeve's place from the hand then, and the easing on to the next point.
+    const points: [number, number, Curve][] = [];
+    if (v < 0) points.push([0, v, LINEAR]);
+    for (let j = 0; j <= Math.min(v, n - 1); j += 1) points.push([starts[j]!, v - j, j === 0 ? EASE_IN_CURVE : LINEAR]);
+    if (v >= n) {
+      points[points.length - 1]![2] = EASE_CURVE;
+      points.push([last + arrive, v - n, LINEAR]);
+    } else {
+      if (v >= 0) {
+        points[points.length - 1]![2] = FALL_CURVE;
+        points.push([lands[v]!, -1, LINEAR]);
+      }
+      // The pile gives under it as each later sleeve lands, sinking steadily until it lies out of sight beneath them.
+      let u = points[points.length - 1]![1];
+      for (let j = Math.max(0, v + 1); j < n && u > -3; j += 1) {
+        if (j === Math.max(0, v + 1)) points.push([lands[j]!, u, LINEAR]);
+        u -= 1;
+        points.push([lands[j]! + settle, u, LINEAR]);
+      }
+    }
+    points.push([duration, points[points.length - 1]![1], LINEAR]);
+    tracks.push({
+      k,
+      v,
+      frames: points.map(([at, u, ease]) => ({ at, pose: poseAt(u, g), ease })),
+      lands: v >= 0 && v < n ? lands[v]! : null,
+    });
   }
-  return { x: 0, y, z, rx, ry: 0, s: 1, opacity, shade };
+  return { duration, reverse: dir < 0, n, tracks };
+}
+
+/** Where a track's sleeve is `t` milliseconds into its plan, matching what the compositor draws then. */
+export function poseOnTrack(frames: readonly RiffleFrame[], t: number): Pose {
+  const next = frames.findIndex((frame) => frame.at > t);
+  if (next === 0) return frames[0]!.pose;
+  if (next < 0) return frames[frames.length - 1]!.pose;
+  const a = frames[next - 1]!;
+  const b = frames[next]!;
+  const p = eased(a.ease, (t - a.at) / (b.at - a.at));
+  const mix = (x: number, y: number) => x + (y - x) * p;
+  return {
+    x: mix(a.pose.x, b.pose.x),
+    y: mix(a.pose.y, b.pose.y),
+    z: mix(a.pose.z, b.pose.z),
+    rx: mix(a.pose.rx, b.pose.rx),
+    ry: mix(a.pose.ry, b.pose.ry),
+    s: mix(a.pose.s, b.pose.s),
+    opacity: mix(a.pose.opacity, b.pose.opacity),
+    shade: mix(a.pose.shade, b.pose.shade),
+  };
 }
 
 /** The tape in hand is pulled up out of the rack and turned to face you; the rest show their spines. */
@@ -168,21 +296,16 @@ export function flipTiming(
   g: FlipGeometry,
   reduce: boolean,
 ) {
-  if (reduce || motion.kind === 'held' || motion.kind === 'arriving') return null;
+  // A riffle runs as its own animation, so its sleeves take their final pose at once.
+  if (reduce || motion.kind === 'held' || motion.kind === 'arriving' || motion.kind === 'riffling') return null;
   const d = k - slotOf(hand, count);
   switch (motion.kind) {
     case 'dropping':
       // Gravity: the dropped sleeve speeds up until it lands, the pile gives under it, the rest step up.
       if (d === -1) return scaled({ dur: 220, ease: FALL, delay: 0 }, g.tempo);
       return scaled(d < -1 ? { dur: 110, ease: EASE, delay: 150 } : { dur: DROP_MS, ease: EASE, delay: 0 }, g.tempo);
-    case 'standingUp':
-      if (d >= 0 && k < motion.from)
-        return scaled({ dur: 560, ease: EASE, delay: (motion.from - 1 - k) * 26 }, g.tempo);
-      return scaled(d >= 0 ? { dur: 540, ease: EASE, delay: 0 } : { dur: 320, ease: EASE, delay: 0 }, g.tempo);
     case 'settling':
       return scaled(settleTiming(motion.dir, d), g.tempo);
-    case 'thumbing':
-      return scaled(settleTiming(motion.dir, d), 0.55 * g.tempo);
     default:
       return { dur: 240, ease: EASE, delay: 0 };
   }

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DROP_MS, type FlipMotion, type RackMotion, type Tip } from './crate-model';
+import { DROP_MS, RIFFLE_MAX, riffleMs, type FlipMotion, type RackMotion, type Tip } from './crate-model';
 import {
+  eased,
   flightPose,
   flipPose,
+  flipRiffle,
+  poseOnTrack,
   flipTiming,
   rackPose,
   rackTiming,
@@ -106,6 +109,65 @@ describe('the finger', () => {
     }
     expect(tipForDrag(0, crate)).toBeCloseTo(0);
     expect(tipForDrag(-10_000, crate)).toBeCloseTo(-1);
+  });
+});
+
+describe('riffles', () => {
+  const at = (index: number) => ({ on: 'sleeve', index }) as const;
+  const riffling = (from: number, to: number): FlipMotion => ({ kind: 'riffling', from, to });
+
+  it('moves every sleeve once, from where it stands to where the dig leaves it', () => {
+    for (const [from, to] of [
+      [0, 2],
+      [3, 9],
+      [0, 40],
+      [40, 0],
+      [37, 3],
+      [12, 50],
+    ] as const) {
+      const plan = flipRiffle(from, to, 50, crate);
+      expect(plan.reverse).toBe(to < from);
+      expect(plan.n).toBe(Math.min(Math.abs(to - from), RIFFLE_MAX));
+      // Planned from the lower slot; a dig back plays it from the end.
+      const [first, last] = plan.reverse ? [at(to), at(from)] : [at(from), at(to)];
+      for (const track of plan.tracks) {
+        const times = track.frames.map((frame) => frame.at);
+        expect(times).toEqual([...times].sort((a, b) => a - b));
+        expect(times.at(-1)).toBe(plan.duration);
+        for (const [hand, pose] of [
+          [first, track.frames[0]!.pose],
+          [last, track.frames.at(-1)!.pose],
+        ] as const) {
+          const real = flipPose(hand, still, track.k, 50, crate);
+          // Sleeves in sight are exactly where the bin draws them; the rest only need to stay out of sight.
+          if (real.opacity > 0 || pose.opacity > 0) expect(pose).toEqual(real);
+        }
+      }
+      expect(plan.duration).toBeLessThanOrEqual(riffleMs(plan.n, plan.reverse ? -1 : 1));
+    }
+  });
+
+  it('riffles the sleeves in reach and the last few before a far target, and leaves the rest alone', () => {
+    const plan = flipRiffle(0, 40, 50, crate);
+    const passed = plan.tracks.filter((track) => track.lands !== null).map((track) => track.k);
+    expect(passed).toEqual([0, 1, 2, 3, 4, 37, 38, 39]);
+    expect(plan.tracks.length).toBeLessThanOrEqual(RIFFLE_MAX + 2 + crate.peek + 1);
+    // Each passed sleeve lands after the one before it, so none is caught mid-fall.
+    const lands = plan.tracks.flatMap((track) => (track.lands === null ? [] : [track.lands]));
+    expect(lands).toEqual([...lands].sort((a, b) => a - b));
+  });
+
+  it('reads a track the way the compositor plays it', () => {
+    expect(eased([0, 0, 1, 1], 0.3)).toBeCloseTo(0.3);
+    expect(eased([0.22, 1, 0.36, 1], 0.5)).toBeGreaterThan(0.9);
+    const track = flipRiffle(0, 3, 10, crate).tracks.find((t) => t.k === 0)!;
+    const fall = track.frames.findIndex((frame) => frame.pose.rx === -crate.A);
+    const midway = (track.frames[fall - 1]!.at + track.frames[fall]!.at) / 2;
+    const rx = poseOnTrack(track.frames, midway).rx;
+    // Gravity: halfway through its time the sleeve has fallen less than halfway.
+    expect(rx).toBeLessThan(0);
+    expect(rx).toBeGreaterThan(-crate.A / 2);
+    expect(flipTiming(at(3), riffling(0, 3), 1, 10, crate, false)).toBeNull();
   });
 });
 

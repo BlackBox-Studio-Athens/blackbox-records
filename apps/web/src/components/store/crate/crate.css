@@ -245,7 +245,8 @@
   isolation: isolate;
   border: 0;
   padding: 0;
-  background: none;
+  /* A sleeve whose artwork is still loading stays solid, so a riffle never shows the bin through it. */
+  background: var(--secondary);
   cursor: inherit;
   transform-origin: 50% 100%;
   -webkit-tap-highlight-color: transparent;

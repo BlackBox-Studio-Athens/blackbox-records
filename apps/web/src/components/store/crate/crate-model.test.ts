@@ -10,6 +10,8 @@ import {
   landed,
   recordOf,
   reduce,
+  RIFFLE_MAX,
+  riffleMs,
   restoreState,
   type Catalog,
   type CrateItem,
@@ -50,14 +52,8 @@ function run(cat: Catalog, intents: Intent[], from: State = initialState(cat)) {
   return intents.reduce((state, intent) => reduce(state, intent, cat), from);
 }
 const open = (onScreen: number[], format = 'all'): Intent => ({ type: 'openCrate', grid, onScreen, format });
-// Three sleeves thumb forward one at a time, the last onto the back board.
-const toBackBoard: Intent[] = [
-  { type: 'digTo', slot: 3 },
-  { type: 'thumbOn' },
-  { type: 'thumbOn' },
-  { type: 'thumbOn' },
-  { type: 'settled' },
-];
+// Three sleeves riffle forward, the last onto the back board.
+const toBackBoard: Intent[] = [{ type: 'digTo', slot: 3 }, { type: 'settled' }];
 
 describe('crate bins', () => {
   it('maps only Vinyl 12-inch, CDs and Tapes to bins', () => {
@@ -205,7 +201,7 @@ describe('a flip bin', () => {
     expect(run(cat, [{ type: 'tip', tip: 1 }], end).mode).toMatchObject({ focus: { motion: { tip: 0 } } });
   });
 
-  it('thumbs through long digs and stands a handful back up in one push', () => {
+  it('riffles a long dig either way in one motion and settles when it ends', () => {
     const long = catalogOf(
       Array.from({ length: 20 }, (_, n) => item('vinyl', 'Artist ' + String(n).padStart(2, '0'))),
       ['vinyl'],
@@ -213,12 +209,24 @@ describe('a flip bin', () => {
     );
     const start = run(long, [{ type: 'openCrate', grid: [0], onScreen: [0], format: 'all' }, { type: 'settled' }]);
     const digging = reduce(start, { type: 'digTo', slot: 15 }, long);
-    expect(digging.hands.vinyl).toEqual({ on: 'sleeve', index: 9 });
-    expect(digging.mode).toMatchObject({ focus: { motion: { kind: 'thumbing', to: 15, total: 6 } } });
-    expect(followUp(digging)?.intent).toEqual({ type: 'thumbOn' });
+    expect(digging.hands.vinyl).toEqual({ on: 'sleeve', index: 15 });
+    expect(digging.mode).toMatchObject({ focus: { motion: { kind: 'riffling', from: 0, to: 15 } } });
+    expect(followUp(digging)).toEqual({ intent: { type: 'settled' }, after: riffleMs(RIFFLE_MAX, 1) });
+    // A hover never leans a sleeve mid-riffle; the next dig starts from the target.
+    expect(reduce(digging, { type: 'lean', lean: 'front' }, long)).toBe(digging);
     const fifth: State = { ...start, hands: { vinyl: { on: 'sleeve', index: 5 } } };
     const back = reduce(fifth, { type: 'digTo', slot: 0 }, long);
-    expect(back.mode).toMatchObject({ focus: { motion: { kind: 'standingUp', from: 5 } } });
+    expect(back.hands.vinyl).toEqual({ on: 'sleeve', index: 0 });
+    expect(back.mode).toMatchObject({ focus: { motion: { kind: 'riffling', from: 5, to: 0 } } });
+    expect(reduce(back, { type: 'settled' }, long).mode).toMatchObject({ focus: { motion: { kind: 'still' } } });
+    // One sleeve still settles on its own, and reduced motion never riffles.
+    expect(reduce(fifth, { type: 'digTo', slot: 4 }, long).mode).toMatchObject({
+      focus: { motion: { kind: 'settling' } },
+    });
+    const calm = { ...long, reduce: true };
+    expect(reduce(fifth, { type: 'digTo', slot: 0 }, calm).mode).toMatchObject({
+      focus: { motion: { kind: 'settling' } },
+    });
   });
 
   it('leans only what is there and never overrides a lifted sleeve', () => {

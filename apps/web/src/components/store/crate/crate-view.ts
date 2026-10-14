@@ -37,10 +37,13 @@ import {
   type State,
 } from './crate-model';
 import {
+  cssCurve,
   EASE,
   flightPose,
   flipPose,
+  flipRiffle,
   flipTiming,
+  poseOnTrack,
   rackPose,
   rackTiming,
   transformOf,
@@ -50,6 +53,8 @@ import {
   type FlipGeometry,
   type Pose,
   type RackGeometry,
+  type Riffle,
+  type RiffleFrame,
   type Timing,
 } from './crate-pose';
 
@@ -282,6 +287,18 @@ type Piece = {
   readonly id: ItemId | null;
   written: Written | null;
 };
+/** A riffle on the page: its sleeves' tracks, and everything to undo when it ends or is interrupted. */
+type Running = {
+  readonly plan: Riffle;
+  readonly tracks: { readonly piece: Piece; readonly frames: readonly RiffleFrame[] }[];
+  /** Interrupted sleeves the new riffle does not move, easing from where they were. */
+  readonly extra: Piece[];
+  readonly animations: Animation[];
+  readonly timers: number[];
+};
+const NOTHING: ReadonlyMap<Piece, Pose> = new Map();
+/** How long an interrupted sleeve takes to rejoin the next riffle. */
+const BLEND_MS = 200;
 type BinView = {
   readonly bin: Bin;
   readonly el: HTMLElement;
@@ -293,6 +310,8 @@ type BinView = {
 };
 
 const px = (n: number) => `${n}px`;
+/** Stacking by place from the hand: the pile lies over the bin, the latest on top; standing, the nearest is in front. */
+const zOf = (d: number) => String(d < 0 ? 130 + d : 100 - d);
 /** Longer than a wheel notch's repeat gap, so a run of flips redraws the panel once. */
 const PANEL_DELAY_MS = 180;
 
@@ -371,6 +390,7 @@ export function mountStoreCrate(
   let resize: ResizeObserver | null = null;
   let wheelState = restingWheelGesture();
   let handCard: HTMLElement | null = null;
+  let riffle: Running | null = null;
   const disposers: (() => void)[] = [];
 
   const listen = <K extends keyof HTMLElementEventMap>(
@@ -394,6 +414,7 @@ export function mountStoreCrate(
     scale = Math.min(1, width / next.width);
     if (next !== layout) {
       layout = next;
+      stopRiffle(false);
       // Geometry differs between the two stages, so their bins are rebuilt on the next render.
       built.forEach((view) => view.el.remove());
       built = new Map();
@@ -719,10 +740,12 @@ export function mountStoreCrate(
     view.pieces.forEach((piece, k) => {
       const { pose, timing } = places[k]!;
       const opacity = focused ? pose.opacity : 0;
-      // Sleeves that stay out of sight keep their last pose: writing them every frame would only cost style work.
-      if (opacity === 0 && piece.written?.opacity === '0') return;
-      const item = cat.items[piece.id!]!;
       const d = k - slot;
+      // Sleeves that stay out of sight keep their last pose: writing them every frame would only cost style work. The
+      // ones just out of sight at either end are kept in place, so a sleeve coming into view arrives from there.
+      const unseen = opacity === 0 && piece.written?.opacity === '0';
+      if (unseen && !(focused && g.mechanic === 'flip' && (d === -3 || d === g.peek + 1))) return;
+      const item = cat.items[piece.id!]!;
       const drawn = opacity > 0;
       if (drawn) load(piece, g.mechanic === 'flip' ? g.w : g.W);
       const front = d === 0 && hand.on !== 'backBoard';
@@ -736,14 +759,14 @@ export function mountStoreCrate(
             : d === -1
               ? `Stand back up ${item.title} by ${item.artist}`
               : `Dig to ${item.title} by ${item.artist}`;
-      const transition = transitionOf(timing, ['transform', 'opacity', 'visibility']);
+      const transition = transitionOf(unseen ? null : timing, ['transform', 'opacity', 'visibility']);
       write(
         piece,
         {
           transform: transformOf(pose, g),
           transition,
           opacity: String(opacity),
-          z: String(g.mechanic === 'rack' ? (front ? 50 : 10 + k) : d < 0 ? 130 + d : 100 - d),
+          z: g.mechanic === 'rack' ? String(front ? 50 : 10 + k) : zOf(d),
           pe: drawn && (g.mechanic === 'rack' || d >= -1) ? 'auto' : 'none',
           shade: pose.shade.toFixed(3),
           label: drawn ? label : '',
@@ -769,7 +792,7 @@ export function mountStoreCrate(
           transform: transformOf(boardPlace.pose, g),
           transition,
           opacity: String(opacity),
-          z: String(100 - (count - slot)),
+          z: zOf(count - slot),
           pe: 'none',
           shade: boardPlace.pose.shade.toFixed(3),
           label: '',
@@ -890,6 +913,10 @@ export function mountStoreCrate(
     const at = state.mode.focus.at;
     const walked = full || prev.mode.view !== 'crate' || prev.mode.focus.at !== at;
     const moved = walked || prev.hands[at] !== state.hands[at];
+    const motion = state.mode.focus.motion;
+    // A riffle plays out to its end; anything else that moves the bin takes over from where its sleeves are.
+    const carried = riffle && (moved || motion.kind !== 'still') ? stopRiffle(!walked) : NOTHING;
+    const started = prev.mode.view === 'crate' && prev.mode.focus.motion === motion;
     const focusIndex = BINS.indexOf(at);
     if (!built.has(at)) binView(at);
     built.forEach((view) => {
@@ -900,7 +927,9 @@ export function mountStoreCrate(
         view.el.style.visibility = focused ? 'visible' : 'hidden';
         view.el.style.zIndex = focused ? '3' : '2';
       }
+      if (focused && motion.kind !== 'riffling') carry(carried, view.geometry);
       if (focused || walked) renderBin(view, focused);
+      if (focused && motion.kind === 'riffling' && !started) startRiffle(view, motion.from, motion.to, carried);
     });
     // The panel sits in the page's flow, so redrawing it lays out the whole page. While digging within a bin it
     // follows once the hand pauses; the frame that turns a sleeve then only moves layers on the compositor.
@@ -913,6 +942,139 @@ export function mountStoreCrate(
       const binFormat = cat.items[cat.shelves[at][0]!]!.formatKey;
       if (host.format() !== binFormat) host.setFormat(binFormat);
     }
+  }
+
+  // ---- Riffle -------------------------------------------------------------------------------------------------
+  /** Plays a dig past two or more sleeves as one riffle on the compositor; renderBin has already written its end. */
+  function startRiffle(view: BinView, from: number, to: number, carried: ReadonlyMap<Piece, Pose>) {
+    const g = view.geometry;
+    const hand = state.hands[view.bin];
+    if (g.mechanic !== 'flip' || !hand || hand.on === 'tape') return;
+    const count = view.pieces.length;
+    const plan = flipRiffle(from, to, count, g);
+    const running: Running = { plan, tracks: [], extra: [], animations: [], timers: [] };
+    const timing: KeyframeAnimationOptions = {
+      duration: plan.duration,
+      direction: plan.reverse ? 'reverse' : 'normal',
+    };
+    const offset = (at: number) => Math.min(1, at / plan.duration);
+    const animate = (piece: Piece, frames: readonly RiffleFrame[]) => {
+      running.animations.push(
+        piece.el.animate(
+          frames.map((f) => ({
+            offset: offset(f.at),
+            easing: cssCurve(f.ease),
+            transform: transformOf(f.pose, g),
+            opacity: f.pose.opacity,
+          })),
+          timing,
+        ),
+        ...piece.shades.map((layer) =>
+          layer.animate(
+            frames.map((f) => ({ offset: offset(f.at), easing: cssCurve(f.ease), opacity: f.pose.shade })),
+            timing,
+          ),
+        ),
+      );
+    };
+    // An interrupted sleeve eases from where it was onto its new course, laid over it for the first moment.
+    const blend = (piece: Piece, was: Pose, onto: Pose) => {
+      const options = { duration: BLEND_MS * g.tempo, easing: EASE };
+      running.animations.push(
+        piece.el.animate(
+          [was, onto].map((pose) => ({ transform: transformOf(pose, g), opacity: pose.opacity })),
+          options,
+        ),
+        ...piece.shades.map((layer) => layer.animate([{ opacity: was.shade }, { opacity: onto.shade }], options)),
+      );
+    };
+    const blendAt = plan.reverse ? plan.duration - BLEND_MS * g.tempo : BLEND_MS * g.tempo;
+    for (const track of plan.tracks) {
+      const piece = track.k === count ? view.board : view.pieces[track.k];
+      if (!piece) continue;
+      load(piece, g.w);
+      running.tracks.push({ piece, frames: track.frames });
+      animate(piece, track.frames);
+      const was = carried.get(piece);
+      if (was) blend(piece, was, poseOnTrack(track.frames, blendAt));
+      // A sleeve the hand passes keeps the standing order until it lands on the pile, and the reverse on a dig back.
+      const standing = zOf(track.v);
+      const lying = zOf(track.v - plan.n);
+      if (track.lands === null) piece.el.style.zIndex = track.v < 0 ? lying : standing;
+      else {
+        piece.el.style.zIndex = plan.reverse ? lying : standing;
+        running.timers.push(
+          window.setTimeout(
+            () => {
+              piece.el.style.zIndex = plan.reverse ? standing : lying;
+            },
+            plan.reverse ? plan.duration - track.lands : track.lands,
+          ),
+        );
+      }
+      piece.el.style.visibility = 'visible';
+      piece.el.style.willChange = 'transform, opacity';
+    }
+    carried.forEach((was, piece) => {
+      if (running.tracks.some((track) => track.piece === piece)) return;
+      running.extra.push(piece);
+      piece.el.style.visibility = 'visible';
+      blend(piece, was, flipPose(hand, null, piece === view.board ? count : view.pieces.indexOf(piece), count, g));
+    });
+    riffle = running;
+    void running.animations[0]?.finished.then(
+      () => {
+        if (riffle === running) stopRiffle(false);
+      },
+      () => {},
+    );
+  }
+
+  /** Ends the riffle; with `keep`, returns where each of its sleeves is now, for the next motion to start from. */
+  function stopRiffle(keep: boolean): ReadonlyMap<Piece, Pose> {
+    const running = riffle;
+    if (!running) return NOTHING;
+    riffle = null;
+    const carried = new Map<Piece, Pose>();
+    const { duration, reverse } = running.plan;
+    const elapsed = Math.min(duration, Number(running.animations[0]?.currentTime ?? duration));
+    for (const { piece, frames } of running.tracks) {
+      if (keep) carried.set(piece, poseOnTrack(frames, reverse ? duration - elapsed : elapsed));
+      rest(piece);
+    }
+    running.extra.forEach(rest);
+    running.animations.forEach((animation) => animation.cancel());
+    running.timers.forEach((id) => clearTimeout(id));
+    return carried;
+  }
+
+  /** Gives a riffled sleeve back its own stacking, visibility and layer. */
+  function rest(piece: Piece) {
+    const written = piece.written;
+    if (!written) return;
+    const drawn = written.opacity !== '0';
+    piece.el.style.zIndex = written.z;
+    piece.el.style.visibility = drawn ? 'visible' : 'hidden';
+    piece.el.style.willChange = drawn ? 'transform, opacity' : 'auto';
+  }
+
+  /** Writes where interrupted sleeves are, so the next motion's transitions start there instead of jumping. */
+  function carry(carried: ReadonlyMap<Piece, Pose>, g: BinGeometry) {
+    let last: HTMLElement | null = null;
+    carried.forEach((pose, piece) => {
+      piece.el.style.transition = 'none';
+      piece.el.style.transform = transformOf(pose, g);
+      piece.el.style.visibility = pose.opacity > 0 ? 'visible' : 'hidden';
+      for (const face of piece.faces) face.style.opacity = String(pose.opacity);
+      for (const layer of piece.shades) {
+        layer.style.transition = 'none';
+        layer.style.opacity = pose.shade.toFixed(3);
+      }
+      piece.written = null;
+      last = piece.el;
+    });
+    // One style flush makes these the values the next transitions start from.
+    if (last) void getComputedStyle(last).transform;
   }
 
   // ---- State --------------------------------------------------------------------------------------------------
@@ -1205,6 +1367,7 @@ export function mountStoreCrate(
 
   function close(to: string | null = null) {
     land();
+    stopRiffle(false);
     if (state.mode.view !== 'crate') return;
     const bin = state.mode.focus.at;
     const view = built.get(bin);
@@ -1320,6 +1483,7 @@ export function mountStoreCrate(
       clearTimeout(timer);
       clearTimeout(panelTimer);
       land();
+      stopRiffle(false);
       finger.dispose();
       disposers.forEach((dispose) => dispose());
       if (state.mode.view === 'crate') leaveLayout();

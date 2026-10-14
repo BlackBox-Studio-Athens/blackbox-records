@@ -54,14 +54,7 @@ export type FlipMotion =
   | { readonly kind: 'held'; readonly tip: Tip }
   | { readonly kind: 'dropping' }
   | { readonly kind: 'settling'; readonly dir: -1 | 0 | 1 }
-  | {
-      readonly kind: 'thumbing';
-      readonly to: number;
-      readonly dir: -1 | 1;
-      readonly step: number;
-      readonly total: number;
-    }
-  | { readonly kind: 'standingUp'; readonly from: number };
+  | { readonly kind: 'riffling'; readonly from: number; readonly to: number };
 export type RackMotion =
   | { readonly kind: 'arriving' }
   | { readonly kind: 'still' }
@@ -86,7 +79,6 @@ export type Intent =
   | { readonly type: 'cancel' }
   | { readonly type: 'flip'; readonly by: -1 | 1 }
   | { readonly type: 'digTo'; readonly slot: number }
-  | { readonly type: 'thumbOn' }
   | { readonly type: 'lean'; readonly lean: Exclude<Lean, 'lifted'> }
   | { readonly type: 'lift' }
   | {
@@ -106,6 +98,28 @@ export type Intent =
 export const DROP_MS = 260;
 /** Covers on screen have landed in their bin by this many milliseconds after the Crate opens. */
 export const ARRIVE_MS = 800;
+/** A long dig riffles at most this many sleeves past the hand: the first ones in reach and the last before the target. */
+export const RIFFLE_MAX = 8;
+/** A riffled sleeve falls onto the pile, the pile gives under it, and the stack steps up into the hand at the end. */
+export const RIFFLE_FALL_MS = 260;
+export const RIFFLE_SETTLE_MS = 110;
+export const RIFFLE_ARRIVE_MS = 340;
+
+/**
+ * When each of `n` riffled sleeves leaves the hand, slowing into the target. A dig back plays its plan reversed, so
+ * its gaps shrink along the plan instead.
+ */
+export function riffleStarts(n: number, dir: -1 | 1): number[] {
+  const starts = [0];
+  for (let j = 1; j < n; j += 1) {
+    const r = n > 2 ? (dir > 0 ? j - 1 : n - 1 - j) / (n - 2) : 0;
+    starts.push(starts[j - 1]! + 36 + 54 * r * r);
+  }
+  return starts;
+}
+
+export const riffleMs = (n: number, dir: -1 | 1) =>
+  riffleStarts(n, dir)[n - 1]! + Math.max(RIFFLE_FALL_MS + RIFFLE_SETTLE_MS, RIFFLE_ARRIVE_MS);
 
 const FLIP_STILL: FlipMotion = { kind: 'still', lean: 'none' };
 const RACK_STILL: RackMotion = { kind: 'still' };
@@ -211,20 +225,14 @@ const commitStep = (progress: number, speed: number): -1 | 0 | 1 =>
 type FlipStep = { readonly hand: FlipHand; readonly motion: FlipMotion };
 type RackStep = { readonly hand: RackHand; readonly motion: RackMotion };
 
-// Moving a flip bin's hand: one sleeve settles, a long way back stands a handful up in one push, anything else
-// thumbs through one sleeve at a time. Far forward digs skip to six short first.
+// Moving a flip bin's hand: one sleeve settles, a dig past more riffles them in one planned motion.
 function flipTo(hand: FlipHand, motion: FlipMotion, target: number, count: number, reduce: boolean): FlipStep {
   const from = slotOf(hand, count);
   const to = clamp(target, 0, count);
   if (to === from) return motion.kind === 'held' ? { hand, motion: { kind: 'settling', dir: 0 } } : { hand, motion };
   const dir = to > from ? 1 : -1;
   if (reduce || Math.abs(to - from) === 1) return { hand: flipHandAt(to, count), motion: { kind: 'settling', dir } };
-  if (dir < 0 && from - to > 2) return { hand: flipHandAt(to, count), motion: { kind: 'standingUp', from } };
-  const start = dir > 0 && to - from > 8 ? to - 6 : from;
-  return {
-    hand: flipHandAt(start, count),
-    motion: { kind: 'thumbing', to, dir, step: 0, total: Math.abs(to - start) },
-  };
+  return { hand: flipHandAt(to, count), motion: { kind: 'riffling', from, to } };
 }
 
 function flipReduce(hand: FlipHand, motion: FlipMotion, intent: Intent, count: number, reduce: boolean): FlipStep {
@@ -248,14 +256,6 @@ function flipReduce(hand: FlipHand, motion: FlipMotion, intent: Intent, count: n
       return flipTo(hand, motion, slot + intent.by, count, reduce);
     case 'digTo':
       return flipTo(hand, motion, intent.slot, count, reduce);
-    case 'thumbOn': {
-      if (motion.kind !== 'thumbing') return same;
-      const next = slot + motion.dir;
-      return {
-        hand: flipHandAt(next, count),
-        motion: next === motion.to ? { kind: 'settling', dir: motion.dir } : { ...motion, step: motion.step + 1 },
-      };
-    }
     case 'lean': {
       if (motion.kind === 'still' && motion.lean === intent.lean) return same;
       // A pointer or the hint never overrides a lifted or moving sleeve, and only leans on what is there.
@@ -273,7 +273,7 @@ function flipReduce(hand: FlipHand, motion: FlipMotion, intent: Intent, count: n
       return motion.kind === 'arriving' ||
         motion.kind === 'dropping' ||
         motion.kind === 'settling' ||
-        motion.kind === 'standingUp'
+        motion.kind === 'riffling'
         ? { hand, motion: FLIP_STILL }
         : same;
     default:
@@ -360,22 +360,21 @@ export function reduce(state: State, intent: Intent, cat: Catalog): State {
   };
 }
 
-/** The single timed follow-up a state asks for: the next thumb, the end of a motion, or of the hint. */
+/** The single timed follow-up a state asks for: the end of a motion, or of the hint. */
 export function followUp(state: State): { readonly intent: Intent; readonly after: number } | null {
   if (state.mode.view === 'grid') return null;
   const motion = state.mode.focus.motion;
   switch (motion.kind) {
-    case 'thumbing':
+    case 'riffling':
       return {
-        intent: { type: 'thumbOn' },
-        after: motion.step === 0 ? 40 : 46 + 64 * Math.pow(motion.step / motion.total, 2),
+        intent: { type: 'settled' },
+        after: riffleMs(Math.min(Math.abs(motion.to - motion.from), RIFFLE_MAX), motion.to > motion.from ? 1 : -1),
       };
     case 'arriving':
       return { intent: { type: 'settled' }, after: ARRIVE_MS };
     case 'dropping':
       return { intent: { type: 'settled' }, after: DROP_MS };
     case 'settling':
-    case 'standingUp':
       return { intent: { type: 'settled' }, after: 900 };
     case 'still':
       return 'lean' in motion && motion.lean === 'hint' ? { intent: { type: 'lean', lean: 'none' }, after: 380 } : null;
