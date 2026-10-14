@@ -69,9 +69,10 @@ describe('ShellPlayerSurface', () => {
     expect(html).not.toContain('Playing');
     expect(html).toContain('Disintegration');
     expect(html).toContain('aria-label="Stop player"');
-    // Stop asks once: unarmed, it carries no stop attribute, so the shell router ignores the first press.
-    expect(html).not.toContain('data-music-streaming-service-embedded-player-mini-player-stop');
+    expect(html).toContain('data-music-streaming-service-embedded-player-mini-player-stop');
     expect(html).not.toContain('data-stop-armed');
+    expect(html).not.toContain('Stop?');
+    expect(html).not.toContain('Press Stop again');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('aria-pressed="false"');
   });

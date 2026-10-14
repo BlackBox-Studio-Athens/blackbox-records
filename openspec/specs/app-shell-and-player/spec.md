@@ -1142,7 +1142,7 @@ The shell SHALL NOT fetch a destination document or overlay from a touch or pen 
 
 ### Requirement: Every listening action identifies the existing session
 
-The shell SHALL mark shared controls for the active editorial source as disabled amber In player status across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Status MUST NOT claim verified playback.
+The shell SHALL mark shared controls for the active editorial source as disabled amber In player status across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Stop SHALL end the session on its first activation without confirmation. Status MUST NOT claim verified playback.
 
 #### Scenario: A session is minimized and its source appears elsewhere
 
@@ -1173,14 +1173,8 @@ The shell SHALL mark shared controls for the active editorial source as disabled
 #### Scenario: Stop is pressed once
 
 - **WHEN** the shopper activates Stop in the floating player
-- **THEN** the control reads Stop? and keeps its accessible name and position
-- **AND** the session continues
-- **AND** the control returns to Stop after three seconds without a second activation.
-
-#### Scenario: Stop is pressed twice
-
-- **WHEN** the shopper activates Stop? within the window
 - **THEN** the session ends with the existing Stop semantics, including focus restoration and iframe removal.
+- **AND** no confirmation state or second activation is required.
 
 ### Requirement: Homepage hero offers Store entry points
 

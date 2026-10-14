@@ -53,17 +53,9 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   expect(await sentinelIntact(page)).toBe(true);
   expect(await isOriginalIframeConnected()).toBe(true);
 
-  // Stop asks once in place: the first press arms it (Stop?), the second ends the session.
+  // A single Stop activation ends the session.
   const stop = page.getByRole('button', { name: 'Stop player' });
-  // Prepare touch geometry before the three-second confirmation window starts.
-  if (isMobile) await stop.tap({ trial: true });
-  const stopBox = isMobile ? await stop.boundingBox() : null;
-  if (isMobile) expect(stopBox).not.toBeNull();
   await press(stop, isMobile);
-  await expect(stop).toHaveText('Stop?');
-  await expect(iframe).toHaveCount(1);
-  if (stopBox) await page.touchscreen.tap(stopBox.x + stopBox.width / 2, stopBox.y + stopBox.height / 2);
-  else await press(stop, isMobile);
   await expect(iframe).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open player' })).toBeHidden();
 });
