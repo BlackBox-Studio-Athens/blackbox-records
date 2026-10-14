@@ -48,7 +48,8 @@ const staffRouteDocuments = {
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
   // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets. Raised 1 KiB on
   // 7 October 2026 for the zero-stock state control (593 Brotli bytes over; openspec/changes/add-coming-soon-availability).
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 153 * 1024 },
+  // Owner approved 160 KiB on 14 October 2026 to unblock CMS releases (156699 bytes measured).
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 160 * 1024 },
   // Raised 1 KiB on 12 October 2026 for the shell's Stats navigation entry (67 Brotli bytes over;
   // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved dispatch controls
   // (131,497 Brotli bytes; add-order-dispatch-marking).
