@@ -26,3 +26,9 @@ Base commit `54132b781722ec9077bcc29b0401b7997376e423` on `main`, uncommitted. P
 - Physical iOS/Android devices, Safari/WebKit decoding and low-power autoplay refusal.
 - UAT/PRD delivery; no hosted environment was touched.
 - The working tree also holds another session's uncommitted `streamline-agent-harness` changes; this change does not touch them.
+
+## UAT release
+
+- Committed as `51c556b856c0f06c1ec03723787a1a1b99e9e451` and pushed to `main` with the earlier unpushed `54132b78` (email branding), which the owner approved releasing together. PRD was not promoted.
+- [Release run 38619803357](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38619803357): every `deploy-uat` step passed, including deployed-release verification, the UAT static smoke and "Require UAT to still serve this run". The first attempt of e2e shard 4 failed `release-merchandising.spec.ts:525` in Firefox (the Music player dialog did not open after a Store Item document round trip), a path this change does not touch; it passed 3/3 locally in Firefox and the re-run of the failed shard passed, so the run concluded `success`. Logs: `.codex-artifacts/hero-video/uat-run-e2e4-failed.log`.
+- UAT (`https://blackbox-records-web-uat.pages.dev/`) is behind Cloudflare Access; the agent's connected Chrome was not signed in, so the hosted hero was not viewed by the agent. Owner review on UAT remains the hosted visual acceptance.
