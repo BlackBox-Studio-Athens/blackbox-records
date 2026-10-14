@@ -1,6 +1,15 @@
 import type { EmailProviderGateway, EmailProviderOperationResult, ProviderNewsletterContact } from './spi';
 import type { EmailRuntimeConfig } from './config';
+import {
+  renderShopperButtonLink,
+  renderShopperEmailFrame,
+  renderShopperParagraph,
+  shopperBrandFontStylesheetUrl,
+  type PaidOrderEmailBrand,
+} from './paid-order-templates';
+import { createBlackBoxEmailTemplate } from './templates';
 import { sendTransactionalEmail } from './transactional-email';
+import type { EmailMessageContent } from './types';
 
 export type EmailConsentPurpose = 'newsletter' | 'availability-withdrawal';
 export type EmailConsentRecord = {
@@ -44,6 +53,59 @@ async function consentToken(id: string, config: EmailRuntimeConfig): Promise<str
 
 function hex(buffer: ArrayBuffer): string {
   return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+const consentEmailCopy = {
+  newsletter: {
+    subject: 'Confirm your BlackBox Records newsletter signup',
+    preheader: 'One click to start receiving release, distro and event updates.',
+    sectionLabel: 'Newsletter',
+    title: 'Confirm your email',
+    intro:
+      'Confirm that you want BlackBox Records release, distro and event updates at this address. The link works for 24 hours.',
+    action: 'Confirm newsletter request',
+    footer: [
+      "Didn't sign up? Ignore this email and you won't be added.",
+      'If you unsubscribed from our emails before, confirming does not undo that.',
+    ],
+  },
+  'availability-withdrawal': {
+    subject: 'Manage your BlackBox Records availability alerts',
+    preheader: 'Cancel the item alerts still waiting for this address.',
+    sectionLabel: 'Notify me',
+    title: 'Your availability alerts',
+    intro:
+      'Use the button below to cancel every availability alert still waiting for this email address. Keep this email: the link works for 12 months.',
+    action: 'Withdraw pending alerts',
+    footer: [
+      'This link does not sign you up for the newsletter.',
+      "Didn't ask for this email? Ignore it and nothing changes.",
+    ],
+  },
+} satisfies Record<EmailConsentPurpose, unknown>;
+
+export function buildEmailConsentEmail(input: {
+  purpose: EmailConsentPurpose;
+  url: string;
+  brand: PaidOrderEmailBrand;
+}): EmailMessageContent {
+  const copy = consentEmailCopy[input.purpose];
+  return createBlackBoxEmailTemplate({
+    brandFontStylesheetUrl: shopperBrandFontStylesheetUrl(input.brand),
+    subject: copy.subject,
+    preheader: copy.preheader,
+    bodyHtml: renderShopperEmailFrame({
+      brand: input.brand,
+      sectionLabel: copy.sectionLabel,
+      title: copy.title,
+      contentHtml: [
+        renderShopperParagraph(copy.intro),
+        `<p style="margin:0 0 16px;">${renderShopperButtonLink(input.url, copy.action)}</p>`,
+        ...copy.footer.map(renderShopperParagraph),
+      ].join(''),
+    }),
+    bodyText: ['BlackBox Records', copy.title, copy.intro, `${copy.action}: ${input.url}`, ...copy.footer].join('\n'),
+  });
 }
 
 export function createEmailConsentServices(input: {
@@ -94,23 +156,16 @@ export function createEmailConsentServices(input: {
     }
     const url = new URL('email-preferences/', config.emailBrandHomeUrl);
     url.hash = new URLSearchParams({ action: purpose, token: retryToken }).toString();
-    const newsletter = purpose === 'newsletter';
-    const subject = newsletter
-      ? 'Confirm your BlackBox Records newsletter request'
-      : 'Manage your BlackBox Records availability alerts';
-    const text = newsletter
-      ? `Confirm this newsletter request within 24 hours: ${url.href}\nIf you did not request it, ignore this email. Existing unsubscribe preferences remain in place.`
-      : `Withdraw all pending availability alerts for this email address: ${url.href}\nIf you did not request this email, ignore it. This link does not sign you up for the newsletter.`;
     try {
       const result = await sendTransactionalEmail(provider, config, {
         to: record.email,
         purpose: `consent-${purpose}`,
         idempotencyEntityId: record.id,
-        content: {
-          subject,
-          text,
-          html: `<p>${text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p><p><a href="${url.href.replaceAll('&', '&amp;')}">${newsletter ? 'Confirm newsletter request' : 'Withdraw pending alerts'}</a></p>`,
-        },
+        content: buildEmailConsentEmail({
+          purpose,
+          url: url.href,
+          brand: { homeUrl: config.emailBrandHomeUrl, logoUrl: config.emailBrandLogoUrl },
+        }),
       });
       if (result.status === 'failed')
         return { ok: false, reason: result.providerSafeReason ?? 'unknown', retryable: result.retryable };

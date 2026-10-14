@@ -235,6 +235,8 @@ describe('paid-order email notifications', () => {
       'preorder-estimate-changed',
       'availability-alert-available',
       'availability-alert-preorder',
+      'consent-newsletter',
+      'consent-availability-withdrawal',
     ]);
 
     for (const preview of previews) {

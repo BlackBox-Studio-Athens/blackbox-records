@@ -6,6 +6,7 @@ import {
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
 import { buildAvailabilityAlertEmail } from './availability-alert-email';
 import { buildPreorderEstimateEmail } from './preorder-estimate-email';
+import { buildEmailConsentEmail } from './consent-capabilities';
 
 export type PaidOrderEmailPreviewName =
   | 'ops-ready'
@@ -14,7 +15,9 @@ export type PaidOrderEmailPreviewName =
   | 'ops-preorder'
   | 'preorder-estimate-changed'
   | 'availability-alert-available'
-  | 'availability-alert-preorder';
+  | 'availability-alert-preorder'
+  | 'consent-newsletter'
+  | 'consent-availability-withdrawal';
 
 export type PaidOrderEmailPreview = {
   message: EmailMessageContent;
@@ -142,6 +145,14 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
         replyToEmail: 'support@blackboxrecordsathens.com',
       }),
       name: `availability-alert-${kind}` as const,
+    })),
+    ...(['newsletter', 'availability-withdrawal'] as const).map((purpose) => ({
+      message: buildEmailConsentEmail({
+        purpose,
+        url: `${previewBrand.homeUrl}email-preferences/#action=${purpose}&token=${'0'.repeat(64)}`,
+        brand: previewBrand,
+      }),
+      name: `consent-${purpose}` as const,
     })),
   ];
 }
