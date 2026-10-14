@@ -12,6 +12,8 @@ import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
 import { readOpenPreorders } from '@/lib/open-preorders';
 import { preorderShowcaseItems } from './_preorder-showcase';
+import heroFilmLandscapeUrl from './_assets/home-hero/home-hero-intro-landscape.mp4?url';
+import heroFilmPortraitUrl from './_assets/home-hero/home-hero-intro-portrait.mp4?url';
 
 const artistProfiles = await listArtistRosterProfiles();
 const newsArticles = await listNewsArticles();
@@ -25,7 +27,12 @@ const preorderItems = await preorderShowcaseItems(readOpenPreorders());
 ---
 
 <SiteLayout pageTitle="Home" pageDescription="BlackBox Records home." mainClass="!pt-0">
-  <HomeHero tagline={homeContent.hero.tagline} image={homeContent.hero.image} imageAlt={homeContent.hero.image_alt} />
+  <HomeHero
+    tagline={homeContent.hero.tagline}
+    image={homeContent.hero.image}
+    imageAlt={homeContent.hero.image_alt}
+    film={{ portraitUrl: heroFilmPortraitUrl, landscapeUrl: heroFilmLandscapeUrl }}
+  />
 
   {preorderItems.length > 0 && (
     <StorePreorderShowcase client:idle items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />

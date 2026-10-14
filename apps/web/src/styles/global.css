@@ -2804,6 +2804,30 @@ body {
     object-position: center 26%;
   }
 
+  /* The prepared loop fades in over the still once it plays and keeps its frame when paused; reduced motion, data
+     saving and a failed source keep the still. The veil (::after) still paints above it. */
+  .homepage-hero-section__film {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .homepage-hero-section__film[data-ready] {
+    opacity: 1;
+  }
+
+  /* On the content gutter's right edge, clear of the centred scroll cue. */
+  .homepage-hero-section__film-control {
+    position: absolute;
+    z-index: 2;
+    right: max(clamp(1rem, 4vw, 2rem), calc((100% - 80rem) / 2 + clamp(1rem, 4vw, 2rem)));
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
   .homepage-hero-section__content-block {
     position: relative;
     z-index: 2;
