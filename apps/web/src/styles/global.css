@@ -2832,6 +2832,14 @@ body {
     opacity: 1;
   }
 
+  /* Sideways phones: the default padding made the hero taller than the screen, pushing the film control below it. */
+  @media (orientation: landscape) and (max-height: 480px) {
+    .homepage-hero-section .homepage-hero-section__content-block {
+      padding-top: calc(var(--header-height) + 1.5rem);
+      padding-bottom: 3.5rem;
+    }
+  }
+
   /* On the content gutter's right edge, clear of the centred scroll cue. */
   .homepage-hero-section__film-control {
     position: absolute;

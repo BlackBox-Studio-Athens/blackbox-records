@@ -95,3 +95,23 @@ test('@phone portrait screens play only the centre crop with a 44px pause contro
   expect(box.x + box.width).toBeLessThanOrEqual(390);
   await expectNoHorizontalOverflow(page);
 });
+
+test('@phone turning the phone sideways swaps to the landscape crop and keeps the hero on screen', async ({ page }) => {
+  await page.goto('./');
+  await waitForShell(page);
+  await expect(film(page)).toHaveAttribute('data-ready', '', { timeout: 15_000 });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect
+    .poll(async () => (await filmState(page)).source, { timeout: 15_000 })
+    .toContain('home-hero-intro-landscape');
+  await expect.poll(async () => (await filmState(page)).paused).toBe(false);
+  const hero = (await page.locator('#homepage-hero-section').boundingBox())!;
+  expect(hero.height).toBeLessThanOrEqual(390);
+  const pause = (await page.getByRole('button', { name: 'Pause background motion' }).boundingBox())!;
+  expect(pause.y + pause.height).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect
+    .poll(async () => (await filmState(page)).source, { timeout: 15_000 })
+    .toContain('home-hero-intro-portrait');
+  await expectNoHorizontalOverflow(page);
+});
