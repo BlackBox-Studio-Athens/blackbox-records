@@ -100,4 +100,36 @@ describe('product safety disclosure', () => {
     expect(markup).toContain('href="https://plant.example/contact" target="_blank" rel="noopener noreferrer"');
     expect(markup).toContain('No specific warnings for this product');
   });
+
+  for (const [address, href, newTab] of [
+    ['safety@example.test', 'mailto:safety@example.test', false],
+    ['https://plant.example/contact', 'https://plant.example/contact', true],
+    ['https://plant.example/@safety/contact', 'https://plant.example/@safety/contact', true],
+    [
+      'https://plant.example/contact?email=safety@example.test',
+      'https://plant.example/contact?email=safety@example.test',
+      true,
+    ],
+  ] as const) {
+    it(`links the ${address} contact of both the manufacturer and the EU responsible person`, () => {
+      const information = productSafetyOfferInformation({
+        ...verified,
+        manufacturer: { ...verified.manufacturer, establishment: 'non_eu', electronic_address: address },
+        responsible_person: {
+          name: 'EU Rep GmbH',
+          postal_address: 'Beispielstraße 1, 10115 Berlin, Germany',
+          electronic_address: address,
+          eu_country: 'DE',
+        },
+      }) as ProductSafetyInformation;
+      const markup = renderToStaticMarkup(<ProductSafetyDisclosure information={information} />);
+      const links = [...markup.matchAll(/<a href="([^"]*)"([^>]*)>([^<]*)<\/a>/g)];
+      expect(links).toHaveLength(2);
+      for (const [, linkHref, attributes, text] of links) {
+        expect(linkHref).toBe(href);
+        expect(text).toBe(address);
+        expect(attributes).toBe(newTab ? ' target="_blank" rel="noopener noreferrer"' : '');
+      }
+    });
+  }
 });

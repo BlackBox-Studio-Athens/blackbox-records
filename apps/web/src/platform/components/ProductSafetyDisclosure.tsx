@@ -22,11 +22,12 @@ export const PRODUCT_SAFETY_COPY = {
 
 function ContactValue({ contact }: { contact: Contact }) {
   const address = contact.electronic_address;
-  const href = address.includes('@') ? `mailto:${address}` : address;
+  // The schema allows an email or an HTTPS page; a contact URL may itself contain @ in its path or query.
+  const href = /^https:\/\//i.test(address) ? address : `mailto:${address}`;
   return (
     <>
       {contact.name}, {contact.postal_address} ·{' '}
-      <a href={href} {...(href.startsWith('https:') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+      <a href={href} {...(href === address ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
         {address}
       </a>
     </>

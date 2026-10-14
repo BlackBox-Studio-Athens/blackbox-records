@@ -339,4 +339,21 @@ describe('store page data helper', () => {
     await expect(listStoreProductSafety()).resolves.toEqual({ 'with-safety': safety });
     expect(getEntry).toHaveBeenCalledWith('releases', 'caregivers');
   });
+
+  it('follows each publication without reloading the module: absent, verified, changed, removed', async () => {
+    mockCatalogData.listStoreItems.mockResolvedValue([
+      { slug: 'caregivers', sourceKind: 'release', sourceId: 'caregivers' },
+    ]);
+    let published: unknown;
+    getEntry.mockImplementation(async () => ({ data: { product_safety: published } }));
+    const verified = { product_type: 'Vinyl LP', product_identifier: 'BBX-014' };
+
+    await expect(listStoreProductSafety()).resolves.toEqual({});
+    published = verified;
+    await expect(listStoreProductSafety()).resolves.toEqual({ caregivers: verified });
+    published = { ...verified, product_identifier: 'BBX-014-RP' };
+    await expect(listStoreProductSafety()).resolves.toEqual({ caregivers: published });
+    published = undefined;
+    await expect(listStoreProductSafety()).resolves.toEqual({});
+  });
 });

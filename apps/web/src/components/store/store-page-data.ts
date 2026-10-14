@@ -94,18 +94,15 @@ export async function getStoreItemProductSafety(storeItem: StoreItem): Promise<P
   return source?.data.product_safety;
 }
 
-/** Store Item slug -> public product safety, for checkout lines added without visiting the item page. */
-let storeProductSafety: Promise<Record<string, ProductSafetyInformation>> | undefined;
-export function listStoreProductSafety(): Promise<Record<string, ProductSafetyInformation>> {
-  // One build-wide read: every compatibility checkout page embeds the same map.
-  storeProductSafety ??= listStoreItems()
-    .then((storeItems) =>
-      Promise.all(
-        storeItems.map(async (storeItem) => [storeItem.slug, await getStoreItemProductSafety(storeItem)] as const),
-      ),
-    )
-    .then((entries) =>
-      Object.fromEntries(entries.filter((entry): entry is [string, ProductSafetyInformation] => Boolean(entry[1]))),
-    );
-  return storeProductSafety;
+/**
+ * Store Item slug -> public product safety, for checkout lines added without visiting the item page. Read on every
+ * render: hosted rendering selects the published snapshot per request, so a module-level cache would go stale.
+ */
+export async function listStoreProductSafety(): Promise<Record<string, ProductSafetyInformation>> {
+  const entries = await Promise.all(
+    (await listStoreItems()).map(
+      async (storeItem) => [storeItem.slug, await getStoreItemProductSafety(storeItem)] as const,
+    ),
+  );
+  return Object.fromEntries(entries.filter((entry): entry is [string, ProductSafetyInformation] => Boolean(entry[1])));
 }
