@@ -4,6 +4,22 @@ Owner: the coordinating Codex chat, **Audit site GDPR compliance**. Updated 14 O
 
 The four Codex preparation packages have been reviewed and integrated into `main`. This handover is ready for Claude Desktop's preview and implementation work. It is not design approval, publication approval, release approval or a declaration of legal compliance. Each linked OpenSpec change remains the source of requirements, tasks and acceptance evidence.
 
+## Claude implementation review, 14 October 2026
+
+Claude's implementation is committed on main as `b38f0a0cba0a4821fcde607ffb01bc74aaf14c04`, `8a5782020afa550b89ab89adfcb3ec8bd70d2f31` and `f4b6c5b523a024e637cd61f77b25476e4cdb547e`. Codex reviewed the three commits against preparation baseline `c68ea0cac13b30d7ccc545320650ef79ab5df765`. The implementation is **not accepted for release yet**: four concrete corrections remain in the [GPSR review](../openspec/changes/record-gpsr-product-safety/claude-review.md) and [consent review](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/claude-review.md). Their evidence supersedes the earlier preparation-only acceptance for these changed flows.
+
+The current source passed `pnpm validate` (64 tasks, 62 cached) and the targeted email-preferences (9) and guarantee (2) browser tests. These tests do not cover the four reproduced cases. Existing owner-approved disclosure placement remains recorded in the changes; this review requests no redesign. Owner facts, publication and hosted checks remain open.
+
+### Correction prompt for the existing Claude Desktop conversation
+
+```text
+Read docs/compliance-ui-handoff.md and the two claude-review.md files linked in its latest review section. Fix findings R1-R4 on main: refresh checkout product-safety data with the active publication; preserve the exact newsletter delivery/activation mailbox while keeping the shared case-insensitive cooldown; preserve an active player when Manage alerts is opened; and keep HTTPS contact URLs containing @ as HTTPS links.
+
+Use the smallest fixes and add the specific regressions named in the reviews. Keep the approved disclosure design and current VAT/checkout/launch settings. You own UI edits; any further non-text main-screen design change still requires preview approval. Do not push, deploy, publish CMS content, send real emails or change providers. Leave item 6 and future-only item 7 alone.
+
+Run focused checks and final pnpm validate, record source-bound evidence in the owning OpenSpec changes, commit the corrections locally, and return exact commits and remaining acceptance gaps for Codex review. Do not claim that passing local tests establishes legal or hosted acceptance.
+```
+
 ## Ownership and approval
 
 Claude Desktop owns all public/staff UI changes, including rendered copy. Codex owns backend/data preparation and integration review. No Claude CLI is required.
