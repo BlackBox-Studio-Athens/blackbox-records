@@ -35,6 +35,15 @@ if (
 const holdingHtml = scripts[0] ? builtHtml.replace(scripts[0], '') : builtHtml;
 writeFileSync(path.join(holdingRoot, 'index.html'), holdingHtml);
 writeFileSync(path.join(holdingRoot, '404.html'), holdingHtml);
+// Keep saved policy URLs usable while the apex still serves Holding; never forward shop routes.
+writeFileSync(
+  path.join(holdingRoot, '_redirects'),
+  `/privacy https://blackbox-records-web.pages.dev/privacy/ 302
+/privacy/ https://blackbox-records-web.pages.dev/privacy/ 302
+/terms https://blackbox-records-web.pages.dev/terms/ 302
+/terms/ https://blackbox-records-web.pages.dev/terms/ 302
+`,
+);
 
 const astroAssets = new Set<string>();
 const pendingCssAssets: string[] = [];

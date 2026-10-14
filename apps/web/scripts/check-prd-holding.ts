@@ -18,6 +18,7 @@ const allowedImageFiles = new Set([
 const requiredFiles = new Set([
   '404.html',
   '_headers',
+  '_redirects',
   'assets/fonts/brand/veneer.css',
   'assets/fonts/brand/veneer_regular.woff2',
   'assets/images/brand/share-card.jpg',
@@ -72,6 +73,14 @@ for (const requiredFile of requiredFiles) {
 const indexHtml = readFileSync(path.join(holdingRoot, 'index.html'), 'utf8');
 const notFoundHtml = readFileSync(path.join(holdingRoot, '404.html'), 'utf8');
 if (notFoundHtml !== indexHtml) throw new Error('PRD Holding Page 404 document must match index.html.');
+
+const legalRedirects = readFileSync(path.join(holdingRoot, '_redirects'), 'utf8');
+const expectedLegalRedirects = ['/privacy', '/privacy/', '/terms', '/terms/']
+  .map((route) => `${route} https://blackbox-records-web.pages.dev${route.replace(/\/$/, '')}/ 302`)
+  .join('\n');
+if (legalRedirects !== `${expectedLegalRedirects}\n`) {
+  throw new Error('Holding redirects must contain only the four temporary PRD legal-document routes.');
+}
 
 const requiredMarkup = [
   `<link rel="canonical" href="${canonicalUrl}">`,

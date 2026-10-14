@@ -92,6 +92,8 @@
       "{workspaceRoot}/scripts/check-runtime-bundle-graphs.ts",
       "{workspaceRoot}/scripts/build-public-release.mjs",
       "{workspaceRoot}/apps/web/scripts/check-image-markup.ts",
+      "{workspaceRoot}/apps/web/scripts/prepare-prd-holding.ts",
+      "{workspaceRoot}/apps/web/scripts/check-prd-holding.ts",
       "{workspaceRoot}/.github/workflows/**/*",
       "{workspaceRoot}/apps/backend/scripts/build-cms.mjs",
       "{workspaceRoot}/scripts/release-candidate*.mjs",
