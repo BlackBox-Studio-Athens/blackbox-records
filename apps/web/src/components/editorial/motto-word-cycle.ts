@@ -9,9 +9,9 @@ import type { animate as animateMotion } from 'motion/mini';
  * 2.9 s: well before the 4 to 9 s in which visitors typically start scrolling. Later words hold for one glance, so a
  * second change starts within the roughly 7 s a phone visitor spends on the first screen.
  */
-export const MOTTO_FIRST_HOLD_MS = 1500;
-export const MOTTO_HOLD_MS = 2800;
-export const MOTTO_SCRUB_MS = 1400;
+export const MOTTO_FIRST_HOLD_MS = 1200;
+export const MOTTO_HOLD_MS = 2300;
+export const MOTTO_SCRUB_MS = 1100;
 // Leaves fast and settles into the last letter, so the new word reads early and lands calmly.
 const SCRUB_EASE: [number, number, number, number] = [0.3, 0.05, 0.2, 1];
 

@@ -41,23 +41,18 @@ test('the hero film plays the landscape loop, pauses on request and out of view,
   await expect(page.locator('.homepage-hero-section__media-image')).toHaveAttribute('fetchpriority', 'high');
   await expect(page.locator('.homepage-hero-section__media-layer')).toHaveAttribute('aria-hidden', 'true');
 
-  const pause = page.getByRole('button', { name: 'Pause background motion' });
-  await pause.click();
-  await expect.poll(async () => (await filmState(page)).paused).toBe(true);
-  // A paused film keeps its frame instead of returning to the still.
-  expect((await filmState(page)).ready).toBe(true);
-  await page.getByRole('button', { name: 'Resume background motion' }).click();
-  await expect.poll(async () => (await filmState(page)).paused).toBe(false);
+  // The hero carries no film control; pausing is automatic.
+  await expect(page.locator('#homepage-hero-section').getByRole('button')).toHaveCount(0);
 
   await page.evaluate(() => window.scrollTo(0, window.innerHeight * 0.7));
   await expect.poll(async () => (await filmState(page)).paused).toBe(true);
-  await expect(pause).toBeDisabled();
+  // A paused film keeps its frame instead of returning to the still.
+  expect((await filmState(page)).ready).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect.poll(async () => (await filmState(page)).paused).toBe(false);
 
   await page.evaluate(() => document.documentElement.setAttribute('data-music-player-session', ''));
   await expect.poll(async () => (await filmState(page)).paused).toBe(true);
-  await expect(pause).toBeDisabled();
   await page.evaluate(() => document.documentElement.removeAttribute('data-music-player-session'));
   await expect.poll(async () => (await filmState(page)).paused).toBe(false);
 
@@ -79,20 +74,15 @@ test('reduced motion keeps the still without requesting the film', async ({ page
   await page.waitForTimeout(2_000);
   expect(await filmState(page)).toMatchObject({ paused: true, ready: false, source: '' });
   expect(requests).toEqual([]);
-  await expect(page.locator('home-hero-film button')).toBeHidden();
 });
 
-test('@phone portrait screens play only the centre crop with a 44px pause control', async ({ page }) => {
+test('@phone portrait screens play only the centre crop', async ({ page }) => {
   const requests = filmRequests(page);
   await page.goto('./');
   await waitForShell(page);
   await expect(film(page)).toHaveAttribute('data-ready', '', { timeout: 15_000 });
   expect((await filmState(page)).source).toContain('home-hero-intro-portrait');
   expect(requests.every((url) => url.includes('portrait'))).toBe(true);
-  const pause = page.getByRole('button', { name: 'Pause background motion' });
-  const box = (await pause.boundingBox())!;
-  expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44);
-  expect(box.x + box.width).toBeLessThanOrEqual(390);
   await expectNoHorizontalOverflow(page);
 });
 
@@ -107,8 +97,6 @@ test('@phone turning the phone sideways swaps to the landscape crop and keeps th
   await expect.poll(async () => (await filmState(page)).paused).toBe(false);
   const hero = (await page.locator('#homepage-hero-section').boundingBox())!;
   expect(hero.height).toBeLessThanOrEqual(390);
-  const pause = (await page.getByRole('button', { name: 'Pause background motion' }).boundingBox())!;
-  expect(pause.y + pause.height).toBeLessThanOrEqual(390);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect
     .poll(async () => (await filmState(page)).source, { timeout: 15_000 })

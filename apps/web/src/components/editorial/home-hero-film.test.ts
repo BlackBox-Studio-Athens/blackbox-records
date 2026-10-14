@@ -8,7 +8,6 @@ const eligible: HomeHeroFilmConditions = {
   inView: true,
   documentVisible: true,
   musicSession: false,
-  manualPause: false,
   unavailable: false,
 };
 
@@ -20,7 +19,6 @@ describe('home hero film', () => {
     expect(shouldPlayHomeHeroFilm({ ...eligible, inView: false })).toBe(false);
     expect(shouldPlayHomeHeroFilm({ ...eligible, documentVisible: false })).toBe(false);
     expect(shouldPlayHomeHeroFilm({ ...eligible, musicSession: true })).toBe(false);
-    expect(shouldPlayHomeHeroFilm({ ...eligible, manualPause: true })).toBe(false);
     expect(shouldPlayHomeHeroFilm({ ...eligible, unavailable: true })).toBe(false);
   });
 });

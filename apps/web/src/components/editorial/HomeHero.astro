@@ -69,20 +69,7 @@ const heroImageWidths = [900, 1400];
     </div>
   </div>
 
-  {film && (
-    <home-hero-film class="homepage-hero-section__film-control">
-      <button
-        type="button"
-        hidden
-        class={buttonVariants({ variant: 'outline', size: 'icon-lg', class: 'bg-background/35' })}
-        aria-label="Pause background motion"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M6 5h4v14H6zM14 5h4v14h-4z" />
-        </svg>
-      </button>
-    </home-hero-film>
-  )}
+  {film && <home-hero-film />}
 
   <div class="homepage-hero-section__scroll-indicator" aria-hidden="true">
     <div class="homepage-hero-section__scroll-indicator-line">

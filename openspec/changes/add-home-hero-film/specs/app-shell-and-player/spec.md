@@ -10,18 +10,18 @@ When prepared hero film files exist, the homepage hero SHALL play a silent loopi
 - **WHEN** the hero still has loaded and at least half the hero is in view in a visible tab without a shell music session
 - **THEN** the film plays muted, inline and looping inside the fixed media layer, fading in over the still once it plays
 - **AND** a portrait viewport loads only the 9:16 centre crop and any other viewport loads only the landscape crop
-- **AND** a pause/resume control with an accessible name is available and keeps the paused frame.
+- **AND** the hero shows no film control.
 
 #### Scenario: Film is paused automatically
 
 - **WHEN** less than half the hero is in view, the tab is hidden or a shell music session exists
-- **THEN** the film pauses on its current frame and the control is disabled
-- **AND** the film resumes when the condition ends unless the visitor paused it.
+- **THEN** the film pauses on its current frame
+- **AND** the film resumes when the condition ends.
 
 #### Scenario: Motion is not appropriate or the film cannot play
 
 - **WHEN** the browser requests reduced motion or data saving, the source fails or muted autoplay is refused
-- **THEN** the still remains without a film request, retry or pause control.
+- **THEN** the still remains without a film request or retry.
 
 #### Scenario: Prepared files are delivered
 

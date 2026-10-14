@@ -9,7 +9,7 @@ The owner prepared a 29.5-second montage of BlackBox sessions (`blackbox_website
 - Home's hero plays a silent, looping film over the existing CMS still, reusing the prepared-film profile from the Sidus and Afterwise backdrops (H.264, CRF 20, 24fps, silent, fast-start, 2000k maxrate).
 - Two prepared files: a 9:16 centre crop for portrait screens, where a full-viewport cover crop shows only the middle quarter of a 16:9 frame, and a landscape crop for wider screens. Both exclude the studio logo with a margin, proven against its measured bounding box.
 - Brightened grayscale is baked into the files, keeping the Monochrome Owns The Page rule without a runtime filter.
-- The film follows the approved Home motion rules: muted and inline, playing only while at least half the hero is in view and the tab is visible, paused during a shell music session, with an accessible pause/resume control. Reduced motion, data saving, a failed source and refused autoplay keep the still.
+- The film follows the approved Home motion rules: muted and inline, playing only while at least half the hero is in view and the tab is visible, and paused during a shell music session. The owner removed the visible pause/resume control after UAT review. Reduced motion, data saving, a failed source and refused autoplay keep the still.
 - The still remains the hero's eager, high-priority image and the film waits for it to load.
 
 ## Capabilities

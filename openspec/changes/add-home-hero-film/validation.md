@@ -41,3 +41,9 @@ The owner found the first grade dark and hazy on UAT. The gamma lift flattened b
 - A hero containing the film (`:has(.homepage-hero-section__film)`) gets a lighter shade that darkens only the header band, the tagline side and the bottom edge. Reduced-motion still and both film sizes checked: `.codex-artifacts/hero-video/regrade/`.
 - The UAT review banner is now one 24 px line whose explanation truncates first (previously wrapped to about 80 px on phones); its text and the release marker check are unchanged.
 - Phones upright and sideways (Chrome on a Pixel 7 profile, WebKit on an iPhone 13 profile): the portrait crop plays upright, rotating swaps to the landscape crop and back and keeps playing, and both fill the screen with `object-fit: cover`. The sideways hero used to exceed a 412 px screen (450 px), pushing the pause control off screen; a short-landscape rule trims its padding so it fits. A `@phone` e2e test covers the rotation. Captures: `.codex-artifacts/hero-video/mobile/`.
+
+## Second UAT review revision
+
+- The owner removed the hero's pause/resume button. The controller keeps automatic pausing (half out of view, hidden tab, music session) and the still for reduced motion and data saving. This leaves no manual pause for a loop longer than five seconds (WCAG 2.2.2), recorded as the owner's decision in design.md.
+- The motto cycle runs a tad faster: first hold 1.2 s, holds 2.3 s, scrub 1.1 s (was 1.5 / 2.8 / 1.4 s).
+- `pnpm test:e2e e2e/home-hero-film.spec.ts` (4 passed) and `e2e/home-motto.spec.ts` (5 passed).

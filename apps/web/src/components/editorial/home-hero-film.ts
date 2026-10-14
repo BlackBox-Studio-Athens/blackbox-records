@@ -6,7 +6,6 @@ export type HomeHeroFilmConditions = {
   inView: boolean;
   documentVisible: boolean;
   musicSession: boolean;
-  manualPause: boolean;
   /** The source failed or the browser refused muted autoplay; the still stays without retries. */
   unavailable: boolean;
 };
@@ -18,15 +17,12 @@ export function shouldPlayHomeHeroFilm(conditions: HomeHeroFilmConditions) {
     conditions.inView &&
     conditions.documentVisible &&
     !conditions.musicSession &&
-    !conditions.manualPause &&
     !conditions.unavailable
   );
 }
 
 // The ghost reaches its faintest opacity at 42vh, so the film plays only while at least half the hero is in view.
 const HOME_HERO_FILM_VISIBLE_RATIO = 0.5;
-const PAUSE_ICON = 'M6 5h4v14H6zM14 5h4v14h-4z';
-const RESUME_ICON = 'm8 5 11 7-11 7Z';
 
 export function defineHomeHeroFilm() {
   if (customElements.get('home-hero-film')) return;
@@ -38,21 +34,18 @@ const ElementBase = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement;
 
 /**
  * Plays the hero's silent loop under the approved Home motion rules: muted and inline, only while the hero is in view
- * and the tab is visible, paused during a shell music session, with a manual pause. Reduced motion and data saving
- * keep the still. The element holds the control; the film sits in the hero's aria-hidden media layer.
+ * and the tab is visible, and paused during a shell music session. Reduced motion and data saving keep the still. The
+ * element sits in the hero; the film is in its aria-hidden media layer.
  */
 class HomeHeroFilm extends ElementBase {
   #video: HTMLVideoElement | null = null;
   #still: HTMLImageElement | null = null;
-  #toggle: HTMLButtonElement | null = null;
-  #icon: SVGPathElement | null = null;
   #observer: IntersectionObserver | null = null;
   #session: MutationObserver | null = null;
   #reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   #portrait = matchMedia('(orientation: portrait)');
   #connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection;
   #inView = false;
-  #manualPause = false;
   #unavailable = false;
   #sync = () => this.#apply();
   #ready = () => this.#video?.setAttribute('data-ready', '');
@@ -60,25 +53,18 @@ class HomeHeroFilm extends ElementBase {
     this.#unavailable = true;
     this.#apply();
   };
-  #togglePause = () => {
-    this.#manualPause = !this.#manualPause;
-    this.#apply();
-  };
 
   connectedCallback() {
     const section = this.closest('section');
     this.#video = section?.querySelector<HTMLVideoElement>('video[data-home-hero-film]') ?? null;
     this.#still = section?.querySelector<HTMLImageElement>('.homepage-hero-section__media-image') ?? null;
-    this.#toggle = this.querySelector('button');
-    this.#icon = this.querySelector('path');
-    if (!section || !this.#video || !this.#toggle) return;
+    if (!section || !this.#video) return;
 
     // A shell snapshot can return the markup as this element last left it.
     this.#video.removeAttribute('data-ready');
     this.#video.muted = true;
     this.#video.addEventListener('playing', this.#ready);
     this.#video.addEventListener('error', this.#fail);
-    this.#toggle.addEventListener('click', this.#togglePause);
     this.#still?.addEventListener('load', this.#sync);
     this.#observer = new IntersectionObserver(
       ([entry]) => {
@@ -107,7 +93,6 @@ class HomeHeroFilm extends ElementBase {
     this.#inView = false;
     this.#video?.removeEventListener('playing', this.#ready);
     this.#video?.removeEventListener('error', this.#fail);
-    this.#toggle?.removeEventListener('click', this.#togglePause);
     this.#still?.removeEventListener('load', this.#sync);
     document.removeEventListener('visibilitychange', this.#sync);
     this.#reducedMotion.removeEventListener('change', this.#sync);
@@ -118,16 +103,11 @@ class HomeHeroFilm extends ElementBase {
 
   #apply() {
     const video = this.#video;
-    const toggle = this.#toggle;
-    if (!video || !toggle) return;
+    if (!video) return;
     const automaticMotion = !this.#reducedMotion.matches && !this.#connection?.saveData;
     const musicSession = document.documentElement.hasAttribute('data-music-player-session');
     const documentVisible = !document.hidden;
 
-    toggle.hidden = !automaticMotion || this.#unavailable;
-    toggle.disabled = !this.#inView || !documentVisible || musicSession;
-    toggle.setAttribute('aria-label', this.#manualPause ? 'Resume background motion' : 'Pause background motion');
-    this.#icon?.setAttribute('d', this.#manualPause ? RESUME_ICON : PAUSE_ICON);
     // A paused film keeps its frame; without automatic motion or a playable source the still returns.
     if (!automaticMotion || this.#unavailable) video.removeAttribute('data-ready');
 
@@ -137,7 +117,6 @@ class HomeHeroFilm extends ElementBase {
       inView: this.#inView,
       documentVisible,
       musicSession,
-      manualPause: this.#manualPause,
       unavailable: this.#unavailable,
     });
     if (!play) {
