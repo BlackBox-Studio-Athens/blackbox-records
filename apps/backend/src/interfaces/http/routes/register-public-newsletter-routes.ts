@@ -10,9 +10,8 @@ export function registerPublicNewsletterRoutes(app: AppOpenApi): void {
     const services = createPublicNewsletterServices(context.env, logger);
 
     try {
-      const result = await services.registerNewsletterSignup({
-        email: context.req.valid('json').email,
-      });
+      const body = context.req.valid('json');
+      const result = await services.registerNewsletterSignup({ email: body.email, source: body.source });
 
       if (result.status === 'failed') {
         return jsonError(context, {

@@ -512,6 +512,8 @@ describe('Notify me', () => {
     expect(html).toMatch(/<input type="checkbox" name="newsletter"(?![^>]*checked)[^>]*>/);
     expect(html).toContain(NEWSLETTER_CONSENT_LABEL);
     expect(html).toContain(AVAILABILITY_ALERT_COPY.fine);
+    // The management page takes no fragment here; only emailed links carry a capability.
+    expect(html).toMatch(/<a [^>]*href="[^"#]*\/email-preferences\/">manage alerts<\/a>\./);
     expect(html).toContain('>Notify me</button>');
     expect(html).toContain('site-button--link');
     expect(html).toContain('>Cancel</button>');
@@ -565,7 +567,7 @@ describe('Notify me', () => {
         storeItemSlug="item"
       />,
     );
-    expect(joined).toContain('You&#x27;re also on the newsletter.');
+    expect(joined).toContain('Check your inbox to confirm the newsletter request.');
     const failed = renderToStaticMarkup(
       <AvailabilityAlertForm
         initial={{ step: 'done', email: 'a@b.co', newsletterOutcome: 'failed' }}
@@ -610,7 +612,11 @@ describe('Notify me', () => {
       .mockRejectedValueOnce(new Error('newsletter_unavailable'));
     const api = createApi({ registerNewsletterSignup });
     await expect(joinNewsletter(api, ' listener@example.com ')).resolves.toBe('joined');
-    expect(registerNewsletterSignup).toHaveBeenCalledWith({ email: 'listener@example.com', consentAccepted: true });
+    expect(registerNewsletterSignup).toHaveBeenCalledWith({
+      email: 'listener@example.com',
+      consentAccepted: true,
+      source: 'availability-alert-form',
+    });
     await expect(joinNewsletter(api, 'listener@example.com')).resolves.toBe('failed');
   });
 });

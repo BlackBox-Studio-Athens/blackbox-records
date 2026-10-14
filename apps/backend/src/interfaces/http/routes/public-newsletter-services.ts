@@ -4,6 +4,7 @@ import {
   EmailConfigurationError,
   logNewsletterRegistrationOutcome,
   registerNewsletterContact,
+  type NewsletterConsentSource,
   type NewsletterRegistrationResult,
 } from '../../../application/email';
 import { NEWSLETTER_CONSENT_COPY_VERSION } from '../../../application/commerce/checkout';
@@ -22,18 +23,18 @@ export function createPublicNewsletterServices(bindings: AppBindings, logger: Pi
     registerNewsletterSignup: async (input: {
       consentedAt?: Date;
       email: string;
+      source?: Extract<NewsletterConsentSource, 'availability-alert-form' | 'site-form'>;
     }): Promise<NewsletterRegistrationResult> => {
       const emailRuntime = createEmailRuntimeServices(bindings);
+      const source = input.source ?? 'site-form';
       const result = await registerNewsletterContact(emailRuntime.provider, emailRuntime.config, {
         consentCopyVersion: NEWSLETTER_CONSENT_COPY_VERSION,
-        consentSource: 'site-form',
+        consentSource: source,
         consentedAt: input.consentedAt ?? new Date(),
         email: publicNewsletterEmail.parse(input.email),
       });
 
-      logNewsletterRegistrationOutcome(logger, result, {
-        source: 'site-form',
-      });
+      logNewsletterRegistrationOutcome(logger, result, { source });
 
       return result;
     },

@@ -11,7 +11,8 @@ export const AVAILABILITY_ALERT_COPY = {
   emailPlaceholder: 'you@example.com',
   consent: 'Email me once when this item can be bought or pre-ordered.',
   optional: 'Optional:',
-  fine: 'BlackBox Records uses your email only for what you ticked. Alert requests are kept for up to 12 months.',
+  fine: 'BlackBox Records uses your email only for what you ticked. Alert requests are kept for up to 12 months. Withdraw anytime from the link we email you, or',
+  manage: 'manage alerts',
   send: 'Notify me',
   sending: 'Sending',
   cancel: 'Cancel',
@@ -19,7 +20,7 @@ export const AVAILABILITY_ALERT_COPY = {
   missingConsent: 'Tick the box so we can email you.',
   failed: "Couldn't save that. Try again.",
   done: (email: string) => `We'll email ${email} once it can be ordered.`,
-  newsletterJoined: "You're also on the newsletter.",
+  newsletterJoined: 'Check your inbox to confirm the newsletter request.',
   newsletterFailed: "The newsletter sign-up didn't go through. Use the newsletter form to try again.",
 } as const;
 
@@ -56,7 +57,11 @@ export async function sendAvailabilityAlert(
 export async function joinNewsletter(api: PublicCheckoutApi | undefined, email: string): Promise<NewsletterOutcome> {
   try {
     const client = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
-    await client.registerNewsletterSignup({ email: email.trim(), consentAccepted: true });
+    await client.registerNewsletterSignup({
+      email: email.trim(),
+      consentAccepted: true,
+      source: 'availability-alert-form',
+    });
     return 'joined';
   } catch {
     return 'failed';
@@ -252,7 +257,14 @@ export default function AvailabilityAlertForm({
         </span>
       </label>
       <p className="availability-alert__fine">
-        {AVAILABILITY_ALERT_COPY.fine} <PrivacyLink />
+        {AVAILABILITY_ALERT_COPY.fine}{' '}
+        <a
+          className="underline underline-offset-4"
+          href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/email-preferences/`}
+        >
+          {AVAILABILITY_ALERT_COPY.manage}
+        </a>
+        . <PrivacyLink />
       </p>
       {errors.form && (
         <p className="availability-alert__error" role="alert">

@@ -151,11 +151,11 @@ describe('NewsletterSignupForm', () => {
       errorMessage: '',
       isSubmitting: true,
       statusClassName: 'text-sm leading-relaxed',
-      statusMessage: 'Subscribing.',
+      statusMessage: 'Sending.',
       statusTone: 'neutral',
     });
 
-    const successMessage = 'Subscribed. Future BlackBox Records updates will go to that email.';
+    const successMessage = 'Check your inbox to confirm your newsletter request within 24 hours.';
     expect(readNewsletterSignupView({ kind: 'registered', message: successMessage })).toMatchObject({
       errorMessage: '',
       isSubmitting: false,
@@ -163,7 +163,8 @@ describe('NewsletterSignupForm', () => {
       statusMessage: successMessage,
       statusTone: 'success',
     });
-    expect(successMessage).not.toMatch(/check your inbox/i);
+    // Double opt-in: success means a confirmation was requested, never that the address is subscribed.
+    expect(successMessage).not.toMatch(/subscribed/i);
   });
 
   it('marks consent errors against the consent control', () => {

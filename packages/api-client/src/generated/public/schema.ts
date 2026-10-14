@@ -391,6 +391,11 @@ export type components = {
             consentAccepted: true;
             /** Format: email */
             email: string;
+            /**
+             * @description Form that collected the consent; defaults to site-form.
+             * @enum {string}
+             */
+            source?: "site-form" | "availability-alert-form";
         };
         NewsletterRegistrationResponse: {
             /**

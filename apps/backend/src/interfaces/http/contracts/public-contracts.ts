@@ -296,6 +296,10 @@ const newsletterRegistrationBodySchema = z
   .object({
     consentAccepted: z.literal(true),
     email: z.string().trim().email(),
+    source: z
+      .enum(['site-form', 'availability-alert-form'])
+      .optional()
+      .describe('Form that collected the consent; defaults to site-form.'),
   })
   .strict()
   .openapi('NewsletterRegistrationBody');

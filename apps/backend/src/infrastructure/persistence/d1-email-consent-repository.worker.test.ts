@@ -59,12 +59,19 @@ describe('D1 email consent capabilities', () => {
     const subscriber = contact();
     subscriber.email = `Fan-${crypto.randomUUID()}@example.com`;
     await expect(services.requestNewsletter(subscriber)).resolves.toEqual({ ok: true });
-    expect(provider.sendEmail.mock.calls[0]![0].to).toBe(subscriber.email);
+    expect(provider.sendEmail.mock.calls[0]![0].to).toBe(subscriber.email.toLowerCase());
+    // A case variant shares the recipient cooldown instead of spending another daily send.
+    await expect(services.requestNewsletter({ ...subscriber, email: subscriber.email.toUpperCase() })).resolves.toEqual(
+      {
+        ok: true,
+      },
+    );
+    expect(provider.sendEmail).toHaveBeenCalledTimes(1);
     expect(provider.registerNewsletterContact).not.toHaveBeenCalled();
     const rawToken = token();
     expect(rawToken).toMatch(/^[a-f0-9]{64}$/);
     const record = await env.COMMERCE_DB.prepare('SELECT * FROM "EmailConsent" WHERE "email" = ?')
-      .bind(subscriber.email)
+      .bind(subscriber.email.toLowerCase())
       .first();
     expect(JSON.stringify(record)).not.toContain(rawToken);
     expect(record).toMatchObject({ tokenHash: await hashEmailConsentToken(rawToken), sentAt: now.toISOString() });

@@ -20,7 +20,7 @@ import {
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
 import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
-import { PrivacyLink } from '@/platform/components/PurchaseInformation';
+import { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 import { clearCheckoutAttempt, getOrCreateCheckoutAttempt } from './checkout-attempt';
@@ -280,9 +280,7 @@ export default function CheckoutOfferStatus({
                     disabled={isStartingCheckout}
                     onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
                   />
-                  <span>
-                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
-                  </span>
+                  <span>{NEWSLETTER_CONSENT_LABEL}</span>
                 </label>
                 <PrivacyLink />
               </div>

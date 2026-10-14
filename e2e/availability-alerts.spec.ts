@@ -117,13 +117,15 @@ for (const width of [1440, 390]) {
     await send.click();
     const done = purchase.locator('[data-availability-alert-done]');
     await expect(done).toHaveText(
-      `✓ We'll email listener@example.com once it can be ordered.${joinNewsletter ? " You're also on the newsletter." : ''}`,
+      `✓ We'll email listener@example.com once it can be ordered.${joinNewsletter ? ' Check your inbox to confirm the newsletter request.' : ''}`,
     );
     await expect(done).toHaveAttribute('role', 'status');
     await expect(done).toBeFocused();
     expect(requests).toEqual([{ email: 'listener@example.com', consent: true }]);
     expect(newsletterRequests).toEqual(
-      joinNewsletter ? [{ email: 'listener@example.com', consentAccepted: true }] : [],
+      joinNewsletter
+        ? [{ email: 'listener@example.com', consentAccepted: true, source: 'availability-alert-form' }]
+        : [],
     );
     await expectNoHorizontalOverflow(page);
     await purchase

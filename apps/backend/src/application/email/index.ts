@@ -40,6 +40,7 @@ export type {
   EmailShipEstimate,
   EmailOperationResult,
   EmailTag,
+  NewsletterConsentSource,
   NewsletterContactRouting,
   NewsletterRegistrationResult,
   PaidOrderEmailAddress,

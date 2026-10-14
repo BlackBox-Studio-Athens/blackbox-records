@@ -468,6 +468,13 @@ Each application module MUST declare its source root, targets and task inputs in
 - **THEN** those route files are owned by the closed `checkout-web` module
 - **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
 
+#### Scenario: Email-preference links are handled
+
+- **GIVEN** emailed newsletter-confirmation and alert-withdrawal links open the standalone `/email-preferences/` document
+- **WHEN** boundary validation runs
+- **THEN** application-owned `web-pages` owns the route and `checkout-web` provides `email-preferences.ts`, which posts capabilities only through its browser-safe public API
+- **AND** the document mounts no app shell, player, analytics or third-party script.
+
 #### Scenario: VAT and delivery summaries are shared with the cart
 
 - **GIVEN** cart and checkout display a Worker-validated delivery quote

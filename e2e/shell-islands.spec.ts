@@ -19,7 +19,7 @@ test('shell portal forms mount again with clean state when cached pages return',
     await email.fill(address);
     await island.getByRole('checkbox').check();
     await island.getByRole('button', { name: /subscribe/i }).click();
-    await expect(island.getByRole('status')).toContainText('Subscribed.');
+    await expect(island.getByRole('status')).toContainText('Check your inbox to confirm');
   }
 
   // Home is the initial document (snapshotted when the shell mounts); About arrives as a fetched snapshot.

@@ -1069,6 +1069,14 @@
           "email": {
             "type": "string",
             "format": "email"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "site-form",
+              "availability-alert-form"
+            ],
+            "description": "Form that collected the consent; defaults to site-form."
           }
         },
         "required": [

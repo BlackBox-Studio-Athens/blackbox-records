@@ -17,6 +17,7 @@
       "status": "closed",
       "exports": [
         "./WithdrawalForm.tsx",
+        "./email-preferences.ts",
         "./public-checkout-api.ts",
         "./public-checkout-presentation.ts",
         "./CheckoutOrderSummary.tsx",

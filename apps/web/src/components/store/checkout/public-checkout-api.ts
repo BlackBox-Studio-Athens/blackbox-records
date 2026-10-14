@@ -169,6 +169,25 @@ export async function submitPublicWithdrawal(body: WithdrawalDeclaration): Promi
   );
 }
 
+// Email-preference capabilities: tokens and addresses travel only in the POST body, never in a URL.
+export async function confirmNewsletterRequest(token: string): Promise<{ status: 'confirmed' }> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
+  const request = fetcher.path('/api/newsletter/confirmations').method('post').create();
+  return readPublicCheckoutResponse(() => request({ token }), "We couldn't confirm right now.");
+}
+
+export async function requestAvailabilityAlertWithdrawalLink(email: string): Promise<{ status: 'requested' }> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
+  const request = fetcher.path('/api/availability-alerts/withdrawal-links').method('post').create();
+  return readPublicCheckoutResponse(() => request({ email }), "Couldn't send a link right now. Try again later.");
+}
+
+export async function withdrawAvailabilityAlerts(token: string): Promise<{ status: 'withdrawn' }> {
+  const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
+  const request = fetcher.path('/api/availability-alerts/withdrawals').method('post').create();
+  return readPublicCheckoutResponse(() => request({ token }), "Couldn't withdraw alerts right now.");
+}
+
 async function readPublicCheckoutResponse<TResponse>(
   operation: () => Promise<{ data: TResponse }>,
   fallbackMessage: string,

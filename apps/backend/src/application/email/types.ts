@@ -38,7 +38,7 @@ export type EmailOperationResult = {
   status: 'failed' | 'sent';
 };
 
-export type NewsletterConsentSource = 'checkout-opt-in' | 'site-form';
+export type NewsletterConsentSource = 'availability-alert-form' | 'checkout-opt-in' | 'site-form';
 
 export type RegisterNewsletterContactCommand = {
   consentCopyVersion: string;

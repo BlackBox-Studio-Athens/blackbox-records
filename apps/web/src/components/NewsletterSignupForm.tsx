@@ -81,7 +81,7 @@ export default function NewsletterSignupForm({
       setConsentAccepted(false);
       setState({
         kind: 'registered',
-        message: 'Subscribed. Future BlackBox Records updates will go to that email.',
+        message: 'Check your inbox to confirm your newsletter request within 24 hours.',
       });
     } catch (error) {
       setState(readNewsletterSignupErrorState(error));
@@ -128,7 +128,7 @@ export default function NewsletterSignupForm({
           disabled={disabled}
           aria-busy={view.isSubmitting ? 'true' : undefined}
         >
-          {view.isSubmitting ? <LoadingButtonContent label="Subscribing" /> : buttonLabel}
+          {view.isSubmitting ? <LoadingButtonContent label="Sending" /> : buttonLabel}
         </Button>
       </div>
 
@@ -193,7 +193,7 @@ export function readNewsletterSignupView(state: NewsletterSignupState) {
         : state.kind === 'submitting'
           ? 'text-sm leading-relaxed'
           : 'accessibility-visually-hidden-text',
-    statusMessage: state.kind === 'submitting' ? 'Subscribing.' : state.kind === 'registered' ? state.message : '',
+    statusMessage: state.kind === 'submitting' ? 'Sending.' : state.kind === 'registered' ? state.message : '',
     statusTone: state.kind === 'registered' ? 'success' : 'neutral',
   };
 }

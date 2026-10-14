@@ -910,6 +910,36 @@ describe('public commerce routes', () => {
     });
   });
 
+  it('records which public form collected newsletter consent and refuses unknown sources', async () => {
+    mockRegisterNewsletterSignup.mockResolvedValueOnce({
+      contactRouting: {
+        contactEmail: 'fan@example.com',
+        intendedSubscriberEmail: 'fan@example.com',
+        isSinkRouted: false,
+      },
+      retryable: false,
+      status: 'registered',
+    });
+    const app = createHttpApp();
+    const post = (source: string) =>
+      app.request(
+        'http://backend.test/api/newsletter/registrations',
+        {
+          body: JSON.stringify({ consentAccepted: true, email: 'fan@example.com', source }),
+          headers: { 'content-type': 'application/json', origin: 'https://blackbox.example' },
+          method: 'POST',
+        },
+        testBindings,
+      );
+
+    expect((await post('availability-alert-form')).status).toBe(200);
+    expect(mockRegisterNewsletterSignup).toHaveBeenLastCalledWith({
+      email: 'fan@example.com',
+      source: 'availability-alert-form',
+    });
+    expect((await post('checkout-opt-in')).status).toBe(400);
+  });
+
   it('maps newsletter provider failures to a provider-safe public response', async () => {
     mockRegisterNewsletterSignup.mockResolvedValueOnce({
       contactRouting: {

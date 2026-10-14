@@ -1,0 +1,390 @@
+---
+import '@/styles/fonts.css';
+import interFontUrl from '@/assets/fonts/ui/inter-latin.woff2?url';
+import bebasNeueFontUrl from '@/assets/fonts/ui/bebas-neue-latin.woff2?url';
+import { createProjectRelativeUrl, siteBrandAssets, siteThemeColor } from '@/platform/config/site';
+import { EMAIL_PREFERENCES_SUPPORT_ADDRESS } from '@/components/store/checkout/email-preferences';
+
+// Emailed capability links open this standalone document: no shell, player, analytics or third-party requests.
+// The hosted renderer keeps these headers and serves no-store when Cache-Control says so; static hosts use the metas.
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+const homeUrl = createProjectRelativeUrl('/');
+const logoUrl = createProjectRelativeUrl('/assets/images/brand/logo-240.webp');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Email preferences | BlackBox Records</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content={siteThemeColor} />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
+    <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />
+    <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={bebasNeueFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+  </head>
+  <body>
+    <main class="email-preferences">
+      <a class="email-preferences__home" href={homeUrl}>
+        <img class="email-preferences__logo" src={logoUrl} alt="BlackBox Records home" width="240" height="240" />
+      </a>
+
+      <div class="email-preferences__body" data-email-preferences-app hidden>
+        <section class="email-preferences__action" aria-labelledby="email-preferences-title">
+          <p class="email-preferences__kicker">EMAIL PREFERENCES</p>
+          <h1 id="email-preferences-title" data-email-preferences-title></h1>
+          <p class="email-preferences__copy" data-email-preferences-intro></p>
+          <button class="email-preferences__button" type="button" data-email-preferences-submit hidden></button>
+          <div
+            class="email-preferences__result"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            tabindex="-1"
+            data-email-preferences-action-status
+          ></div>
+          <div
+            class="email-preferences__result email-preferences__result--error"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            tabindex="-1"
+            data-email-preferences-action-error
+          ></div>
+        </section>
+
+        <section
+          class="email-preferences__recovery"
+          aria-labelledby="email-preferences-recovery-title"
+          data-email-preferences-recovery
+          hidden
+        >
+          <h2 id="email-preferences-recovery-title">Request a new link</h2>
+          <form novalidate data-email-preferences-form>
+            <label for="email-preferences-email">Email</label>
+            <div class="email-preferences__row">
+              <input
+                id="email-preferences-email"
+                type="email"
+                name="email"
+                autocomplete="email"
+                inputmode="email"
+                spellcheck="false"
+                data-email-preferences-email
+              />
+              <button
+                class="email-preferences__button email-preferences__button--outline"
+                type="submit"
+                data-email-preferences-send
+              >
+                Send link
+              </button>
+            </div>
+            <div
+              class="email-preferences__result"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              tabindex="-1"
+              data-email-preferences-recovery-status
+            ></div>
+            <div
+              id="email-preferences-recovery-error"
+              class="email-preferences__result email-preferences__result--error"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+              tabindex="-1"
+              data-email-preferences-recovery-error
+            ></div>
+          </form>
+        </section>
+      </div>
+
+      <noscript>
+        <p class="email-preferences__kicker">EMAIL PREFERENCES</p>
+        <p class="email-preferences__copy">
+          Turn on JavaScript to use this page, or write to{' '}
+          <a href={`mailto:${EMAIL_PREFERENCES_SUPPORT_ADDRESS}`}>{EMAIL_PREFERENCES_SUPPORT_ADDRESS}</a>.
+        </p>
+      </noscript>
+    </main>
+
+    <script>
+      import { mountEmailPreferences } from '@/components/store/checkout/email-preferences';
+
+      mountEmailPreferences();
+    </script>
+  </body>
+</html>
+
+<style>
+  @font-face {
+    font-family: 'Veneer';
+    src: url('@/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+    font-display: swap;
+    font-style: normal;
+    font-weight: 900;
+  }
+
+  :root {
+    color-scheme: dark;
+    --void: #0d0d0d;
+    --ink: #f5f5f5;
+    --muted: #b3b3b3;
+    --border: #262626;
+    --deep-border: #2b2b2b;
+    --charcoal: #141414;
+    --hover: #161616;
+    --control-ink: #e8e8e8;
+    --control-ink-pressed: #cfcfcf;
+    --primary-inverse: #090909;
+    --error: #cf6b80;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--void);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  .email-preferences {
+    display: grid;
+    align-content: start;
+    gap: clamp(2.5rem, 8vh, 5rem);
+    width: min(100%, 44rem);
+    min-height: 100svh;
+    padding: clamp(1.5rem, 6vw, 4rem);
+  }
+
+  .email-preferences__home {
+    justify-self: start;
+  }
+
+  .email-preferences__logo {
+    display: block;
+    width: clamp(4.5rem, 10vw, 7.5rem);
+    height: auto;
+  }
+
+  .email-preferences__body {
+    display: grid;
+    gap: 3rem;
+  }
+
+  .email-preferences__kicker {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    line-height: 1.4;
+  }
+
+  h1 {
+    max-width: 14ch;
+    margin: 0.75rem 0 1.25rem;
+    font-family: Veneer, 'Bebas Neue', Impact, sans-serif;
+    font-size: clamp(2.75rem, 9vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: 0.025em;
+    line-height: 0.86;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+
+  h2 {
+    margin: 0 0 1rem;
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    font-size: 1.75rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    line-height: 1;
+  }
+
+  .email-preferences__copy {
+    max-width: 40ch;
+    margin: 0 0 1.5rem;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .email-preferences__recovery {
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .email-preferences__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  input {
+    flex: 1 1 14rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--void);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  input[aria-invalid='true'] {
+    border-color: var(--error);
+  }
+
+  .email-preferences__button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 1rem 0;
+    border: 1px solid var(--control-ink);
+    border-radius: 0;
+    background: var(--control-ink);
+    color: var(--primary-inverse);
+    cursor: pointer;
+    font-family: 'Bebas Neue', Impact, sans-serif;
+    font-size: 1.125rem;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition:
+      background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .email-preferences__button[hidden] {
+    display: none;
+  }
+
+  .email-preferences__button--outline {
+    border-color: var(--deep-border);
+    background: var(--charcoal);
+    color: var(--ink);
+  }
+
+  @media (hover: hover) {
+    .email-preferences__button:hover {
+      border-color: var(--ink);
+      background: var(--ink);
+    }
+
+    .email-preferences__button--outline:hover {
+      border-color: #3a3a3a;
+      background: var(--hover);
+    }
+  }
+
+  .email-preferences__button:active {
+    border-color: var(--control-ink-pressed);
+    background: var(--control-ink-pressed);
+  }
+
+  .email-preferences__button--outline:active {
+    border-color: var(--deep-border);
+    background: var(--void);
+  }
+
+  .email-preferences__button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .email-preferences__button[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  a,
+  input,
+  .email-preferences__button,
+  .email-preferences__result {
+    outline: none;
+  }
+
+  a:focus-visible,
+  input:focus-visible,
+  .email-preferences__button:focus-visible,
+  .email-preferences__result:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  a {
+    color: var(--ink);
+    text-underline-offset: 0.2em;
+    overflow-wrap: anywhere;
+  }
+
+  .email-preferences__result {
+    max-width: 44ch;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .email-preferences__result :global(p) {
+    margin: 1.25rem 0 0;
+  }
+
+  .email-preferences__result :global(p + p) {
+    margin-top: 0.5rem;
+  }
+
+  .email-preferences__result:not(.email-preferences__result--error) :global(p + p) {
+    color: var(--muted);
+  }
+
+  .email-preferences__result--error {
+    color: var(--error);
+  }
+
+  @media (max-width: 30rem) {
+    .email-preferences__row {
+      flex-direction: column;
+    }
+
+    input {
+      flex: none;
+    }
+
+    .email-preferences__button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .email-preferences__button {
+      transition: none;
+    }
+  }
+</style>

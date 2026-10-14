@@ -17,6 +17,8 @@
 
 ## 4. Separate acceptance
 
+- [x] 4.0 Close audit gaps found on 14 October 2026: truthful signup/alert success copy, one consent label on every surface (`blackbox-newsletter-v1` = "I agree to receive BlackBox Records release, distro, and event updates. I can unsubscribe anytime."), `availability-alert-form` consent source, case-insensitive confirmation cooldown and withdrawal notice in the alert fine print; verify focused backend/web tests and the shell-islands and availability-alerts browser specs.
+
 - [ ] 4.1 Claude Desktop implements the email-preferences page and truthful form copy after required preview approval; verify browser, accessibility and player continuity checks.
 - [ ] 4.2 Review and publish a narrow amendment to actual CMS privacy content through Content Publication; preserve real controller/editorial information and verify accepted snapshot.
 - [ ] 4.3 With separate release/provider authorization, verify UAT sink behavior, reconcile migration numbering and obtain exact-candidate hosted acceptance. No real email or hosted mutation in this implementation.

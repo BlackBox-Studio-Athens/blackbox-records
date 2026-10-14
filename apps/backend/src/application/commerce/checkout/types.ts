@@ -15,6 +15,7 @@ import type { AcceptedMonetaryPolicy } from '../../../domain/commerce';
 
 export type StoreOfferCatalogStatus = 'catalog_drift' | 'ready' | 'sold_out';
 
+// Names the exact checkbox text every surface shows (web NEWSLETTER_CONSENT_LABEL); new wording needs a new version.
 export const NEWSLETTER_CONSENT_COPY_VERSION = 'blackbox-newsletter-v1';
 
 type StoreOfferIdentity = {
