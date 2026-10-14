@@ -29,3 +29,16 @@ Reproduction: `node --import tsx .codex-artifacts/compliance-review-20261014/rep
 - No UI source, supplier facts, providers or hosted content changed during review. Official assets, 200% text/zoom, no-JS/image-failure behavior, staff browser interaction and Local publication acceptance still require the checks already assigned in the owning changes.
 
 Verdict: fix R1 and R4, then review the new evidence. Unknown supplier facts and incomplete-offer treatment remain owner work.
+
+## Fixes, 14 October 2026
+
+Commit `17547f01` fixes R1 and R4; final validation ran on `c8251ce2594db5e1cbe6fd4748cfa9a5b3d46217`.
+
+- **R1:** `listStoreProductSafety` no longer keeps a module-level promise. It reads `listStoreItems` and the publication-aware `getEntry` on every render, so each checkout uses the snapshot its render selected. Regression `store-page-data.test.ts` "follows each publication without reloading the module" goes from absent to verified to changed to removed in one module instance. No sale rule or checkout gate changed.
+- **R4:** `ContactValue` treats an address starting with `https://` as a contact page and keeps it, with a new tab and `noopener noreferrer`. Everything else, which the schema limits to a valid email, becomes `mailto:`. `statutory-disclosures.test.tsx` covers a normal email, a normal HTTPS page, and HTTPS with `@` in the path and in the query, for both the manufacturer and the EU responsible person. Markup and visible text are unchanged.
+- **Reproductions:** `reproduce-safety-cache.mjs` and `reproduce-contact-link.mjs` now fail their assertions of the old behaviour (two source reads; the HTTPS href is no longer `mailto:`). Output is in `.codex-artifacts/compliance-review-20261014/fixes/reproductions-after-fix.log`.
+- **Checks:**
+  - Scoped `pnpm test` passed for both files.
+  - `pnpm test:e2e e2e/international-order-checkout.spec.ts`: 13 passed (`.codex-artifacts/compliance-review-20261014/fixes/e2e-checkout.json`).
+  - `pnpm validate` passed, `mode: local`, scope `all`; before and after SHA `c8251ce2`, matching clean fingerprint `e3b0c442…b855`, zero changed files. Summary: `.codex-artifacts/validation/2026-10-14T13-42-03-675Z-78088-cc335b/summary.json`.
+- **Still unverified:** a published snapshot with verified data in a real Local publication or hosted runtime; product safety in a browser (no edition has verified data yet). Tasks 2.1, 2.3 and 2.4 stay open.

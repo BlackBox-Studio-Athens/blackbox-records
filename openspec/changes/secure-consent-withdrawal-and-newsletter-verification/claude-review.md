@@ -28,3 +28,39 @@ Smallest fix compatible with the no-third-party token page: open the standalone 
 - No hosted headers, real delivery, suppression configuration or privacy publication was tested. Existing copy awaiting owner review remains unapproved by this code review. Item 6 and future-only item 7 remain unchanged.
 
 Verdict: fix R2 and R3 before accepting the completed consent implementation. Passing local checks do not establish legal or hosted acceptance.
+
+## Fixes, 14 October 2026
+
+Commit `c8251ce2` fixes R2 and R3; final validation ran on that SHA.
+
+- **R2:**
+  - Newsletter attempts store the exact trimmed address. The provider sends to it, and activation uses the same address, because the payload's `email` is set to it.
+  - Alert-withdrawal attempts stay lowercased, so they match stored alerts.
+  - `D1EmailConsentRepository.reserve` compares `lower("email")` in its cooldown insert guard and its read-back. Case variants therefore share one cooldown and one daily-budget slot.
+  - A reused unsent attempt returns its own row, so its own address and payload are used, never a later request's spelling.
+  - Unchanged: daily limits, single-use hashed tokens, unsubscribe preservation, and the invalidation of all withdrawal tokens.
+  - Worker regressions in `d1-email-consent-repository.worker.test.ts`:
+    - the delivered `to` and the activated contact are the exact requested mailbox;
+    - an uppercase variant sends nothing new;
+    - new test: after an unknown provider outcome, a lowercased retry resends the identical body to the original spelling, and confirmation activates that spelling.
+- **R3:**
+  - The "manage alerts" link has `target="_blank" rel="noopener noreferrer"` and a `sr-only` " (opens in a new tab)". Visible text, position and classes are unchanged.
+  - The standalone token page is unchanged and not added to the shell.
+  - Browser regression in `e2e/availability-alerts.spec.ts`, "manage alerts opens preferences in a new tab and keeps the player, document and cart". It mocks the provider embed, plays and minimizes the player, opens the alert form and presses the real link. It then checks:
+    - the new tab is `/email-preferences/` with "Request a new link" and a null `window.opener`;
+    - the original document's sentinel holds, the same iframe element is still connected and Open player is available;
+    - the seeded cart in localStorage is byte-identical.
+  - Ran in `chromium-desktop`.
+- **Reproductions:** `reproduce-newsletter-address.mjs` now fails its assertion of the old behaviour, because delivery is the original spelling (`.codex-artifacts/compliance-review-20261014/fixes/reproductions-after-fix.log`). `reproduce-manage-link.js` is superseded by the e2e regression and was not rerun.
+- **Checks:**
+  - Scoped `pnpm test` passed for the worker test and `StoreItemPurchaseActions.test.tsx` (link markup assertion updated).
+  - `pnpm test:e2e e2e/availability-alerts.spec.ts`: 6 passed (`.codex-artifacts/compliance-review-20261014/fixes/e2e-availability-alerts.json`, `.log`).
+  - `pnpm validate` passed: `.codex-artifacts/validation/2026-10-14T13-42-03-675Z-78088-cc335b/summary.json`, `mode: local`, matching clean fingerprint, zero changed files.
+- **Still unverified:**
+  - Real delivery to a case-sensitive mailbox.
+  - Resend behaviour.
+  - Hosted headers.
+  - New-tab behaviour on phone browsers (the regression runs on desktop Chromium only).
+  - Screen-reader announcement.
+
+  Tasks 4.2 and 4.3 stay open.
