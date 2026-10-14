@@ -3,6 +3,8 @@ import { createStoreItemAvailability, type ItemAvailability } from '@/lib/item-a
 import type { CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
 import { getImage } from 'astro:assets';
+import { getEntry } from '@/lib/content-reader';
+import type { ProductSafetyInformation } from '@/platform/components/ProductSafetyDisclosure';
 
 export type StorePageEntry = {
   storeItem: StoreItem;
@@ -81,4 +83,29 @@ export async function createStorePageStaticPaths() {
       } satisfies StorePageEntry,
     },
   }));
+}
+
+/** Verified public GPSR projection of the Store Item's Release or Distro source; absent when unverified. */
+export async function getStoreItemProductSafety(storeItem: StoreItem): Promise<ProductSafetyInformation | undefined> {
+  const source =
+    storeItem.sourceKind === 'release'
+      ? await getEntry('releases', storeItem.sourceId)
+      : await getEntry('distro', storeItem.sourceId);
+  return source?.data.product_safety;
+}
+
+/** Store Item slug -> public product safety, for checkout lines added without visiting the item page. */
+let storeProductSafety: Promise<Record<string, ProductSafetyInformation>> | undefined;
+export function listStoreProductSafety(): Promise<Record<string, ProductSafetyInformation>> {
+  // One build-wide read: every compatibility checkout page embeds the same map.
+  storeProductSafety ??= listStoreItems()
+    .then((storeItems) =>
+      Promise.all(
+        storeItems.map(async (storeItem) => [storeItem.slug, await getStoreItemProductSafety(storeItem)] as const),
+      ),
+    )
+    .then((entries) =>
+      Object.fromEntries(entries.filter((entry): entry is [string, ProductSafetyInformation] => Boolean(entry[1]))),
+    );
+  return storeProductSafety;
 }

@@ -25,3 +25,11 @@ For an in-scope offer, missing required Article 19 information needs resolution 
 ## Verification and recovery
 
 Test incomplete drafts, verified completeness, non-EU responsibility, malformed contacts and dates, explicit safety assessment, old records, accepted snapshot isolation and evidence stripping. Test schema setup repetition and unexpected native types. Run focused `pnpm test` and final `pnpm validate`, then strict guarded OpenSpec validation. A reviewed code revert leaves additive CMS fields and accepted snapshots intact; do not delete evidence columns or restore content during a code rollback. Public display acceptance waits for Claude, then Local browser and publication checks; hosted acceptance requires separate authorization.
+
+## Approved presentation and recorded risk (owner, 14 October 2026)
+
+The owner approved preview v3 and instructed that product safety sit in expandable controls "no matter what". Public: a closed native "Product safety" disclosure at the end of the Store Item information area, and a closed "Product safety" disclosure under each checkout order line (both checkout documents), because Store-card Buy and Releases Buy add to the cart without visiting the item page. Only the verified public projection is rendered; checkout pages embed a build-time map of Store Item slug to that projection, leaving the cart contract unchanged.
+
+**Recorded risk:** Article 19 requires the information to be indicated "clearly and visibly" in the offer, and the Codex handover advised against collapsed-only presentation. Commission guidance C/2025/6233 does not address tabs or accordions. A shop survey (14 October 2026) found collapsed tabs, accordions and popups to be the common pattern among shops that comply at all (Kings Road Merch, Nuclear Blast, Skroutz, Shopify GPSR apps); practitioners consider a separate page or QR code insufficient. The owner accepted this risk; it is not a legal clearance.
+
+Staff: a "Product safety" group in the Release and Distro editors and Item setup, with plain hints and per-field missing messages (owner feedback that "Add the edition or batch identifier." was unclear). EU contact hints and messages were written by analogy and await owner review.

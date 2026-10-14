@@ -8,8 +8,8 @@
 
 ## 2. Claude Desktop preview and presentation
 
-- [ ] 2.1 Claude Desktop obtains and inspects the official RGB English/Greek notice files, records original filenames/hashes/provenance, and presents a concrete desktop/phone placement preview; retain explicit user approval before non-text UI implementation.
-- [ ] 2.2 Claude Desktop implements the approved prominent reminder and full accessible notice, with no-JS access and existing accepted terms preserved; land focused tests covering first activation, text/link access and unchanged checkout/cart/consent behaviour.
+- [x] 2.1 Claude Desktop obtains and inspects the official RGB English/Greek notice files, records original filenames/hashes/provenance, and presents a concrete desktop/phone placement preview; retain explicit user approval before non-text UI implementation.
+- [x] 2.2 Claude Desktop implements the approved prominent reminder and full accessible notice, with no-JS access and existing accepted terms preserved; land focused tests covering first activation, text/link access and unchanged checkout/cart/consent behaviour.
 
 ## 3. Acceptance of implemented presentation
 

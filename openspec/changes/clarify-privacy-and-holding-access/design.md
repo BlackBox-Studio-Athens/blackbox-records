@@ -15,3 +15,7 @@ Base: `dfea9e105f51e7e472dc08e535a479e7dbb2186b`. Worktree explicitly authorized
 The scoped regression executes the actual preparation/check scripts in a disposable fixture, checks unchanged holding HTML and exact legal redirects, and rejects catchall/shop forwarding and extra shop HTML. It is not a Cloudflare routing emulator. Hosted 302 status, query handling, public destination health, and absence of platform-injected analytics require a separately authorized bounded Holding acceptance after deployment. UI discoverability, mobile/keyboard treatment and CMS publication remain Claude/owner acceptance.
 
 After switch-day finalization, `pages.dev` may redirect back to the apex. The Holding artifact must then be retired/refreshed before any rollback to avoid a policy redirect loop. `launch-switch-day` already owns Holding retirement; this change does not execute it.
+
+## Approved Holding link (owner, 14 October 2026)
+
+Preview v3 approved one quiet muted PRIVACY link in a separate "Legal" navigation under the contact actions, linking `/privacy/` (served by the prepared 302). Terms is not linked from Holding because Holding sells nothing; the `/terms` redirects remain for saved URLs. `check-prd-holding.ts` accepts `/privacy/` as the only relative anchor and requires it; `scripts/holding-legal-routes.test.ts` covers both.

@@ -10,6 +10,6 @@
 ## Remaining finding acceptance
 
 - [ ] 2.1 Owner verifies edition/batch identity, BlackBox's role, manufacturer contacts, any EU responsible person and safety/transition evidence for actual offers.
-- [ ] 2.2 Claude Desktop prepares the UI preview; owner explicitly approves non-text public-screen changes before Claude implements staff/public presentation and tests.
+- [x] 2.2 Claude Desktop prepares the UI preview; owner explicitly approves non-text public-screen changes before Claude implements staff/public presentation and tests.
 - [ ] 2.3 Parent/owner reviews the actual incomplete-offer impact and decides the staged publication/sale treatment; implement only the explicitly authorized plan.
 - [ ] 2.4 Verify draft privacy, selected revision, accepted snapshot and visible offer information through normal Local publication/browser acceptance; hosted adoption/publication requires separate authorization.

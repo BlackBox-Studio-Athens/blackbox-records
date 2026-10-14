@@ -17,7 +17,8 @@ describe('Holding legal route isolation', () => {
 <meta name="robots" content="noindex, nofollow">
 <h1>UNDER CONSTRUCTION.</h1><p>BLACKBOX RECORDS IS ACTIVE.</p>
 <a href="https://www.instagram.com/blackboxrecordsath/">FOLLOW ON INSTAGRAM</a>
-<a href="mailto:info@blackboxrecordsathens.com">EMAIL THE LABEL</a>`;
+<a href="mailto:info@blackboxrecordsathens.com">EMAIL THE LABEL</a>
+<nav aria-label="Legal"><a href="/privacy/">PRIVACY</a></nav>`;
     const run = (script: string) =>
       execFileSync(process.execPath, [path.join(web, 'scripts', script)], {
         encoding: 'utf8',
@@ -69,6 +70,15 @@ describe('Holding legal route isolation', () => {
         expect(() => run('check-prd-holding.ts')).toThrow(/Holding redirects/);
       }
       writeFileSync(path.join(output, '_redirects'), redirects);
+      // Only the redirected privacy link may be relative; a shop path is refused.
+      const writeDocument = (document: string) => {
+        for (const file of ['index.html', '404.html']) writeFileSync(path.join(output, file), document);
+      };
+      writeDocument(html.replace('</nav>', '<a href="/store/">STORE</a></nav>'));
+      expect(() => run('check-prd-holding.ts')).toThrow(/Invalid PRD Holding Page action: \/store\//);
+      writeDocument(html.replace('<a href="/privacy/">PRIVACY</a>', ''));
+      expect(() => run('check-prd-holding.ts')).toThrow(/Missing required PRD Holding Page markup: href="\/privacy\/"/);
+      writeDocument(html);
       mkdirSync(path.join(output, 'store'));
       writeFileSync(path.join(output, 'store/index.html'), 'shop');
       expect(() => run('check-prd-holding.ts')).toThrow(/Unexpected HTML/);

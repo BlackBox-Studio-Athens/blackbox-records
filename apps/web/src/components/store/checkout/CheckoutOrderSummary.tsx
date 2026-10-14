@@ -15,6 +15,7 @@ import {
 } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
 import { preorderChipText } from '@/platform/lib/preorder-estimate';
+import ProductSafetyDisclosure, { type ProductSafetyInformation } from '@/platform/components/ProductSafetyDisclosure';
 
 export type CheckoutOrderSummaryInput = {
   availabilityLabel: string;
@@ -26,6 +27,8 @@ export type CheckoutOrderSummaryInput = {
   priceAmountMinor?: number | undefined;
   priceCurrencyCode?: string | undefined;
   priceDisplay: string;
+  /** Verified public product safety by Store Item slug; lines can arrive from Store-card Buy without the item page. */
+  productSafety?: Record<string, ProductSafetyInformation> | undefined;
   storeItemSlug?: string | undefined;
   subtitle: string;
   title: string;
@@ -178,6 +181,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                     Pay what you want: purchase this item alone, with quantity one.
                   </p>
                 )}
+                <ProductSafetyDisclosure information={props.productSafety?.[line.storeItemSlug]} />
               </div>
             </article>
           ))}

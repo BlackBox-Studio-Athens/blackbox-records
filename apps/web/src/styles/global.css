@@ -7376,6 +7376,103 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* Approved 14 October 2026: closed text disclosures for statutory information (legal guarantee, product safety).
+   They read like the neighbouring support links until opened. The official notice artwork keeps its own colours. */
+.legal-guarantee > summary,
+.product-safety > summary,
+.legal-guarantee__text > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  color: var(--foreground);
+  font: 400 0.75rem/1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-guarantee > summary::-webkit-details-marker,
+.product-safety > summary::-webkit-details-marker,
+.legal-guarantee__text > summary::-webkit-details-marker {
+  display: none;
+}
+
+.store-item-product-safety {
+  grid-column: 1 / -1;
+}
+
+.legal-guarantee__body {
+  display: grid;
+  gap: 12px;
+  max-width: 34rem;
+  padding-top: 12px;
+}
+
+.legal-guarantee__body img {
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+
+.legal-guarantee__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.legal-guarantee__links a {
+  color: var(--foreground);
+  font: 400 0.75rem/1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legal-guarantee__text :is(p, div) {
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.6 var(--font-sans);
+}
+
+.product-safety__facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 16px;
+  margin: 8px 0 0;
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.6 var(--font-sans);
+}
+
+.product-safety__facts dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.product-safety__facts a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 420px) {
+  .product-safety__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-safety__facts dd {
+    margin-bottom: 6px;
+  }
+}
+
+@media (pointer: coarse) {
+  .legal-guarantee > summary,
+  .product-safety > summary,
+  .legal-guarantee__text > summary,
+  .legal-guarantee__links a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
 @media (pointer: coarse) {
   .checkout-review__continue,
   .checkout-review__support a,

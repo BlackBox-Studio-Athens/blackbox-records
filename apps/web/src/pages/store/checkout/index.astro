@@ -4,6 +4,7 @@ import CheckoutOfferStatus from '@/components/store/checkout/CheckoutOfferStatus
 import { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { listStoreProductSafety } from '@/components/store/store-page-data';
 
 const initialCheckoutAvailability = {
   canBuy: true,
@@ -47,7 +48,7 @@ const summaryItem = {
       </div>
 
       <aside class="checkout-review__summary" aria-label="Order summary">
-        <CheckoutOrderSummary client:load {...summaryItem} />
+        <CheckoutOrderSummary client:load {...summaryItem} productSafety={await listStoreProductSafety()} />
       </aside>
     </div>
   </section>

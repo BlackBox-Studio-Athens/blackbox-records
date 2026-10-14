@@ -92,6 +92,7 @@ const requiredMarkup = [
   'EMAIL THE LABEL',
   'href="https://www.instagram.com/blackboxrecordsath/"',
   'href="mailto:info@blackboxrecordsathens.com"',
+  'href="/privacy/"',
 ];
 for (const markup of requiredMarkup) {
   if (!indexHtml.includes(markup)) throw new Error(`Missing required PRD Holding Page markup: ${markup}`);
@@ -126,7 +127,8 @@ for (const tag of indexHtml.match(/<(?:img|link|source)\b[^>]*>/gi) ?? []) {
 
 for (const match of indexHtml.matchAll(/<a\b[^>]*\bhref="([^"]*)"/gi)) {
   const href = match[1];
-  if (!href || href === '#' || (!href.startsWith('https:') && !href.startsWith('mailto:'))) {
+  // The only relative action is the privacy link that the exact /privacy/ 302 above serves.
+  if (!href || href === '#' || (!href.startsWith('https:') && !href.startsWith('mailto:') && href !== '/privacy/')) {
     throw new Error(`Invalid PRD Holding Page action: ${href || '(empty)'}`);
   }
 }

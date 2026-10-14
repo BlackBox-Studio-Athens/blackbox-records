@@ -1,5 +1,6 @@
 import { getPurchaseInformation, isPurchaseInformationDraft } from '@/platform/lib/purchase-information';
 import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
+import LegalGuaranteeNotice from './LegalGuaranteeNotice';
 import Prose from './Prose';
 
 // Newsletter consent copy, shared by every form that offers the newsletter so recorded consent matches one text.
@@ -44,6 +45,7 @@ export default function PurchaseInformation({
           <a href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/withdrawal/`}>Withdraw from an order</a>
           <a href={`${termsHref}#support`}>Purchase help</a>
         </div>
+        <LegalGuaranteeNotice />
       </div>
     );
   }

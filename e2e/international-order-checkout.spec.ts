@@ -209,6 +209,43 @@ for (const trace of ['loc=GR\n', 'loc=XX\n', 'loc=T1\n', 'invalid response']) {
   });
 }
 
+for (const width of [1280, 390]) {
+  test(`the legal guarantee reminder stays closed until clicked and never touches payment at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: width === 1280 ? 860 : 844 });
+    await prepareCheckout(page);
+    const review = await openCheckout(page);
+    const reminder = review.locator('[data-legal-guarantee]');
+    const pay = review.getByRole('button', { name: 'Continue to Payment', exact: true });
+    await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+    await expect(reminder).not.toHaveAttribute('open', '');
+    const notice = reminder.getByRole('img', { name: 'EU notice on your legal guarantee rights' });
+    await expect(notice).toBeHidden();
+
+    const summary = reminder.getByText('Your legal guarantee rights', { exact: true });
+    expect((await summary.boundingBox())!.height).toBeGreaterThan(0);
+    await summary.click();
+    await expect(notice).toBeVisible();
+    expect(await notice.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+    await expect(reminder.getByRole('link', { name: 'Στα ελληνικά' })).toHaveAttribute(
+      'href',
+      /legal-guarantee-notice-el\.svg$/,
+    );
+    await expect(reminder.getByRole('link', { name: 'EU legal guarantee information' })).toHaveAttribute(
+      'href',
+      'https://europa.eu/youreurope/guarantees',
+    );
+    await reminder.getByText('Text version', { exact: true }).click();
+    await expect(reminder).toContainText(
+      'Minimum two-year legal guarantee protection for goods sold in the European Union.',
+    );
+    await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+    await expect(review.getByRole('checkbox')).not.toBeChecked();
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
 test('a failed country request stays hidden while Greek checkout remains usable', async ({ page }) => {
   await prepareCheckout(page);
   await page.addInitScript(() => {

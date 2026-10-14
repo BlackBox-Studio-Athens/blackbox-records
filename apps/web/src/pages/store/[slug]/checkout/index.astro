@@ -6,7 +6,7 @@ import StoreOfferPriceDisplay, { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/compon
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
+import { getStorePageEntryBySlug, listStoreProductSafety } from '@/components/store/store-page-data';
 import {
   createPricedCartSeedForStorePage,
   type StorePageEntry,
@@ -25,6 +25,7 @@ const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.s
 if (!entry) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const { storeItem, primaryAvailability } = entry;
 const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
+const productSafety = await listStoreProductSafety();
 const availabilityLabel = primaryAvailability?.availability.label ?? '';
 const canBuy = primaryAvailability?.canBuy ?? false;
 const fallbackCartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
@@ -74,7 +75,7 @@ const summaryItem = {
             />
           </summary>
           <div class="min-w-0 border-t border-border/70 p-3 sm:p-4">
-            <CheckoutOrderSummary client:load {...summaryItem} />
+            <CheckoutOrderSummary client:load {...summaryItem} productSafety={productSafety} />
           </div>
         </details>
       </div>
@@ -98,7 +99,7 @@ const summaryItem = {
 
       <aside class="hidden lg:block">
         <div class="sticky top-[calc(var(--header-height)+2rem)]">
-          <CheckoutOrderSummary client:load {...summaryItem} />
+          <CheckoutOrderSummary client:load {...summaryItem} productSafety={productSafety} />
         </div>
       </aside>
     </div>

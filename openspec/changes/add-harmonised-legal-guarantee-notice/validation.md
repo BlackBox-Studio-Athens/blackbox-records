@@ -30,3 +30,25 @@ The initial focused Graphify query failed because this newly created worktree ha
 - `git diff --check` passed. No product code changed, so no new implementation test or browser run is claimed.
 - The final rerun after these documentation edits and task updates is recorded in ignored `.codex-artifacts/guarantee-notice/completion.json`, including its source-bound summary and local commit identity. The earlier summary above is retained as an intermediate check, not evidence for later edited documentation.
 - No check was waived and no full-project grant was requested.
+
+## Official assets (downloaded 14 October 2026, owner authorized)
+
+Source page: https://commission.europa.eu/publications/practical-guidelines-and-high-resolution-vector-files-eu-notice-and-label-product-guarantees_en
+
+| Package                                                                                             | SHA-256                                                            |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `SVG.zip` ("EU notice in all EU languages … zipfile with SVG")                                      | `6797b40b19af8c26906ef31b8aec3351685b9b6fb4d3d9a3bffa90f14bdf6b84` |
+| `Harmonised notice in 24 languages colour and black and white_0.zip` (PDF, used for the transcript) | `baae862aabc57e79ae28ebc2dcfb445f5c8ec768bb558b8518b1f2c3b928c992` |
+
+| Original file                            | Shipped as                                                          | SHA-256 (byte-identical)                                           |
+| ---------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `Legal guarantee_notice EN.svg` (colour) | `apps/web/public/assets/images/legal/legal-guarantee-notice-en.svg` | `d1b4293b75637022b582b3025f789d292e1c845660a0460d855bbe523b9763f7` |
+| `Legal guarantee_notice EL.svg` (colour) | `apps/web/public/assets/images/legal/legal-guarantee-notice-el.svg` | `cb474fb5261ed80aa1e21695d07268b39897e2d8043e69c6988907f879c2f428` |
+
+Both SVGs contain no script or external reference. Their text is outlined, so the transcripts in `LegalGuaranteeNotice.tsx` were taken from `Legal guarantee_notice ENN.pdf` (pdftotext) and read from `Legal guarantee_notice ELN.pdf`. `statutory-disclosures.test.tsx` pins both hashes.
+
+## Implementation checks (14 October 2026)
+
+- `pnpm test apps/web/src/platform/components/statutory-disclosures.test.tsx`: passed (closed disclosure, artwork, links, transcripts, checkout-only placement, file hashes).
+- `pnpm test:e2e e2e/international-order-checkout.spec.ts -g "legal guarantee"`: 2 passed (1280px desktop, 390px phone): closed until clicked, artwork loads, Greek and EU links, transcript, payment state and newsletter checkbox unchanged, no horizontal overflow.
+- Still unverified: 200% zoom and enlarged text with the notice open, image failure, no-JS checkout rendering, hosted delivery.

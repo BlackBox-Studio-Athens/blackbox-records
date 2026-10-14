@@ -20,6 +20,7 @@
         "./components/Prose.tsx",
         "./components/PurchaseInformation.tsx",
         "./components/PurchaseDocument.tsx",
+        "./components/ProductSafetyDisclosure.tsx",
         "./lib/purchase-information.ts",
         "./lib/backend/public-backend-config.ts",
         "./lib/private-preview.ts",

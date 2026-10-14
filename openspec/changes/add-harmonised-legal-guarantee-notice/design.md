@@ -29,3 +29,9 @@ See [proposal.md](proposal.md). This delivery is preparation only: the owner ass
 ## Migration Plan
 
 No migration is needed. Claude implements after the preview gate, runs focused and final checks, and records browser evidence. Any software release and any CMS publication require their respective authorization. Reverting the UI code reverses its presentation; reverting a content change requires a separately reviewed content operation.
+
+## Approved presentation (owner, 14 October 2026)
+
+The owner approved preview v3 ("Compliance UI preview", claude.ai artifact Te9tUfEdq9JckamnM3pnEZ) and asked that statutory items sit in expandable controls, not in the shopper's face. The reminder is one closed native disclosure, "Your legal guarantee rights", in the checkout support row before Continue to Payment, in both checkout documents. This is the checkout example in the Commission's April 2026 practical guidelines, section 2.3 (pages 19-20): a sentence from which the full notice appears on the first click. Store, item pages and Terms are unchanged; the Terms anchor and the Store reminder were dropped. The opened disclosure shows the unmodified English RGB notice, an Open full size link, the Greek file, the EU information link (same destination as the QR code) and a nested Text version with the full English and Greek transcripts. The confirmation-email inclusion recommended on page 20 stays with the deferred company-order-confirmation change.
+
+Shop survey (14 October 2026, public pages only): none of the Greek record shops checked showed the notice yet; one Shopify shop used a footer link to an image page. The Commission's examples, not peer practice, set this placement.

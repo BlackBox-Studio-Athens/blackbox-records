@@ -5,6 +5,7 @@ import {
   createPricedCartSeedForStorePage,
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
+  listStoreProductSafety,
 } from './store-page-data';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import type * as ItemAvailabilityModule from '@/lib/item-availability';
@@ -20,6 +21,9 @@ vi.mock('astro:assets', () => ({ getImage }));
 const mockItemAvailability = vi.hoisted(() => ({
   getPrimaryAvailabilityForStoreItem: vi.fn(),
 }));
+
+const getEntry = vi.hoisted(() => vi.fn(async (_collection: string, _id: string): Promise<unknown> => undefined));
+vi.mock('@/lib/content-reader', () => ({ getEntry }));
 
 vi.mock('@/lib/catalog-data', () => ({
   getStoreItemBySlug: mockCatalogData.getStoreItemBySlug,
@@ -320,5 +324,19 @@ describe('store page data helper', () => {
       storeItemSlug: 'aftermaths',
       variantId: 'variant_aftermaths_standard',
     });
+  });
+
+  it('maps only Store Items whose Release or Distro source has verified public product safety', async () => {
+    const safety = { product_type: 'Cassette', product_identifier: 'AT-01' };
+    mockCatalogData.listStoreItems.mockResolvedValue([
+      { slug: 'with-safety', sourceKind: 'distro', sourceId: 'afterglow-tape' },
+      { slug: 'without-safety', sourceKind: 'release', sourceId: 'caregivers' },
+    ]);
+    getEntry.mockImplementation(async (collection: string, id: string) =>
+      collection === 'distro' && id === 'afterglow-tape' ? { data: { product_safety: safety } } : { data: {} },
+    );
+
+    await expect(listStoreProductSafety()).resolves.toEqual({ 'with-safety': safety });
+    expect(getEntry).toHaveBeenCalledWith('releases', 'caregivers');
   });
 });

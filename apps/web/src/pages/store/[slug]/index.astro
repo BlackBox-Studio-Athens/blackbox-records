@@ -18,7 +18,8 @@ import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createReleaseDetailPath, resolveArtistProfileForRelease } from '@/lib/catalog-data';
 import { getLabelSettings } from '@/lib/site-data';
-import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
+import { getStorePageEntryBySlug, getStoreItemProductSafety } from '@/components/store/store-page-data';
+import ProductSafetyDisclosure from '@/platform/components/ProductSafetyDisclosure';
 import {
   createCartLineItemSnapshotForStorePage,
   createPricedCartSeedForStorePage,
@@ -97,6 +98,7 @@ const credits = sourceRelease?.data.credits ?? [];
 const partnerLinks = sourceRelease?.data.partner_links ?? [];
 const singles = sourceRelease?.data.singles ?? [];
 const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 0;
+const productSafety = await getStoreItemProductSafety(storeItem);
 const pageDescription = storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`;
 const product = {
   name: storeItem.title,
@@ -287,6 +289,7 @@ const product = {
           ))}
         </section>
       )}
+      <ProductSafetyDisclosure information={productSafety} className="store-item-product-safety" />
     </div>
   </section>
 </SiteLayout>

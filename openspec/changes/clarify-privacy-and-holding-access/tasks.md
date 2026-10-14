@@ -12,7 +12,7 @@
 
 ## 3. Claude and owner acceptance
 
-- [ ] 3.1 [Claude] Prepare Holding Privacy-link preview; obtain the owner's approval before non-text UI implementation. Implement all approved rendered text/link changes through the existing design gates.
+- [x] 3.1 [Claude] Prepare Holding Privacy-link preview; obtain the owner's approval before non-text UI implementation. Implement all approved rendered text/link changes through the existing design gates.
 - [ ] 3.2 [Owner] Confirm the retention criteria, review practice, relevant provider settings/agreement evidence and analytics basis identified in `handover.md`.
 - [ ] 3.3 [Claude/Owner] Review the exact saved CMS revision against the accepted snapshot; publish only under separate authority and record content identity/readback.
 - [ ] 3.4 After separately authorized Holding release, verify the four actual redirects, destination documents and 404 shop paths. Preserve switch-day retirement/rollback compatibility; no deployment is authorized here.
