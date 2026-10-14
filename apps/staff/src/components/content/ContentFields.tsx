@@ -37,6 +37,7 @@ import {
   Users,
 } from 'lucide-react';
 import EditorialPicker from './EditorialPicker';
+import ProductSafetyFields from './ProductSafetyFields';
 import { Button } from '../ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 import { Input } from '../ui/input';
@@ -526,6 +527,15 @@ export default function ContentFields({
       </FieldGroup>
     </FieldSet>
   );
+  const productSafety = (
+    <ProductSafetyFields
+      key={editorIdentity}
+      value={data.product_safety}
+      disabled={disabled}
+      validationAttempt={validationAttempt}
+      onChange={(next) => set('product_safety', next)}
+    />
+  );
   const isActiveArtist = data.is_active !== false && data.is_active !== 0;
   if (collection === 'artists')
     return (
@@ -741,6 +751,7 @@ export default function ContentFields({
           )}
           {section('text', 'Full text', body)}
         </Accordion>
+        {productSafety}
       </>
     );
   if (collection === 'news')
@@ -804,6 +815,7 @@ export default function ContentFields({
             </>,
           )}
         </Accordion>
+        {productSafety}
       </>
     );
   if (collection === 'home')

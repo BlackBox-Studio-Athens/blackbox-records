@@ -31,6 +31,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
+import ProductSafetyFields from './ProductSafetyFields';
 import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
@@ -91,7 +92,9 @@ export function setupCommand(input: {
   quantity: string;
   zeroStockState?: ZeroStockState;
   expectedMonth?: string;
+  productSafety?: Record<string, unknown> | undefined;
 }): CatalogSetupCommand {
+  const safetyData = input.productSafety ? { product_safety: input.productSafety } : {};
   const openingQuantity = Number(input.quantity);
   if (!/^\d+$/.test(input.quantity) || !Number.isSafeInteger(openingQuantity) || openingQuantity > maxOpeningStock)
     throw new Error('Enter a whole number of copies, starting from zero.');
@@ -132,7 +135,7 @@ export function setupCommand(input: {
           slug: editorialSlug(title, input.identity),
           data:
             sourceKind === 'release'
-              ? releaseDetails(input)
+              ? { ...releaseDetails(input), ...safetyData }
               : {
                   title,
                   artist_or_label: input.artistOrLabel.trim(),
@@ -142,6 +145,7 @@ export function setupCommand(input: {
                   group: itemType,
                   format: itemType,
                   order: 0,
+                  ...safetyData,
                 },
         },
     itemType,
@@ -179,6 +183,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [quantity, setQuantity] = useState('0');
   const [zeroStockState, setZeroStockState] = useState<ZeroStockState>('sold_out');
   const [expectedMonth, setExpectedMonth] = useState('');
+  const [productSafety, setProductSafety] = useState<Record<string, unknown>>();
+  const safetyData = productSafety ? { product_safety: productSafety } : {};
   const [pending, setPending] = useState<CatalogSetupCommand | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -219,6 +225,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           cover_image: image ? { id: image } : null,
           cover_image_alt: alt,
           formats: [format],
+          ...safetyData,
         }
       : {
           title,
@@ -229,6 +236,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           group: format,
           format,
           order: 0,
+          ...safetyData,
         };
   const editorialJson = JSON.stringify(editorialData);
   const autosave = useDraftAutosave({
@@ -388,6 +396,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
                 const restoredFormat = Array.isArray(data.formats) ? data.formats[0] : data.group;
                 setFormat((current) => DISTRO_GROUP_VALUES.find((group) => group === restoredFormat) ?? current);
+                if (data.product_safety && typeof data.product_safety === 'object')
+                  setProductSafety(data.product_safety as Record<string, unknown>);
                 setMessage('Your private draft has been restored.');
                 setReady(true);
               })
@@ -454,7 +464,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         }
         const command = draftPending ?? {
           slug: editorialSlug(title, crypto.randomUUID()),
-          data: releaseDetails({ title, artist, date, summary, image, alt, format }),
+          data: { ...releaseDetails({ title, artist, date, summary, image, alt, format }), ...safetyData },
         };
         sessionStorage.setItem(draftKey, JSON.stringify(command));
         setDraftPending(command);
@@ -488,6 +498,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           quantity,
           zeroStockState,
           expectedMonth,
+          productSafety,
         });
       if (mode === 'existing' && !existing && !pending) throw new Error('Choose an existing title.');
       sessionStorage.setItem(storageKey, JSON.stringify(command));
@@ -678,6 +689,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               />
               Sell this release in the shop
             </label>
+          )}
+          {mode === 'new' && (
+            <ProductSafetyFields value={productSafety} disabled={locked} onChange={setProductSafety} />
           )}
         </fieldset>
         {sell && (

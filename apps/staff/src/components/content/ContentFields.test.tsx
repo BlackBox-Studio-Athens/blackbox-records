@@ -238,3 +238,139 @@ test('Artist activity follows the form disabled state', () => {
   );
   expect(/<input(?=[^>]*id="content-is_active")[^>]*>/.exec(markup)?.[0]).toContain('disabled=""');
 });
+
+const safetyComplete = {
+  product_type: '12-inch vinyl LP',
+  product_identifier: 'BBX-014',
+  operator_role: 'manufacturer',
+  manufacturer: {
+    name: 'Example Records',
+    postal_address: '1 Example Street, 10000 Athens, Greece',
+    electronic_address: 'safety@example.com',
+    establishment: 'eu',
+  },
+  safety_information: { status: 'not_required' },
+  evidence: {
+    reference: 'Invoice 2026-031',
+    checked_on: '2026-10-01',
+    notes: 'Checked the invoice and supplier sheet.',
+  },
+};
+
+function renderSafety(
+  collection: 'releases' | 'distro',
+  initial: Record<string, unknown>,
+  validationAttempt = 0,
+): { markup: string; data: () => Record<string, unknown>; render: () => string } {
+  let data = initial;
+  const render = () => {
+    controls.inputs = [];
+    controls.buttons = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection={collection}
+        data={data}
+        base=""
+        validation={getContentValidation(collection, data)}
+        validationAttempt={validationAttempt}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  return { markup: render(), data: () => data, render };
+}
+const safetyInput = (path: string) =>
+  controls.inputs.find((input) => input['data-content-path'] === `product_safety.${path}`)!;
+const verifyButton = () =>
+  controls.buttons.find(
+    (button) => Array.isArray(button.children) && button.children.includes('Mark details verified'),
+  );
+const typeInto = (path: string, value: string) =>
+  safetyInput(path).onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
+
+test.each(['releases', 'distro'] as const)(
+  '%s editor shows a closed Product safety group without changing an untouched record',
+  (collection) => {
+    const record = { title: 'Record' };
+    const { markup, data } = renderSafety(collection, record);
+    expect(data()).toBe(record);
+    expect(markup).toMatch(/<details(?![^>]*open)[^>]*><summary[^>]*>.*Product safety/);
+    expect(markup).toContain('Fill this in from the paperwork for this exact edition.');
+    expect(markup).toContain('11 details missing before this can be verified.');
+    expect(markup).toContain('Available once every required field above is filled.');
+    expect(verifyButton()?.disabled).toBe(true);
+    expect(markup).toMatch(
+      /id="content-product_safety\.product_identifier"[^>]*aria-describedby="content-product_safety\.product_identifier-hint"/,
+    );
+    expect(markup).toContain('usually the catalogue number on the spine or centre label');
+    expect(markup).toContain('lang="el"');
+    expect(markup).not.toContain('EU contact person');
+    expect(markup).not.toContain('Enter the catalogue number printed on this edition');
+  },
+);
+
+test('a verified claim with missing details opens the group with mapped field messages', () => {
+  const record = { title: 'Record', product_safety: { review_status: 'verified', product_type: 'Cassette' } };
+  const validation = getContentValidation('releases', record);
+  expect(validation.byPath['product_safety.product_identifier']).toBeDefined();
+  const { markup } = renderSafety('releases', record, 1);
+  expect(markup).toMatch(/<details[^>]*open=""/);
+  expect(markup).toContain('Enter the catalogue number printed on this edition, e.g. BBX-014.');
+  expect(markup).toContain('Enter the manufacturer&#x27;s name.');
+  expect(markup).toContain('Say where the proof is kept.');
+  expect(markup.slice(markup.indexOf('Product safety'))).not.toContain('expected');
+  expect(markup).toMatch(
+    /id="content-product_safety\.product_identifier"[^>]*aria-invalid="true"[^>]*aria-describedby="content-product_safety\.product_identifier-hint content-product_safety\.product_identifier-error"/,
+  );
+  expect(markup).not.toContain('Enter what the product is');
+});
+
+test('Mark details verified is available only for complete details and writes only the review status', () => {
+  const almost = renderSafety('distro', {
+    title: 'Item',
+    product_safety: { ...safetyComplete, evidence: { ...safetyComplete.evidence, notes: undefined } },
+  });
+  expect(almost.markup).toContain('1 detail missing before this can be verified.');
+  expect(verifyButton()?.disabled).toBe(true);
+  const ready = renderSafety('distro', { title: 'Item', product_safety: safetyComplete });
+  expect(ready.markup).not.toContain('missing before this can be verified');
+  expect(verifyButton()?.disabled).not.toBe(true);
+  verifyButton()!.onClick!({} as Parameters<NonNullable<ComponentProps<'button'>['onClick']>>[0]);
+  expect(ready.data()).toEqual({ title: 'Item', product_safety: { ...safetyComplete, review_status: 'verified' } });
+  expect(ready.render()).toContain('Verified · checked on 2026-10-01');
+  expect(verifyButton()).toBeUndefined();
+});
+
+test('a manufacturer outside the EU reveals the EU contact person fields', () => {
+  const { markup } = renderSafety('releases', {
+    product_safety: { manufacturer: { establishment: 'non_eu' } },
+  });
+  expect(markup).toContain('EU contact person');
+  expect(markup).toContain('The company in the EU responsible for this product.');
+  expect(markup).toContain('id="content-product_safety.responsible_person.eu_country"');
+  expect(markup).toContain('<option value="GR">Greece</option>');
+});
+
+test('editing verified product details resets review and empty inputs remove the value', () => {
+  const { data, render } = renderSafety('releases', {
+    title: 'Record',
+    product_safety: { ...safetyComplete, review_status: 'verified', first_placed_on_eu_market: '2026-01-05' },
+  });
+  typeInto('product_identifier', 'BBX-014 · 2nd press 2026');
+  expect(data().product_safety).toEqual({
+    ...safetyComplete,
+    product_identifier: 'BBX-014 · 2nd press 2026',
+    review_status: 'incomplete',
+    first_placed_on_eu_market: '2026-01-05',
+  });
+  render();
+  expect(verifyButton()?.disabled).not.toBe(true);
+  typeInto('product_type', '');
+  expect(data().product_safety).not.toHaveProperty('product_type');
+  render();
+  typeInto('manufacturer.name', '');
+  expect((data().product_safety as typeof safetyComplete).manufacturer).not.toHaveProperty('name');
+  expect(data().title).toBe('Record');
+});
