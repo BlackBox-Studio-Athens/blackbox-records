@@ -127,6 +127,16 @@ After approval, implement the agreed UI and land focused checks with each change
 
 Record the approved preview, source identity, checks and remaining acceptance in each owning OpenSpec change. Return changed files, commit identity, evidence paths and remaining facts for Codex review. Keep CMS Content Publication and Software Release separate. Complete UI work before requesting release of the combined backend/UI behavior.
 
+## Software Release evidence, 14 October 2026
+
+The owner separately authorized Software Release of candidate `a118135cb3320e98d843c7ec5c20fc77dd5df843`. [UAT push run 571](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38598389183) and [PRD promotion 21](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38599477294) both succeeded on their first attempt. All 12 UAT jobs passed: repository checks, four public browser shards, WebKit phone checks, both Staff preview browsers, build and deployment. The hosted static smoke passed all three scenarios. Migration `0036_email_consent_capabilities.sql` applied successfully in both environments.
+
+UAT's authenticated CI checks verified the candidate's Worker and hosted identities before and after the smoke. PRD's workflow checks and independent public readback verified the same SHA and candidate run `38598389183` / `571`. PRD retained publication `ece5d89f-c7f5-4606-bf30-c717b9413377` and snapshot `f98041c526012c56d66ffb855c90a2bcb0a9419ac1c676829461e03300bf7ad1`. The apex still returned the Holding page titled `BlackBox Records | Site Coming Online`. Existing PRD `nativeCheckout.enabled=true` and `NO_TAX_COLLECTED` were unchanged; this release did not activate those controls.
+
+Before pushing, `pnpm build:web` passed route isolation, image markup, sitemap, cache/font checks and existing public bundle budgets. The candidate's CMS build and focused/local validation evidence remain in `.codex-artifacts/compliance-review-20261014/cms-budget-release/completion.json`. Release run metadata, logs, downloaded UAT smoke and independent readback are retained under `.codex-artifacts/compliance-release-20261014/`.
+
+This establishes Software Release only. No CMS drafts were published, Holding deployment or DNS change was made, or payment/email/provider-write scenario was run. Native GPSR persistence/publication acceptance, actual supplier/controller/provider/statutory evidence, manual accessibility/readability acceptance and the consent UAT sink scenario remain open in their owning changes. Successful deployment does not establish legal or content acceptance.
+
 ## Original implementation prompt for Claude Desktop (historical; completed)
 
 ```text
