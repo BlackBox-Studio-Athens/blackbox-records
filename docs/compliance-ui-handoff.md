@@ -12,6 +12,28 @@ Codex independently verified the passing clean-source validation summary for `a4
 
 The correction prompt has been completed. Do not rerun the original implementation prompt below or reopen R1-R4 without new evidence. Remaining acceptance is listed in the owning OpenSpec tasks; this review does not authorize deployment or publication.
 
+## Additional local acceptance, 14 October 2026
+
+Checked clean source `de14a9f9f99e0fdbc444bc1ecd98fce20fd8fd48` without UI/runtime edits. Evidence and reproducible browser probes are in `.codex-artifacts/compliance-review-20261014/local-acceptance/`; `completion.json` records final documentation validation and commit identity.
+
+- Guarantee checkout regression: 2 passes, desktop Chromium and Chromium phone. No-JS keyboard opening, English/Greek transcripts and 320/390/1280px reflow passed in Chromium and desktop WebKit. Blocking notice SVGs leaves the text alternative accessible. A 200% CSS-zoom simulation passed; this does not establish actual browser-menu zoom or human normal-size artwork readability.
+- Email preferences: all 9 existing scoped tests passed, including explicit submission, token URL/referrer/storage checks, focus/error/live-region markup and 320/390px states. WebKit at 390px also passed the Manage alerts new-tab probe, retaining the original document, player iframe and cart. This Windows engine reported `maxTouchPoints: 0` despite accepting tap actions; physical iPhone and assistive-technology acceptance remain open.
+- Staff: an isolated Astro server on loopback port 4399 and intercepted synthetic API replies exercised the real Distro and Release editors. Opening either record made no write. Missing details disabled verification; non-EU selection exposed EU contact fields; all 16 visible controls had labels; associated errors and Greek language metadata worked; document reflow passed at 320/390/1440px. Complete synthetic details could be marked verified, private evidence-only edits preserved that state and a product-identifier edit reset it. No CMS write or publication was allowed. Actual persistence, revision conflicts and accepted-snapshot readback are not covered by these browser fixtures.
+- The local privacy fixture remains readable without JavaScript. It contains pending source content, so it is not evidence of the real accepted privacy notice or controller details.
+
+No new product blocker was reproduced in these checks. R1-R4 remain closed. OpenSpec tasks that also require real content/publication, normal-size readability, actual browser zoom, physical-device or assistive-technology evidence remain open. Existing source-bound backend/projection tests are reused; no full suite or provider request is implied.
+
+### Specific owner inputs still needed
+
+1. **Retention practice:** name the person responsible and the actual review/deletion trigger or cadence for orders/delivery, returns/complaints, unsuccessful service inquiries, newsletter evidence/suppression, technical logs, mailboxes and backups. Ask the accountant to identify applicable record categories, periods and starting events; do not guess a universal period. State whether any legal hold applies.
+2. **Provider evidence:** confirm the actual Resend plan and message-log/contact/suppression settings; mailbox/backup providers and settings; applicable Cloudflare, Resend and Stripe agreement/DPA/transfer documentation. Supply redacted evidence references, not credentials. Existing public provider terms do not establish this account's configuration.
+3. **Analytics assessment:** provide any existing purpose, legal-basis/legitimate-interest and terminal-access assessment for the configured analytics. If none exists, record it as missing for assessment; do not choose a legal basis merely by preference or change analytics here.
+4. **Actual product facts:** for each physical edition/batch, provide its identifier, packaging/product pictures, commissioning/brand and supplier-role evidence, legal manufacturer name/address/direct electronic contact and EU establishment; where applicable, EU responsible-person identity/contacts/mandate; Greek warnings or documented assessment that none are required. Any transition claim needs evidence for that stock's first EU-market placement. Dunk pressing alone does not establish the legal manufacturer. Keep private invoices/notes outside public projections and Git.
+5. **Incomplete offers:** identify the affected actual catalogue items and decide the proposed treatment while facts are missing (for example, withhold those offers or complete the evidence before their adoption). Continuing an incomplete offer is not recorded as legal acceptance. No sale gate or catalogue change has been applied.
+6. **Content adoption:** review the exact saved privacy/terms revision, preserve the already established controller details, and approve factual wording only after items 1-4 are resolved where relevant. Publication is a separate later action. Provide the revision identity/accepted snapshot for the eventual comparison; no need to resend unchanged personal details into chat.
+
+Remaining technical acceptance is separate from those factual answers: persisted CMS edit/preview/revision and snapshot checks, real-data public safety displays on all buying paths, physical-device/screen-reader and actual browser zoom/readability checks, and separately authorized hosted redirects/headers/provider delivery/suppression. The current request authorizes none of the publication, deployment or real-email steps. The natural-person launch decision, VAT/checkout settings, item 6 and future-company item 7 remain unchanged.
+
 ## Ownership and approval
 
 Claude Desktop owns all public/staff UI changes, including rendered copy. Codex owns backend/data preparation and integration review. No Claude CLI is required.
@@ -22,12 +44,12 @@ Work on `main` in `C:/Users/SVall/WebstormProjects/blackbox-records`. Preserve u
 
 ## Reviewed packages
 
-| Audit items | OpenSpec and detailed handover                                                                                    | Remaining work                                                                                      |
-| ----------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 2, 5, 10    | [Privacy and Holding access](../openspec/changes/clarify-privacy-and-holding-access/handover.md)                  | Owner-confirmed privacy copy, CMS review/publication and hosted routing acceptance                  |
-| 3, 4        | [Consent and cancellation](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/handover.md) | Remaining accessibility/provider checks, hosted headers and reviewed privacy amendment              |
-| 8           | [Legal-guarantee notice](../openspec/changes/add-harmonised-legal-guarantee-notice/handover.md)                   | Remaining zoom, no-JS, image-failure and hosted acceptance                                          |
-| 9           | [GPSR product information](../openspec/changes/record-gpsr-product-safety/handover.md)                            | Verified supplier facts, incomplete-offer decision, staff/public browser and publication acceptance |
+| Audit items | OpenSpec and detailed handover                                                                                    | Remaining work                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 2, 5, 10    | [Privacy and Holding access](../openspec/changes/clarify-privacy-and-holding-access/handover.md)                  | Owner-confirmed privacy copy, CMS review/publication and hosted routing acceptance                          |
+| 3, 4        | [Consent and cancellation](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/handover.md) | Remaining accessibility/provider checks, hosted headers and reviewed privacy amendment                      |
+| 8           | [Legal-guarantee notice](../openspec/changes/add-harmonised-legal-guarantee-notice/handover.md)                   | Actual browser zoom/readability, assistive technology and hosted acceptance                                 |
+| 9           | [GPSR product information](../openspec/changes/record-gpsr-product-safety/handover.md)                            | Verified supplier facts, incomplete-offer decision, persisted CMS/public browser and publication acceptance |
 
 Accepted source commits and their integration on main:
 

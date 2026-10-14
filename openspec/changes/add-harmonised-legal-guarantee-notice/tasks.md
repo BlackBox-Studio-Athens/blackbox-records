@@ -14,7 +14,9 @@
 ## 3. Acceptance of implemented presentation
 
 - [ ] 3.1 Verify the approved UI in scoped desktop/phone browser checks, including normal-size notice readability, keyboard/touch, 320/390px reflow, image failure, no-JS access and persistent player; record actual observations and screenshots.
-- [ ] 3.2 Run final-tree `pnpm validate` and guarded strict OpenSpec validation after implementation; record source-bound evidence and any remaining hosted or publication acceptance without treating local success as release authorization.
+- [x] 3.2 Run final-tree `pnpm validate` and guarded strict OpenSpec validation after implementation; record source-bound evidence and any remaining hosted or publication acceptance without treating local success as release authorization.
+
+Task 3.1 is partially verified in the 14 October additional local acceptance record: desktop/phone regression, Chromium/WebKit no-JS and image-failure access, keyboard transcripts, 320/390px reflow and CSS-zoom simulation passed. Actual browser-menu zoom, normal-size human readability and assistive-technology acceptance remain open. See `validation.md` and the source-bound completion receipt it names.
 
 ## Workflow follow-up
 
