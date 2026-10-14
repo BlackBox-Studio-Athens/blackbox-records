@@ -64,3 +64,16 @@ Commit `c8251ce2` fixes R2 and R3; final validation ran on that SHA.
   - Screen-reader announcement.
 
   Tasks 4.2 and 4.3 stay open.
+
+## Codex re-review acceptance, 14 October 2026
+
+R2 and R3 are accepted at `a4cd20f7d11320cea5ac98fa804cbd26b6ca0203`. The reviewer read the service/repository diff and connected reservation, delivery, activation and withdrawal paths. Case-insensitive cooldown comparisons do not rewrite stored newsletter addresses or payloads; retries return the reserved row. The new worker regression covers an ambiguous provider outcome followed by another spelling. Existing single-use and withdrawal behavior remains intact.
+
+Independently inspected the passing final validation summary `.codex-artifacts/validation/2026-10-14T13-47-31-943Z-30452-f451a5/summary.json`: matching clean before/after SHA `a4cd20f7d11320cea5ac98fa804cbd26b6ca0203`, fingerprint `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, zero source changes. The retained availability browser summary has six expected passes and zero unexpected/flaky results.
+
+Additional reviewer checks:
+
+- `pnpm test:e2e e2e/availability-alerts.spec.ts -g "manage alerts"`: one desktop Chromium test passed.
+- Playwright CLI Chromium touch emulation, 390 x 844: tapping the real Manage alerts link opens `/email-preferences/` with a null opener and no horizontal overflow. The original `performance.timeOrigin`, original connected player iframe and seeded cart remain unchanged. The screen-reader-only notice is absolutely positioned at 1 x 1px. Probe: `.codex-artifacts/compliance-review-20261014/fixes/verify-manage-mobile.js`; named browser session was closed after the check.
+
+Visible text, layout and styling are unchanged. The mobile check is emulation, not physical-device, WebKit or screen-reader acceptance. No real email, provider change, CMS publication or deployment occurred. Remaining owner facts, privacy publication and hosted acceptance remain open; the earlier verdict is retained as review history, not an unresolved R2/R3 blocker.

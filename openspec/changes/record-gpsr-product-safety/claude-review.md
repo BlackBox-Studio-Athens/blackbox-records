@@ -42,3 +42,9 @@ Commit `17547f01` fixes R1 and R4; final validation ran on `c8251ce2594db5e1cbe6
   - `pnpm test:e2e e2e/international-order-checkout.spec.ts`: 13 passed (`.codex-artifacts/compliance-review-20261014/fixes/e2e-checkout.json`).
   - `pnpm validate` passed, `mode: local`, scope `all`; before and after SHA `c8251ce2`, matching clean fingerprint `e3b0c442…b855`, zero changed files. Summary: `.codex-artifacts/validation/2026-10-14T13-42-03-675Z-78088-cc335b/summary.json`.
 - **Still unverified:** a published snapshot with verified data in a real Local publication or hosted runtime; product safety in a browser (no edition has verified data yet). Tasks 2.1, 2.3 and 2.4 stay open.
+
+## Codex re-review acceptance, 14 October 2026
+
+R1 and R4 are accepted at `a4cd20f7d11320cea5ac98fa804cbd26b6ca0203`. The reviewer read the complete fix diff, the publication-aware reader and callers, and the regression cases. The helper now reads each render's source; no persistent promise survives a snapshot change. Contact rendering preserves the schema's HTTPS alternative even with `@`, for both contact roles. No visible design, copy, sale gate or supplier fact changed.
+
+Independently inspected `.codex-artifacts/validation/2026-10-14T13-47-31-943Z-30452-f451a5/summary.json`: status `passed`, mode `local`, identical before/after SHA `a4cd20f7d11320cea5ac98fa804cbd26b6ca0203`, fingerprint `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, zero files/source changes. The retained checkout browser summary reports 13 expected passes and zero unexpected/flaky results. Passing unchanged source evidence is reused; the review does not claim a new real publication or supplier-data browser check. The remaining acceptance listed above stays open.

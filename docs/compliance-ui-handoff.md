@@ -2,23 +2,15 @@
 
 Owner: the coordinating Codex chat, **Audit site GDPR compliance**. Updated 14 October 2026.
 
-The four Codex preparation packages have been reviewed and integrated into `main`. This handover is ready for Claude Desktop's preview and implementation work. It is not design approval, publication approval, release approval or a declaration of legal compliance. Each linked OpenSpec change remains the source of requirements, tasks and acceptance evidence.
+The four Codex preparation packages and Claude's implementation are integrated into `main`. Codex has accepted the corrections to review findings R1-R4, as recorded below. This is not publication approval, release approval or a declaration of legal compliance. Each linked OpenSpec change remains the source of requirements, tasks and acceptance evidence.
 
 ## Claude implementation review, 14 October 2026
 
-Claude's implementation is committed on main as `b38f0a0cba0a4821fcde607ffb01bc74aaf14c04`, `8a5782020afa550b89ab89adfcb3ec8bd70d2f31` and `f4b6c5b523a024e637cd61f77b25476e4cdb547e`. Codex reviewed the three commits against preparation baseline `c68ea0cac13b30d7ccc545320650ef79ab5df765`. The implementation is **not accepted for release yet**: four concrete corrections remain in the [GPSR review](../openspec/changes/record-gpsr-product-safety/claude-review.md) and [consent review](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/claude-review.md). Their evidence supersedes the earlier preparation-only acceptance for these changed flows.
+Claude's implementation is committed on main as `b38f0a0cba0a4821fcde607ffb01bc74aaf14c04`, `8a5782020afa550b89ab89adfcb3ec8bd70d2f31` and `f4b6c5b523a024e637cd61f77b25476e4cdb547e`. The first review found four regressions. Fix commits `17547f01` and `c8251ce2594db5e1cbe6fd4748cfa9a5b3d46217`, with evidence commit `a4cd20f7d11320cea5ac98fa804cbd26b6ca0203`, were subsequently reviewed and **R1-R4 are closed for local code review**. See the [GPSR review](../openspec/changes/record-gpsr-product-safety/claude-review.md) and [consent review](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/claude-review.md) for the historical findings, fixes and latest Codex acceptance.
 
-The current source passed `pnpm validate` (64 tasks, 62 cached) and the targeted email-preferences (9) and guarantee (2) browser tests. These tests do not cover the four reproduced cases. Existing owner-approved disclosure placement remains recorded in the changes; this review requests no redesign. Owner facts, publication and hosted checks remain open.
+Codex independently verified the passing clean-source validation summary for `a4cd20f7`, reviewed the new regression tests and connected code, and reran the desktop Manage alerts regression. An additional Chromium touch-emulation check at 390px passed: a new tab opens with no opener, while the original document, same player iframe and cart remain intact. Visible layout, styles and copy remain unchanged; the new-tab notice is screen-reader-only. Actual device/WebKit and assistive-technology checks are not implied. Owner facts, Local publication, remaining accessibility/staff browser checks and hosted acceptance remain open.
 
-### Correction prompt for the existing Claude Desktop conversation
-
-```text
-Read docs/compliance-ui-handoff.md and the two claude-review.md files linked in its latest review section. Fix findings R1-R4 on main: refresh checkout product-safety data with the active publication; preserve the exact newsletter delivery/activation mailbox while keeping the shared case-insensitive cooldown; preserve an active player when Manage alerts is opened; and keep HTTPS contact URLs containing @ as HTTPS links.
-
-Use the smallest fixes and add the specific regressions named in the reviews. Keep the approved disclosure design and current VAT/checkout/launch settings. You own UI edits; any further non-text main-screen design change still requires preview approval. Do not push, deploy, publish CMS content, send real emails or change providers. Leave item 6 and future-only item 7 alone.
-
-Run focused checks and final pnpm validate, record source-bound evidence in the owning OpenSpec changes, commit the corrections locally, and return exact commits and remaining acceptance gaps for Codex review. Do not claim that passing local tests establishes legal or hosted acceptance.
-```
+The correction prompt has been completed. Do not rerun the original implementation prompt below or reopen R1-R4 without new evidence. Remaining acceptance is listed in the owning OpenSpec tasks; this review does not authorize deployment or publication.
 
 ## Ownership and approval
 
@@ -30,12 +22,12 @@ Work on `main` in `C:/Users/SVall/WebstormProjects/blackbox-records`. Preserve u
 
 ## Reviewed packages
 
-| Audit items | OpenSpec and detailed handover                                                                                    | Remaining work                                                                                              |
-| ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 2, 5, 10    | [Privacy and Holding access](../openspec/changes/clarify-privacy-and-holding-access/handover.md)                  | Owner-confirmed privacy copy, Holding-link preview/UI, CMS review/publication and hosted routing acceptance |
-| 3, 4        | [Consent and cancellation](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/handover.md) | Preferences page, truthful signup copy, browser checks and reviewed privacy amendment                       |
-| 8           | [Legal-guarantee notice](../openspec/changes/add-harmonised-legal-guarantee-notice/handover.md)                   | Official assets, approved placement, accessible presentation and browser acceptance                         |
-| 9           | [GPSR product information](../openspec/changes/record-gpsr-product-safety/handover.md)                            | Staff/public UI, verified supplier facts, incomplete-offer decision and publication acceptance              |
+| Audit items | OpenSpec and detailed handover                                                                                    | Remaining work                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 2, 5, 10    | [Privacy and Holding access](../openspec/changes/clarify-privacy-and-holding-access/handover.md)                  | Owner-confirmed privacy copy, CMS review/publication and hosted routing acceptance                  |
+| 3, 4        | [Consent and cancellation](../openspec/changes/secure-consent-withdrawal-and-newsletter-verification/handover.md) | Remaining accessibility/provider checks, hosted headers and reviewed privacy amendment              |
+| 8           | [Legal-guarantee notice](../openspec/changes/add-harmonised-legal-guarantee-notice/handover.md)                   | Remaining zoom, no-JS, image-failure and hosted acceptance                                          |
+| 9           | [GPSR product information](../openspec/changes/record-gpsr-product-safety/handover.md)                            | Verified supplier facts, incomplete-offer decision, staff/public browser and publication acceptance |
 
 Accepted source commits and their integration on main:
 
@@ -99,7 +91,7 @@ After approval, implement the agreed UI and land focused checks with each change
 
 Record the approved preview, source identity, checks and remaining acceptance in each owning OpenSpec change. Return changed files, commit identity, evidence paths and remaining facts for Codex review. Keep CMS Content Publication and Software Release separate. Complete UI work before requesting release of the combined backend/UI behavior.
 
-## Prompt for Claude Desktop
+## Original implementation prompt for Claude Desktop (historical; completed)
 
 ```text
 Work in C:\Users\SVall\WebstormProjects\blackbox-records on main. Read AGENTS.md and docs/compliance-ui-handoff.md, then all four detailed OpenSpec handovers it links. Codex has prepared and reviewed the backend/data contracts; you own all UI and rendered-copy changes.
