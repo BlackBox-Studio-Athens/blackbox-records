@@ -36,7 +36,7 @@ Preserve pre-mounted polite status and assertive error regions, atomic announcem
 
 ## Narrow CMS privacy amendment to prepare for review
 
-Edit the **actual published Privacy record**, preserving its 2026-10-13 controller and other real editorial information. Do not replace it with `apps/web/src/content/services/site.json` placeholders. Proposed targeted additions, conditional on the reviewed implementation being released:
+Edit the **actual published Privacy record**, preserving its 2026-10-13 controller and other real editorial information. Do not replace it with `apps/web/src/platform/content/purchase-information/site.json` placeholders. Proposed targeted additions, conditional on the reviewed implementation being released:
 
 > Newsletter requests require email confirmation before activation. Pending confirmation tokens expire after 24 hours and their records are removed on the next successful maintenance pass. Confirmation does not override existing global unsubscribe preferences or provider suppression.
 >
