@@ -18,6 +18,8 @@ tmp/
 .codegraph/
 graphify-out/
 .claude/
+.skillopt-sleep/
+.skillopt-sleep-handoff/
 
 apps/backend/openapi/*.json
 apps/backend/src/generated/
