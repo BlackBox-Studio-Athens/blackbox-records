@@ -1,5 +1,11 @@
 import type { CollectionEntry } from 'astro:content';
-import { proseText, resolveProse, type RichText } from '@blackbox/content-model';
+import {
+  catalogNumberSchema,
+  proseText,
+  resolveProse,
+  type CatalogNumber,
+  type RichText,
+} from '@blackbox/content-model';
 import { getCollection, getEntry } from '@/lib/content-reader';
 import { buildEmbeddedPlayerData, type EmbeddedPlayerData } from '@/components/music/music';
 
@@ -25,7 +31,6 @@ export type StoreItem = {
   slug: string;
   variantId?: string;
   taxCategory: StoreItemTaxCategory;
-  sourceKind: StoreItemSourceKind;
   sourceId: string;
   embeddedPlayerData: EmbeddedPlayerData | null;
   title: string;
@@ -41,7 +46,7 @@ export type StoreItem = {
   eyebrow: string | null;
   metadata: string[];
   storePath: string;
-};
+} & ({ sourceKind: 'release'; catalogNumber: CatalogNumber } | { sourceKind: 'distro'; catalogNumber?: never });
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
   latestReleaseDate: string | null;
@@ -185,6 +190,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     ...(releaseEntry.data.store_item ? { variantId: releaseEntry.data.store_item.variantId } : {}),
     taxCategory: 'physical_goods',
     sourceKind: 'release',
+    catalogNumber: catalogNumberSchema.parse(releaseEntry.data.catalog_number),
     sourceId: releaseEntry.id,
     embeddedPlayerData: buildEmbeddedPlayerData(
       releaseEntry.id,

@@ -211,6 +211,7 @@ test('upcoming releases may omit dates; released records must provide one', () =
     artist: 'sidus',
     cover_image: { id: 'artwork' },
     cover_image_alt: 'Lotus',
+    catalog_number: 'BBR#001',
     release_stage: 'upcoming',
   };
   assert.deepEqual(validateCmsContent('releases', release), []);
@@ -249,6 +250,7 @@ test('Releases order accepts only positive whole numbers and reaches the public 
     artist: 'sidus',
     cover_image: { id: 'image' },
     cover_image_alt: 'Lotus',
+    catalog_number: 'BBR#001',
     release_stage: 'upcoming',
   };
   for (const releases_priority of [undefined, null, '', 1, 2]) {
@@ -470,6 +472,7 @@ test('structured issues cover URLs, email, dates, enums, arrays, media, and rela
     release_date: '2026-06-09',
     cover_image: { id: 'image-1' },
     cover_image_alt: 'Cover',
+    catalog_number: 'BBR#001',
   };
   const artists = {
     title: 'Artist',
@@ -554,6 +557,7 @@ describe('GPSR product safety', () => {
     artist: 'artist',
     cover_image: { id: 'cover' },
     cover_image_alt: 'Fixture cover',
+    catalog_number: 'BBR#001',
     release_stage: 'upcoming',
   };
 

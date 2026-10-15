@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { getPlatformProxy } from 'wrangler';
 import { prepareCatalogSchema } from '../src/cms/catalog-schema.ts';
+import { backfillReleaseCatalogNumbers } from '../src/cms/catalog-number-backfill.ts';
 
 // Release step: runs the same idempotent native field setup as the admin-only
 // catalog-schema route, so hosted CMS fields follow deployed code without a
@@ -14,10 +15,14 @@ const { values } = parseArgs({
     env: { type: 'string', default: 'local' },
     'persist-to': { type: 'string' },
     'confirm-live-cms-changes': { type: 'boolean', default: false },
+    'backfill-catalog-numbers': { type: 'boolean', default: false },
+    apply: { type: 'boolean', default: false },
   },
 });
 if (!['local', 'uat', 'prd'].includes(values.env)) throw new Error('Select local, uat or prd.');
 const local = values.env === 'local';
+if (values.apply && !values['backfill-catalog-numbers'])
+  throw new Error('--apply requires --backfill-catalog-numbers.');
 if (!local && values['persist-to']) throw new Error('--persist-to is Local-only.');
 if (values.env === 'prd' && !values['confirm-live-cms-changes'])
   throw new Error('PRD catalog schema preparation requires one-run --confirm-live-cms-changes.');
@@ -57,17 +62,23 @@ const database = proxy.env.CMS_DB;
 const db = new Kysely({ dialect: new D1Dialect({ database }) });
 const fieldCount = () => database.prepare('SELECT count(*) AS total FROM _emdash_fields').first('total');
 try {
-  const fieldsBefore = await fieldCount();
-  const response = await prepareCatalogSchema({ db });
-  if (!response.ok) throw new Error(`Catalog schema preparation failed with ${response.status}.`);
-  console.log(
-    JSON.stringify({
-      environment: values.env,
-      database: resource.database_name,
-      fieldsBefore,
-      fieldsAfter: await fieldCount(),
-    }),
-  );
+  if (values['backfill-catalog-numbers']) {
+    console.log(
+      JSON.stringify({ environment: values.env, ...(await backfillReleaseCatalogNumbers(db, values.apply)) }),
+    );
+  } else {
+    const fieldsBefore = await fieldCount();
+    const response = await prepareCatalogSchema({ db });
+    if (!response.ok) throw new Error(`Catalog schema preparation failed with ${response.status}.`);
+    console.log(
+      JSON.stringify({
+        environment: values.env,
+        database: resource.database_name,
+        fieldsBefore,
+        fieldsAfter: await fieldCount(),
+      }),
+    );
+  }
 } finally {
   await db.destroy();
   await proxy.dispose();

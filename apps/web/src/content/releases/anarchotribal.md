@@ -1,4 +1,5 @@
 ---
+catalog_number: BBR#003
 title: Anarchotribal
 artist: ouranopithecus
 release_date: 2026-06-06

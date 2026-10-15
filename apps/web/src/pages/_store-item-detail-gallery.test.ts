@@ -1,3 +1,4 @@
+import { catalogNumberSchema } from '@blackbox/content-model';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -67,6 +68,7 @@ describe('Store Item detail gallery contract', () => {
     const context = {
       storeItem: { image: cover, imageAlt: 'Cover' },
       release: { data: { cover_image: cover, cover_image_alt: 'Cover', title: 'Album' } },
+      catalog_number: catalogNumberSchema.parse('BBR#001'),
       gallery: [{ image: alternate, image_alt: 'Back' }],
       galleryImageWidths: widths,
       editorialImageQuality: 68,

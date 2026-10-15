@@ -161,6 +161,40 @@ test('Releases order stays optional, validates positive whole numbers and edits 
   expect(data.releases_priority).toBeNull();
 });
 
+test('Catalog number is a required release field that stores the typed label number in canonical case', () => {
+  let data: ComponentProps<typeof ContentFields>['data'] = { title: 'Record' };
+  const render = () => {
+    controls.inputs = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection="releases"
+        data={data}
+        base=""
+        validation={getContentValidation('releases', data)}
+        validationAttempt={0}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  const html = render();
+  expect(html.indexOf('Catalog number')).toBeLessThan(html.indexOf('Release stage'));
+  const field = () => controls.inputs.find((input) => input['data-content-path'] === 'catalog_number')!;
+  expect(field().required).toBe(true);
+  for (const [typed, stored, valid] of [
+    ['bbr #004', 'BBR#004', true],
+    ['BBR#0', 'BBR#0', false],
+    ['BBR#000', 'BBR#000', false],
+  ] as const) {
+    field().onChange!({ target: { value: typed } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
+    render();
+    expect(data.catalog_number).toBe(stored);
+    expect(getContentValidation('releases', data).byPath.catalog_number === undefined).toBe(valid);
+    expect(data.title).toBe('Record');
+  }
+});
+
 test.each(['http://example.com/record', '/record', 'javascript:alert(1)'])(
   'partner store link errors stay associated with their field for %s',
   (url) => {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { legacyReleaseCatalogNumber, releaseCatalogNumberClashes } from './catalog-number';
 import { contentMediaIds, isCmsCollection, validateCmsRevisionContent } from './emdash-content';
 
 // Build-owned identities, never editable CMS fields or price/stock authority.
@@ -64,6 +65,8 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
   environmentSchema.parse(environment);
   if (encoder.encode(json).byteLength > 4 * 1024 * 1024) throw new Error('Invalid snapshot manifest size.');
   const snapshot = snapshotSchemas[environment].parse(JSON.parse(json));
+  const clashes = releaseCatalogNumberClashes(snapshot.records);
+  if (clashes.length) throw new Error(clashes.map((clash) => clash.message).join('\n'));
   if (requiredRevision !== undefined && !snapshot.records.some((record) => record.revisionId === requiredRevision))
     throw new Error('Requested publication revision is absent from the snapshot.');
   const identities = new Set<string>();
@@ -87,8 +90,10 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
   );
   const referencedMedia = new Set<string>();
   for (const record of snapshot.records) {
-    if (!isCmsCollection(record.collection) || validateCmsRevisionContent(record.collection, record.data).length)
-      throw new Error('Invalid snapshot content.');
+    if (!isCmsCollection(record.collection)) throw new Error('Invalid snapshot content.');
+    const issues = validateCmsRevisionContent(record.collection, record.data);
+    if (issues.length)
+      throw new Error(`Invalid snapshot content (${record.collection}/${record.slug}): ${issues.join('; ')}`);
     const identity = `${record.collection}/${record.id}`;
     const path = `${record.collection}/${record.slug}`;
     if (identities.has(identity) || paths.has(path)) throw new Error('Duplicate snapshot record.');
@@ -114,3 +119,14 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
 }
 
 export type ContentSnapshot = ReturnType<typeof parseContentSnapshot>;
+
+/** Only checksum-verified accepted manifests may use the legacy reader. Candidates remain strict. */
+export function parseAcceptedContentSnapshot(json: string, environment: 'local' | 'uat' | 'prd'): ContentSnapshot {
+  if (encoder.encode(json).byteLength > 4 * 1024 * 1024) throw new Error('Invalid snapshot manifest size.');
+  const snapshot = snapshotSchemas[environment].parse(JSON.parse(json));
+  for (const record of snapshot.records) {
+    if (record.collection === 'releases' && !Object.hasOwn(record.data, 'catalog_number'))
+      record.data.catalog_number = legacyReleaseCatalogNumber(record.slug);
+  }
+  return parseContentSnapshot(JSON.stringify(snapshot), environment);
+}

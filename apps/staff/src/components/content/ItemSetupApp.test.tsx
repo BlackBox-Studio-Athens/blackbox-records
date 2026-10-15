@@ -7,6 +7,7 @@ const input = {
   existing: null,
   title: 'New record',
   artist: 'artist-one',
+  catalogNumber: 'BBR#005',
   artistOrLabel: 'Label name',
   date: '2026-09-14',
   summary: 'New music',
@@ -88,10 +89,19 @@ it('keeps an editorial-only release free of price and stock fields', () => {
   expect(releaseDetails(input)).toEqual({
     title: input.title,
     artist: input.artist,
+    catalog_number: 'BBR#005',
     release_date: input.date,
     summary: input.summary,
     cover_image: { id: input.image },
     cover_image_alt: input.alt,
     formats: [input.format],
   });
+});
+
+it('never creates a release without one canonical catalog number', () => {
+  for (const catalogNumber of ['', 'BBR#0', 'BBR#000', 'BBR001', 'bbr#001'])
+    expect(() => releaseDetails({ ...input, catalogNumber })).toThrow('BBR#001');
+  expect(() => setupCommand({ ...input, catalogNumber: '' })).toThrow('BBR#001');
+  // Distro and Merch sources never carry a label catalog number.
+  expect(JSON.stringify(setupCommand({ ...input, kind: 'distro' }))).not.toContain('catalog_number');
 });

@@ -1,3 +1,4 @@
+import { catalogNumberSchema } from '@blackbox/content-model';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:assets', () => ({ getImage: vi.fn(async () => ({ src: '/cart-176.webp' })) }));
@@ -20,6 +21,7 @@ vi.mock('astro:content', () => ({
             artist: { id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg' },
             cover_image_alt: 'Disintegration by Afterwise',
+            catalog_number: catalogNumberSchema.parse('BBR#002'),
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
@@ -33,6 +35,7 @@ vi.mock('astro:content', () => ({
             artist: { id: 'chronoboros' },
             cover_image: { src: '/caregivers.jpg' },
             cover_image_alt: 'Caregivers by Chronoboros',
+            catalog_number: catalogNumberSchema.parse('BBR#001'),
             formats: ['Vinyl'],
             release_date: new Date('2026-03-13T00:00:00.000Z'),
             summary: 'Caregivers release.',

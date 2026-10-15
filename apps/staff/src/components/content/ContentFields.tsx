@@ -46,7 +46,12 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
-import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
+import {
+  catalogNumberInput,
+  contentFieldErrors,
+  youtubeVideoId,
+  type ContentValidation,
+} from '../publication/content-validation';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
@@ -670,6 +675,10 @@ export default function ContentFields({
           onBlur={() => touch('artist')}
           onSelect={(item) => set('artist', item.id)}
         />
+        {field('catalog_number', 'Catalog number', { normalize: catalogNumberInput })}
+        <FieldDescription className="col-span-full">
+          The label number, such as BBR#001. Each release has its own, and the Store lists releases in this order.
+        </FieldDescription>
         <Field>
           <FieldLabel htmlFor="content-release_stage" icon={CalendarDays}>
             Release stage

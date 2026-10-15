@@ -259,6 +259,7 @@ test('requires the pinned Release reference to resolve to a published Artist and
         release_date: '2026-09-14',
         cover_image: { id: 'image' },
         cover_image_alt: 'Cover',
+        catalog_number: 'BBR#001',
       },
     },
   ];

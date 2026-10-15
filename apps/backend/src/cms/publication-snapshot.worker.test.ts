@@ -1,4 +1,5 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
+import { createHash } from 'node:crypto';
 import { beforeAll, beforeEach, expect, test } from 'vitest';
 import { readPublication, requestPublication } from './publication-journal';
 import { handlePublicationWorkflow } from './publication-routes';
@@ -93,6 +94,51 @@ const manifest = (sha256: string) => ({
   media: [
     { id: 'image', sha256, filename: 'cover.png', mimeType: 'image/png', size: pixels.byteLength, width: 1, height: 1 },
   ],
+});
+
+test('exports accepted legacy snapshot bytes unchanged after catalog upgrade validation', async () => {
+  const { item, sha256, goLive } = await prepare();
+  await goLive();
+  const original = manifest(sha256);
+  const json = JSON.stringify({
+    ...original,
+    records: [
+      ...original.records,
+      {
+        collection: 'artists',
+        id: 'artist',
+        slug: 'artist',
+        revisionId: 'artist-rev',
+        data: { title: 'Artist', genre: 'Rock', bio: 'Bio', image: { id: 'image' }, image_alt: 'Portrait' },
+      },
+      {
+        collection: 'releases',
+        id: 'environment-id',
+        slug: 'caregivers',
+        revisionId: 'release-rev',
+        data: {
+          title: 'Caregivers',
+          artist: 'artist',
+          release_stage: 'upcoming',
+          cover_image: { id: 'image' },
+          cover_image_alt: 'Cover',
+        },
+      },
+    ],
+  });
+  const digest = createHash('sha256').update(json).digest('hex');
+  await env.TEST_SNAPSHOTS.put(`snapshots/uat/manifest/${digest}`, json, { sha256: digest });
+  await env.TEST_CMS_DB.prepare('UPDATE _blackbox_publications SET snapshot_sha256 = ? WHERE id = ?')
+    .bind(digest, item.id)
+    .run();
+  const response = await handlePublicationWorkflow(
+    new Request('https://staff.example/_emdash/api/blackbox/publications/snapshot', {
+      headers: { Authorization: `Bearer ${token}`, 'X-Publication-ID': item.id, 'X-CI-Run-ID': '12345' },
+    }),
+    context,
+  );
+  expect(response.status).toBe(200);
+  expect(await response.text()).toBe(json);
 });
 
 test('exports only a live snapshot and its referenced media through authenticated workflow reads', async () => {

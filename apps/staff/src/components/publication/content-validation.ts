@@ -45,6 +45,9 @@ export function contentFieldErrors(validation: ContentValidation, path: string):
     .map((issue) => issue.message);
 }
 
+// Staff type the label number freely; spacing and case never make it invalid.
+export const catalogNumberInput = (input: string) => input.toUpperCase().replace(/\s+/g, '');
+
 export function youtubeVideoId(input: string): string | null {
   if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
   try {

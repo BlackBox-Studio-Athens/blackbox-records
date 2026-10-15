@@ -1,3 +1,4 @@
+import { catalogNumberSchema } from '@blackbox/content-model';
 import type { CollectionEntry } from 'astro:content';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -12,6 +13,7 @@ vi.mock('astro:content', () => ({
             artist: { collection: 'artists', id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Disintegration cover',
+            catalog_number: catalogNumberSchema.parse('BBR#002'),
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
@@ -26,6 +28,7 @@ vi.mock('astro:content', () => ({
             artist: { collection: 'artists', id: 'chronoboros' },
             cover_image: { src: '/caregivers.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Caregivers cover',
+            catalog_number: catalogNumberSchema.parse('BBR#001'),
             formats: ['Vinyl'],
             merch_url: 'https://chronoboros.bandcamp.com/merch',
             release_date: new Date('2026-03-13T00:00:00.000Z'),

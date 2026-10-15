@@ -1,4 +1,5 @@
 export * from './validation';
+export * from './catalog-number';
 export * from './music';
 export * from './release-status';
 export * from './schemas';

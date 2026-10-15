@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getCollection } from 'astro:content';
+import { catalogNumberSchema } from '@blackbox/content-model';
 import distroPage from '../content/distro-page/site.json';
 
 const galleryFixture = vi.hoisted(() => ({
@@ -20,6 +21,7 @@ vi.mock('astro:content', () => ({
             artist: { id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg' },
             cover_image_alt: 'Disintegration cover',
+            catalog_number: catalogNumberSchema.parse('BBR#002'),
             gallery: galleryFixture.gallery,
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
@@ -34,6 +36,7 @@ vi.mock('astro:content', () => ({
             artist: { id: 'chronoboros' },
             cover_image: { src: '/caregivers.jpg' },
             cover_image_alt: 'Caregivers cover',
+            catalog_number: catalogNumberSchema.parse('BBR#001'),
             formats: ['Vinyl'],
             merch_url: 'https://chronoboros.bandcamp.com/merch',
             release_date: new Date('2026-03-13T00:00:00.000Z'),
@@ -87,10 +90,51 @@ import {
   listStoreCollectionEntries,
   selectStoreCollectionEntries,
   sortStoreCollectionEntriesByArtist,
+  sortAllStoreCollectionEntries,
   type StoreCollectionEntry,
 } from './store-collection';
 
 describe('store collection entries', () => {
+  it('orders All releases numerically before artist-ordered Distro without mutating or duplicating', async () => {
+    const entries = await listStoreCollectionEntries();
+    const release = entries.find((entry) => entry.storeItem.sourceKind === 'release')!;
+    const distro = entries.find((entry) => entry.storeItem.sourceKind === 'distro')!;
+    const numbered = (slug: string, value: string, subtitle: string): StoreCollectionEntry => ({
+      ...release,
+      storeItem: {
+        ...release.storeItem,
+        sourceKind: 'release',
+        catalogNumber: catalogNumberSchema.parse(value),
+        slug,
+        subtitle,
+      },
+    });
+    const inputs = [
+      { ...distro, storeItem: { ...distro.storeItem, slug: 'z-distro', subtitle: 'Zulu' } },
+      numbered('disintegration', 'BBR#002', 'Afterwise'),
+      numbered('large', 'BBR#1000', 'Aardvark'),
+      numbered('caregivers', 'BBR#001', 'Chronoboros'),
+      { ...distro, storeItem: { ...distro.storeItem, slug: 'a-distro', subtitle: 'Alpha' } },
+      numbered('anarchotribal', 'BBR#003', 'Ouranopithecus'),
+      numbered('nine', 'BBR#999', 'Zebra'),
+    ];
+    const original = [...inputs];
+    const sorted = sortAllStoreCollectionEntries(inputs);
+    expect(sorted.map((entry) => entry.storeItem.slug)).toEqual([
+      'caregivers',
+      'disintegration',
+      'anarchotribal',
+      'nine',
+      'large',
+      'a-distro',
+      'z-distro',
+    ]);
+    expect(inputs).toEqual(original);
+    expect(new Set(sorted).size).toBe(inputs.length);
+    expect(sortAllStoreCollectionEntries([])).toEqual([]);
+    expect(() => sortAllStoreCollectionEntries([...inputs, inputs[0]!])).toThrow('more than once');
+    expect(sortStoreCollectionEntriesByArtist(inputs)[0]!.storeItem.slug).toBe('large');
+  });
   it('reads collections a bounded number of times without a lookup per Store Item', async () => {
     vi.mocked(getCollection).mockClear();
     await listStoreCollectionEntries();

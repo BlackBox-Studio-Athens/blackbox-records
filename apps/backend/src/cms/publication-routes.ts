@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { isCmsCollection, parseContentSnapshot } from '@blackbox/content-model';
+import { isCmsCollection, parseAcceptedContentSnapshot } from '@blackbox/content-model';
 import { readPublicationCatalog } from './item-publication-recovery';
 import {
   publicationHistoryQuery,
@@ -73,7 +73,7 @@ export async function handlePublicationWorkflow(
     }
     const json = await object.text();
     if (createHash('sha256').update(json).digest('hex') !== item.snapshotSha256) throw new Error('Invalid snapshot');
-    const manifest = parseContentSnapshot(json, environment.data);
+    const manifest = parseAcceptedContentSnapshot(json, environment.data);
     if (url.pathname === root + '/snapshot')
       return new Response(json, {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' },

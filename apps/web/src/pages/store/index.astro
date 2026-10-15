@@ -1,9 +1,9 @@
 ---
 import StoreCollectionPage from '@/layouts/StoreCollectionPage.astro';
 import { getDiscoverableStoreCatalogCategories, getStoreCatalogCategory } from '@/lib/store-categories';
-import { listStoreCollectionEntries, sortStoreCollectionEntriesByArtist } from '@/lib/store-collection';
+import { listStoreCollectionEntries, sortAllStoreCollectionEntries } from '@/lib/store-collection';
 
-const collectionEntries = sortStoreCollectionEntriesByArtist(await listStoreCollectionEntries());
+const collectionEntries = sortAllStoreCollectionEntries(await listStoreCollectionEntries());
 const discoverableCategories = getDiscoverableStoreCatalogCategories(
   collectionEntries.flatMap((entry) => entry.categoryIds),
 );

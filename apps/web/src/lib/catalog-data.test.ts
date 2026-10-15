@@ -1,3 +1,4 @@
+import { catalogNumberSchema } from '@blackbox/content-model';
 import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import { describe, expect, it, vi } from 'vitest';
@@ -13,6 +14,7 @@ vi.mock('astro:content', () => ({
             artist: { collection: 'artists', id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Disintegration cover',
+            catalog_number: catalogNumberSchema.parse('BBR#002'),
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
@@ -27,6 +29,7 @@ vi.mock('astro:content', () => ({
             artist: { collection: 'artists', id: 'chronoboros' },
             cover_image: { src: '/caregivers.jpg', width: 100, height: 100, format: 'jpg' },
             cover_image_alt: 'Caregivers cover',
+            catalog_number: catalogNumberSchema.parse('BBR#001'),
             formats: ['Vinyl'],
             merch_url: 'https://chronoboros.bandcamp.com/merch',
             release_date: new Date('2026-03-13T00:00:00.000Z'),
@@ -158,7 +161,9 @@ function createStoreItemCollisionRecord(
   return {
     slug,
     taxCategory: 'physical_goods',
-    sourceKind,
+    ...(sourceKind === 'release'
+      ? { sourceKind, catalogNumber: catalogNumberSchema.parse('BBR#001') }
+      : { sourceKind }),
     sourceId,
     embeddedPlayerData: null,
     title: sourceId,
@@ -253,11 +258,26 @@ describe('groupDistroEntries', () => {
 });
 
 describe('StoreItem projection contract', () => {
+  it('keeps catalog numbers required on Releases and forbidden on Distro at the type boundary', async () => {
+    const [release] = await listStoreItems();
+    const { sourceKind: _kind, catalogNumber: _number, ...common } = release!;
+    // @ts-expect-error Release Store Items cannot omit their catalog number.
+    const missing: StoreItem = { ...common, sourceKind: 'release' };
+    // @ts-expect-error Distro Store Items cannot carry a Release catalog number.
+    const misplaced: StoreItem = {
+      ...common,
+      sourceKind: 'distro',
+      catalogNumber: catalogNumberSchema.parse('BBR#001'),
+    };
+    expect(missing).not.toHaveProperty('catalogNumber');
+    expect(misplaced.sourceKind).toBe('distro');
+  });
   it('keeps persisted Store Item identity when editorial title or format changes', async () => {
     const release = createReleaseEntry('stable-source', {
       artist: { collection: 'artists', id: 'afterwise' },
       cover_image: createTestImage('/new-cover.jpg'),
       cover_image_alt: 'New cover',
+      catalog_number: catalogNumberSchema.parse('BBR#001'),
       release_date: new Date('2026-09-14'),
       title: 'Renamed release',
       formats: ['CD'],
@@ -277,6 +297,7 @@ describe('StoreItem projection contract', () => {
         artist: { collection: 'artists', id: 'afterwise' },
         cover_image: createTestImage('/cover.jpg'),
         cover_image_alt: 'Caregivers cover',
+        catalog_number: catalogNumberSchema.parse('BBR#001'),
         formats: ['Vinyl', 'Digital'],
         release_date: new Date('2024-11-02T00:00:00.000Z'),
         summary: 'Release summary',
@@ -286,6 +307,7 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItem).toEqual({
       slug: 'caregivers-vinyl',
+      catalogNumber: 'BBR#001',
       taxCategory: 'physical_goods',
       sourceKind: 'release',
       sourceId: 'caregivers-control',
@@ -315,6 +337,7 @@ describe('StoreItem projection contract', () => {
       bandcamp_embed_url,
       cover_image: createTestImage('/shared.jpg'),
       cover_image_alt: 'Shared release cover',
+      catalog_number: catalogNumberSchema.parse('BBR#001'),
       formats: ['CD'],
       release_date: new Date('2024-11-02T00:00:00.000Z'),
       tidal_url,
@@ -352,6 +375,7 @@ describe('StoreItem projection contract', () => {
         artist: { collection: 'artists', id: 'afterwise' },
         cover_image: createTestImage('/disintegration.jpg'),
         cover_image_alt: 'Disintegration cover',
+        catalog_number: catalogNumberSchema.parse('BBR#002'),
         formats: ['Black Vinyl LP'],
         merch_url: '/store/',
         release_date: new Date('2026-09-01T00:00:00.000Z'),
@@ -374,6 +398,7 @@ describe('StoreItem projection contract', () => {
         artist: { collection: 'artists', id: 'ouranopithecus' },
         cover_image: createTestImage('/anarchotribal-cover.webp'),
         cover_image_alt: 'Anarchotribal cover',
+        catalog_number: catalogNumberSchema.parse('BBR#003'),
         formats: ['Vinyl'],
         merch_url: '/store/',
         release_date: new Date('2026-12-01T00:00:00.000Z'),
@@ -396,6 +421,7 @@ describe('StoreItem projection contract', () => {
         artist: { collection: 'artists', id: 'chronoboros' },
         cover_image: createTestImage('/caregivers.jpg'),
         cover_image_alt: 'Caregivers cover',
+        catalog_number: catalogNumberSchema.parse('BBR#001'),
         formats: ['Vinyl'],
         merch_url: 'https://chronoboros.bandcamp.com/merch',
         release_date: new Date('2026-03-13T00:00:00.000Z'),

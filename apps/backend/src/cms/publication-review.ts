@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { EmDashRuntime } from 'emdash/middleware';
 import {
   contentMediaIds,
+  releaseCatalogNumberClashes,
   removePublishedDistro,
   isCmsCollection,
   validateCmsRevisionContent,
@@ -121,6 +122,10 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
         catalog,
       );
     }
+  }
+  for (const clash of releaseCatalogNumberClashes(candidate.records)) {
+    for (const entry of review.entries)
+      if (entry.collection === 'releases' && clash.recordIds.includes(entry.recordId)) entry.issues.push(clash.message);
   }
   review.destinations = review.entries.map(({ collection, recordId, slug, title }) => ({
     collection,

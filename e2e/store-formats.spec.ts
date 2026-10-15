@@ -526,6 +526,19 @@ test('Distro catalog keeps its alphabetical order through format, search and Cra
   expect(await cards.locator('visible=true').count()).toBe(original.length);
 });
 
+test('All Store leads with BlackBox releases in catalog number order, then Distro by artist', async ({ page }) => {
+  await page.goto('store/');
+  await waitForShell(page);
+  const cards = page.locator('#all-store-catalog [data-distro-search-item]');
+  const titles = await cards.locator('h2').allInnerTexts();
+  // BBR#001 Caregivers, BBR#002 Disintegration, BBR#003 Anarchotribal (catalog order, not release date).
+  expect(titles.slice(0, 3)).toEqual(['Caregivers', 'Disintegration', 'Anarchotribal']);
+  const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
+  const distroArtists = (await cards.evaluateAll((nodes) => nodes.map((node) => node.dataset.storeArtist!))).slice(3);
+  const normal = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ');
+  expect(distroArtists).toEqual([...distroArtists].sort((a, b) => collator.compare(normal(a), normal(b))));
+});
+
 test.describe('Native Store navigation', () => {
   test.use({ javaScriptEnabled: false });
 

@@ -1,10 +1,70 @@
 import { env } from 'cloudflare:test';
 import { afterEach, expect, it, vi } from 'vitest';
-import { PublicSnapshotSelection, currentPublicationKey } from './published-storage';
+import { PublicSnapshotSelection, currentPublicationKey, readPublishedSnapshot } from './published-storage';
 
 const bucket = env.TEST_SNAPSHOTS;
 const pointer = (sha = 'a'.repeat(64)) => ({ id: crypto.randomUUID(), snapshotSha256: sha, generation: 1 });
 const key = currentPublicationKey('uat');
+
+it('upgrades checksum-bound accepted legacy Releases without rewriting R2 and refuses unmapped slugs', async () => {
+  const manifest = (slug: string) =>
+    JSON.stringify({
+      schemaVersion: 1,
+      environment: 'uat',
+      records: [
+        {
+          collection: 'artists',
+          id: 'cms-artist',
+          slug: 'artist',
+          revisionId: 'a',
+          data: { title: 'Artist', genre: 'Rock', bio: 'Bio', image: { id: 'image' }, image_alt: 'Portrait' },
+        },
+        {
+          collection: 'releases',
+          id: 'environment-specific-id',
+          slug,
+          revisionId: 'r',
+          data: {
+            title: slug,
+            artist: 'cms-artist',
+            release_stage: 'upcoming',
+            cover_image: { id: 'image' },
+            cover_image_alt: 'Cover',
+          },
+        },
+      ],
+      media: [
+        {
+          id: 'image',
+          sha256: 'a'.repeat(64),
+          filename: 'cover.png',
+          mimeType: 'image/png',
+          size: 1,
+          width: 1,
+          height: 1,
+        },
+      ],
+    });
+  for (const slug of ['caregivers', 'lotus', 'fictional-unmapped-release']) {
+    const json = manifest(slug);
+    const sha = Array.from(
+      new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(json))),
+      (byte) => byte.toString(16).padStart(2, '0'),
+    ).join('');
+    const path = `snapshots/uat/manifest/${sha}`;
+    await bucket.put(path, json, { sha256: sha });
+    if (slug === 'caregivers')
+      expect((await readPublishedSnapshot(bucket, 'uat', sha)).records[1]!.data.catalog_number).toBe('BBR#001');
+    else if (slug === 'lotus')
+      expect((await readPublishedSnapshot(bucket, 'uat', sha)).records[1]!.data.catalog_number).toBe('BBR#004');
+    else
+      await expect(readPublishedSnapshot(bucket, 'uat', sha)).rejects.toThrow(
+        '"fictional-unmapped-release" has no catalog number',
+      );
+    expect(await (await bucket.get(path))!.text()).toBe(json);
+    await bucket.delete(path);
+  }
+});
 
 afterEach(async () => {
   vi.restoreAllMocks();

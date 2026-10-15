@@ -377,6 +377,7 @@ it('reuses published HTML through the public gateway and retires it on publicati
               artist: 'sidus',
               cover_image: { id: 'image' },
               cover_image_alt: 'Lotus',
+              catalog_number: 'BBR#001',
               release_stage: 'upcoming',
               clips: clipId ? [{ title: 'Embrace The Void', youtube_video_id: clipId }] : [],
             },

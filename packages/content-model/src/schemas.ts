@@ -1,4 +1,5 @@
 import { tracklistSchema } from './tracklist';
+import { catalogNumberSchema } from './catalog-number';
 import { productSafetyOfferSchema } from './product-safety';
 import { artistCountriesSchema, parseArtistCountries, validArtistLink } from './artist-fields';
 import { z } from 'zod';
@@ -76,6 +77,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
   references: { artist: TReference },
 ) {
   return z.object({
+    catalog_number: catalogNumberSchema,
     title: requiredText,
     artist: references.artist,
     release_stage: z.enum(['upcoming', 'released']).optional(),

@@ -1,3 +1,4 @@
+import { catalogNumberSchema } from '@blackbox/content-model';
 import { createHash } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -52,6 +53,7 @@ it('loads only checksum-bound content, maps stable references and rejects altere
             release_date: '2026-09-14',
             cover_image: image,
             cover_image_alt: 'Cover',
+            catalog_number: catalogNumberSchema.parse('BBR#001'),
             gallery: [{ image: galleryImage, image_alt: 'Back cover' }],
           },
         },
@@ -85,6 +87,23 @@ it('loads only checksum-bound content, maps stable references and rejects altere
     await writeFile(mediaPath, bytes);
     const input = { path, sha256: digest(json), environment: 'local' as const };
     const loaded = await readContentSnapshot(input);
+    expect(loaded.snapshot.records.find((record) => record.collection === 'releases')!.data.catalog_number).toBe(
+      'BBR#001',
+    );
+    const legacyJson = JSON.stringify({
+      ...snapshot,
+      storeItems: snapshot.storeItems.map((item) => ({ ...item, sourceId: 'caregivers' })),
+      records: snapshot.records.map((record) => {
+        if (record.collection !== 'releases') return record;
+        const { catalog_number: _catalog, ...data } = record.data;
+        return { ...record, slug: 'caregivers', data };
+      }),
+    });
+    await writeFile(path, legacyJson);
+    expect(
+      (await readContentSnapshot({ ...input, sha256: digest(legacyJson) })).snapshot.records[1]!.data.catalog_number,
+    ).toBe('BBR#001');
+    await writeFile(path, json);
     expect(snapshotCollection(loaded, 'artists')[0]).toMatchObject({
       id: 'stable-artist',
       data: {

@@ -1,6 +1,7 @@
 import { listDistroEntries, listStoreItems, type DistroCatalogEntry, type StoreItem } from './catalog-data';
 import { groupDistroEntries } from './distro-data';
 import type { DistroGroupName, DistroIntroKey } from '@blackbox/content-model';
+import { compareCatalogNumbers } from '@blackbox/content-model';
 import { createStoreItemAvailability, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
 
@@ -73,6 +74,16 @@ export function sortStoreCollectionEntriesByArtist(entries: readonly StoreCollec
       bandCollator.compare(left.storeItem.title, right.storeItem.title) ||
       left.storeItem.slug.localeCompare(right.storeItem.slug, 'en'),
   );
+}
+
+export function sortAllStoreCollectionEntries(entries: readonly StoreCollectionEntry[]): StoreCollectionEntry[] {
+  return sortStoreCollectionEntriesByArtist(entries).sort((left, right) => {
+    const a = left.storeItem;
+    const b = right.storeItem;
+    if (a.sourceKind === 'release' && b.sourceKind === 'release')
+      return compareCatalogNumbers(a.catalogNumber, b.catalogNumber);
+    return Number(b.sourceKind === 'release') - Number(a.sourceKind === 'release');
+  });
 }
 
 export function getStoreDistroFormatGroup(entry: StoreCollectionEntry): DistroGroupName {

@@ -5,6 +5,15 @@ import type { EmDashRuntime } from 'emdash/middleware';
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  const catalogNumber = await registry.getField('releases', 'catalog_number');
+  if (!catalogNumber)
+    await registry.createField('releases', {
+      slug: 'catalog_number',
+      label: 'Catalog number',
+      type: 'string',
+      required: false,
+    });
+  else if (catalogNumber.type !== 'string') throw new Error('Unexpected field type: releases.catalog_number');
   const footerText = await registry.getField('settings', 'footer_text');
   if (!footerText)
     await registry.createField('settings', {

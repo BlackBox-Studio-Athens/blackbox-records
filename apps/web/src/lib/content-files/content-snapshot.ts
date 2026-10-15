@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import {
   contentMediaIds,
   projectProseFields,
-  parseContentSnapshot,
+  parseAcceptedContentSnapshot,
   sourceCollectionNames,
   type ContentSnapshot,
 } from '@blackbox/content-model';
@@ -20,7 +20,7 @@ export async function readContentSnapshot(input: SnapshotInput) {
   if ((await stat(path)).size > 4 * 1024 * 1024) throw new Error('Snapshot exceeds size limit.');
   const bytes = await readFile(path);
   if (hash(bytes) !== input.sha256) throw new Error('Snapshot checksum mismatch.');
-  const snapshot = parseContentSnapshot(bytes.toString('utf8'), input.environment);
+  const snapshot = parseAcceptedContentSnapshot(bytes.toString('utf8'), input.environment);
   const root = dirname(path);
   const media = new Map<string, { path: string; relativePath: string; item: ContentSnapshot['media'][number] }>();
   for (const item of snapshot.media) {

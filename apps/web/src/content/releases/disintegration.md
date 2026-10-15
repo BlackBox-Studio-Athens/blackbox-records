@@ -1,4 +1,5 @@
 ---
+catalog_number: BBR#002
 title: Disintegration
 artist: afterwise
 release_date: 2026-06-09

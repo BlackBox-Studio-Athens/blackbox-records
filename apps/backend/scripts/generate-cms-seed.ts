@@ -17,13 +17,14 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     if (property.type === 'integer' || property.type === 'number' || property.type === 'boolean') type = property.type;
     if (name === 'image' || name === 'cover_image') type = 'image';
     if (name === 'tracklist') type = 'json';
+    if (slug === 'releases' && name === 'catalog_number') type = 'string';
     if (slug === 'releases' && name === 'releases_priority') type = 'number';
     if (name === 'bandcamp_embed_url' || name === 'tidal_url') type = 'url';
     if (name === 'body' || name.endsWith('_rich')) type = 'portableText';
     if (['releases', 'news'].includes(slug) && name === 'artist') type = 'reference';
     return {
       slug: name,
-      label: name.replaceAll('_', ' '),
+      label: name === 'catalog_number' ? 'Catalog number' : name.replaceAll('_', ' '),
       type,
       // Native fields accept private incomplete work; the editorial hook validates safety and publication checks completeness.
       required: false,

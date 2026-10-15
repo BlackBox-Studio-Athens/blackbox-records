@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { catalogNumberSchema } from '@blackbox/content-model';
 
 import {
   createCartLineItemSnapshotForStorePage,
@@ -45,6 +46,7 @@ describe('store page data helper', () => {
       slug: 'disintegration-black-vinyl-lp',
       sourceKind: 'release',
       sourceId: 'disintegration',
+      catalogNumber: catalogNumberSchema.parse('BBR#002'),
       embeddedPlayerData: null,
       title: 'Disintegration',
       subtitle: 'Afterwise',
@@ -82,6 +84,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'disintegration',
+        catalogNumber: catalogNumberSchema.parse('BBR#002'),
         embeddedPlayerData: null,
         title: 'Disintegration',
         subtitle: 'Afterwise',
@@ -112,6 +115,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'caregivers',
+        catalogNumber: catalogNumberSchema.parse('BBR#001'),
         embeddedPlayerData: null,
         title: 'Caregivers',
         subtitle: 'Chronoboros',
@@ -181,6 +185,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'disintegration',
+        catalogNumber: catalogNumberSchema.parse('BBR#002'),
         embeddedPlayerData: null,
         title: 'Disintegration',
         subtitle: 'Afterwise',

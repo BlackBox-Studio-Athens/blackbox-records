@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseContentSnapshot } from '@blackbox/content-model';
+import { parseAcceptedContentSnapshot } from '@blackbox/content-model';
 
 export const publicationPointerSchema = z
   .object({
@@ -23,7 +23,7 @@ export async function readPublishedSnapshot(bucket: R2Bucket, environment: Publi
     await object?.body.cancel();
     throw new Error('Published snapshot is unavailable.');
   }
-  return parseContentSnapshot(await object.text(), environment);
+  return parseAcceptedContentSnapshot(await object.text(), environment);
 }
 
 const publishedMediaSchema = z.object({
@@ -72,7 +72,11 @@ export async function readPublicationPointer(bucket: R2Bucket, environment: Publ
 /** Pointer refresh is single-flight; parsed content is loaded only for a render or media lookup. */
 export class PublicSnapshotSelection {
   private current:
-    | { pointer: PublicationPointer; checkedAt: number; snapshot?: Promise<ReturnType<typeof parseContentSnapshot>> }
+    | {
+        pointer: PublicationPointer;
+        checkedAt: number;
+        snapshot?: Promise<ReturnType<typeof parseAcceptedContentSnapshot>>;
+      }
     | undefined;
   private refreshing: Promise<NonNullable<PublicSnapshotSelection['current']>> | undefined;
   private epoch = 0;

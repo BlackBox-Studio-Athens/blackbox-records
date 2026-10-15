@@ -18,6 +18,12 @@ test('catalog preparation adds optional Artist activity and News reference field
   });
   const runtime = { db: {} } as EmDashRuntime;
   expect((await prepareCatalogSchema(runtime)).status).toBe(200);
+  expect(create).toHaveBeenCalledWith('releases', {
+    slug: 'catalog_number',
+    label: 'Catalog number',
+    type: 'string',
+    required: false,
+  });
   expect(create).toHaveBeenCalledWith('settings', {
     slug: 'footer_text',
     label: 'Footer text',
@@ -59,6 +65,9 @@ test('catalog preparation adds optional Artist activity and News reference field
   });
   expect((await prepareCatalogSchema(runtime)).status).toBe(200);
   expect(create).toHaveBeenCalledTimes(created);
+  fields.set('releases/catalog_number', { ...fields.get('releases/catalog_number')!, type: 'number' });
+  await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: releases.catalog_number');
+  fields.set('releases/catalog_number', { ...fields.get('releases/catalog_number')!, type: 'string' });
   fields.set('settings/footer_text', { ...fields.get('settings/footer_text')!, type: 'json' });
   await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: settings.footer_text');
   fields.set('settings/footer_text', { ...fields.get('settings/footer_text')!, type: 'string' });

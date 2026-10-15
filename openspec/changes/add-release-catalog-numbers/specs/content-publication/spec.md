@@ -1,0 +1,21 @@
+## ADDED Requirements
+
+### Requirement: Accepted legacy Release snapshots have a bounded catalog upgrade
+
+Readers SHALL deterministically upgrade missing catalog_number only in accepted snapshots using the owner-confirmed release slug assignments. They SHALL preserve immutable stored bytes and identity, reject unknown identities and invalid supplied values, and require explicit valid numbers for new publication candidates.
+
+#### Scenario: Confirmed legacy snapshot renders
+
+- **WHEN** an accepted snapshot lacks catalog_number on caregivers, anarchotribal, disintegration or lotus
+- **THEN** the reader supplies BBR#001, BBR#003, BBR#002 or BBR#004 respectively and validates the full upgraded snapshot.
+
+#### Scenario: Legacy release is unmapped
+
+- **WHEN** an accepted snapshot contains an unmapped Release without catalog_number
+- **THEN** loading fails with a message naming that slug and the missing owner-confirmed assignment
+- **AND** no number is invented.
+
+#### Scenario: A new candidate omits a catalog number
+
+- **WHEN** a new snapshot or publication candidate is validated
+- **THEN** missing catalog_number fails even for a known legacy slug.

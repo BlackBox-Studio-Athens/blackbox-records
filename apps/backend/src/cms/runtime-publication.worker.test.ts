@@ -445,6 +445,36 @@ async function setup() {
   return { deps, runtime, renderer, input, pointer, selection, cache };
 }
 
+test('publication review reports catalog clashes across the combined selection before acceptance', async () => {
+  const { deps } = await setup();
+  const data = {
+    title: 'Release',
+    artist: 'artist',
+    release_stage: 'upcoming',
+    catalog_number: 'BBR#001',
+    cover_image: { id: 'image' },
+    cover_image_alt: 'Cover',
+  };
+  deps.runtime = {
+    handleContentGet: vi.fn(async (_collection: string, id: string) => ({
+      success: true,
+      data: { _rev: 'v1', item: { id, slug: id, draftRevisionId: `draft-${id}`, data: { title: 'Artist' } } },
+    })),
+    handleRevisionGet: vi.fn(async (id: string) => ({
+      success: true,
+      data: { item: { id, collection: 'releases', entryId: id.slice(6), data } },
+    })),
+  } as unknown as EmDashRuntime;
+  const input = {
+    records: ['caregivers', 'lotus'].map((recordId) => ({ collection: 'releases', recordId, expectedRevision: 'v1' })),
+  };
+  const { review } = await reviewPublication(input, deps);
+  for (const entry of review.entries)
+    expect(entry.issues).toContain(
+      'Catalog number BBR#001 is used by releases "caregivers" (caregivers), "lotus" (lotus). Use a unique catalog number for each release.',
+    );
+});
+
 test('activation refreshes warm public selection then purges through the private service before becoming live', async () => {
   const { deps, runtime, renderer, input, pointer, selection, cache } = await setup();
   expect((await selection.selected()).pointer).toEqual(pointer);
@@ -1000,6 +1030,7 @@ test.each(['artist-first', 'release-first'])(
         release_date: '2026-09-19',
         cover_image: { id: 'image' },
         cover_image_alt: 'Sleeve',
+        catalog_number: 'BBR#001',
         formats: ['Vinyl'],
         credits: [],
       },

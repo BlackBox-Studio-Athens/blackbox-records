@@ -5,6 +5,8 @@ import { returnStaffTask, staffLink } from '../../lib/staff-navigation';
 import { Progress } from 'radix-ui';
 import {
   DISTRO_GROUP_VALUES,
+  catalogNumberMessage,
+  parseCatalogNumber,
   proseBlocks,
   proseText,
   resolveProse,
@@ -21,6 +23,7 @@ import {
   Disc3,
   Euro,
   FileText,
+  Hash,
   Package,
   RefreshCw,
   Type,
@@ -33,6 +36,7 @@ import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import ProductSafetyFields from './ProductSafetyFields';
 import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
+import { catalogNumberInput } from '../publication/content-validation';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
 import ZeroStockStateControl, { isZeroStockState, type ZeroStockState } from '../stock/ZeroStockStateControl';
@@ -54,6 +58,7 @@ function descriptionFields(summary: Prose) {
 export function releaseDetails(input: {
   title: string;
   artist: string;
+  catalogNumber: string;
   date: string;
   summary: Prose;
   image: string;
@@ -62,9 +67,12 @@ export function releaseDetails(input: {
 }) {
   if (!input.title.trim() || !input.artist || !input.date || !input.image || !input.alt.trim())
     throw new Error('Complete the title, artist, date and artwork.');
+  const catalogNumber = parseCatalogNumber(input.catalogNumber);
+  if (!catalogNumber) throw new Error(catalogNumberMessage);
   return {
     title: input.title.trim(),
     artist: input.artist,
+    catalog_number: catalogNumber,
     release_date: input.date,
     ...descriptionFields(input.summary),
     cover_image: { id: input.image },
@@ -79,6 +87,7 @@ export function setupCommand(input: {
   existing: EditorialRecord | null;
   title: string;
   artist: string;
+  catalogNumber: string;
   artistOrLabel: string;
   date: string;
   summary: Prose;
@@ -170,6 +179,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [artistName, setArtistName] = useState('');
+  const [catalogNumber, setCatalogNumber] = useState('');
   const [artistOrLabel, setArtistOrLabel] = useState('');
   const [date, setDate] = useState('');
   const [summary, setSummary] = useState<Prose>('');
@@ -206,7 +216,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       ready:
         mode === 'existing'
           ? !!existing
-          : !!title.trim() && !!proseText(summary).trim() && (kind !== 'release' || (!!artist && !!date)),
+          : !!title.trim() &&
+            !!proseText(summary).trim() &&
+            (kind !== 'release' || (!!artist && !!parseCatalogNumber(catalogNumber) && !!date)),
     },
     { label: 'Artwork', ready: mode === 'existing' || (!!image && !!alt.trim()) },
     {
@@ -220,6 +232,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       ? {
           title,
           artist,
+          // A half-typed number is not a draft value; drafts may omit it until it parses.
+          ...(parseCatalogNumber(catalogNumber) ? { catalog_number: catalogNumber } : {}),
           release_date: date,
           ...descriptionFields(summary),
           cover_image: image ? { id: image } : null,
@@ -386,6 +400,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 setKind(saved.collection === 'releases' ? 'release' : data.group === 'Clothes' ? 'merch' : 'distro');
                 setTitle(String(data.title ?? ''));
                 setArtist(String(data.artist ?? ''));
+                setCatalogNumber(String(data.catalog_number ?? ''));
                 setArtistOrLabel(String(data.artist_or_label ?? ''));
                 setDate(String(data.release_date ?? ''));
                 setSummary(
@@ -441,7 +456,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     if (busy || needsReview || completed || draftSaved) return;
     if (!pending && !draftPending && step < 2) {
       if (step === 0 && !setupReadiness.slice(0, 2).every((item) => item.ready)) {
-        setMessage('Complete the title, description, artist, date and artwork before continuing.');
+        setMessage('Complete the title, description, artist, catalog number, date and artwork before continuing.');
         return;
       }
       if (mode === 'new' && !(await autosave.flush())) return;
@@ -464,7 +479,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         }
         const command = draftPending ?? {
           slug: editorialSlug(title, crypto.randomUUID()),
-          data: { ...releaseDetails({ title, artist, date, summary, image, alt, format }), ...safetyData },
+          data: {
+            ...releaseDetails({ title, artist, catalogNumber, date, summary, image, alt, format }),
+            ...safetyData,
+          },
         };
         sessionStorage.setItem(draftKey, JSON.stringify(command));
         setDraftPending(command);
@@ -485,6 +503,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           existing: mode === 'existing' ? existing : (draftDocument.current?.item ?? null),
           title,
           artist,
+          catalogNumber,
           artistOrLabel,
           date,
           summary,
@@ -606,6 +625,26 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                       setArtistName(String(item.data.title));
                     }}
                   />
+                  <div className="grid gap-2">
+                    <label htmlFor="setup-catalog-number" className="flex items-center gap-2">
+                      <Hash className="size-4 text-muted-foreground" aria-hidden="true" />
+                      Catalog number
+                    </label>
+                    <Input
+                      id="setup-catalog-number"
+                      required
+                      placeholder="BBR#001"
+                      value={catalogNumber}
+                      aria-invalid={(!!catalogNumber && !parseCatalogNumber(catalogNumber)) || undefined}
+                      aria-describedby="setup-catalog-number-help"
+                      onChange={(event) => setCatalogNumber(catalogNumberInput(event.target.value))}
+                    />
+                    <p id="setup-catalog-number-help" className="text-sm text-muted-foreground">
+                      {catalogNumber && !parseCatalogNumber(catalogNumber)
+                        ? catalogNumberMessage
+                        : 'Each release has its own. The Store lists releases in this order.'}
+                    </p>
+                  </div>
                   <label className="grid gap-2">
                     <span className="flex items-center gap-2">
                       <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />

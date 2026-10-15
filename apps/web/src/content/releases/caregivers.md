@@ -1,4 +1,5 @@
 ---
+catalog_number: BBR#001
 title: Caregivers
 artist: chronoboros
 release_date: 2026-03-13
