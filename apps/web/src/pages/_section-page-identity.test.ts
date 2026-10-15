@@ -6,6 +6,7 @@ const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import
 const css = source('../styles/global.css');
 const internalPageHero = source('../components/InternalPageHero.astro');
 const servicesPage = source('./services/index.astro');
+const storeCollectionPage = source('../layouts/StoreCollectionPage.astro');
 
 function cssRule(selector: string) {
   const match = new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(css);
@@ -25,6 +26,14 @@ describe('section page identity', () => {
     expect(internalPageHero).toContain('const resolvedSectionLabel = resolveSupportingLabel(sectionLabel, title);');
     expect(internalPageHero).toContain('resolvedSectionLabel &&');
     expect(internalPageHero).toContain('{resolvedSectionLabel}');
+  });
+
+  it('gives every Store category one visually hidden H1, as on Releases', () => {
+    expect(storeCollectionPage.match(/<h1\b/g)).toHaveLength(1);
+    expect(storeCollectionPage).toContain('<h1 class="sr-only">{category.heading}</h1>');
+    expect(storeCollectionPage).not.toContain('InternalPageHero');
+    // The canonical metadata title is unchanged.
+    expect(storeCollectionPage).toContain('pageTitle={category.title}');
   });
 
   it('keeps Services on the shared title class', () => {

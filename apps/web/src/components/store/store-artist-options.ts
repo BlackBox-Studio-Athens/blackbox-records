@@ -64,7 +64,7 @@ export function filterStoreArtistOptions(fieldset: ParentNode, query: string) {
   if (noMatch) noMatch.hidden = !needle || shown > 0;
 }
 
-/** The phone Artists chip names how many artists are ticked and takes the selected edge while any are. */
+/** The desktop Artists chip names how many artists are ticked and takes the selected edge while any are. */
 export function setStoreArtistsTrigger(trigger: HTMLElement, count: number) {
   const label = trigger.querySelector<HTMLElement>('[data-store-artists-trigger-label]');
   if (label) label.textContent = count > 0 ? `Artists · ${count}` : 'Artists';
@@ -78,12 +78,14 @@ export function resetStoreArtistsTrigger(trigger: HTMLButtonElement) {
   setStoreArtistsTrigger(trigger, 0);
 }
 
-/** Returns the checklist to its server state: closed sheet, list in the pane, nothing ticked, no find query. */
+/** Returns the checklist to its server state: closed sheet, list in its menu, nothing ticked, no find query. */
 export function resetStoreArtistControls(host: ParentNode) {
+  const sheet = host.querySelector<HTMLElement>('[data-store-filter-sheet]');
+  if (sheet) {
+    sheet.removeAttribute('open');
+    returnStoreFilterParts(sheet.closest('.store-browse-layout') ?? host);
+  }
   const fieldset = host.querySelector<HTMLFieldSetElement>('[data-store-artist-fieldset]');
-  const sheet = host.querySelector<HTMLElement>('[data-store-artists-sheet]');
-  if (sheet) sheet.removeAttribute('open');
-  if (fieldset && sheet?.contains(fieldset)) sheet.before(fieldset);
   host.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((checkbox) => {
     checkbox.checked = false;
     checkbox.removeAttribute('checked');
@@ -97,4 +99,42 @@ export function resetStoreArtistControls(host: ParentNode) {
   fieldset.disabled = true;
   placeStoreArtistOptions(fieldset);
   filterStoreArtistOptions(fieldset, '');
+}
+
+const filterParts = ['formats', 'availability', 'view', 'artists'] as const;
+
+/**
+ * Lends the browse controls to the phone Filter sheet: each `[data-store-filter-part]` moves into its sheet section,
+ * and a section with nothing to show stays hidden (no Pre-orders yet, or a Grid without a bin).
+ */
+export function moveStoreFilterParts(root: ParentNode, sheet: ParentNode) {
+  for (const part of filterParts) {
+    const section = sheet.querySelector<HTMLElement>(`[data-store-filter-section="${part}"]`);
+    const node = root.querySelector<HTMLElement>(`[data-store-filter-part="${part}"]`);
+    if (!section) continue;
+    if (node) section.append(node);
+    const crate = node?.closest<HTMLElement>('.store-crate');
+    section.hidden = !node || node.hidden || (part === 'view' && (!crate || crate.dataset.storeCrateSwitch !== 'on'));
+  }
+}
+
+/** Returns every lent control to its toolbar or menu home; snapshots and teardown call it too. */
+export function returnStoreFilterParts(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-store-filter-section] > [data-store-filter-part]').forEach((node) => {
+    root.querySelector(`[data-store-filter-home="${node.dataset.storeFilterPart}"]`)?.append(node);
+  });
+}
+
+/** The phone Filter chip counts the choices already applied; the badge keeps its box while empty. */
+export function setStoreFilterTrigger(trigger: HTMLElement, count: number) {
+  const badge = trigger.querySelector<HTMLElement>('[data-store-filter-count]');
+  if (badge) badge.textContent = count > 0 ? String(count) : '';
+  trigger.toggleAttribute('data-store-filter-active', count > 0);
+}
+
+/** Server state: the chip opens the native Formats menu when the page has one, and is otherwise disabled. */
+export function resetStoreFilterTrigger(trigger: HTMLButtonElement) {
+  trigger.disabled = !trigger.hasAttribute('popovertarget');
+  trigger.hidden = false;
+  setStoreFilterTrigger(trigger, 0);
 }

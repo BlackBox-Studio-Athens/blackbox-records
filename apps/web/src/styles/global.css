@@ -87,6 +87,12 @@ body.is-shell-scroll-locked {
   --color-control-edge-quiet: var(--control-edge-quiet);
   --color-control-edge-hover: var(--control-edge-hover);
   --color-control-muted-pressed: var(--control-muted-pressed);
+  /* Accent roles as short utility names (border-violet-700), shorter than arbitrary values in shipped islands. */
+  --color-violet-300: var(--violet-300);
+  --color-violet-500: var(--violet-500);
+  --color-violet-700: var(--violet-700);
+  --color-violet-surface: var(--violet-surface);
+  --color-slate-500: var(--slate-500);
 }
 
 :root {
@@ -348,6 +354,97 @@ body {
 }
 
 @layer components {
+  /* The public button family's shared rules (components/ui/button.tsx): square, Bebas caps nudged 1px down, one 2px ink
+     focus ring, 45% disabled, and on coarse pointers an invisible halo inside the 1px border. Variant and caller
+     utilities override these. */
+  .site-button {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid;
+    border-radius: 0;
+    padding-top: 1px;
+    font-family: var(--font-display-ui);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    outline: none;
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .site-button:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+
+  .site-button:is(:disabled, [aria-disabled='true']) {
+    pointer-events: none;
+    opacity: 0.45;
+  }
+
+  .site-button:disabled {
+    cursor: not-allowed;
+  }
+
+  .site-button[aria-busy='true'] {
+    cursor: progress;
+  }
+
+  @media (pointer: coarse) {
+    .site-button::before {
+      position: absolute;
+      inset: -5px;
+      content: '';
+    }
+  }
+
+  /* Default icon size at zero specificity, so an icon's own size-* class still wins. No class-substring selector here:
+     it would make every class change on <html> (Lenis rewrites them on scroll) restyle the page. */
+  .site-button svg {
+    flex-shrink: 0;
+    pointer-events: none;
+  }
+
+  :where(.site-button) svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Ghost: a hairline underline grows from the centre on hover. */
+  .site-button--ghost::after {
+    position: absolute;
+    inset-inline: 0.375rem;
+    bottom: 0.625rem;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) {
+    .site-button--ghost:hover::after {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-button,
+    .site-button--ghost::after {
+      transition: none;
+    }
+  }
+
   .accessibility-skip-to-content-link {
     @apply sr-only;
   }
@@ -4201,62 +4298,20 @@ body.is-app-shell-overlay-open {
   --page-max-width: 90rem;
 }
 
-.store-collection-page #store-page-top > section {
-  padding-block: 1.25rem 1rem;
-}
-
-.store-collection-page .internal-page-hero__title {
-  margin-top: 0.5rem;
-}
-
+/* One compact line above the grid; narrow or enlarged text wraps it naturally. */
 .store-purchase-note {
-  padding-block: 0.75rem;
+  padding-block: 0.5rem;
   color: var(--muted-foreground);
   font-size: 0.8125rem;
 }
 
+/* No side pane: the toolbar row and the grid share the whole frame (store-mobile-first-browse). */
 .store-browse-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
   padding-block: 0.5rem 3rem;
 }
 
-.store-browse-pane,
 .store-browse-results {
   min-width: 0;
-}
-
-.store-browse-content {
-  display: grid;
-  padding-block: 0.75rem;
-}
-
-.store-browse-top {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  text-decoration: underline;
-}
-
-/* Below the sticky desktop pane the Top link points at the visible page top and the artist host is empty,
-   so neither takes room above the first card row. The host stays rendered: it holds the Artists sheet. */
-@media (max-width: 63.99rem) {
-  .store-purchase-note {
-    padding-block: 0.5rem;
-  }
-
-  .store-browse-layout {
-    gap: 0.75rem;
-  }
-
-  .store-browse-content {
-    padding-block: 0;
-  }
-
-  .store-browse-top {
-    display: none;
-  }
 }
 
 .store-artists legend,
@@ -4415,14 +4470,15 @@ body.is-app-shell-overlay-open {
   outline-offset: 2px;
 }
 
-.store-artists-trigger[data-store-artists-active] {
-  border-color: var(--foreground);
-  background: var(--control-face-selected);
+.store-artists-trigger[data-store-artists-active],
+.store-filter-trigger[data-store-filter-active] {
+  border-color: var(--violet-500);
+  background: var(--violet-surface);
   color: var(--foreground);
 }
 
-/* Phones: the Artists chip opens this modal bottom sheet, which borrows the pane's checklist while open. */
-.store-artists-sheet {
+/* Phones: Filter opens this modal bottom sheet, which borrows the toolbar's browse controls while open. */
+.store-filter-sheet {
   inset: auto 0 0;
   width: 100%;
   max-width: none;
@@ -4436,16 +4492,16 @@ body.is-app-shell-overlay-open {
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
 }
 
-.store-artists-sheet[open] {
+.store-filter-sheet[open] {
   display: flex;
   flex-direction: column;
 }
 
-.store-artists-sheet::backdrop {
+.store-filter-sheet::backdrop {
   background: rgba(0, 0, 0, 0.62);
 }
 
-.store-artists-sheet__head {
+.store-filter-sheet__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4453,16 +4509,16 @@ body.is-app-shell-overlay-open {
   padding: 0.5rem 0.5rem 0.25rem var(--page-gutter);
 }
 
-.store-artists-sheet__head h2 {
+.store-filter-sheet__head h2 {
   font-size: 1rem;
   font-weight: 600;
 }
 
-.store-artists-sheet__head h2:focus {
+.store-filter-sheet__head h2:focus {
   outline: none;
 }
 
-.store-artists-sheet__body {
+.store-filter-sheet__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -4470,11 +4526,21 @@ body.is-app-shell-overlay-open {
   padding-inline: var(--page-gutter);
 }
 
-.store-artists-sheet .store-artists {
-  display: block;
+.store-filter-sheet__section {
+  padding-block: 0.75rem;
 }
 
-.store-artists-sheet legend {
+.store-filter-sheet__section h3 {
+  margin-bottom: 0.625rem;
+  color: var(--violet-500);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* Inside the sheet each section's own heading names the borrowed control. */
+.store-filter-sheet :is(.store-format-links h2, .store-artists legend) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -4483,29 +4549,90 @@ body.is-app-shell-overlay-open {
   white-space: nowrap;
 }
 
-.store-artists-sheet .store-artists > p:first-of-type {
+.store-filter-sheet .store-artists > p:first-of-type {
   margin-top: 0;
 }
 
-.store-artists-sheet .store-artists-list {
+.store-filter-sheet .store-artists-list {
   max-height: none;
   overflow: visible;
   padding-inline: 0;
 }
 
-.store-artists-sheet .store-artists label {
+.store-filter-sheet .store-artists label {
   min-height: 3rem;
   border-bottom: 1px solid var(--control-edge-quiet);
   font-size: 0.9375rem;
 }
 
-.store-artists-sheet__foot {
+.store-filter-sheet__foot {
   border-top: 1px solid var(--border);
   padding: 0.75rem var(--page-gutter) max(1.25rem, env(safe-area-inset-bottom));
 }
 
-.store-artists-sheet__show {
+.store-filter-sheet__show {
   width: 100%;
+}
+
+/* Desktop Formats and Artists menus: native popovers under their toolbar chips. Without anchor positioning they open
+   centred; on phones (no JavaScript) the Formats menu opens as a bottom panel. */
+.store-browse-menu {
+  width: min(22rem, calc(100vw - 2 * var(--page-gutter)));
+  max-height: min(32rem, calc(100dvh - var(--header-height) - 2rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--control-edge);
+  background: var(--card);
+  padding: 0.25rem 1rem 0.75rem;
+  color: var(--foreground);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
+}
+
+.store-browse-menu .store-format-links {
+  border-top: 0;
+}
+
+.store-browse-menu .store-artists legend {
+  padding-block: 0.75rem 0;
+}
+
+@supports (position-anchor: --a) {
+  [data-store-formats-trigger] {
+    anchor-name: --store-formats-trigger;
+  }
+
+  [data-store-artists-trigger] {
+    anchor-name: --store-artists-trigger;
+  }
+
+  @media (min-width: 64rem) {
+    #store-formats-menu {
+      position-anchor: --store-formats-trigger;
+    }
+
+    #store-artists-menu {
+      position-anchor: --store-artists-trigger;
+    }
+
+    .store-browse-menu {
+      inset: auto;
+      top: calc(anchor(bottom) + 0.25rem);
+      left: anchor(left);
+      margin: 0;
+      position-try-fallbacks: flip-inline;
+    }
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .store-browse-menu {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-width: 1px 0 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
 .store-format-links a {
@@ -4523,46 +4650,63 @@ body.is-app-shell-overlay-open {
   color: var(--foreground);
 }
 
+/* One 44px toolbar row: Search and Filter on phones; Search, Formats, Artists, Pre-orders, Grid/Crate and the count on
+   desktop. Every control keeps its server box, so enhancement moves nothing. */
 .store-search-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-.store-search-toolbar > div {
-  flex: 1 1 16rem;
+.store-search-field {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
-/* Phones: search on its own row, then Artists, Pre-orders and Clear filters on one row from 375px, then the count. */
-@media (max-width: 63.99rem) {
-  .store-search-toolbar {
-    column-gap: 0.375rem;
-  }
+/* Homes hold the Pre-orders chip and the view switch in the row; the Filter sheet borrows them on phones. */
+.store-filter-home {
+  display: contents;
+}
 
-  .store-search-toolbar > div {
-    flex-basis: 100%;
+.store-filter-trigger {
+  color: var(--foreground);
+}
+
+.store-filter-trigger__count {
+  min-width: 1ch;
+  color: var(--violet-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.store-menu-trigger svg,
+.store-filter-trigger svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Grid and Crate exist only inside a collection with a bin (the Crate root); elsewhere there is nothing to switch. */
+.store-crate-view-switch {
+  display: none;
+}
+
+.store-crate .store-crate-view-switch {
+  display: inline-flex;
+}
+
+@media (max-width: 63.99rem) {
+  .store-search-toolbar :is(.store-menu-trigger, .store-filter-home) {
+    display: none;
   }
 
   .store-search-toolbar p.store-result-count {
     order: 1;
-    width: auto;
-    flex: 1 0 100%;
-  }
-
-  .store-search-toolbar .store-artists-trigger,
-  .store-search-toolbar .store-preorder-filter {
-    gap: 0.375rem;
-    padding-inline: 0.625rem;
-  }
-
-  .store-search-toolbar .store-artists-trigger svg {
-    width: 0.875rem;
-    height: 0.875rem;
+    flex: 1 1 auto;
   }
 
   .store-search-toolbar .store-clear-filters {
+    order: 2;
     gap: 0.25rem;
     padding-inline: 0.25rem;
     font-size: 0.9375rem;
@@ -4574,17 +4718,25 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* Desktop: the row stays under the header while the Grid scrolls, so Crate opens on the cards in view. */
+@media (min-width: 64rem) {
+  .store-filter-trigger {
+    display: none;
+  }
+
+  .store-search-toolbar {
+    position: sticky;
+    top: var(--header-height);
+    z-index: 20;
+    padding-block: 0.5rem;
+    background: var(--background);
+  }
+}
+
 .store-result-count {
   font-size: 0.875rem;
   color: var(--muted-foreground);
   scroll-margin-top: 0.5rem;
-}
-
-.store-category-description {
-  max-width: 70ch;
-  margin-bottom: 0.75rem;
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
 }
 
 .store-empty-results {
@@ -4614,29 +4766,69 @@ body.is-app-shell-overlay-open {
   flex: 1;
   flex-direction: column;
   gap: 0.25rem;
-  min-height: 15rem;
-  padding: 0.75rem;
+  padding: 0.625rem;
   overflow-wrap: anywhere;
 }
 
-.store-collection-page .store-item-card__listen + .store-item-card__content {
-  min-height: 11.75rem;
+/* Listen sits on the artwork's bottom-left corner: this layer covers the square frame, and only the button takes
+   pointer input, so the card link still answers everywhere else. Icon-only 44x44 on phones, labelled 112x44 from 40rem. */
+.store-collection-page .store-item-card__surface {
+  position: relative;
 }
 
 .store-collection-page .store-item-card__listen {
-  position: relative;
-  min-height: 3.25rem;
-  padding: 0.5rem 0.75rem 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0.5rem;
+  pointer-events: none;
 }
 
 .store-collection-page .store-item-card__listen .music-listen-trigger {
   position: relative;
   z-index: 3;
-  width: 7rem;
-  min-width: 7rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
   height: 2.75rem;
-  padding: 0 0.5rem;
-  gap: 0.375rem;
+  padding: 0;
+  pointer-events: auto;
+}
+
+@media (max-width: 39.99rem) {
+  .store-collection-page .store-item-card__listen [data-music-listen-label] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 40rem) {
+  .store-collection-page .store-item-card__content {
+    padding: 0.75rem;
+  }
+
+  .store-collection-page .store-item-card__listen .music-listen-trigger {
+    width: 7rem;
+    min-width: 7rem;
+    padding: 0 0.5rem;
+    gap: 0.375rem;
+  }
+}
+
+/* In the Crate the sleeve is the artwork, so the item in hand's own card lists Listen in flow above its identity. */
+.store-crate [data-store-crate-hand] .store-item-card__listen {
+  position: static;
+  width: auto;
+  aspect-ratio: auto;
+  padding: 0.75rem 0.75rem 0;
 }
 
 /* The title reads as the card's link (Buy and Listen are separate actions): faint underline at rest, full when the
@@ -4682,23 +4874,34 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* Identity after the artwork: plain ink format line, Veneer title, then the artist credit in ink with a muted by. */
 .store-item-card__artist {
   font-family: var(--font-sans);
-  font-weight: 400;
+  font-weight: 500;
   color: var(--muted-foreground);
-  font-size: 0.875rem;
-  line-height: 1.4;
+  font-size: 1rem;
+  line-height: 1.3;
 }
 
 .store-item-card__artist-name {
   font-family: inherit;
   font-weight: inherit;
+  color: var(--foreground);
 }
 
 .store-item-card__option {
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 0.8125rem;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 64rem) {
+  .store-item-card__artist {
+    font-size: 1.0625rem;
+  }
 }
 
 /* The row reserves Buy's 44px (plus its top padding), so cards keep their height when listing prices arrive. */
@@ -4707,12 +4910,29 @@ body.is-app-shell-overlay-open {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.375rem 0.75rem;
+  gap: 0.375rem 0.5rem;
   min-height: 3.25rem;
   margin-top: auto;
   padding-top: 0.5rem;
-  font-size: 0.9375rem;
+  font-size: 1.25rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* One filled action beside the price; on two-up phones it hugs its label instead of the 112px minimum. */
+.store-item-card__buy {
+  min-width: 0;
+  padding-inline: 0.625rem;
+}
+
+@media (min-width: 64rem) {
+  .store-item-card__price {
+    font-size: 1.5rem;
+  }
+
+  .store-item-card__buy {
+    min-width: 7rem;
+    padding-inline: 1rem;
+  }
 }
 
 .store-collection-page .store-item-card__availability {
@@ -6528,39 +6748,21 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* No side pane: four columns from 64rem and five from 80rem (259.2px at 1440), with 20px gaps. */
 @media (min-width: 64rem) {
-  .store-browse-layout {
-    grid-template-columns: 13rem minmax(0, 1fr);
-    gap: 1.5rem;
-  }
-
-  .store-browse-pane {
-    position: sticky;
-    top: calc(var(--header-height) + 1rem);
-    align-self: start;
-    /* A pane taller than the viewport keeps its end reachable without scrolling the results to their end. */
-    max-height: calc(100dvh - var(--header-height) - 2rem);
-    overflow-y: auto;
-    /* Overlay scrollbars (Firefox on Windows 11) reserve no gutter and would cover the format counts. */
-    padding-inline-end: 0.75rem;
-  }
-
-  .store-artists-trigger {
-    display: none;
-  }
-
   .store-artists-list {
     max-height: min(22rem, 45vh);
   }
 
   .store-collection-page :is(.store-catalog-chunks, .distro-group-grid) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.25rem;
   }
 }
 
 @media (min-width: 80rem) {
   .store-collection-page :is(.store-catalog-chunks, .distro-group-grid) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -6709,7 +6911,7 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Keep the familiar Distro format ledger within the compact Browse pane. */
+/* The familiar Distro format ledger, in the desktop Formats menu. */
 .store-format-links {
   border-top: 1px solid var(--border);
 }
@@ -6738,25 +6940,13 @@ body.is-app-shell-overlay-open {
   }
 }
 
-.store-browse-pane > .store-format-links {
-  margin-block: 0.75rem;
-}
-
-/* Below the desktop pane, formats are wrapping chips and Artist is a native select. */
+/* Phones: the Filter sheet (or the no-JavaScript Formats panel) shows formats as wrapping chips. */
 @media (max-width: 63.99rem) {
-  .store-artists {
-    display: none;
-  }
-
   .store-format-links {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     border-top: 0;
-  }
-
-  .store-browse-pane > .store-format-links {
-    margin-bottom: 0;
   }
 
   .store-format-links h2 {
@@ -6798,8 +6988,8 @@ body.is-app-shell-overlay-open {
   }
 
   .store-format-links a[aria-current='true'] {
-    border-color: var(--foreground);
-    background: var(--control-face-selected);
+    border-color: var(--violet-500);
+    background: var(--violet-surface);
     color: var(--foreground);
     text-decoration: none;
   }

@@ -52,15 +52,22 @@ test('Back preserves the scrolled release listing through nested details and For
   expect(await sentinelIntact(page)).toBe(true);
 });
 
-test('Back closes Crate, Forward restores it and Grid consumes its entry', async ({ page }) => {
+test('Back closes Crate, Forward restores it and Grid consumes its entry', async ({ page, isMobile }) => {
+  // On phones Grid and Crate sit in the Filter sheet, which closes and consumes its own entry before the choice applies.
+  const view = async (name: RegExp | string) => {
+    if (isMobile) await page.locator('[data-store-filter-trigger]').click();
+    await page.getByRole('button', { name, exact: typeof name === 'string' }).click();
+    if (isMobile) await expect(page.locator('#store-filter-sheet')).toBeHidden();
+  };
   await page.goto('releases/');
   await waitForShell(page);
   await page.locator('header [data-nav-link="/store/"]').evaluate((element: HTMLElement) => element.click());
   await expect(page).toHaveURL(/\/store\/$/);
   const crate = page.locator('.store-crate');
   await expect(crate).toHaveAttribute('data-store-crate-ready', '');
+  await expect(page.locator('[data-store-search-toolbar]')).toHaveAttribute('data-store-search-ready', '');
   const offset = await page.evaluate(() => window.scrollY);
-  await page.getByRole('button', { name: /^Crate/ }).click();
+  await view(/^Crate/);
   await expect(crate).toHaveAttribute('data-store-crate', 'open');
   await page.goBack();
   await expect(page).toHaveURL(/\/store\/$/);
@@ -68,36 +75,41 @@ test('Back closes Crate, Forward restores it and Grid consumes its entry', async
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
   await page.goForward();
   await expect(crate).toHaveAttribute('data-store-crate', 'open');
-  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  await view('Grid');
   await expect(crate).toHaveAttribute('data-store-crate', 'grid');
   await page.goBack();
   await expect(page).toHaveURL(/\/releases\/$/);
 });
 
-test('Back closes phone Artists and every dismissal consumes its entry', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'Native Artists sheet is offered on phones.');
+test('Back closes the phone Filter sheet and every dismissal consumes its entry', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The Filter sheet is offered on phones.');
   await page.goto('releases/');
   await waitForShell(page);
   await page.locator('header [data-nav-link="/store/"]').evaluate((element: HTMLElement) => element.click());
   await expect(page).toHaveURL(/\/store\/$/);
-  const trigger = page.locator('[data-store-artists-trigger]');
-  const sheet = page.locator('#store-artists-sheet');
-  await expect(trigger).toBeEnabled();
+  const trigger = page.locator('[data-store-filter-trigger]');
+  const sheet = page.locator('#store-filter-sheet');
+  await expect(page.locator('[data-store-search-toolbar]')).toHaveAttribute('data-store-search-ready', '');
   await trigger.click();
   await expect(sheet).toBeVisible();
+  // The sheet borrows the format links and artists, and returns them on close.
+  await expect(sheet.getByRole('navigation', { name: 'Browse Distro formats' })).toBeVisible();
+  await expect(sheet.getByRole('group', { name: 'Artists' })).toBeVisible();
   const offset = await page.evaluate(() => window.scrollY);
   await page.goBack();
   await expect(sheet).toBeHidden();
   await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.locator('#store-artists-menu [data-store-artist-fieldset]')).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
   await page.goForward();
   await expect(sheet).toBeVisible();
   for (const dismissal of ['done', 'close', 'escape', 'backdrop']) {
-    if (dismissal === 'done') await sheet.locator('[data-store-artists-sheet-done]').click();
+    if (dismissal === 'done') await sheet.locator('[data-store-filter-sheet-done]').click();
     else if (dismissal === 'close') await sheet.getByRole('button', { name: 'Close', exact: true }).click();
     else if (dismissal === 'escape') await page.keyboard.press('Escape');
     else await page.mouse.click(1, 1);
     await expect(sheet).toBeHidden();
+    await expect(trigger).toBeFocused();
     await page.goBack();
     await expect(page).toHaveURL(/\/releases\/$/);
     if (dismissal !== 'backdrop') {
@@ -108,6 +120,37 @@ test('Back closes phone Artists and every dismissal consumes its entry', async (
       await expect(sheet).toBeVisible();
     }
   }
+});
+
+test('@phone Back closes the Filter sheet while the player is minimized and the player survives', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'The Filter sheet is offered on phones.');
+  await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  await page.goto('store/');
+  await waitForShell(page);
+  await expect(page.locator('[data-store-search-toolbar]')).toHaveAttribute('data-store-search-ready', '');
+  await page.locator('.store-item-card__listen .music-listen-trigger').first().tap();
+  const modal = page.getByRole('dialog', { name: 'Music player' });
+  await expect(modal).toBeVisible();
+  const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
+  await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+  await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).tap();
+  await page.getByRole('button', { name: 'Minimize player' }).tap();
+  await expect(modal).toBeHidden();
+  const original = await iframe.elementHandle();
+
+  const sheet = page.locator('#store-filter-sheet');
+  await page.locator('[data-store-filter-trigger]').tap();
+  await expect(sheet).toBeVisible();
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.getByRole('button', { name: 'Open player' })).toBeVisible();
+  expect(await original!.evaluate((frame) => frame.isConnected)).toBe(true);
 });
 
 test('Back closes full video, Forward restores it and Close consumes its entry', async ({ page }) => {

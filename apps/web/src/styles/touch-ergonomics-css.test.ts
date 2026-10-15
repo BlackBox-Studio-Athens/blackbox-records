@@ -85,11 +85,12 @@ describe('touch ergonomics', () => {
 describe('Store layout on phones', () => {
   const phone = '@media (max-width: 63.99rem)';
 
-  it('drops the empty browse pane space above the first Store card row', () => {
-    expect(ruleBody('.store-browse-top', phone)).toMatch(/display:\s*none/);
-    expect(ruleBody('.store-browse-content', phone)).toMatch(/padding-block:\s*0/);
-    expect(ruleBody('.store-browse-layout', phone)).toMatch(/gap:\s*0\.75rem/);
-    expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
+  it('keeps only Search and Filter in the row above the first Store card row', () => {
+    expect(ruleBody('.store-search-toolbar :is(.store-menu-trigger, .store-filter-home)', phone)).toMatch(
+      /display:\s*none/,
+    );
+    // Listen sits on the artwork corner, so no Listen row pushes the identity down.
+    expect(ruleBody('.store-collection-page .store-item-card__listen', null)).toMatch(/position:\s*absolute/);
   });
 
   it('lets the item in hand in the Crate paint its price and Buy row at every width', () => {

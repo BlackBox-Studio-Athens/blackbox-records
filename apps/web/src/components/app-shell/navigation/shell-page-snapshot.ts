@@ -135,11 +135,16 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
     }
     const summary = toolbar.querySelector<HTMLElement>('[data-store-search-summary]');
     if (summary) summary.textContent = '';
-    toolbar.querySelectorAll<HTMLButtonElement>('button:not([data-store-artists-trigger])').forEach((button) => {
+  });
+  // These start disabled and hidden on the server; the Pre-orders chip may be lent to the Filter sheet.
+  root
+    .querySelectorAll<HTMLButtonElement>(
+      '[data-store-clear-search], [data-store-preorder-filter], [data-store-clear-filters]',
+    )
+    .forEach((button) => {
       button.disabled = true;
       button.hidden = true;
     });
-  });
   root.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
     element.removeAttribute('data-store-search-active');
   });

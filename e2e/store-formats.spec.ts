@@ -35,7 +35,7 @@ test('Store card Buy and Releases Buy vinyl fill Violet with restrained, station
   await waitForShell(page);
   const card = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
   const buy = card.locator('[data-store-card-buy]');
-  const listen = card.getByRole('button', { name: 'Listen', exact: true });
+  const listen = card.locator('.store-item-card__listen .music-listen-trigger');
   await expect(buy).toHaveClass(/purchase-action/);
   await expect(buy).toHaveAccessibleName('Buy');
   await buy.scrollIntoViewIfNeeded();
@@ -250,7 +250,7 @@ test('Store categories retain current state, keyboard focus and shell navigation
   await expect(all).toHaveCSS('transition-duration', '0s');
 });
 
-test('Store listing cards use Veneer titles and quiet credits with unchanged sizes', async ({ page }) => {
+test('Store listing cards lead with format, a Veneer title and a promoted artist credit', async ({ page }) => {
   await page.goto('store/');
   await waitForShell(page);
   await page.evaluate(() => document.fonts.ready);
@@ -288,11 +288,27 @@ test('Store listing cards use Veneer titles and quiet credits with unchanged siz
       await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
       await expect(credit).toHaveText(`by ${artist}`);
       await expect(credit).toHaveCSS('font-family', /Inter/);
-      await expect(credit).toHaveCSS('font-weight', '400');
+      // The artist credit is promoted: Inter medium in ink, 16px on phones and 17px on desktop, with a muted by.
+      await expect(credit).toHaveCSS('font-weight', '500');
+      await expect(credit).toHaveCSS('color', 'rgb(179, 179, 179)');
       await expect(name).toHaveCSS('font-family', /Inter/);
-      await expect(name).toHaveCSS('font-weight', '400');
-      await expect(name).toHaveCSS('font-size', '14px');
-      await expect(name).toHaveCSS('line-height', '19.6px');
+      await expect(name).toHaveCSS('font-weight', '500');
+      await expect(name).toHaveCSS('color', 'rgb(245, 245, 245)');
+      await expect(name).toHaveCSS('font-size', width >= 1024 ? '17px' : '16px');
+      // The format precedes the title as a plain ink Inter 13px semibold capitals line, without a mark.
+      const format = card.locator('.store-item-card__option');
+      await expect(format).toHaveCSS('font-size', '13px');
+      await expect(format).toHaveCSS('font-weight', '600');
+      await expect(format).toHaveCSS('text-transform', 'uppercase');
+      await expect(format).toHaveCSS('color', 'rgb(245, 245, 245)');
+      expect(
+        await card.evaluate((element) => {
+          const format = element.querySelector('.store-item-card__option')!;
+          return Boolean(
+            format.compareDocumentPosition(element.querySelector('h2')!) & Node.DOCUMENT_POSITION_FOLLOWING,
+          );
+        }),
+      ).toBe(true);
       await expect(card).toHaveAttribute('data-store-artist', artist);
       await expect(card.locator('.prose-card-link')).toHaveAccessibleName(`${await title.textContent()} by ${artist}`);
     }
@@ -348,14 +364,26 @@ test('Store listing cards use Veneer titles and quiet credits with unchanged siz
   await expect(page.locator('h1.brand-display-title')).toHaveCSS('font-family', /Veneer/);
 });
 
-test('phone Store shows Distro formats without opening a disclosure and selects one @phone', async ({ page }) => {
+test('phone Store keeps Distro formats in the one Filter sheet and selects one @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/distro/');
   await waitForShell(page);
   // The search control renders once the Distro enhancement is connected.
   await expect(page.locator('[data-distro-search] input')).toBeVisible();
+  await expect(page.locator('[data-store-search-toolbar]')).toHaveAttribute('data-store-search-ready', '');
+  // Search and Filter share the phone row; the desktop menus stay out of it.
+  const filter = page.getByRole('button', { name: /^Filter/ });
+  const search = page.getByRole('searchbox', { name: 'Search Store' });
+  const [filterBox, searchBox] = await Promise.all([filter.boundingBox(), search.boundingBox()]);
+  expect(Math.round(filterBox!.y)).toBe(Math.round(searchBox!.y));
+  expect(filterBox!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.locator('[data-store-formats-trigger]')).toBeHidden();
+  await expect(page.locator('[data-store-artists-trigger]')).toBeHidden();
 
-  const formats = page.getByRole('navigation', { name: 'Browse Distro formats' });
+  await filter.click();
+  const sheet = page.getByRole('dialog', { name: 'Filter' });
+  await expect(sheet).toBeVisible();
+  const formats = sheet.getByRole('navigation', { name: 'Browse Distro formats' });
   const cds = formats.getByRole('link', { name: /^CDs/ });
   await expect(cds).toBeVisible();
   await expect(formats.getByRole('link', { name: /^All formats/ })).toHaveAttribute('aria-current', 'true');
@@ -363,15 +391,12 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   await cds.click();
   await expect(cds).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('[data-distro-search-group]')).toHaveCount(0);
-  const cards = page.locator('[data-distro-search-item]:visible');
+  const cards = page.locator('[data-distro-search-item]:not([data-distro-search-hidden])');
   const key = (await cds.getAttribute('href'))!.slice(1);
   expect(await cards.count()).toBeGreaterThan(0);
   expect(await cards.count()).toBe(Number(await cds.locator('span').last().innerText()));
   for (const card of await cards.all()) await expect(card).toHaveAttribute('data-distro-format-key', key);
   const artist = await cards.first().getAttribute('data-store-artist');
-  const artistsChip = page.getByRole('button', { name: /^Artists/ });
-  await artistsChip.click();
-  const sheet = page.getByRole('dialog', { name: 'Artists' });
   await sheet
     .locator('[data-store-artist-option]')
     .filter({ hasText: `${artist} (` })
@@ -381,16 +406,18 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   await expect(sheet.locator('[data-store-artist-selected-label]')).toHaveText('Selected · 1');
   await sheet.getByRole('button', { name: /^Show \d+ items?$/ }).click();
   await expect(sheet).toBeHidden();
-  await expect(artistsChip).toBeFocused();
-  await expect(artistsChip).toHaveText('Artists · 1');
-  const filterRow = await page
-    .locator('[data-store-artists-trigger], [data-store-clear-filters]')
-    .evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
-  expect(new Set(filterRow).size).toBe(1);
-  await page.getByRole('searchbox', { name: 'Search Store' }).fill(await cards.first().locator('h2').innerText());
+  await expect(filter).toBeFocused();
+  // Two applied choices: one format and one artist.
+  await expect(filter).toHaveText('Filter2');
+  await expect(page.locator('#store-formats-menu [data-distro-format-navigation]')).toHaveCount(1);
+  await search.fill(await cards.first().locator('h2').innerText());
   await expect(cards.first()).toHaveAttribute('data-store-artist', artist!);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-  await expect(formats.getByRole('link', { name: /^All formats/ })).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('[data-distro-format-link][data-distro-format-key="all"]')).toHaveAttribute(
+    'aria-current',
+    'true',
+  );
+  await expect(filter).toHaveText('Filter');
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile.png' });
   await cards.first().scrollIntoViewIfNeeded();
@@ -401,10 +428,13 @@ test('desktop Store artist filter combines several ticked artists with find and 
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('store/distro/');
   await waitForShell(page);
+  // Desktop keeps the checklist in the toolbar's Artists menu; the phone Filter chip is hidden.
+  await expect(page.locator('[data-store-search-toolbar]')).toHaveAttribute('data-store-search-ready', '');
+  await expect(page.locator('[data-store-filter-trigger]')).toBeHidden();
+  await page.locator('[data-store-artists-trigger]').click();
   const pane = page.getByRole('group', { name: 'Artists' });
   await expect(pane.getByRole('checkbox').first()).toBeEnabled();
   await expect(pane.getByText('All artists')).toHaveCount(0);
-  await expect(page.locator('[data-store-artists-trigger]')).toBeHidden();
   const options = pane.locator('[data-store-artist-options] input');
   const [first, second] = await options.evaluateAll((nodes) =>
     nodes.slice(2, 4).map((node) => node.getAttribute('value')!),
@@ -501,7 +531,10 @@ test('Distro catalog keeps its alphabetical order through format, search and Cra
   const firstCard = cards.locator('visible=true').first();
   const formatKey = await firstCard.getAttribute('data-distro-format-key');
   const firstTitle = await firstCard.locator('h2').innerText();
+  // The format links sit in the toolbar's Formats menu, which closes once a format is chosen.
+  await page.locator('[data-store-formats-trigger]').click();
   await page.locator(`[data-distro-format-link][data-distro-format-key="${formatKey}"]`).click();
+  await expect(page.locator('#store-formats-menu')).toBeHidden();
   await search.fill(firstTitle);
   await expect(firstCard).toBeVisible();
   expect(await cards.locator('visible=true').count()).toBeGreaterThan(0);
@@ -584,6 +617,28 @@ test.describe('Native Store navigation', () => {
       await expect(releaseCard).toHaveCount(label === 'Distro' ? 0 : 1);
     }
   });
+
+  test('format links stay reachable through the native Formats menu without JavaScript @phone', async ({
+    page,
+    isMobile,
+  }) => {
+    test.setTimeout(180_000);
+    await page.route('**/*', (route) =>
+      route.request().resourceType() === 'image'
+        ? route.fulfill({
+            contentType: 'image/svg+xml',
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+          })
+        : route.fallback(),
+    );
+    await page.goto('store/');
+    // Phones open the same native menu from Filter until the Filter sheet is available.
+    await page.locator(isMobile ? '[data-store-filter-trigger]' : '[data-store-formats-trigger]').click();
+    const formats = page.getByRole('navigation', { name: 'Browse Distro formats' });
+    await expect(formats).toBeVisible();
+    await formats.getByRole('link', { name: /^CDs/ }).click();
+    await expect(page).toHaveURL(/\/store\/distro\/#distro-group-cds$/);
+  });
 });
 
 test('Distro shell navigation and filters preserve the playing iframe', async ({ page }) => {
@@ -638,16 +693,16 @@ test('a first typo query waits for the lazy fuzzy matcher', async ({ page }) => 
   await expect(page.locator('.store-empty-results')).toBeHidden();
 });
 
-test('phone Store shows the first card artwork in the first viewport @phone', async ({ page }) => {
+test('phone Store shows the whole first card row in the first viewport @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/');
   await waitForShell(page);
-  await expect(page.getByRole('navigation', { name: 'Browse Distro formats' })).toBeVisible();
-  await expect(page.locator('.store-browse-top')).toBeHidden();
-  const top = await page
-    .locator('.store-item-card--listing')
-    .first()
-    .evaluate((card) => card.getBoundingClientRect().top);
-  // Measured 665 (was 761): the first row's artwork fits above the fold.
-  expect(top).toBeLessThan(844 - 150);
+  // Hidden H1, category links, the compact purchase note, then Search and Filter: no visible header or side pane.
+  await expect(page.getByRole('heading', { level: 1, name: 'All', exact: true })).toHaveClass(/sr-only/);
+  await expect(page.getByText(/^Shipping calculated in your cart/)).toBeVisible();
+  const first = page.locator('.store-item-card--listing').first();
+  const box = (await first.boundingBox())!;
+  // Measured 298 with the purchase note above the grid (was 674): artwork and identity of the first row fit.
+  expect(box.y).toBeLessThan(320);
+  expect((await first.locator('h2').boundingBox())!.y).toBeLessThan(844);
 });

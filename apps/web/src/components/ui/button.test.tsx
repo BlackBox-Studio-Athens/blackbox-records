@@ -15,28 +15,26 @@ function classesOf(html: string) {
 }
 
 describe('Button', () => {
-  it('draws a square 44px Bebas control with a coarse-pointer halo by default', () => {
+  it('draws a 44px control whose shared family rules live in the site-button CSS', () => {
     const html = renderToStaticMarkup(<Button>Checkout</Button>);
     const classes = classesOf(html);
 
     expect(html).toContain('data-variant="default"');
     expect(html).toContain('data-size="default"');
     expect(classes).toEqual(
-      expect.arrayContaining([
-        'site-button',
-        'site-button--primary',
-        'rounded-none',
-        'font-display',
-        'uppercase',
-        'min-h-11',
-        'min-w-28',
-        'text-base',
-        'pointer-coarse:before:absolute',
-        'pointer-coarse:before:-inset-[5px]',
-        'focus-visible:outline-2',
-        'focus-visible:outline-solid',
-      ]),
+      expect.arrayContaining(['site-button', 'site-button--primary', 'min-h-11', 'min-w-28', 'text-base']),
     );
+    // The base rules ship once in CSS rather than in every island bundle.
+    expect(classes).not.toContain('rounded-none');
+    for (const rule of [
+      'border-radius: 0;',
+      'text-transform: uppercase;',
+      'outline: 2px solid var(--foreground);',
+      'inset: -5px;',
+      'opacity: 0.45;',
+    ]) {
+      expect(globalCss).toContain(rule);
+    }
   });
 
   it('has one 44px size plus the 52px hero exception', () => {
@@ -51,12 +49,10 @@ describe('Button', () => {
     const chip = buttonVariants({ variant: 'chip' }).split(' ');
     const inverse = buttonVariants({ variant: 'inverse' }).split(' ');
 
-    expect(chip).toEqual(
-      expect.arrayContaining(['site-button--chip', 'min-h-11', 'aria-pressed:border-[var(--violet-500)]']),
-    );
+    expect(chip).toEqual(expect.arrayContaining(['site-button--chip', 'min-h-11', 'aria-pressed:border-violet-500']));
     expect(chip).not.toContain('min-w-28');
     expect(inverse).toEqual(
-      expect.arrayContaining(['site-button--inverse', 'border-[var(--violet-700)]', 'text-foreground', 'min-w-28']),
+      expect.arrayContaining(['site-button--inverse', 'border-violet-700', 'text-foreground', 'min-w-28']),
     );
   });
 
@@ -71,14 +67,7 @@ describe('Button', () => {
   });
 
   it('sizes icons at zero specificity without matching on the class attribute', () => {
-    const base = buttonVariants().split(' ');
-    const icon = buttonVariants({ variant: 'outline', size: 'icon' }).split(' ');
-
-    expect(base).toContain('[:where(&)_svg]:size-[18px]');
-    expect(icon).toContain('[:where(&)_svg]:size-[18px]');
-    for (const classes of [base, icon]) {
-      expect(classes.join(' ')).not.toContain('[class');
-    }
+    expect(flatCss).toContain(':where(.site-button) svg { width: 18px; height: 18px; }');
   });
 
   it('draws icon controls at 44px on a quiet neutral edge', () => {

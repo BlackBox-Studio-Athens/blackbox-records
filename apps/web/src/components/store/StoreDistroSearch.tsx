@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,15 @@ import { acquireLenisModalLock, scrollElementWithLenis } from '@/platform/lib/le
 import { connectSurfaceHistory } from '@/platform/lib/surface-history';
 import {
   filterStoreArtistOptions,
+  moveStoreFilterParts,
   normalizeStoreArtist,
   placeStoreArtistOptions,
   resetStoreArtistControls,
   resetStoreArtistsTrigger,
+  resetStoreFilterTrigger,
+  returnStoreFilterParts,
   setStoreArtistsTrigger,
+  setStoreFilterTrigger,
 } from './store-artist-options';
 
 import { connectStoreCrate, type StoreCrateSwitch } from './crate/crate-switch';
@@ -186,79 +190,96 @@ type StoreArtistControlsProps = {
 
 export function StoreArtistControls({ choices, resultsId }: StoreArtistControlsProps) {
   return (
-    <>
-      {/* The desktop pane shows this list; on phones the island moves it into the sheet below while it is open. */}
-      <fieldset className="store-artists" disabled data-store-artist-fieldset>
-        <legend>Artists</legend>
-        <p id="store-artists-help">Tick one or more.</p>
-        <input
-          type="search"
-          className="store-artists-find"
-          placeholder="Find an artist"
-          enterKeyHint="search"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          aria-label="Find an artist"
-          aria-controls="store-artists-options"
-          data-store-artist-find
-        />
-        <div className="store-artists-selected" hidden data-store-artist-selected>
-          <div className="store-artists-selected__head">
-            <span data-store-artist-selected-label>Selected · 0</span>
-            <button type="button" className="store-artists-clear" data-store-artist-clear>
-              Clear
-            </button>
-          </div>
-          <div className="store-artists-selected__list" data-store-artist-selected-list />
+    // The desktop Artists menu holds this list; on phones the island moves it into the Filter sheet while it is open.
+    <fieldset className="store-artists" disabled data-store-artist-fieldset data-store-filter-part="artists">
+      <legend>Artists</legend>
+      <p id="store-artists-help">Tick one or more.</p>
+      <input
+        type="search"
+        className="store-artists-find"
+        placeholder="Find an artist"
+        enterKeyHint="search"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        aria-label="Find an artist"
+        aria-controls="store-artists-options"
+        data-store-artist-find
+      />
+      <div className="store-artists-selected" hidden data-store-artist-selected>
+        <div className="store-artists-selected__head">
+          <span data-store-artist-selected-label>Selected · 0</span>
+          <button type="button" className="store-artists-clear" data-store-artist-clear>
+            Clear
+          </button>
         </div>
-        <div id="store-artists-options" className="store-artists-list" data-lenis-scroll-root data-store-artist-options>
-          {choices.map((choice, index) => (
-            <label
-              key={choice.key}
-              data-store-artist-option
-              data-store-artist-index={index}
-              data-store-artist-name={choice.key}
-            >
-              <input
-                type="checkbox"
-                name="store-artist"
-                value={choice.key}
-                aria-controls={resultsId}
-                aria-describedby="store-artists-help"
-              />
-              <span>
-                {choice.label} <span className="text-muted-foreground">({choice.count})</span>
-              </span>
-            </label>
-          ))}
-        </div>
-        <p className="store-artists-no-match" hidden data-store-artist-no-match>
-          No artist matches.
-        </p>
-      </fieldset>
-      <dialog
-        id="store-artists-sheet"
-        className="store-artists-sheet"
-        aria-labelledby="store-artists-sheet-title"
-        data-store-artists-sheet
-      >
-        <div className="store-artists-sheet__head">
-          <h2 id="store-artists-sheet-title" tabIndex={-1}>
-            Artists
-          </h2>
-          <Button type="button" variant="outline" size="icon" aria-label="Close" data-store-artists-sheet-close>
-            <X aria-hidden="true" />
-          </Button>
-        </div>
-        <div className="store-artists-sheet__body" data-lenis-scroll-root data-store-artists-sheet-body />
-        <div className="store-artists-sheet__foot">
-          <Button type="button" className="store-artists-sheet__show" data-store-artists-sheet-done>
-            Show items
-          </Button>
-        </div>
-      </dialog>
-    </>
+        <div className="store-artists-selected__list" data-store-artist-selected-list />
+      </div>
+      <div id="store-artists-options" className="store-artists-list" data-lenis-scroll-root data-store-artist-options>
+        {choices.map((choice, index) => (
+          <label
+            key={choice.key}
+            data-store-artist-option
+            data-store-artist-index={index}
+            data-store-artist-name={choice.key}
+          >
+            <input
+              type="checkbox"
+              name="store-artist"
+              value={choice.key}
+              aria-controls={resultsId}
+              aria-describedby="store-artists-help"
+            />
+            <span>
+              {choice.label} <span className="text-muted-foreground">({choice.count})</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="store-artists-no-match" hidden data-store-artist-no-match>
+        No artist matches.
+      </p>
+    </fieldset>
+  );
+}
+
+const STORE_FILTER_SECTIONS = [
+  ['formats', 'Formats'],
+  ['availability', 'Availability'],
+  ['view', 'View'],
+  ['artists', 'Artists'],
+] as const;
+
+/** The phone Filter sheet: one modal bottom sheet that borrows the toolbar's browse controls while it is open. */
+export function StoreFilterSheet() {
+  return (
+    <dialog
+      id="store-filter-sheet"
+      className="store-filter-sheet"
+      aria-labelledby="store-filter-sheet-title"
+      data-store-filter-sheet
+    >
+      <div className="store-filter-sheet__head">
+        <h2 id="store-filter-sheet-title" tabIndex={-1}>
+          Filter
+        </h2>
+        <Button type="button" variant="outline" size="icon" aria-label="Close" data-store-filter-sheet-close>
+          <X aria-hidden="true" />
+        </Button>
+      </div>
+      <div className="store-filter-sheet__body" data-lenis-scroll-root data-store-filter-sheet-body>
+        {STORE_FILTER_SECTIONS.map(([part, title]) => (
+          <section key={part} className="store-filter-sheet__section" hidden data-store-filter-section={part}>
+            <h3>{title}</h3>
+          </section>
+        ))}
+      </div>
+      <div className="store-filter-sheet__foot">
+        <Button type="button" className="store-filter-sheet__show" data-store-filter-sheet-done>
+          Show items
+        </Button>
+      </div>
+    </dialog>
   );
 }
 
@@ -266,11 +287,13 @@ type StoreArtistSelection = ReadonlySet<string>;
 
 // Enhance the server controls without replacing them. Query changes never touch this list.
 const StoreArtistPicker = memo(function StoreArtistPicker({
+  appliedCount,
   artists,
   host,
   onArtistsChange,
   visibleLabel,
 }: {
+  appliedCount: number;
   artists: StoreArtistSelection;
   host: HTMLElement;
   onArtistsChange: Dispatch<SetStateAction<StoreArtistSelection>>;
@@ -279,14 +302,19 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
   useEffect(() => {
     const fieldset = host.querySelector<HTMLFieldSetElement>('[data-store-artist-fieldset]');
     if (!fieldset) return;
-    const sheet = host.querySelector<HTMLDialogElement>('[data-store-artists-sheet]');
-    const sheetBody = sheet?.querySelector<HTMLElement>('[data-store-artists-sheet-body]');
+    const sheet = host.querySelector<HTMLDialogElement>('[data-store-filter-sheet]');
     const find = host.querySelector<HTMLInputElement>('[data-store-artist-find]');
     const trigger = document.querySelector<HTMLButtonElement>(
       '[data-store-search-toolbar] [data-store-artists-trigger]',
     );
+    const filterTrigger = document.querySelector<HTMLButtonElement>(
+      '[data-store-search-toolbar] [data-store-filter-trigger]',
+    );
     const desktop = window.matchMedia('(min-width: 64rem)');
     let releaseScroll: (() => void) | null = null;
+    // A Grid or Crate choice made in the sheet waits until the sheet has closed and consumed its history entry,
+    // so the Crate's own entry is never the one Back removes.
+    let pendingViewChoice: HTMLElement | null = null;
     const onChange = (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement) || target.name !== 'store-artist') return;
@@ -302,63 +330,93 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (sheet && event.target === sheet) closeSheet();
       else if (button?.hasAttribute('data-store-artist-clear')) onArtistsChange(new Set());
-      else if (button?.matches('[data-store-artists-sheet-close], [data-store-artists-sheet-done]')) closeSheet();
+      else if (button?.matches('[data-store-filter-sheet-close], [data-store-filter-sheet-done]')) closeSheet();
+    };
+    const onViewChoice = (event: Event) => {
+      const choice =
+        event.target instanceof Element
+          ? event.target.closest<HTMLElement>('[data-store-crate-grid], [data-store-crate-open]')
+          : null;
+      if (!choice) return;
+      event.stopPropagation();
+      pendingViewChoice = choice;
+      closeSheet();
     };
     const onFind = () => filterStoreArtistOptions(fieldset, find?.value ?? '');
     const openSheet = (fromHistory = false) => {
-      if (!sheet || !sheetBody || sheet.open) return;
+      if (!sheet || sheet.open) return;
       if (!fromHistory) surfaceHistory.push();
-      sheetBody.append(fieldset);
+      moveStoreFilterParts(document, sheet);
       sheet.showModal();
       releaseScroll = acquireLenisModalLock(sheet);
-      sheet.querySelector<HTMLElement>('#store-artists-sheet-title')?.focus({ preventScroll: true });
+      sheet.querySelector<HTMLElement>('#store-filter-sheet-title')?.focus({ preventScroll: true });
     };
-    const returnList = () => {
-      sheet?.before(fieldset);
+    const returnParts = () => {
+      returnStoreFilterParts(document);
       releaseScroll?.();
       releaseScroll = null;
     };
     const onClose = () => {
-      returnList();
-      trigger?.focus({ preventScroll: true });
+      returnParts();
+      filterTrigger?.focus({ preventScroll: true });
+      pendingViewChoice?.click();
+      pendingViewChoice = null;
     };
-    const surfaceHistory = connectSurfaceHistory('__storeArtists', (open) => {
+    const surfaceHistory = connectSurfaceHistory('__storeFilter', (open) => {
       if (open) openSheet(true);
       else sheet?.close();
     });
     const closeSheet = () => surfaceHistory.close(() => sheet?.close());
-    const onOpen = () => openSheet();
+    // Prevent the native fallback (the Formats menu) once the sheet is available.
+    const onOpen = (event: Event) => {
+      event.preventDefault();
+      openSheet();
+    };
     const onCancel = (event: Event) => {
       event.preventDefault();
       closeSheet();
     };
     const onViewport = (event: MediaQueryListEvent) => {
       if (event.matches && sheet?.open) closeSheet();
+      if (!event.matches) {
+        document.querySelectorAll<HTMLElement>('[data-store-browse-menu]').forEach((menu) => {
+          try {
+            menu.hidePopover();
+          } catch {
+            // Already closed or unsupported.
+          }
+        });
+      }
     };
     host.addEventListener('change', onChange);
     host.addEventListener('click', onClick);
+    sheet?.addEventListener('click', onViewChoice, true);
     find?.addEventListener('input', onFind);
     find?.addEventListener('keydown', blurOnEnter);
-    trigger?.addEventListener('click', onOpen);
+    filterTrigger?.addEventListener('click', onOpen);
     sheet?.addEventListener('cancel', onCancel);
     sheet?.addEventListener('close', onClose);
     desktop.addEventListener('change', onViewport);
     fieldset.disabled = false;
     if (trigger) trigger.disabled = false;
+    if (filterTrigger) filterTrigger.disabled = false;
     return () => {
       host.removeEventListener('change', onChange);
       host.removeEventListener('click', onClick);
+      sheet?.removeEventListener('click', onViewChoice, true);
       find?.removeEventListener('input', onFind);
       find?.removeEventListener('keydown', blurOnEnter);
-      trigger?.removeEventListener('click', onOpen);
+      filterTrigger?.removeEventListener('click', onOpen);
       sheet?.removeEventListener('cancel', onCancel);
       surfaceHistory.dispose();
       sheet?.removeEventListener('close', onClose);
       desktop.removeEventListener('change', onViewport);
+      pendingViewChoice = null;
       if (sheet?.open) sheet.close();
-      returnList();
+      returnParts();
       resetStoreArtistControls(host);
       if (trigger) resetStoreArtistsTrigger(trigger);
+      if (filterTrigger) resetStoreFilterTrigger(filterTrigger);
     };
   }, [host, onArtistsChange]);
   useEffect(() => {
@@ -373,17 +431,36 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
     if (trigger) setStoreArtistsTrigger(trigger, count);
   }, [artists, host]);
   useEffect(() => {
-    const done = host.querySelector<HTMLElement>('[data-store-artists-sheet-done]');
+    const filterTrigger = document.querySelector<HTMLElement>(
+      '[data-store-search-toolbar] [data-store-filter-trigger]',
+    );
+    if (filterTrigger) setStoreFilterTrigger(filterTrigger, appliedCount);
+  }, [appliedCount]);
+  useEffect(() => {
+    const done = host.querySelector<HTMLElement>('[data-store-filter-sheet-done]');
     if (done) done.textContent = `Show ${visibleLabel}`;
   }, [host, visibleLabel]);
   return null;
 });
 
-export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
+type StoreSearchToolbarProps = {
+  /** The cards' container, which the Grid/Crate switch controls. */
+  catalogId: string;
+  /** The native Formats menu, when the collection shows the Distro format links. */
+  formatsMenuId?: string | undefined;
+  resultsId: string;
+};
+
+/**
+ * One 44px row: Search, then Filter on phones, or Formats, Artists, Pre-orders, Grid/Crate and the count on desktop.
+ * Every control renders at its final size before enhancement. Formats and the phone Filter open the native Formats
+ * menu without JavaScript, so the format links stay reachable; the island turns Filter into the Filter sheet.
+ */
+export function StoreSearchToolbar({ catalogId, formatsMenuId, resultsId }: StoreSearchToolbarProps) {
   return (
     <>
       <div className="store-search-toolbar" data-store-search-toolbar>
-        <div className="relative">
+        <div className="store-search-field relative">
           <Search
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
@@ -401,6 +478,103 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
             className="h-11 rounded-none pl-10"
           />
         </div>
+        <Button
+          type="button"
+          variant="chip"
+          className="store-filter-trigger"
+          aria-haspopup="dialog"
+          aria-controls="store-filter-sheet"
+          popoverTarget={formatsMenuId}
+          disabled={!formatsMenuId}
+          data-store-filter-trigger
+        >
+          <SlidersHorizontal aria-hidden="true" />
+          Filter
+          <span className="store-filter-trigger__count" data-store-filter-count />
+        </Button>
+        {formatsMenuId && (
+          <Button
+            type="button"
+            variant="chip"
+            className="store-menu-trigger"
+            popoverTarget={formatsMenuId}
+            data-store-formats-trigger
+          >
+            Formats
+            <ChevronDown aria-hidden="true" />
+          </Button>
+        )}
+        <Button
+          type="button"
+          variant="chip"
+          className="store-menu-trigger store-artists-trigger"
+          popoverTarget="store-artists-menu"
+          disabled
+          data-store-artists-trigger
+        >
+          <span data-store-artists-trigger-label>Artists</span>
+          <ChevronDown aria-hidden="true" />
+        </Button>
+        {/* Homes keep the Pre-orders chip and the view switch in the desktop row; the Filter sheet borrows them. */}
+        <span className="store-filter-home" data-store-filter-home="availability">
+          <Button
+            type="button"
+            variant="chip"
+            className="store-preorder-filter"
+            aria-pressed="false"
+            aria-controls={resultsId}
+            disabled
+            hidden
+            data-store-preorder-filter
+            data-store-filter-part="availability"
+          >
+            Pre-orders{' '}
+            <span className="store-preorder-filter__count" data-store-preorder-count>
+              0
+            </span>
+          </Button>
+        </span>
+        <span className="store-filter-home" data-store-filter-home="view">
+          {/* Shown only inside a collection with a bin, once the Store search island is ready. */}
+          <span
+            className="store-crate-view-switch"
+            role="group"
+            aria-label="Catalogue view"
+            data-store-filter-part="view"
+          >
+            <button
+              type="button"
+              className="store-crate-view"
+              aria-controls={catalogId}
+              aria-pressed="true"
+              data-store-crate-grid
+              disabled
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <rect width="7" height="7"></rect>
+                <rect x="9" width="7" height="7"></rect>
+                <rect y="9" width="7" height="7"></rect>
+                <rect x="9" y="9" width="7" height="7"></rect>
+              </svg>
+              Grid
+            </button>
+            <button
+              type="button"
+              className="store-crate-view"
+              aria-controls={catalogId}
+              aria-pressed="false"
+              data-store-crate-open
+              disabled
+            >
+              <svg width="18" height="16" viewBox="0 0 18 16" fill="currentColor" aria-hidden="true">
+                <rect x="5" y="0" width="8" height="2"></rect>
+                <rect x="3" y="3" width="12" height="2"></rect>
+                <rect x="1" y="6" width="16" height="10"></rect>
+              </svg>
+              Crate
+            </button>
+          </span>
+        </span>
         <p
           className="store-result-count"
           tabIndex={-1}
@@ -411,34 +585,6 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
         />
         <Button type="button" variant="ghost" disabled hidden data-store-clear-search>
           Clear search
-        </Button>
-        {/* Phones only (CSS); the island opens the Artists sheet from it. */}
-        <Button
-          type="button"
-          variant="chip"
-          className="store-artists-trigger"
-          aria-haspopup="dialog"
-          aria-controls="store-artists-sheet"
-          disabled
-          data-store-artists-trigger
-        >
-          <span data-store-artists-trigger-label>Artists</span>
-          <ChevronDown aria-hidden="true" />
-        </Button>
-        <Button
-          type="button"
-          variant="chip"
-          className="store-preorder-filter"
-          aria-pressed="false"
-          aria-controls={resultsId}
-          disabled
-          hidden
-          data-store-preorder-filter
-        >
-          Pre-orders{' '}
-          <span className="store-preorder-filter__count" data-store-preorder-count>
-            0
-          </span>
         </Button>
         <button type="button" className="store-clear-filters" disabled hidden data-store-clear-filters>
           <X aria-hidden="true" />
@@ -546,6 +692,9 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (!link?.dataset.distroFormatKey) return;
       event.preventDefault();
       event.stopPropagation();
+      // A choice from the desktop Formats menu closes it; the sheet stays open and shows the new count.
+      const menu = link.closest<HTMLElement>('[data-store-browse-menu]');
+      if (menu?.matches(':popover-open')) menu.hidePopover();
       // In the Crate a format choice walks to its bin, or leaves for the Grid when it has none.
       if (crateRef.current?.choose(link.dataset.distroFormatKey)) return;
       pendingFocus.current = true;
@@ -565,7 +714,8 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const summary = toolbar?.querySelector<HTMLParagraphElement>('[data-store-search-summary]');
     const clearSearch = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-search]');
     const clearAll = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-filters]');
-    const preorderFilter = toolbar?.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
+    // The Pre-orders chip may sit in the Filter sheet, outside the toolbar.
+    const preorderFilter = document.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
     inputRef.current = input ?? null;
     summaryRef.current = summary ?? null;
     const onInput = () => setQuery(input?.value ?? '');
@@ -648,8 +798,8 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const toolbar = document.querySelector<HTMLElement>('[data-store-search-toolbar]');
     const clearSearch = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-search]');
     const clearAll = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-filters]');
-    const preorderFilter = toolbar?.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
-    const preorderCount = toolbar?.querySelector<HTMLElement>('[data-store-preorder-count]');
+    const preorderFilter = document.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
+    const preorderCount = document.querySelector<HTMLElement>('[data-store-preorder-count]');
     if (preorderFilter) {
       preorderFilter.hidden = preorders.count === 0;
       preorderFilter.setAttribute('aria-pressed', String(preordersOnly));
@@ -666,6 +816,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   if (!ready) return null;
   return artistHost ? (
     <StoreArtistPicker
+      appliedCount={artists.size + Number(preordersOnly) + Number(format !== 'all')}
       artists={artists}
       host={artistHost}
       onArtistsChange={setArtists}

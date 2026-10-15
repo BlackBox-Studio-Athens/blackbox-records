@@ -34,6 +34,8 @@ function crateOf(page: Page) {
 async function openCrate(page: Page, press: (locator: Locator) => Promise<void> = (locator) => locator.click()) {
   const crate = crateOf(page);
   await expect(crate.root).toHaveAttribute('data-store-crate-ready', '');
+  // Below 64rem Grid and Crate sit in the Filter sheet, which closes before the Crate opens.
+  if ((page.viewportSize()?.width ?? 1440) < 1024) await press(page.locator('[data-store-filter-trigger]'));
   await press(crate.open);
   await expect(crate.root).toHaveAttribute('data-store-crate', 'open');
   await expect(crate.root).toHaveAttribute('data-store-crate-settled', '');
@@ -69,7 +71,8 @@ test.describe('Store Crate on desktop', () => {
     await page.getByRole('link', { name: 'Distro', exact: true }).first().click();
     await expect(page).toHaveURL(/\/store\/distro\/$/);
     expect(await sentinelIntact(page)).toBe(true);
-    await expect(page.locator('.store-crate-bar')).toHaveCSS('position', 'sticky');
+    // The toolbar row, with Grid and Crate, stays under the header while the Grid scrolls.
+    await expect(page.locator('[data-store-search-toolbar]')).toHaveCSS('position', 'sticky');
     const crate = await openCrate(page);
     await expect(crate.stage).toHaveCSS('overflow', 'hidden');
   });
@@ -173,16 +176,21 @@ test.describe('Store Crate on desktop', () => {
     await waitForShell(page);
     const crate = await openCrate(page);
     const formats = page.getByRole('navigation', { name: 'Browse Distro formats' });
-    await formats.getByRole('link', { name: /Vinyl 12-inch/ }).click();
+    // The format links sit in the toolbar's Formats menu.
+    const chooseFormat = async (name: RegExp) => {
+      await page.locator('[data-store-formats-trigger]').click();
+      await formats.getByRole('link', { name }).click();
+    };
+    await chooseFormat(/Vinyl 12-inch/);
     await expect(crate.counter).toContainText('/ 52');
     await page.getByRole('button', { name: /^Flip .* forward$/ }).click();
     await page.getByRole('button', { name: /^Flip .* forward$/ }).click();
     await expect.poll(() => slotOf(crate.counter)).toBe(3);
     const third = (await crate.hand.locator('h2').innerText()).trim();
 
-    await formats.getByRole('link', { name: /^CDs/ }).click();
+    await chooseFormat(/^CDs/);
     await expect(crate.counter).toContainText('/ 39');
-    await formats.getByRole('link', { name: /Vinyl 12-inch/ }).click();
+    await chooseFormat(/Vinyl 12-inch/);
     await expect.poll(() => slotOf(crate.counter)).toBe(3);
 
     // Crate, Grid and Crate again returns to the same record.
@@ -193,12 +201,12 @@ test.describe('Store Crate on desktop', () => {
     await expect(crate.hand.locator('h2')).toHaveText(third);
 
     // Vinyl 7-inch has no bin: the Grid shows it and the switch hides.
-    await formats.getByRole('link', { name: /Vinyl 7-inch/ }).click();
+    await chooseFormat(/Vinyl 7-inch/);
     await expect(crate.root).toHaveAttribute('data-store-crate', 'grid');
     await expect(crate.root).toHaveAttribute('data-store-crate-switch', 'off');
-    await formats.getByRole('link', { name: /Tapes/ }).click();
+    await chooseFormat(/Tapes/);
     await expect(crate.root).toHaveAttribute('data-store-crate-switch', 'off');
-    await formats.getByRole('link', { name: /All formats/ }).click();
+    await chooseFormat(/All formats/);
     await expect(crate.root).toHaveAttribute('data-store-crate-switch', 'on');
 
     // Search always uses the Grid.

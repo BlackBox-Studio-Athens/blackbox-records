@@ -1,5 +1,4 @@
 ---
-import InternalPageHero from '@/components/InternalPageHero.astro';
 import { priceDisclosure } from '@blackbox/api-client/public';
 import StoreItemCard from '@/components/store/StoreItemCard.astro';
 import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
@@ -32,9 +31,8 @@ const catalogId = 'all-store-catalog';
 <SiteLayout pageTitle={category.title} pageDescription={category.description} mainClass="store-collection-page">
   {entries.length > 0 && <StoreListingPricePrefetch pathname={category.path} />}
   <div>
-    <div id="store-page-top">
-      <InternalPageHero sectionLabel="Store" title={category.heading} />
-    </div>
+    {/* One visually hidden H1, as on Releases: the category links and the toolbar orient the shopper. */}
+    <h1 class="sr-only">{category.heading}</h1>
     <StoreCategoryNavigation activeCategoryId={category.id} categories={discoverableCategories} />
     <p class="layout-container store-purchase-note">
       {priceDisclosure}{' '}
@@ -50,35 +48,42 @@ const catalogId = 'all-store-catalog';
       <slot name="distro" />
     ) : (
       <div class="layout-container store-browse-layout" data-store-search-root>
-        <StoreBrowsePane entries={entries} resultsId={catalogId}>
-          {distroGroups.length > 0 && (
-            <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links">
-              <h2>Browse Distro formats</h2>
-              {distroGroups.map((group) => (
-                <a
-                  href={createProjectRelativeUrl('/store/distro/#' + createStoreDistroGroupHeadingId(group.groupName))}
-                >
-                  <span>{group.groupName}</span>
-                  <span>{group.entries.length}</span>
-                </a>
-              ))}
-            </nav>
-          )}
-        </StoreBrowsePane>
         <section class="store-browse-results" aria-label={category.label + ' Store collection'}>
-          {category.id !== 'all' && <p class="store-category-description">{category.description}</p>}
-          <div data-store-search>
-            <StoreSearchToolbar resultsId={catalogId} />
-          </div>
-          <p data-store-result-total hidden>
-            {entries.length} {entries.length === 1 ? 'item' : 'items'}
-          </p>
-          <StoreCrate
-            catalogId={catalogId}
-            formatGroups={entries.map(getStoreDistroFormatGroup)}
-            binRow
-            label={category.label}
-          >
+          <StoreCrate formatGroups={entries.map(getStoreDistroFormatGroup)} binRow label={category.label}>
+            <Fragment slot="toolbar">
+              <div data-store-search>
+                <StoreSearchToolbar
+                  resultsId={catalogId}
+                  catalogId={catalogId}
+                  formatsMenuId={distroGroups.length > 0 ? 'store-formats-menu' : undefined}
+                />
+              </div>
+              <p data-store-result-total hidden>
+                {entries.length} {entries.length === 1 ? 'item' : 'items'}
+              </p>
+              <StoreBrowsePane entries={entries} resultsId={catalogId}>
+                {distroGroups.length > 0 && (
+                  <nav
+                    slot="formats"
+                    aria-label="Browse Distro formats"
+                    class="store-format-links"
+                    data-store-filter-part="formats"
+                  >
+                    <h2>Browse Distro formats</h2>
+                    {distroGroups.map((group) => (
+                      <a
+                        href={createProjectRelativeUrl(
+                          '/store/distro/#' + createStoreDistroGroupHeadingId(group.groupName),
+                        )}
+                      >
+                        <span>{group.groupName}</span>
+                        <span>{group.entries.length}</span>
+                      </a>
+                    ))}
+                  </nav>
+                )}
+              </StoreBrowsePane>
+            </Fragment>
             <div id={catalogId} class="store-catalog-chunks">
               {entries.map((entry, index) => (
                 <StoreItemCard

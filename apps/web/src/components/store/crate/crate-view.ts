@@ -1374,7 +1374,10 @@ export function mountStoreCrate(
     // instant scroll, never the page's smooth one.
     const deskTop = desk!.getBoundingClientRect().top;
     const headerBottom = readRootScrollPaddingTop();
-    if (deskTop < headerBottom || deskTop > window.innerHeight * 0.4) {
+    // Phones lift the bin under the header so the item in hand's card follows on screen; the desktop toolbar stays
+    // sticky above a bin that already starts high.
+    const settledTop = window.innerHeight * (window.matchMedia('(min-width: 64rem)').matches ? 0.4 : 0.2);
+    if (deskTop < headerBottom || deskTop > settledTop) {
       window.scrollTo({ top: window.scrollY + deskTop - headerBottom, behavior: 'instant' as ScrollBehavior });
     }
     flyIn(rects);

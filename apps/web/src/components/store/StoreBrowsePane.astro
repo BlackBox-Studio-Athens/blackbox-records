@@ -1,5 +1,5 @@
 ---
-import { getStoreArtistChoices, StoreArtistControls } from './StoreDistroSearch';
+import { getStoreArtistChoices, StoreArtistControls, StoreFilterSheet } from './StoreDistroSearch';
 import type { StoreCollectionEntry } from '@/lib/store-collection';
 import './store-chrome.css';
 interface Props {
@@ -11,12 +11,28 @@ const { entries, resultsId } = Astro.props;
 const choices = getStoreArtistChoices(entries.map(({ storeItem }) => ({ artist: storeItem.subtitle })));
 ---
 
-<aside class="store-browse-pane">
-  <slot name="formats" />
-  <div class="store-browse-content" data-store-artists>
+{/* The toolbar's menus and the phone Filter sheet. Native popovers keep the format links reachable without JavaScript;
+   the Store search island lends the menus' contents to the sheet on phones. */}
+<div class="store-browse-menus" data-store-artists>
+  {Astro.slots.has('formats') && (
+    <div
+      id="store-formats-menu"
+      class="store-browse-menu"
+      popover="auto"
+      data-store-browse-menu
+      data-store-filter-home="formats"
+    >
+      <slot name="formats" />
+    </div>
+  )}
+  <div
+    id="store-artists-menu"
+    class="store-browse-menu store-browse-menu--artists"
+    popover="auto"
+    data-store-browse-menu
+    data-store-filter-home="artists"
+  >
     <StoreArtistControls choices={choices} resultsId={resultsId} />
   </div>
-  <a class="store-browse-top" href="#store-page-top" data-scroll-to-target="store-page-top">
-    Top ↑
-  </a>
-</aside>
+  <StoreFilterSheet />
+</div>

@@ -15,8 +15,12 @@ const browse = readFileSync(
 );
 describe('Distro format navigation', () => {
   it('renders one ordinary link per format before the Artist picker', () => {
-    expect(source).toContain('<nav slot="formats"');
-    expect(browse.indexOf('<slot name="formats" />')).toBeLessThan(browse.indexOf('data-store-artists'));
+    expect(source).toMatch(/<nav\s+slot="formats"/);
+    // The links sit in a native popover (the desktop Formats menu), reachable without JavaScript; the Filter sheet
+    // borrows them on phones.
+    expect(source).toContain('data-store-filter-part="formats"');
+    expect(browse).toMatch(/id="store-formats-menu"[\s\S]*?popover="auto"[\s\S]*?<slot name="formats" \/>/);
+    expect(browse.indexOf('<slot name="formats" />')).toBeLessThan(browse.indexOf('id="store-artists-menu"'));
     expect(source.match(/data-distro-format-navigation/g)).toHaveLength(1);
     expect(source.match(/formats.map/g)).toHaveLength(1);
     expect(source).toContain('aria-label="Browse Distro formats"');
@@ -33,14 +37,15 @@ describe('Distro format navigation', () => {
     expect(source).not.toContain('group.entries.map');
     expect(source).not.toContain('content.group_intros');
     expect(browse).not.toContain('<details');
-    expect(browse.indexOf('data-store-artists')).toBeLessThan(browse.indexOf('href="#store-page-top"'));
   });
-  it('keeps the desktop pane sticky with checkboxes and gives phones the Artists chip', () => {
-    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-browse-pane\s*\{\s*position: sticky/);
-    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-artists-trigger\s*\{\s*display: none/);
-    expect(cssSource).toMatch(/\.store-artists-sheet \.store-artists\s*\{\s*display: block/);
+  it('drops the side pane: desktop menus in the toolbar, one Filter sheet on phones', () => {
+    expect(cssSource).not.toContain('.store-browse-pane');
+    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-filter-trigger\s*\{\s*display: none/);
     expect(cssSource).toMatch(
-      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-artists\s*\{\s*display: none;\s*\}\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
+      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-search-toolbar :is\(\.store-menu-trigger, \.store-filter-home\)/,
+    );
+    expect(cssSource).toMatch(
+      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
     );
     expect(cssSource).not.toContain('[data-distro-search-root][data-distro-selected-format]');
   });

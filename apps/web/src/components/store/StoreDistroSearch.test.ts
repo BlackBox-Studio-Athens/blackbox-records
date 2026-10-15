@@ -13,12 +13,15 @@ import {
   resolveInitialDistroFormatKey,
   StoreSearchToolbar,
   StoreArtistControls,
+  StoreFilterSheet,
   type DistroSearchDom,
 } from './StoreDistroSearch';
 
 describe('server Store chrome', () => {
   it('renders the final disabled search controls with an empty reserved result box', () => {
-    const html = renderToStaticMarkup(createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog' }));
+    const html = renderToStaticMarkup(
+      createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog', catalogId: 'all-store-catalog' }),
+    );
     expect(html).toContain('data-store-search-toolbar');
     expect(html).toMatch(/<input[^>]*type="search"[^>]*disabled/);
     expect(html).toContain('aria-controls="all-store-catalog"');
@@ -28,9 +31,11 @@ describe('server Store chrome', () => {
     expect(html).toMatch(/data-store-preorder-count="[^"]*">0<\/span>/);
     expect(html).toMatch(/data-store-preorder-notes="[^"]*" hidden/);
     expect(html).toMatch(/data-store-empty-results="[^"]*" hidden/);
+    // The Grid/Crate switch renders at its final size in the row, disabled until the island connects.
+    expect(html.match(/data-store-crate-(grid|open)="[^"]*" disabled/g)).toHaveLength(2);
   });
 
-  it('renders a disabled artist checklist and a closed phone sheet before enhancement', () => {
+  it('renders a disabled artist checklist that the Filter sheet borrows on phones', () => {
     const html = renderToStaticMarkup(
       createElement(StoreArtistControls, {
         resultsId: 'distro-search-results',
@@ -41,6 +46,7 @@ describe('server Store chrome', () => {
       }),
     );
     expect(html).toContain('<fieldset class="store-artists" disabled');
+    expect(html).toContain('data-store-filter-part="artists"');
     expect(html).not.toContain('<select');
     expect(html).not.toContain('All artists');
     expect(html).toMatch(
@@ -50,19 +56,56 @@ describe('server Store chrome', () => {
     expect(html).toContain('data-store-artist-index="1" data-store-artist-name="other band"');
     expect(html).toMatch(/<input type="search"[^>]*aria-label="Find an artist"/);
     expect(html).toMatch(/data-store-artist-selected="[^"]*" hidden|hidden="" data-store-artist-selected/);
-    expect(html).toMatch(/<dialog id="store-artists-sheet"[^>]*aria-labelledby="store-artists-sheet-title"/);
-    expect(html).not.toMatch(/<dialog[^>]*\bopen\b/);
   });
 
-  it('renders the phone Artists chip and Clear filters text action in the toolbar', () => {
-    const html = renderToStaticMarkup(createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog' }));
-    expect(html).toMatch(/<button[^>]*aria-haspopup="dialog"[^>]*aria-controls="store-artists-sheet"[^>]*disabled/);
-    expect(html).not.toMatch(/<button[^>]*hidden[^>]*data-store-artists-trigger/);
-    expect(html).toMatch(
+  it('renders one closed Filter sheet with Formats, Availability, View and Artists in that order', () => {
+    const html = renderToStaticMarkup(createElement(StoreFilterSheet));
+    expect(html).toMatch(/<dialog id="store-filter-sheet"[^>]*aria-labelledby="store-filter-sheet-title"/);
+    expect(html).not.toMatch(/<dialog[^>]*\bopen\b/);
+    const sections = [...html.matchAll(/data-store-filter-section="([a-z]+)"/g)].map((match) => match[1]);
+    expect(sections).toEqual(['formats', 'availability', 'view', 'artists']);
+    expect(html).toContain('data-store-filter-sheet-done');
+  });
+
+  it('renders the phone Filter chip, desktop menus and Clear filters in one toolbar row', () => {
+    const withFormats = renderToStaticMarkup(
+      createElement(StoreSearchToolbar, {
+        resultsId: 'all-store-catalog',
+        catalogId: 'all-store-catalog',
+        formatsMenuId: 'store-formats-menu',
+      }),
+    );
+    // Without JavaScript, Filter opens the native Formats menu so the format links stay reachable.
+    expect(withFormats).toMatch(
+      /<button[^>]*aria-haspopup="dialog"[^>]*aria-controls="store-filter-sheet"[^>]*popovertarget="store-formats-menu"[^>]*data-store-filter-trigger/i,
+    );
+    expect(withFormats).not.toMatch(/<button[^>]*disabled[^>]*data-store-filter-trigger/);
+    expect(withFormats).toMatch(/<button[^>]*popovertarget="store-formats-menu"[^>]*data-store-formats-trigger/i);
+    expect(withFormats).toMatch(
+      /<button[^>]*popovertarget="store-artists-menu"[^>]*disabled[^>]*data-store-artists-trigger/i,
+    );
+    expect(withFormats).toMatch(
       /<button type="button" class="store-clear-filters" disabled="" hidden="" data-store-clear-filters/,
     );
-    expect(html.indexOf('data-store-artists-trigger')).toBeLessThan(html.indexOf('data-store-preorder-filter'));
-    expect(html.indexOf('data-store-preorder-filter')).toBeLessThan(html.indexOf('data-store-clear-filters'));
+    expect(withFormats.indexOf('data-store-filter-trigger')).toBeLessThan(
+      withFormats.indexOf('data-store-formats-trigger'),
+    );
+    expect(withFormats.indexOf('data-store-artists-trigger')).toBeLessThan(
+      withFormats.indexOf('data-store-preorder-filter'),
+    );
+    expect(withFormats.indexOf('data-store-preorder-filter')).toBeLessThan(
+      withFormats.indexOf('data-store-crate-grid'),
+    );
+    expect(withFormats.indexOf('data-store-crate-grid')).toBeLessThan(withFormats.indexOf('data-store-search-summary'));
+    expect(withFormats.indexOf('data-store-search-summary')).toBeLessThan(
+      withFormats.indexOf('data-store-clear-filters'),
+    );
+    // Without format links there is no Formats menu, and Filter waits for the sheet.
+    const withoutFormats = renderToStaticMarkup(
+      createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog', catalogId: 'all-store-catalog' }),
+    );
+    expect(withoutFormats).not.toContain('data-store-formats-trigger');
+    expect(withoutFormats).toMatch(/<button[^>]*disabled[^>]*data-store-filter-trigger/);
   });
 });
 

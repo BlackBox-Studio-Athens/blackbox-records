@@ -26,7 +26,7 @@ const option = primaryAvailability?.optionLabel || entry.distro?.format || entry
 const cartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const formatGroup = getStoreDistroFormatGroup(entry);
 const sizes =
-  '(min-width: 1440px) 16.9375rem, (min-width: 1280px) calc((100vw - 356px) / 4), (min-width: 1024px) calc((100vw - 336px) / 3), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
+  '(min-width: 1440px) 16.2rem, (min-width: 1280px) calc((100vw - 144px) / 5), (min-width: 1024px) calc((100vw - 124px) / 4), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
 // Two widths keep Images transformations per source low and let phones, Crate sleeves and HiDPI desktops share one cached 720w.
 const widths = [360, 720];
 ---
@@ -84,10 +84,15 @@ const widths = [360, 720];
     ></a>
     {storeItem.embeddedPlayerData && (
       <div class="store-item-card__listen">
-        <MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />
+        {/* On the artwork's corner: icon-only on phones, so the record names itself. */}
+        <MusicStreamingServiceListenTrigger
+          embeddedPlayerData={storeItem.embeddedPlayerData}
+          context={storeItem.title + ' by ' + storeItem.subtitle}
+        />
       </div>
     )}
     <CardContent className="store-item-card__content">
+      {option && <p class="store-item-card__option">{option}</p>}
       <h2 class="brand-card-title">{storeItem.title}</h2>
       <p class="store-item-card__artist">
         by{' '}
@@ -101,7 +106,6 @@ const widths = [360, 720];
           )}
         </span>
       </p>
-      {option && <p class="store-item-card__option">{option}</p>}
       <span class="store-item-card__release-status" data-store-listing-release-status hidden>
         {DIGITAL_RELEASE_BADGE}
       </span>
@@ -129,7 +133,7 @@ const widths = [360, 720];
         {cartSeed && (
           <button
             type="button"
-            class={buttonVariants({ className: 'ml-auto min-w-[4.5rem] gap-1.5 px-3' })}
+            class={buttonVariants({ className: 'store-item-card__buy ml-auto gap-1.5' })}
             data-store-card-buy={JSON.stringify(cartSeed)}
             data-store-card-buy-label="Buy"
             data-store-item-slug={storeItem.slug}

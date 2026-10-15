@@ -8,12 +8,13 @@
   --crate-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The bar keeps its row from the first paint, so the switch appearing after hydration moves nothing. It stays under
-   the header while the Grid scrolls, so Crate always opens on the cards the shopper is looking at. */
+/* The bin row shows only in the open Crate. The Grid/Crate switch sits in the Store toolbar, which stays under the
+   header on desktop. */
+.store-crate:not([data-store-crate='open']) .store-crate-bar {
+  display: none;
+}
+
 .store-crate-bar {
-  position: sticky;
-  top: var(--header-height);
-  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -29,9 +30,8 @@
   scroll-margin-top: calc(var(--header-height) + 4.5rem);
 }
 
-/* Grid and Crate read as one switch; the pressed side takes the ink face. */
+/* Grid and Crate read as one 44px switch; the pressed side takes the ink face. */
 .store-crate-view-switch {
-  display: inline-flex;
   gap: 0.25rem;
   border: 1px solid #333333;
   padding: 3px;
@@ -52,7 +52,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
-  min-height: 2.375rem;
+  min-height: 2.25rem;
   border: 0;
   padding: 1px 0.875rem 0;
   color: var(--muted-foreground);
@@ -135,8 +135,13 @@
 .store-crate[data-store-crate='open'] {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'bar' 'desk' 'nav' 'panel';
+  grid-template-areas: 'tools' 'bar' 'desk' 'nav' 'panel';
   column-gap: 2rem;
+}
+
+.store-crate-tools {
+  grid-area: tools;
+  min-width: 0;
 }
 
 .store-crate-bar {
@@ -160,8 +165,8 @@
 @media (min-width: 64rem) {
   .store-crate[data-store-crate='open'] {
     grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas: 'bar bar' 'desk nav' 'desk panel';
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas: 'tools tools' 'bar bar' 'desk nav' 'desk panel';
   }
 
   .store-crate-end,

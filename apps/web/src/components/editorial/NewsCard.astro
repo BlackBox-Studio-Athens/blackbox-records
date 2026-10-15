@@ -53,7 +53,7 @@ const newsCardImageSizes = {
       <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs tracking-[0.18em] uppercase text-muted-foreground">
         <p>{formatMonthYear(item.data.date)}</p>
         {artist?.data.genre && (
-          <span class="news-card__genre max-w-full border border-[var(--violet-700)] px-2 py-1 text-xs leading-relaxed tracking-[0.12em] text-[var(--violet-500)] [overflow-wrap:anywhere]">
+          <span class="news-card__genre max-w-full border border-violet-700 px-2 py-1 text-xs leading-relaxed tracking-[0.12em] text-violet-500 [overflow-wrap:anywhere]">
             {artist.data.genre}
           </span>
         )}

@@ -1,7 +1,5 @@
 ---
-import Prose from '@/components/Prose.astro';
 import StoreItemCard from './StoreItemCard.astro';
-import { getDistroPageContent } from '@/lib/site-data';
 import {
   createStoreDistroGroupHeadingId,
   getStoreDistroFormatGroup,
@@ -17,7 +15,6 @@ interface Props {
 }
 const { entries: sourceEntries } = Astro.props;
 const entries = sortStoreCollectionEntriesByArtist(sourceEntries);
-const content = await getDistroPageContent();
 const groups = groupStoreDistroCollectionEntries(entries);
 const catalogId = 'distro-catalog';
 const formats = [
@@ -32,33 +29,7 @@ const formats = [
 ---
 
 <div class="layout-container store-browse-layout">
-  <StoreBrowsePane entries={entries} resultsId="distro-search-results">
-    <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links" data-distro-format-navigation>
-      <h2>Browse Distro formats</h2>
-      {formats.map((format) => (
-        <a
-          href={'#' + format.target}
-          data-distro-format-link
-          data-distro-format-key={format.key}
-          data-distro-format-current={format.key === 'all' ? '' : undefined}
-          aria-current={format.key === 'all' ? 'true' : undefined}
-        >
-          <>
-            <span>{format.label}</span>
-            <span>{format.count}</span>
-          </>
-        </a>
-      ))}
-    </nav>
-  </StoreBrowsePane>
   <section class="store-browse-results" aria-label="Distro">
-    <Prose class="store-category-description" value={content.hero.intro} data-content-path="hero.intro" />
-    <div data-distro-search>
-      <StoreSearchToolbar resultsId="distro-search-results" />
-    </div>
-    <p data-store-result-total hidden>
-      {entries.length} {entries.length === 1 ? 'item' : 'items'}
-    </p>
     <div id="distro-search-results" class="distro-page-groups relative" data-distro-search-root tabindex="-1">
       {groups.map((group) => (
         <span
@@ -67,12 +38,44 @@ const formats = [
           aria-hidden="true"
         />
       ))}
-      <StoreCrate
-        catalogId={catalogId}
-        formatGroups={entries.map(getStoreDistroFormatGroup)}
-        binRow={false}
-        label="Distro"
-      >
+      <StoreCrate formatGroups={entries.map(getStoreDistroFormatGroup)} binRow={false} label="Distro">
+        <Fragment slot="toolbar">
+          <div data-distro-search>
+            <StoreSearchToolbar
+              resultsId="distro-search-results"
+              catalogId={catalogId}
+              formatsMenuId="store-formats-menu"
+            />
+          </div>
+          <p data-store-result-total hidden>
+            {entries.length} {entries.length === 1 ? 'item' : 'items'}
+          </p>
+          <StoreBrowsePane entries={entries} resultsId="distro-search-results">
+            <nav
+              slot="formats"
+              aria-label="Browse Distro formats"
+              class="store-format-links"
+              data-distro-format-navigation
+              data-store-filter-part="formats"
+            >
+              <h2>Browse Distro formats</h2>
+              {formats.map((format) => (
+                <a
+                  href={'#' + format.target}
+                  data-distro-format-link
+                  data-distro-format-key={format.key}
+                  data-distro-format-current={format.key === 'all' ? '' : undefined}
+                  aria-current={format.key === 'all' ? 'true' : undefined}
+                >
+                  <>
+                    <span>{format.label}</span>
+                    <span>{format.count}</span>
+                  </>
+                </a>
+              ))}
+            </nav>
+          </StoreBrowsePane>
+        </Fragment>
         <div id={catalogId} class="distro-group-grid">
           {entries.map((entry, index) => (
             <StoreItemCard

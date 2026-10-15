@@ -49,7 +49,8 @@ describe('Catalog description typography', () => {
   });
 
   it('keeps summaries conditional and detail prose on body typography', () => {
-    expect(distroCatalog).toContain('value={content.hero.intro}');
+    // Distro has no visible introduction above its toolbar (store-mobile-first-browse).
+    expect(distroCatalog).not.toContain('content.hero.intro');
     expect(distroCatalog).not.toContain('content.group_intros');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 

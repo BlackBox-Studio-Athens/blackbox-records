@@ -147,8 +147,9 @@ describe('Store Item listening context contract', () => {
     expect(purchaseActions).toContain('purchaseHint=');
     expect(source).toContain('embeddedPlayerData={embeddedPlayerData}');
     expect(storeCard).toContain('storeItem.embeddedPlayerData && (');
-    expect(storeCard).toContain(
-      '<MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />',
+    // The card's corner Listen names its record, so the icon-only phone control stays distinct.
+    expect(storeCard).toMatch(
+      /<MusicStreamingServiceListenTrigger\s+embeddedPlayerData=\{storeItem\.embeddedPlayerData\}\s+context=\{storeItem\.title \+ ' by ' \+ storeItem\.subtitle\}/,
     );
     expect(source).not.toContain('embeddedPlayerData={cartItem}');
     expect(source).not.toContain("getEntry('artists', storeItem.sourceId)");

@@ -8,7 +8,7 @@ import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPur
 import { preorderBadges } from '@/platform/lib/preorder-estimate';
 import { availabilityChipText } from '@/platform/lib/availability-copy';
 
-import { resetStoreArtistControls, resetStoreArtistsTrigger } from './store-artist-options';
+import { resetStoreArtistControls, resetStoreArtistsTrigger, resetStoreFilterTrigger } from './store-artist-options';
 
 export const STORE_LISTING_PRICE_COPY = {
   loading: 'Checking price',
@@ -36,10 +36,11 @@ function setStoreCardBuyLabel(button: HTMLButtonElement, label: string) {
   (button.querySelector?.<HTMLElement>('[data-store-card-buy-label]') ?? button).textContent = label;
 }
 
-/** Resets the Artists checklist, its phone sheet and the toolbar Artists chip to their disabled server state. */
+/** Resets the Artists checklist, the phone Filter sheet and the toolbar chips to their server state. */
 export function sanitizeStoreArtistChrome(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach(resetStoreArtistControls);
   root.querySelectorAll<HTMLButtonElement>('[data-store-artists-trigger]').forEach(resetStoreArtistsTrigger);
+  root.querySelectorAll<HTMLButtonElement>('[data-store-filter-trigger]').forEach(resetStoreFilterTrigger);
 }
 
 /** Snapshots keep the server chrome and reset its state before the next enhancement. */
@@ -54,11 +55,16 @@ export function sanitizeStoreSearchChrome(root: ParentNode) {
     }
     const summary = toolbar.querySelector<HTMLElement>('[data-store-search-summary]');
     if (summary) summary.textContent = '';
-    toolbar.querySelectorAll<HTMLButtonElement>('button:not([data-store-artists-trigger])').forEach((button) => {
+  });
+  // These start disabled and hidden on the server; the Pre-orders chip may be lent to the Filter sheet.
+  root
+    .querySelectorAll<HTMLButtonElement>(
+      '[data-store-clear-search], [data-store-preorder-filter], [data-store-clear-filters]',
+    )
+    .forEach((button) => {
       button.disabled = true;
       button.hidden = true;
     });
-  });
   sanitizeStoreArtistChrome(root);
   root.querySelectorAll<HTMLElement>('[data-store-empty-results], [data-store-result-total]').forEach((element) => {
     element.hidden = true;

@@ -132,22 +132,29 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   await waitForShell(page);
   const search = page.getByRole('searchbox', { name: 'Search Store' });
   await expect(search).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Pre-orders/ })).toHaveCount(0);
+  const toggle = page.locator('[data-store-preorder-filter]');
+  await expect(toggle).toBeHidden();
   releaseListing();
-  const toggle = page.getByRole('button', { name: 'Pre-orders 2', exact: true });
+  // On phones the Pre-orders choice lives in the Filter sheet; the hash entry already applied it.
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  const filter = page.locator('[data-store-filter-trigger]');
+  await expect(filter).toHaveText('Filter1');
   const cards = page.locator('[data-distro-search-root] [data-distro-search-item]');
   await expect(cards.locator('visible=true')).toHaveCount(2);
   await expect(page.locator('.store-preorder-notes')).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: '.codex-artifacts/preorders/followup/store-cards/filter-390.png' });
 
+  await filter.click();
+  const sheet = page.getByRole('dialog', { name: 'Filter' });
+  await expect(sheet.getByRole('button', { name: 'Pre-orders 2', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   const selected = cards.filter({ has: page.locator(`[data-store-item-slug="${selectedSlug}"]`) });
   const format = await selected.getAttribute('data-distro-format-key');
-  await page.locator(`[data-distro-format-link][data-distro-format-key="${format}"]`).click();
+  await sheet.locator(`[data-distro-format-link][data-distro-format-key="${format}"]`).click();
   const artist = await selected.getAttribute('data-store-artist');
-  await page.getByRole('button', { name: /^Artists/ }).click();
-  const sheet = page.getByRole('dialog', { name: 'Artists' });
   await sheet
     .locator('[data-store-artist-option]')
     .filter({ hasText: `${artist} (` })
@@ -156,6 +163,7 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
     .check();
   await sheet.getByRole('button', { name: /^Show \d+ items?$/ }).click();
   await expect(sheet).toBeHidden();
+  await expect(filter).toHaveText('Filter3');
   await search.fill(await selected.locator('h2').innerText());
   await expect(cards.locator('visible=true')).toHaveCount(1);
   await expect(selected).toBeVisible();
@@ -169,9 +177,12 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   // Clear filters moves focus to the live result count, as in store-formats.spec.ts.
   await expect(page.locator('[data-store-search-summary]')).toBeFocused();
   await expect(search).toHaveValue('');
-  await expect(page.getByRole('button', { name: /^Artists/ })).toHaveText('Artists');
+  await expect(filter).toHaveText('Filter');
   await expect(page.locator('input[name="store-artist"]:checked')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: /^All formats/ })).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('[data-distro-format-link][data-distro-format-key="all"]')).toHaveAttribute(
+    'aria-current',
+    'true',
+  );
   expect(await cards.locator('visible=true').count()).toBeGreaterThan(2);
 });
 
@@ -305,7 +316,8 @@ for (const state of [
         expect(Math.abs(price.y + price.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
         if (state.badge) {
           const badge = (await card.locator('[data-store-listing-preorder]').boundingBox())!;
-          expect(Math.abs(badge.x - content.x - 12)).toBeLessThan(1);
+          // Content padding is 10px on two-up phones and 12px from 40rem.
+          expect(Math.abs(badge.x - content.x - (width < 640 ? 10 : 12))).toBeLessThan(1);
           expect(badge.y).toBeLessThan(button.y);
         }
       } else {

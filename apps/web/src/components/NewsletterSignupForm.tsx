@@ -168,11 +168,7 @@ export default function NewsletterSignupForm({
         role="alert"
         aria-live="assertive"
         aria-atomic="true"
-        className={
-          view.errorMessage
-            ? 'text-sm leading-relaxed text-[color:var(--violet-300)]'
-            : 'accessibility-visually-hidden-text'
-        }
+        className={view.errorMessage ? 'text-sm leading-relaxed text-violet-300' : 'accessibility-visually-hidden-text'}
       >
         {view.errorMessage && (
           <>

@@ -36,7 +36,10 @@ describe('Store collection category surfaces', () => {
 
   it('shares category metadata, discovery, search and a complete Grid', () => {
     expect(collectionPageSource).toContain('pageTitle={category.title}');
-    expect(collectionPageSource).toContain('<InternalPageHero sectionLabel="Store" title={category.heading} />');
+    // One visually hidden H1 on every viewport, as on Releases; no visible Store / category introduction.
+    expect(collectionPageSource).toContain('<h1 class="sr-only">{category.heading}</h1>');
+    expect(collectionPageSource).not.toContain('InternalPageHero');
+    expect(collectionPageSource).not.toContain('store-category-description');
     expect(collectionPageSource).toContain('data-store-result-total');
     expect(collectionPageSource).toContain('aria-label="Browse Distro formats"');
     expect(collectionPageSource).toContain('createStoreDistroGroupHeadingId(group.groupName)');
@@ -128,7 +131,7 @@ describe('Store collection category surfaces', () => {
   });
 
   it('uses compact Grid image slots that Crate sleeves reuse', () => {
-    expect(storeItemCardSource).toContain('(min-width: 1280px) calc((100vw - 356px) / 4)');
+    expect(storeItemCardSource).toContain('(min-width: 1280px) calc((100vw - 144px) / 5)');
     expect(storeItemCardSource).not.toContain('data-store-grid-sizes');
     // Two shared widths bound Images Free transformations per source (docs/cloudflare-free-tier.md).
     expect(storeItemCardSource).toContain('const widths = [360, 720];');

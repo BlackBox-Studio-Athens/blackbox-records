@@ -136,18 +136,21 @@ describe('Store listing-price presentation', () => {
     const toolbar = {
       removeAttribute: vi.fn(),
       querySelector: (selector: string) => (selector === 'input[type="search"]' ? input : summary),
-      querySelectorAll: () => [clear],
     };
     const fieldset = { disabled: false, querySelector: () => null };
     const find = { value: 'ban', removeAttribute: vi.fn() };
-    const sheet = { removeAttribute: vi.fn(), contains: () => true, before: vi.fn() };
+    // The open Filter sheet still holds the borrowed Artists checklist; cleanup returns it to its menu home.
+    const lent = { dataset: { storeFilterPart: 'artists' } };
+    const artistsHome = { append: vi.fn() };
+    const layout = { querySelectorAll: () => [lent], querySelector: () => artistsHome };
+    const sheet = { removeAttribute: vi.fn(), closest: () => layout };
     const checkboxes = [
       { value: 'band', checked: true, removeAttribute: vi.fn() },
       { value: 'other', checked: false, removeAttribute: vi.fn() },
     ];
     const artistParts: Record<string, unknown> = {
       '[data-store-artist-fieldset]': fieldset,
-      '[data-store-artists-sheet]': sheet,
+      '[data-store-filter-sheet]': sheet,
       '[data-store-artist-find]': find,
     };
     const artistHost = {
@@ -156,12 +159,21 @@ describe('Store listing-price presentation', () => {
     };
     const triggerLabel = { textContent: 'Artists · 1' };
     const trigger = { disabled: false, hidden: true, querySelector: () => triggerLabel, toggleAttribute: vi.fn() };
+    const filterTrigger = {
+      disabled: true,
+      hidden: true,
+      hasAttribute: (name: string) => name === 'popovertarget',
+      querySelector: () => ({ textContent: '2' }),
+      toggleAttribute: vi.fn(),
+    };
     const total = { hidden: false };
     const preorderNotes = { hidden: false };
     const elements: Record<string, unknown[]> = {
       '[data-store-search-toolbar]': [toolbar],
       '[data-store-artists]': [artistHost],
       '[data-store-artists-trigger]': [trigger],
+      '[data-store-filter-trigger]': [filterTrigger],
+      '[data-store-clear-search], [data-store-preorder-filter], [data-store-clear-filters]': [clear],
       '[data-store-empty-results], [data-store-result-total]': [total],
       '[data-store-preorder-notes]': [preorderNotes],
     };
@@ -171,13 +183,16 @@ describe('Store listing-price presentation', () => {
     expect(summary.textContent).toBe('');
     expect(clear).toEqual({ disabled: true, hidden: true });
     expect(sheet.removeAttribute).toHaveBeenCalledWith('open');
-    expect(sheet.before).toHaveBeenCalledWith(fieldset);
+    expect(artistsHome.append).toHaveBeenCalledWith(lent);
     expect(fieldset.disabled).toBe(true);
     expect(checkboxes.map(({ checked }) => checked)).toEqual([false, false]);
     expect(find.value).toBe('');
     expect(trigger).toMatchObject({ disabled: true, hidden: false });
     expect(triggerLabel.textContent).toBe('Artists');
     expect(trigger.toggleAttribute).toHaveBeenCalledWith('data-store-artists-active', false);
+    // Filter returns to its server state: enabled for the native Formats menu, no applied count.
+    expect(filterTrigger).toMatchObject({ disabled: false, hidden: false });
+    expect(filterTrigger.toggleAttribute).toHaveBeenCalledWith('data-store-filter-active', false);
     expect(total.hidden).toBe(true);
     expect(preorderNotes.hidden).toBe(true);
   });

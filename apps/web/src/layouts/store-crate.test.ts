@@ -18,7 +18,9 @@ describe('Store Crate markup', () => {
     expect(distroSource).toContain('formatGroups={entries.map(getStoreDistroFormatGroup)}');
     expect(collectionSource).toContain('formatGroups={entries.map(getStoreDistroFormatGroup)}');
     expect(crateSource).toContain('const bins = openBinsOf(formatGroups);');
-    expect(crateSource).toMatch(/bins\.length === 0 \? \(\s*<slot \/>/);
+    expect(crateSource).toMatch(/bins\.length === 0 \? \(\s*<>\s*<slot name="toolbar" \/>\s*<slot \/>/);
+    // The toolbar, with its Grid/Crate switch and Filter sheet, sits inside the Crate root that the Crate code queries.
+    expect(crateSource).toMatch(/<div class="store-crate-tools">\s*<slot name="toolbar" \/>\s*<\/div>/);
     // Distro chooses bins through its format links; other collections get the bin row.
     expect(distroSource).toContain('binRow={false}');
     expect(collectionSource).toMatch(/<StoreCrate[\s\S]*?binRow\s/);
@@ -26,7 +28,7 @@ describe('Store Crate markup', () => {
 
   it('starts in the Grid with a disabled switch and no Crate state on the server', () => {
     expect(crateSource).toContain('data-store-crate="grid"');
-    expect(crateSource.match(/data-store-crate-(grid|open)\s+disabled/g)).toHaveLength(2);
+    expect(searchSource.match(/data-store-crate-(grid|open)\s+disabled/g)).toHaveLength(2);
     expect(crateSource).toMatch(/data-store-crate-desk hidden/);
     expect(crateSource).not.toContain('data-store-crate-hand');
     // The bar keeps its row from the first paint; the switch stays invisible until the island is ready.
@@ -35,7 +37,7 @@ describe('Store Crate markup', () => {
 
   it('loads the Crate view lazily and keeps it out of the shell', () => {
     expect(searchSource).toContain("from './crate/crate-switch'");
-    expect(searchSource).not.toContain('crate-view');
+    expect(searchSource).not.toContain('./crate/crate-view');
     expect(switchSource).toContain("import('./crate-view')");
     expect(snapshotSource).toContain('export function sanitizeStoreCrateSnapshot');
     expect(snapshotSource).not.toContain('crate-view');

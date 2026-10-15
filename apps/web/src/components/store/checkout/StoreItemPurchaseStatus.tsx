@@ -36,7 +36,7 @@ export default function StoreItemPurchaseStatus({
       className={cn(
         purchaseActionLayoutClasses,
         'inline-flex min-h-11 items-center justify-center gap-2 border px-4 pt-px text-center font-display text-base leading-none tracking-[0.06em] text-foreground uppercase',
-        state.statusTone === 'sold-out' && 'border-[var(--violet-700)] bg-[var(--violet-surface)]',
+        state.statusTone === 'sold-out' && 'border-violet-700 bg-violet-surface',
         state.statusTone === 'incoming' && 'border-dashed border-[#8c8c8c]',
         state.statusTone === 'neutral' && 'border-[#767676]',
       )}
