@@ -1,6 +1,6 @@
 import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-test('Store card Buy and Releases Buy vinyl fill Violet with restrained, stationary feedback', async ({ page }) => {
+test('Store card Buy and Releases Buy vinyl fill Flint with restrained, stationary feedback', async ({ page }) => {
   const storeItemSlug = 'disintegration-black-vinyl-lp';
   await page.route('**/api/store/listing-prices*', (route) =>
     route.fulfill({
@@ -64,9 +64,9 @@ test('Store card Buy and Releases Buy vinyl fill Violet with restrained, station
   await buy.hover();
   await buy.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   const hovering = await buy.evaluate(appearance);
-  // Violet 700 face at rest; hover darkens to Violet 800 and lights the edge Violet 500.
-  expect(resting).toMatchObject({ face: 'rgb(125, 88, 160)', edge: 'rgb(125, 88, 160)' });
-  expect(hovering).toMatchObject({ face: 'rgb(102, 69, 132)', edge: 'rgb(176, 143, 208)' });
+  // Flint 700 face at rest; hover darkens to Flint 800 and lights the edge Flint 500.
+  expect(resting).toMatchObject({ face: 'rgb(98, 110, 114)', edge: 'rgb(98, 110, 114)' });
+  expect(hovering).toMatchObject({ face: 'rgb(77, 89, 92)', edge: 'rgb(136, 147, 150)' });
   await expect(buy).toHaveCSS('color', 'rgb(245, 245, 245)');
   expect(hovering).not.toEqual(resting);
   expect(hovering.transform).toBe('none');

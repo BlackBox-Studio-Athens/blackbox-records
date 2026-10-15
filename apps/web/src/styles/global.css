@@ -87,11 +87,11 @@ body.is-shell-scroll-locked {
   --color-control-edge-quiet: var(--control-edge-quiet);
   --color-control-edge-hover: var(--control-edge-hover);
   --color-control-muted-pressed: var(--control-muted-pressed);
-  /* Accent roles as short utility names (border-violet-700), shorter than arbitrary values in shipped islands. */
-  --color-violet-300: var(--violet-300);
-  --color-violet-500: var(--violet-500);
-  --color-violet-700: var(--violet-700);
-  --color-violet-surface: var(--violet-surface);
+  /* Accent roles as short utility names (border-flint-700), shorter than arbitrary values in shipped islands. */
+  --color-flint-300: var(--flint-300);
+  --color-flint-500: var(--flint-500);
+  --color-flint-700: var(--flint-700);
+  --color-flint-surface: var(--flint-surface);
   --color-slate-500: var(--slate-500);
 }
 
@@ -131,22 +131,28 @@ body.is-shell-scroll-locked {
   --border: #262626;
   --input: #262626;
   --ring: #f5f5f5;
-  /* Three fixed accent roles (openspec/changes/accent-and-button-system): Sea means pre-order, Violet means buy and
-     labels you read, Slate means listen and small marks. Titles, grounds and body copy stay ink and grey. */
+  /* Three fixed accent roles (openspec/changes/accent-and-button-system): Sea means pre-order, Flint means buy and
+     labels you read, Slate means listen and small marks. Flint is a cool gray (OKLCH h215, C .012-.016) between Sea
+     and Slate, so it reads as a neutral rather than a third hue. Titles, grounds and body copy stay ink and grey. */
   --sea-800: #256258;
   --sea-700: #2d766a;
   --sea-500: #4ca999;
   --sea-300: #7cc7b9;
   --sea-surface: rgba(45, 118, 106, 0.16);
-  --violet-800: #664584;
-  --violet-700: #7d58a0;
-  --violet-500: #b08fd0;
-  --violet-300: #cab2e4;
-  --violet-surface: rgba(125, 88, 160, 0.16);
+  --flint-800: #4d595c;
+  --flint-700: #626e72;
+  --flint-500: #889396;
+  --flint-300: #c1cbce;
+  --flint-surface: rgba(98, 110, 114, 0.16);
   --slate-700: #366e99;
   --slate-500: #66a2d2;
   --slate-300: #91c4ee;
   --slate-surface: rgba(54, 110, 153, 0.16);
+  /* Error red (OKLCH h25, C .145-.15), the warm opposite of the cool accents: international restriction notices only
+     (icon, edge, text), never a control face. Form errors stay Flint 300 after their "Error" label. */
+  --error-700: #bc4945;
+  --error-500: #e4706a;
+  --error-surface: rgba(188, 73, 69, 0.16);
   /* Pre-order names kept as Sea aliases (openspec/changes/add-store-preorders) */
   --preorder-accent: var(--sea-700);
   --preorder-accent-active: var(--sea-500);
@@ -521,7 +527,7 @@ body {
   }
 
   /* One link style for the header, the phone Menu and the footer sitemap; surface modifiers only size it.
-     Every section marks its current page the same way: an ink label over one Violet underline. */
+     Every section marks its current page the same way: an ink label over one Flint underline. */
   .site-nav-link {
     --nav-link-rest: var(--muted-foreground);
     --nav-link-hover: var(--foreground);
@@ -572,7 +578,7 @@ body {
   }
 
   .site-nav-link[aria-current='page'] .site-nav-link__label::after {
-    background: var(--violet-500);
+    background: var(--flint-500);
   }
 
   .site-nav-link:focus-visible .site-nav-link__label::after,
@@ -717,7 +723,7 @@ body {
     font-size: 0.75rem;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--violet-500);
+    color: var(--flint-500);
   }
 
   .services-page-intro__title {
@@ -922,7 +928,7 @@ body {
   .services-inquiry-form__label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--violet-500);
+    color: var(--flint-500);
   }
 
   .services-inquiry-form__meta {
@@ -985,13 +991,13 @@ body {
     max-width: 42rem;
     font-size: 0.95rem;
     line-height: 1.7;
-    color: var(--violet-300);
+    color: var(--flint-300);
   }
 
   .services-inquiry-form__input[aria-invalid='true'],
   .services-inquiry-form__textarea[aria-invalid='true'],
   .services-inquiry-form__select[aria-invalid='true'] {
-    border-color: var(--violet-300);
+    border-color: var(--flint-300);
   }
 
   .services-inquiry-form__success {
@@ -1455,7 +1461,7 @@ body {
   }
 
   .artist-latest-teaser__label {
-    color: var(--violet-500);
+    color: var(--flint-500);
     font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
@@ -1548,7 +1554,7 @@ body {
   }
 
   .artist-detail-kicker {
-    color: var(--violet-500);
+    color: var(--flint-500);
     font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
@@ -1617,7 +1623,7 @@ body {
   }
 
   .newsletter-signup-consent-checkbox:checked {
-    accent-color: var(--violet-500);
+    accent-color: var(--flint-500);
     animation: newsletter-checkbox-confirm 230ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -2228,8 +2234,8 @@ body {
   .store-item-card__artist-link {
     color: inherit;
     text-decoration: underline;
-    /* Artist names are labels you read: a Violet underline at rest. */
-    text-decoration-color: var(--violet-500);
+    /* Artist names are labels you read: a Flint underline at rest. */
+    text-decoration-color: var(--flint-500);
     text-underline-offset: 4px;
     transition: color 150ms ease;
   }
@@ -3479,8 +3485,8 @@ body {
   }
 }
 
-/* Home hero CTA, the family's one 52px control: ink face and dark label at rest. On hover and keyboard focus a Violet
-   fill rises from the base edge in 240ms, the label turns white (5.1:1) and the arrow slides 6px inside the box.
+/* Home hero CTA, the family's one 52px control: ink face and dark label at rest. On hover and keyboard focus a Flint
+   fill rises from the base edge in 240ms, the label turns white (4.8:1) and the arrow slides 6px inside the box.
    Unlayered so it wins over the default variant's utilities; reduced motion switches instantly. */
 .home-hero-cta {
   isolation: isolate;
@@ -3491,7 +3497,7 @@ body {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: var(--violet-700);
+  background: var(--flint-700);
   content: '';
   pointer-events: none;
   transform: scaleY(0);
@@ -3504,7 +3510,7 @@ body {
 }
 
 .home-hero-cta:is(:focus-visible, :active) {
-  border-color: var(--violet-700);
+  border-color: var(--flint-700);
   background-color: var(--control-ink);
   color: var(--foreground);
 }
@@ -3519,7 +3525,7 @@ body {
 
 @media (hover: hover) {
   .home-hero-cta:hover {
-    border-color: var(--violet-700);
+    border-color: var(--flint-700);
     background-color: var(--control-ink);
     color: var(--foreground);
   }
@@ -3828,9 +3834,9 @@ body.is-app-shell-overlay-open {
 }
 
 .store-category-signal__link[aria-current='page'] {
-  border-bottom-color: var(--violet-500);
+  border-bottom-color: var(--flint-500);
   color: var(--foreground);
-  background: var(--violet-surface);
+  background: var(--flint-surface);
 }
 
 .store-category-signal__link[aria-current='page']:focus-visible {
@@ -4485,7 +4491,7 @@ body.is-app-shell-overlay-open {
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;
-  accent-color: var(--violet-500);
+  accent-color: var(--flint-500);
 }
 
 .store-artists label:focus-within {
@@ -4529,8 +4535,8 @@ body.is-app-shell-overlay-open {
 
 .store-artists-trigger[data-store-artists-active],
 .store-filter-trigger[data-store-filter-active] {
-  border-color: var(--violet-500);
-  background: var(--violet-surface);
+  border-color: var(--flint-500);
+  background: var(--flint-surface);
   color: var(--foreground);
 }
 
@@ -4589,7 +4595,7 @@ body.is-app-shell-overlay-open {
 
 .store-filter-sheet__section h3 {
   margin-bottom: 0.625rem;
-  color: var(--violet-500);
+  color: var(--flint-500);
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.22em;
@@ -4703,7 +4709,7 @@ body.is-app-shell-overlay-open {
 
 .store-format-links a[aria-current='true'] {
   text-decoration: underline;
-  text-decoration-color: var(--violet-500);
+  text-decoration-color: var(--flint-500);
   color: var(--foreground);
 }
 
@@ -4733,7 +4739,7 @@ body.is-app-shell-overlay-open {
 
 .store-filter-trigger__count {
   min-width: 1ch;
-  color: var(--violet-500);
+  color: var(--flint-500);
   font-variant-numeric: tabular-nums;
 }
 
@@ -5002,11 +5008,11 @@ body.is-app-shell-overlay-open {
   white-space: nowrap;
 }
 
-/* One tone per zero-stock state on every surface: Sold Out alone carries the Violet edge; Coming Soon and
+/* One tone per zero-stock state on every surface: Sold Out alone carries the Flint edge; Coming Soon and
    Repressing take a dashed neutral edge, the convention for "not here yet". */
 .store-collection-page .store-item-card__availability[data-store-listing-availability-state='sold_out'],
 .store-item-card__release-status[data-availability-state='sold_out'] {
-  border-color: var(--violet-700);
+  border-color: var(--flint-700);
 }
 
 .store-collection-page
@@ -5161,7 +5167,7 @@ body.is-app-shell-overlay-open {
 }
 
 .availability-alert__input[aria-invalid='true'] {
-  border-color: var(--violet-300);
+  border-color: var(--flint-300);
 }
 
 .availability-alert__consent {
@@ -5183,7 +5189,7 @@ body.is-app-shell-overlay-open {
 }
 
 .availability-alert__consent input[aria-invalid='true'] {
-  outline: 1px solid var(--violet-300);
+  outline: 1px solid var(--flint-300);
   outline-offset: 2px;
 }
 
@@ -5205,7 +5211,7 @@ body.is-app-shell-overlay-open {
   min-height: 0;
 }
 
-/* Errors read in Violet 300 after a visible "Error" label, so they never rely on colour alone. */
+/* Errors read in Flint 300 after a visible "Error" label, so they never rely on colour alone. */
 .form-error-label {
   margin-right: 0.5em;
   font-weight: 600;
@@ -5215,7 +5221,7 @@ body.is-app-shell-overlay-open {
 
 .availability-alert__error {
   margin: 0;
-  color: var(--violet-300);
+  color: var(--flint-300);
   font-size: 0.8125rem;
 }
 
@@ -5237,11 +5243,11 @@ body.is-app-shell-overlay-open {
 }
 
 /* Copies left is a status, never a control, and never animated urgency. On cards it keeps the status chip's exact box
-   and differs from Sold Out only by its Violet surface. On the item page it is a 28px tab fused to the top edge of
+   and differs from Sold Out only by its Flint surface. On the item page it is a 28px tab fused to the top edge of
    Add To Cart: same width, same square 1px edge and the button's display type. */
 .store-collection-page .store-item-card__availability[data-store-listing-availability-state='low_stock'] {
-  border-color: var(--violet-700);
-  background: var(--violet-surface);
+  border-color: var(--flint-700);
+  background: var(--flint-surface);
   font-variant-numeric: tabular-nums;
 }
 
@@ -5256,9 +5262,9 @@ body.is-app-shell-overlay-open {
   min-height: 1.75rem;
   margin: 0;
   padding: 1px 0.75rem 0;
-  border: 1px solid var(--violet-700);
+  border: 1px solid var(--flint-700);
   border-bottom: 0;
-  background: var(--violet-surface);
+  background: var(--flint-surface);
   color: var(--foreground);
   font-family: var(--font-display);
   font-size: 0.9375rem;
@@ -5391,8 +5397,8 @@ body.is-app-shell-overlay-open {
   }
 
   .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
-    border-color: var(--violet-500);
-    background-color: var(--violet-800);
+    border-color: var(--flint-500);
+    background-color: var(--flint-800);
   }
 
   .preorder-action:not(:disabled, [aria-disabled='true']) {
@@ -5402,30 +5408,30 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Buy is the filled Violet control with a white label and the format mark: Store card Buy, Releases Buy vinyl and
+/* Buy is the filled Flint control with a white label and the format mark: Store card Buy, Releases Buy vinyl and
    Add to cart (openspec/changes/accent-and-button-system). Hover and press darken the face; nothing moves. */
 .purchase-action {
-  border-color: var(--violet-700);
-  background-color: var(--violet-700);
+  border-color: var(--flint-700);
+  background-color: var(--flint-700);
   color: var(--foreground);
   box-shadow: none;
 }
 
 .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):focus-visible {
-  border-color: var(--violet-500);
-  background-color: var(--violet-800);
+  border-color: var(--flint-500);
+  background-color: var(--flint-800);
 }
 
 @media (hover: hover) {
   .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):hover {
-    border-color: var(--violet-500);
-    background-color: var(--violet-800);
+    border-color: var(--flint-500);
+    background-color: var(--flint-800);
   }
 }
 
 .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):active {
-  border-color: var(--violet-800);
-  background-color: var(--violet-800);
+  border-color: var(--flint-800);
+  background-color: var(--flint-800);
   box-shadow: none;
 }
 
@@ -5928,7 +5934,7 @@ body.is-app-shell-overlay-open {
 }
 
 .store-cart-drawer__continue {
-  border-color: var(--violet-700);
+  border-color: var(--flint-700);
   background: transparent;
 }
 
@@ -6305,7 +6311,7 @@ body.is-app-shell-overlay-open {
   bottom: calc((2.75rem - 1.5em) / 2);
   left: 0;
   height: 1px;
-  background: var(--violet-500);
+  background: var(--flint-500);
   content: '';
   pointer-events: none;
 }
@@ -7110,8 +7116,8 @@ body.is-app-shell-overlay-open {
   }
 
   .store-format-links a[aria-current='true'] {
-    border-color: var(--violet-500);
-    background: var(--violet-surface);
+    border-color: var(--flint-500);
+    background: var(--flint-surface);
     color: var(--foreground);
     text-decoration: none;
   }
@@ -7834,7 +7840,7 @@ body.is-app-shell-overlay-open {
   align-self: flex-start;
   height: 44px;
   padding-inline: 2rem;
-  border-color: var(--violet-700);
+  border-color: var(--flint-700);
   background: transparent;
   font: 400 1rem/1.1 var(--font-display-ui);
   letter-spacing: 0.08em;
@@ -8007,7 +8013,7 @@ body.is-app-shell-overlay-open {
 }
 #releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state='sold_out'] {
   border-style: solid;
-  border-color: var(--violet-700);
+  border-color: var(--flint-700);
 }
 #releases-merchandising [data-release-badges] .preorder-badge {
   color: var(--sea-500);

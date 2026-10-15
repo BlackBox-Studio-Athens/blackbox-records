@@ -440,12 +440,12 @@ for (const width of [320, 390, 1280]) {
       lead.locator('.release-card-formats').boundingBox(),
     ]);
     expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
-    // Catalog Buy fills Violet with the record mark; the featured Pre-order fills Sea Green.
+    // Catalog Buy fills Flint with the record mark; the featured Pre-order fills Sea Green.
     const catalogBuy = page
       .locator('[data-release-role="catalog"]')
       .getByRole('link', { name: 'Buy vinyl, Caregivers', exact: true });
     await expect(catalogBuy).toHaveClass(/purchase-action/);
-    await expect(catalogBuy).toHaveCSS('background-color', 'rgb(125, 88, 160)');
+    await expect(catalogBuy).toHaveCSS('background-color', 'rgb(98, 110, 114)');
     await expect(catalogBuy).toHaveCSS('color', 'rgb(245, 245, 245)');
     await expect(catalogBuy.locator('.store-buy-icon')).toBeVisible();
     await expect(page.locator('[data-release-role="catalog"] [data-release-price]')).toHaveText('€28.00');

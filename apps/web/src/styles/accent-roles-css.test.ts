@@ -17,17 +17,17 @@ function rule(selector: string) {
   return globalCss.slice(start, globalCss.indexOf('}', start));
 }
 
-// openspec/changes/accent-and-button-system: Sea means pre-order, Violet means buy and labels, Slate means Listen.
+// openspec/changes/accent-and-button-system: Sea means pre-order, Flint means buy and labels, Slate means Listen.
 describe('accent roles', () => {
   it('defines the three accent scales', () => {
     for (const token of [
       '--sea-800: #256258',
       '--sea-700: #2d766a',
       '--sea-500: #4ca999',
-      '--violet-800: #664584',
-      '--violet-700: #7d58a0',
-      '--violet-500: #b08fd0',
-      '--violet-300: #cab2e4',
+      '--flint-800: #4d595c',
+      '--flint-700: #626e72',
+      '--flint-500: #889396',
+      '--flint-300: #c1cbce',
       '--slate-700: #366e99',
       '--slate-500: #66a2d2',
       '--slate-300: #91c4ee',
@@ -42,12 +42,18 @@ describe('accent roles', () => {
     }
   });
 
-  it('fills Buy in Violet and Pre-order in Sea, with white labels', () => {
-    expect(rule('.purchase-action')).toMatch(
-      /background-color: var\(--violet-700\);[\s\S]*color: var\(--foreground\);/,
-    );
+  it('fills Buy in Flint and Pre-order in Sea, with white labels', () => {
+    expect(rule('.purchase-action')).toMatch(/background-color: var\(--flint-700\);[\s\S]*color: var\(--foreground\);/);
     expect(rule('.preorder-action')).toMatch(/background-color: var\(--sea-700\);[\s\S]*color: var\(--foreground\);/);
     expect(globalCss).not.toMatch(/\.preorder-action \{[^}]*inset 0 -3px/);
+  });
+
+  it('keeps error red on the international notices only, never a face', () => {
+    expect(globalCss).toContain('--error-700: #bc4945');
+    expect(globalCss).toContain('--error-500: #e4706a');
+    expect(globalCss).not.toContain('var(--error-');
+    expect(publicCss[2]).toContain('border: 1px solid var(--error-700);');
+    expect(publicCss[2]).not.toMatch(/background[^;]*var\(--error-/);
   });
 
   it('makes Listen the Slate control', () => {

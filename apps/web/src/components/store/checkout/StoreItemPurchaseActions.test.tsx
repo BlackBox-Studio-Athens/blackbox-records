@@ -204,13 +204,13 @@ describe('StoreItemPurchaseActions', () => {
     expect(renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />)).toBe('');
   });
 
-  it('renders Sold Out as a solid Violet status, not a disabled button, with no line or Notify me', () => {
+  it('renders Sold Out as a solid Flint status, not a disabled button, with no line or Notify me', () => {
     const html = renderToStaticMarkup(
       <StoreItemPurchaseStatus state={readStoreItemPurchaseStatus(soldOutOffer)} storeItemSlug="item" />,
     );
     expect(html).toMatch(/^<p role="status"/);
     expect(html).toContain('>Sold Out</p>');
-    expect(html).toContain('border-violet-700');
+    expect(html).toContain('border-flint-700');
     expect(html).toContain('data-store-item-purchase-tone="sold-out"');
     expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
@@ -232,7 +232,7 @@ describe('StoreItemPurchaseActions', () => {
       );
       expect(html).toContain('data-store-item-purchase-tone="incoming"');
       expect(html).toContain('border-dashed');
-      expect(html).not.toContain('border-violet-700');
+      expect(html).not.toContain('border-flint-700');
       expect(html).toContain(icon);
       expect(html).toMatch(/<svg[^>]*width="14"/);
       expect(html).toContain(`${label}</p>`);

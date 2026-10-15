@@ -55,7 +55,7 @@ describe('page frame', () => {
     }
   });
 
-  it('gives each zero-stock state one tone: dashed for not here yet, Violet for Sold Out', () => {
+  it('gives each zero-stock state one tone: dashed for not here yet, Flint for Sold Out', () => {
     const css = globalCss.replace(/\/\*[\s\S]*?\*\//g, '');
     const rule = (selector: string) =>
       [...css.matchAll(/([^{};]+)\{([^{}]*)\}/g)]
@@ -63,8 +63,8 @@ describe('page frame', () => {
         .map(([, , body]) => body);
     expect(rule("[data-store-listing-availability-state='coming_soon']").join()).toMatch(/border-style:\s*dashed/);
     expect(rule("[data-availability-state='repressing']").join()).toMatch(/border-style:\s*dashed/);
-    expect(rule("[data-store-listing-availability-state='sold_out']").join()).toContain('var(--violet-700)');
-    expect(rule("[data-availability-state='sold_out']").join()).toContain('var(--violet-700)');
+    expect(rule("[data-store-listing-availability-state='sold_out']").join()).toContain('var(--flint-700)');
+    expect(rule("[data-availability-state='sold_out']").join()).toContain('var(--flint-700)');
     expect(css).not.toContain(':has(.preorder-action:disabled)');
   });
 });

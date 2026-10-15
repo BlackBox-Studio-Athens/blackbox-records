@@ -423,7 +423,7 @@ function CheckoutReturnBadge({ view }: { view: CheckoutReturnStatusView }) {
         'inline-flex border px-2 py-1 text-xs uppercase tracking-[0.18em]',
         view.tone === 'success' && 'border-emerald-300/40 bg-emerald-300/10 text-emerald-100',
         view.tone === 'attention' && 'border-foreground/25 bg-background/70 text-foreground',
-        view.tone === 'error' && 'border-violet-700 bg-violet-surface text-violet-300',
+        view.tone === 'error' && 'border-flint-700 bg-flint-surface text-flint-300',
         view.tone === 'loading' && 'border-border/70 bg-background/60 text-muted-foreground',
       )}
     >

@@ -125,7 +125,7 @@ export default function CheckoutOfferStatus({
     'checkout-review__badge rounded-none',
     view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
     view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
-    view.tone === 'error' && 'border-violet-700 bg-violet-surface text-violet-300',
+    view.tone === 'error' && 'border-flint-700 bg-flint-surface text-flint-300',
     view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
   );
 
@@ -334,7 +334,7 @@ export default function CheckoutOfferStatus({
           {checkoutError && (
             <div className="space-y-3">
               <p
-                className="border border-violet-700 bg-violet-surface p-3 text-xs leading-relaxed text-violet-300"
+                className="border border-flint-700 bg-flint-surface p-3 text-xs leading-relaxed text-flint-300"
                 role="alert"
               >
                 <span className="form-error-label">Error</span>

@@ -45,14 +45,14 @@ describe('Button', () => {
     expect(buttonVariants({ variant: 'outline' }).split(' ')).toContain('min-h-11');
   });
 
-  it('selects chips in Violet and edges browse actions in Violet', () => {
+  it('selects chips in Flint and edges browse actions in Flint', () => {
     const chip = buttonVariants({ variant: 'chip' }).split(' ');
     const inverse = buttonVariants({ variant: 'inverse' }).split(' ');
 
-    expect(chip).toEqual(expect.arrayContaining(['site-button--chip', 'min-h-11', 'aria-pressed:border-violet-500']));
+    expect(chip).toEqual(expect.arrayContaining(['site-button--chip', 'min-h-11', 'aria-pressed:border-flint-500']));
     expect(chip).not.toContain('min-w-28');
     expect(inverse).toEqual(
-      expect.arrayContaining(['site-button--inverse', 'border-violet-700', 'text-foreground', 'min-w-28']),
+      expect.arrayContaining(['site-button--inverse', 'border-flint-700', 'text-foreground', 'min-w-28']),
     );
   });
 

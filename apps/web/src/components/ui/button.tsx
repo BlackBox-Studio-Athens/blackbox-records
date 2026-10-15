@@ -17,14 +17,14 @@ const buttonVariantClasses = cva('site-button', {
         'site-button--primary border-control-ink bg-control-ink text-primary-foreground hover:border-foreground hover:bg-foreground active:border-control-ink-pressed active:bg-control-ink-pressed active:shadow-[inset_0_0_0_1px_rgba(13,13,13,0.22)]',
       outline:
         'site-button--outline border-control-edge bg-secondary text-foreground hover:border-control-edge-hover hover:bg-control-face-hover active:bg-card',
-      // Browse actions (Read News, View Full Roster, Continue shopping): charcoal face, Violet edge, white label.
+      // Browse actions (Read News, View Full Roster, Continue shopping): charcoal face, Flint edge, white label.
       inverse:
-        'site-button--inverse border-violet-700 bg-secondary text-foreground hover:border-violet-500 hover:bg-violet-surface',
+        'site-button--inverse border-flint-700 bg-secondary text-foreground hover:border-flint-500 hover:bg-flint-surface',
       // The underline that grows from the centre on hover is global.css .site-button--ghost::after.
       ghost:
         'site-button--ghost border-transparent bg-transparent text-muted-foreground hover:text-foreground active:text-control-muted-pressed',
       link: 'site-button--link',
-      chip: 'site-button--chip group border-control-edge-quiet bg-secondary text-muted-foreground hover:border-control-edge-hover hover:text-foreground aria-pressed:border-violet-500 aria-pressed:bg-violet-surface aria-pressed:text-foreground',
+      chip: 'site-button--chip group border-control-edge-quiet bg-secondary text-muted-foreground hover:border-control-edge-hover hover:text-foreground aria-pressed:border-flint-500 aria-pressed:bg-flint-surface aria-pressed:text-foreground',
     },
     size: {
       default: 'min-h-11 px-4 text-base',
