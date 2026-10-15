@@ -29,8 +29,8 @@ describe('Store collection category surfaces', () => {
     expect(categoryNavigationSource).toContain('data-store-category-active');
     // Store-format browser coverage checks responsive category layout and target sizes.
     expect(cssSource).toContain('border-bottom: 3px solid transparent');
-    expect(cssSource).toContain('border-bottom-color: var(--store-accent-active)');
-    expect(cssSource).toContain('background: var(--store-accent-surface)');
+    expect(cssSource).toContain('border-bottom-color: var(--violet-500)');
+    expect(cssSource).toContain('background: var(--violet-surface)');
     expect(cssSource).toContain('outline: 2px solid var(--foreground)');
   });
 

@@ -31,7 +31,7 @@ const cartReturnPath = createProjectRelativeUrl('/store/checkout/return/');
       window.location.replace(`${cartReturnPath}${window.location.search}${window.location.hash}`);
     }
   </script>
-  <section class="checkout-review checkout-return" data-tone="store">
+  <section class="checkout-review checkout-return">
     <CheckoutReturnStatus
       client:load
       checkoutPath={createProjectRelativeUrl('/store/checkout/')}

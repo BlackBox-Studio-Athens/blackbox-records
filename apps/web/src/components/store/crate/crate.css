@@ -405,7 +405,7 @@
 
 .store-crate-letter[aria-current='true'] {
   color: var(--foreground);
-  box-shadow: inset 0 -2px 0 var(--store-accent);
+  box-shadow: inset 0 -2px 0 var(--violet-500);
 }
 
 .store-crate-nav {

@@ -15,7 +15,7 @@ function classesOf(html: string) {
 }
 
 describe('Button', () => {
-  it('draws a square 36px Bebas control with a 44px coarse-pointer halo by default', () => {
+  it('draws a square 44px Bebas control with a coarse-pointer halo by default', () => {
     const html = renderToStaticMarkup(<Button>Checkout</Button>);
     const classes = classesOf(html);
 
@@ -28,8 +28,9 @@ describe('Button', () => {
         'rounded-none',
         'font-display',
         'uppercase',
-        'min-h-9',
-        'min-w-24',
+        'min-h-11',
+        'min-w-28',
+        'text-base',
         'pointer-coarse:before:absolute',
         'pointer-coarse:before:-inset-[5px]',
         'focus-visible:outline-2',
@@ -38,33 +39,32 @@ describe('Button', () => {
     );
   });
 
-  it('keeps the large size at 44px with the commerce minimum width', () => {
-    const classes = classesOf(renderToStaticMarkup(<Button size="lg">Add to cart</Button>));
+  it('has one 44px size plus the 52px hero exception', () => {
+    const hero = buttonVariants({ size: 'hero' }).split(' ');
 
-    expect(classes).toEqual(expect.arrayContaining(['min-h-11', 'min-w-28', 'text-base']));
-    expect(classes).not.toContain('min-h-9');
+    expect(hero).toEqual(expect.arrayContaining(['site-button--hero', 'min-h-13', 'text-xl']));
+    expect(hero).not.toContain('min-h-11');
+    expect(buttonVariants({ variant: 'outline' }).split(' ')).toContain('min-h-11');
   });
 
-  it('widens the halo for 32px chips and exposes pressed state styling', () => {
-    const classes = buttonVariants({ variant: 'chip', size: 'sm' }).split(' ');
+  it('selects chips in Violet and edges browse actions in Violet', () => {
+    const chip = buttonVariants({ variant: 'chip' }).split(' ');
+    const inverse = buttonVariants({ variant: 'inverse' }).split(' ');
 
-    expect(classes).toEqual(
-      expect.arrayContaining([
-        'site-button--chip',
-        'min-h-8',
-        'pointer-coarse:before:-inset-[7px]',
-        'aria-pressed:border-foreground',
-      ]),
+    expect(chip).toEqual(
+      expect.arrayContaining(['site-button--chip', 'min-h-11', 'aria-pressed:border-[var(--violet-500)]']),
     );
-    expect(classes).not.toContain('pointer-coarse:before:-inset-[5px]');
-    expect(classes).not.toContain('min-w-24');
+    expect(chip).not.toContain('min-w-28');
+    expect(inverse).toEqual(
+      expect.arrayContaining(['site-button--inverse', 'border-[var(--violet-700)]', 'text-foreground', 'min-w-28']),
+    );
   });
 
-  it('keeps text actions in the reading face without the caps nudge', () => {
+  it('keeps text actions in the reading face in a 44px row without the caps nudge', () => {
     const classes = buttonVariants({ variant: 'link' }).split(' ');
 
     expect(classes).toEqual(
-      expect.arrayContaining(['site-button--link', 'font-sans', 'normal-case', 'pt-0', 'underline']),
+      expect.arrayContaining(['site-button--link', 'font-sans', 'normal-case', 'pt-0', 'underline', 'min-h-11']),
     );
     expect(classes).not.toContain('font-display');
     expect(classes).not.toContain('pt-px');
@@ -72,37 +72,30 @@ describe('Button', () => {
 
   it('sizes icons at zero specificity without matching on the class attribute', () => {
     const base = buttonVariants().split(' ');
-    const small = buttonVariants({ size: 'sm' }).split(' ');
-    const large = buttonVariants({ size: 'lg' }).split(' ');
-    const iconLarge = buttonVariants({ variant: 'outline', size: 'icon-lg' }).split(' ');
+    const icon = buttonVariants({ variant: 'outline', size: 'icon' }).split(' ');
 
-    expect(base).toContain('[:where(&)_svg]:size-4');
-    expect(small).toContain('[:where(&)_svg]:size-3.5');
-    expect(small).not.toContain('[:where(&)_svg]:size-4');
-    expect(large).toContain('[:where(&)_svg]:size-[18px]');
-    expect(large).not.toContain('[:where(&)_svg]:size-4');
-    expect(iconLarge).toContain('[:where(&)_svg]:size-[18px]');
-    for (const classes of [base, small, large, iconLarge]) {
+    expect(base).toContain('[:where(&)_svg]:size-[18px]');
+    expect(icon).toContain('[:where(&)_svg]:size-[18px]');
+    for (const classes of [base, icon]) {
       expect(classes.join(' ')).not.toContain('[class');
     }
   });
 
-  it('marks icon controls so section tone never reaches them', () => {
+  it('draws icon controls at 44px on a quiet neutral edge', () => {
     const classes = buttonVariants({ variant: 'outline', size: 'icon' }).split(' ');
 
-    expect(classes).toEqual(expect.arrayContaining(['site-button--icon', 'size-9', 'border-control-edge-quiet']));
+    expect(classes).toEqual(expect.arrayContaining(['site-button--icon', 'size-11', 'border-control-edge-quiet']));
     expect(classes).not.toContain('border-control-edge');
   });
 });
 
 describe('Button family CSS', () => {
-  it('lets outlined buttons inherit the store and services tone, but not icon controls', () => {
-    expect(globalCss).toContain("[data-tone='store'] .site-button--outline:not(.site-button--icon) {");
-    expect(globalCss).toContain("[data-tone='services'] .site-button--outline:not(.site-button--icon) {");
+  it('gives outlined buttons no section tone', () => {
+    expect(globalCss).not.toContain('[data-tone=');
   });
 
   it('reserves the header cart slot so navigation does not shift', () => {
-    expect(globalCss).toMatch(/\[data-store-cart-header-root\] \{[^}]*min-width: 2\.25rem;[^}]*min-height: 2\.25rem;/);
+    expect(globalCss).toMatch(/\[data-store-cart-header-root\] \{[^}]*min-width: 2\.75rem;[^}]*min-height: 2\.75rem;/);
   });
 
   it('keeps Bebas on buttons, Listen, purchase status and copies-left notices inside store item pages', () => {

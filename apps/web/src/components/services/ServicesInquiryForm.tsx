@@ -194,6 +194,7 @@ export function ServicesInquirySubmissionFeedback({ status }: { status: Services
           id={status === 'field-error' ? 'services-inquiry-field-error' : undefined}
           role="alert"
         >
+          <span className="form-error-label">Error</span>
           {errorMessage}
         </p>
       ) : null}
@@ -416,7 +417,6 @@ export default function ServicesInquiryForm({
           className="min-w-[12.5rem] justify-self-start"
           aria-busy={isSubmitting ? 'true' : undefined}
           disabled={isSubmitting}
-          size="lg"
           type="submit"
           variant="outline"
         >

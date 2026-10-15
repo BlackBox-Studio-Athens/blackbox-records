@@ -6,8 +6,8 @@ function read(path: string) {
   return readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 }
 
-// Section tone is declared once per surface, inside the shell-swapped main content (attributes on <main>
-// itself do not survive shell navigation); outlined buttons inside inherit it from global.css.
+// Accent roles are fixed (openspec/changes/accent-and-button-system): Sea for pre-order, Violet for buying and labels,
+// Slate for Listen and small marks. No surface declares a section tone that recolours the controls inside it.
 describe('section tone declarations', () => {
   it.each([
     '../layouts/StoreCollectionPage.astro',
@@ -17,12 +17,10 @@ describe('section tone declarations', () => {
     './store/[slug]/checkout/index.astro',
     './store/[slug]/checkout/return/index.astro',
     '../components/store/cart/StoreCartDrawer.tsx',
-  ])('%s declares the store tone once', (path) => {
-    expect(read(path).match(/data-tone="store"/g)).toHaveLength(1);
-  });
-
-  it('declares the services tone once on the services page', () => {
-    expect(read('./services/index.astro').match(/data-tone="services"/g)).toHaveLength(1);
+    '../components/store/checkout/WithdrawalForm.tsx',
+    './services/index.astro',
+  ])('%s declares no section tone', (path) => {
+    expect(read(path)).not.toMatch(/data-tone=/);
   });
 
   it('keeps accent colours out of individual public buttons', () => {

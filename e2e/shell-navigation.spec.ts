@@ -360,7 +360,13 @@ test('mobile navigation sheet drives shell navigation without horizontal overflo
   const store = mobileNav.getByRole('link', { name: 'Store' });
   expect(await store.getAttribute('aria-current')).toBeNull();
   await expect(store).toHaveCSS('border-left-width', '0px');
-  await expect(store).not.toHaveCSS('color', 'rgb(207, 107, 128)');
+  await expect(store).not.toHaveAttribute('data-nav-accent');
+  // Every section marks its current page with the same Violet underline.
+  expect(
+    await links
+      .first()
+      .evaluate((link) => getComputedStyle(link.querySelector('.site-nav-link__label')!, '::after').backgroundColor),
+  ).toBe('rgb(176, 143, 208)');
   for (const target of [...(await links.all()), page.getByRole('button', { name: 'Close', exact: true })]) {
     expect((await target.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   }

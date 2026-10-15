@@ -20,7 +20,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
   pageTitle="Services"
   pageDescription="Share your demo, book tours, print merch, and press vinyl with BlackBox."
 >
-  <div data-tone="services">
+  <div>
     <section class="layout-container services-page-intro">
       <p class="services-page-intro__eyebrow">What We Do</p>
       <h1 class="services-page-intro__title internal-page-hero__title">{servicesContent.hero.title}</h1>
@@ -29,7 +29,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
         href="#services-inquiry"
         data-services-inquiry-target-service="General"
         data-scroll-to-target="services-inquiry"
-        class={buttonVariants({ size: 'lg' })}
+        class={buttonVariants()}
       >
         {servicesContent.hero.cta_text}
       </a>
@@ -111,7 +111,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
             href="#services-inquiry"
             data-services-inquiry-target-service="Share your demo"
             data-scroll-to-target="services-inquiry"
-            class={buttonVariants({ variant: 'outline', size: 'lg' })}
+            class={buttonVariants({ variant: 'outline' })}
           >
             Share your demo
           </a>

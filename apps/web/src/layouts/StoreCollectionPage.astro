@@ -31,7 +31,7 @@ const catalogId = 'all-store-catalog';
 
 <SiteLayout pageTitle={category.title} pageDescription={category.description} mainClass="store-collection-page">
   {entries.length > 0 && <StoreListingPricePrefetch pathname={category.path} />}
-  <div data-tone="store">
+  <div>
     <div id="store-page-top">
       <InternalPageHero sectionLabel="Store" title={category.heading} />
     </div>

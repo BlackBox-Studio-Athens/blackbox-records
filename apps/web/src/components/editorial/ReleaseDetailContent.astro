@@ -151,7 +151,7 @@ const galleryImages =
             <ReleaseStoreLink
               client:idle
               href={commerceLink.href}
-              className={buttonVariants({ size: 'lg' })}
+              className={buttonVariants()}
               releaseDate={releaseDateMachineValue}
               physicalFormat={commerceLink.physicalFormat}
               projected={projectedPreorder && projectedListing(projectedPreorder)}
@@ -162,7 +162,7 @@ const galleryImages =
                 href={commerceLink.href}
                 target={commerceLink.target}
                 rel={commerceLink.rel}
-                class={buttonVariants({ size: 'lg', className: commerceLink.target ? 'pr-6' : undefined })}
+                class={buttonVariants({ className: commerceLink.target ? 'pr-6' : undefined })}
               >
                 {commerceLink.label}
                 {commerceLink.target && (

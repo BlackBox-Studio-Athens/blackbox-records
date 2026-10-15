@@ -204,11 +204,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
             class="artist-detail-listen-trigger"
           />
         )}
-        <a
-          href={latestReleaseHref}
-          data-astro-prefetch
-          class={buttonVariants({ variant: 'ghost', size: latestReleasePlayerData ? 'lg' : 'default' })}
-        >
+        <a href={latestReleaseHref} data-astro-prefetch class={buttonVariants({ variant: 'ghost' })}>
           Details
         </a>
       </div>

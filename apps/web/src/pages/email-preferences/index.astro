@@ -146,7 +146,7 @@ const logoUrl = createProjectRelativeUrl('/assets/images/brand/logo-240.webp');
     --control-ink: #e8e8e8;
     --control-ink-pressed: #cfcfcf;
     --primary-inverse: #090909;
-    --error: #cf6b80;
+    --error: #cab2e4;
   }
 
   * {
@@ -366,6 +366,15 @@ const logoUrl = createProjectRelativeUrl('/assets/images/brand/logo-240.webp');
 
   .email-preferences__result--error {
     color: var(--error);
+  }
+
+  /* Errors never rely on colour alone: the script writes the message, CSS adds the visible label. */
+  .email-preferences__result--error:not(:empty)::before {
+    content: 'Error';
+    margin-right: 0.5em;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   @media (max-width: 30rem) {

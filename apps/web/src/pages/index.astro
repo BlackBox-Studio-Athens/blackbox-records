@@ -48,7 +48,7 @@ const preorderItems = await preorderShowcaseItems(readOpenPreorders());
         <a
           href={createProjectRelativeUrl(homeNews.link_url)}
           data-astro-prefetch
-          class={buttonVariants({ variant: 'ghost' })}
+          class={buttonVariants({ variant: 'inverse' })}
         >
           {homeNews.link_text}
         </a>
@@ -92,7 +92,7 @@ const preorderItems = await preorderShowcaseItems(readOpenPreorders());
           <a
             href={createProjectRelativeUrl(homeArtists.button_link)}
             data-astro-prefetch
-            class={buttonVariants({ variant: 'outline' })}
+            class={buttonVariants({ variant: 'inverse' })}
           >
             {homeArtists.button_text}
           </a>

@@ -16,8 +16,8 @@ interface Props {
 }
 const { catalogId, formatGroups, binRow, label } = Astro.props;
 const bins = openBinsOf(formatGroups);
-const stepButton = buttonVariants({ variant: 'outline', size: 'icon-lg' });
-const endButton = buttonVariants({ variant: 'outline', size: 'lg' });
+const stepButton = buttonVariants({ variant: 'outline', size: 'icon' });
+const endButton = buttonVariants({ variant: 'outline' });
 ---
 
 {/* Collections without a bin render only their Grid. */}

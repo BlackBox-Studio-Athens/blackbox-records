@@ -57,14 +57,12 @@ const heroImageWidths = [900, 1400];
       <a
         href={createProjectRelativeUrl('/store/')}
         data-astro-prefetch
-        class={buttonVariants({
-          variant: 'outline',
-          size: 'sm',
-          class:
-            'min-h-7 px-2 text-xs border-control-ink/48 bg-background/35 text-[#d8d8d8] pointer-coarse:before:-inset-[9px]',
-        })}
+        class={buttonVariants({ size: 'hero', className: 'home-hero-cta' })}
       >
-        Browse the Store
+        <span>Browse the Store</span>
+        <svg class="home-hero-cta__arrow" viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+          <path d="M2 9h13M10 4l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" />
+        </svg>
       </a>
     </div>
   </div>

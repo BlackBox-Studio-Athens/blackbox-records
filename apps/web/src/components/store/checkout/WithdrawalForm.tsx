@@ -78,7 +78,7 @@ export default function WithdrawalForm({
     );
 
   return (
-    <div className="space-y-5" data-tone="store">
+    <div className="space-y-5">
       {reviewing ? (
         <div className="space-y-5">
           <h2 ref={heading} tabIndex={-1} className="font-display text-3xl">
@@ -106,7 +106,6 @@ export default function WithdrawalForm({
           <div className="flex flex-wrap gap-3">
             <Button
               type="button"
-              size="lg"
               disabled={pending}
               aria-busy={pending}
               onClick={() => {
@@ -178,9 +177,7 @@ export default function WithdrawalForm({
               onChange={(event) => setDetails({ ...details, email: event.target.value })}
             />
           </div>
-          <Button type="submit" size="lg">
-            Review withdrawal
-          </Button>
+          <Button type="submit">Review withdrawal</Button>
         </form>
       )}
       {error && <p role="alert">{error}</p>}

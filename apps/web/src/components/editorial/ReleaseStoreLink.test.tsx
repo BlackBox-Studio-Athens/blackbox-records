@@ -36,7 +36,7 @@ vi.mock('react', async (importOriginal) => {
 
 const props = {
   href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-  className: buttonVariants({ size: 'lg' }),
+  className: buttonVariants(),
   releaseDate: '2026-10-16',
   physicalFormat: 'vinyl' as const,
 };
@@ -71,7 +71,7 @@ afterEach(() => vi.useRealTimers());
 
 describe('ReleaseStoreLink', () => {
   it.each([undefined, 'outline'] as const)('preserves the server Shop release anchor with %s styling', (variant) => {
-    const className = buttonVariants({ variant, size: 'lg' });
+    const className = buttonVariants({ variant });
     expect(renderToStaticMarkup(<ReleaseStoreLink {...props} physicalFormat={null} className={className} />)).toBe(
       renderToStaticMarkup(
         <a href={props.href} className={className}>

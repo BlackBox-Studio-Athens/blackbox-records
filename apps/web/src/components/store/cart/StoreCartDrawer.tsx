@@ -96,7 +96,6 @@ export default function StoreCartDrawer({
       <SheetContent
         ref={setModalRoot}
         side="right"
-        data-tone="store"
         className="store-cart-drawer top-[var(--header-height)] bottom-auto z-[1100] flex h-[calc(100dvh-var(--header-height))] min-h-0 w-[min(100vw,440px)] max-w-none flex-col overflow-hidden border-l border-border bg-card p-0 text-foreground sm:max-w-none"
       >
         <StoreCartDrawerPanel
@@ -349,7 +348,6 @@ export function StoreCartDrawerPanel({
         {hasLines && (
           <Button
             asChild
-            size="lg"
             className={`store-cart-drawer__checkout${visibleLines.some((line) => line.preorder) ? ' preorder-action' : ''}`}
           >
             <a href={view.checkoutHref || undefined} data-store-cart-checkout>
@@ -362,13 +360,7 @@ export function StoreCartDrawerPanel({
             </a>
           </Button>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="store-cart-drawer__continue"
-          onClick={onContinueShopping}
-        >
+        <Button type="button" variant="inverse" className="store-cart-drawer__continue" onClick={onContinueShopping}>
           {STORE_CART_DRAWER_COPY.continueShopping}
         </Button>
       </div>

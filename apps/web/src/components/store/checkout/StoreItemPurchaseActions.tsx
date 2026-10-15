@@ -241,7 +241,6 @@ export default function StoreItemPurchaseActions({
     return (
       <Button
         type="button"
-        size="lg"
         variant="outline"
         className={`${purchaseActionLayoutClasses} disabled:opacity-100`}
         disabled
@@ -264,7 +263,6 @@ export default function StoreItemPurchaseActions({
         </p>
         <Button
           type="button"
-          size="lg"
           variant="outline"
           className="w-full"
           onClick={() => setReadAttempt((attempt) => attempt + 1)}
@@ -287,11 +285,10 @@ export default function StoreItemPurchaseActions({
   const addToCartButton = (
     <Button
       type="button"
-      size="lg"
       variant={isAddedVisible ? 'outline' : 'default'}
       className={cn(
         purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses,
-        activeCartItem.preorder && 'preorder-action',
+        activeCartItem.preorder ? 'preorder-action' : !isAddedVisible && 'purchase-action',
       )}
       data-store-item-add-to-cart
       data-store-item-added={isAddedVisible ? '' : undefined}

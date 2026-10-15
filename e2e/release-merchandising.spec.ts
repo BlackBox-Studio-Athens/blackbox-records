@@ -359,8 +359,9 @@ for (const width of [390, 1280]) {
     await expect(lead.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
     const status = lead.locator('[data-release-badges] .store-item-card__release-status');
     await expect(status).toHaveText('Digital out now');
-    await expect(status).toHaveCSS('font-family', /Geist Mono/);
-    await expect(status).toHaveCSS('text-transform', 'uppercase');
+    // Status is a plain Inter line without a box (accent-and-button-system).
+    await expect(status).toHaveCSS('font-family', /Inter/);
+    await expect(status).toHaveCSS('text-transform', 'none');
     await expect(status).toHaveCSS('border-width', '0px');
     // Status sits with the buying facts: after the formats, before the price and action.
     const badges = await lead.locator('[data-release-badges]').boundingBox();
@@ -411,21 +412,22 @@ for (const width of [320, 390, 1280]) {
     await expect(lead.locator('[data-release-price]')).toHaveCSS('font-family', /Bebas Neue/);
     await expect(lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true })).toBeVisible();
     const status = lead.locator('[data-release-badges] .store-item-card__release-status');
-    await expect(status).toHaveCSS('font-family', /Geist Mono/);
-    await expect(status).toHaveCSS('font-weight', '700');
-    await expect(status).toHaveCSS('text-transform', 'uppercase');
+    await expect(status).toHaveCSS('font-family', /Inter/);
+    await expect(status).toHaveCSS('color', 'rgb(179, 179, 179)');
     await expect(status).toHaveCSS('border-width', '0px');
+    await expect(lead.locator('.preorder-badge')).toHaveCSS('color', 'rgb(76, 169, 153)');
     const [badges, formats] = await Promise.all([
       lead.locator('[data-release-badges]').boundingBox(),
       lead.locator('.release-card-formats').boundingBox(),
     ]);
     expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
-    // Catalog Buy wears the Store card chrome and record mark, so the featured Pre-order stays the filled primary.
+    // Catalog Buy fills Violet with the record mark; the featured Pre-order fills Sea Green.
     const catalogBuy = page
       .locator('[data-release-role="catalog"]')
       .getByRole('link', { name: 'Buy vinyl, Caregivers', exact: true });
     await expect(catalogBuy).toHaveClass(/purchase-action/);
-    await expect(catalogBuy).toHaveCSS('border-top-color', 'rgba(245, 245, 245, 0.48)');
+    await expect(catalogBuy).toHaveCSS('background-color', 'rgb(125, 88, 160)');
+    await expect(catalogBuy).toHaveCSS('color', 'rgb(245, 245, 245)');
     await expect(catalogBuy.locator('.store-buy-icon')).toBeVisible();
     await expect(page.locator('[data-release-role="catalog"] [data-release-price]')).toHaveText('€28.00');
     await expect(page.getByText('Featured records', { exact: true })).toHaveCount(0);
@@ -462,10 +464,11 @@ for (const width of [320, 390, 1280]) {
     await page.mouse.move(0, 0);
     await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
     const visual = await button.evaluate((element) => ({
-      shadow: getComputedStyle(element).boxShadow,
+      face: getComputedStyle(element).backgroundColor,
+      label: getComputedStyle(element).color,
       accent: getComputedStyle(element).getPropertyValue('--preorder-accent').trim(),
     }));
-    expect(visual.shadow).toMatch(/-3(?:\.0+)?px/);
+    expect(visual).toMatchObject({ face: 'rgb(45, 118, 106)', label: 'rgb(245, 245, 245)' });
     expect(visual.accent).not.toBe('');
     await expectNoHorizontalOverflow(page);
     await button.focus();

@@ -14,11 +14,11 @@ describe('navigationLinkAttributes', () => {
     expect(navigationLinkAttributes('/', '/blackbox-records/artists/')['aria-current']).toBeUndefined();
   });
 
-  it('keeps Store current across its categories and accents only Store and Services', () => {
+  it('keeps Store current across its categories without a section accent', () => {
     const store = navigationLinkAttributes('/store/', '/blackbox-records/store/distro/');
-    expect(store).toMatchObject({ 'aria-current': 'page', 'data-nav-accent': 'store' });
-    expect(navigationLinkAttributes('/store/merch/', '/')['data-nav-accent']).toBe('store');
-    expect(navigationLinkAttributes('/services/', '/')['data-nav-accent']).toBe('services');
-    expect(navigationLinkAttributes('/about/', '/')['data-nav-accent']).toBeUndefined();
+    expect(store).toMatchObject({ 'aria-current': 'page' });
+    for (const url of ['/store/', '/services/', '/about/'] as const) {
+      expect(navigationLinkAttributes(url, '/')).not.toHaveProperty('data-nav-accent');
+    }
   });
 });

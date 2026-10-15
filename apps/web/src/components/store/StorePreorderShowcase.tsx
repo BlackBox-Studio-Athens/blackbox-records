@@ -337,11 +337,7 @@ function PreorderChapter({
         <span className="home-preorders__option">{item.option}</span>
         <span className="home-preorders__price">{item.displayPrice}</span>
       </div>
-      <a
-        href={item.storePath}
-        data-astro-prefetch
-        className={buttonVariants({ size: 'lg', className: 'preorder-action' })}
-      >
+      <a href={item.storePath} data-astro-prefetch className={buttonVariants({ className: 'preorder-action' })}>
         <span>Pre-order</span>
       </a>
       {clip && !badges.some((badge) => estimate && badge.includes(estimate)) && (
@@ -410,7 +406,7 @@ function PreorderChapter({
               {background && automaticMotion && !failed && !autoplayBlocked && (
                 <button
                   type="button"
-                  className={buttonVariants({ variant: 'outline', size: 'icon-lg' })}
+                  className={buttonVariants({ variant: 'outline', size: 'icon' })}
                   disabled={!active || !documentVisible || playerSession || playing}
                   aria-label={manualPause ? 'Resume background motion' : 'Pause background motion'}
                   onClick={() => setManualPause((paused) => !paused)}
@@ -424,7 +420,7 @@ function PreorderChapter({
                 ref={watchButton}
                 type="button"
                 disabled={playerSession}
-                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                className={buttonVariants({ variant: 'outline' })}
                 aria-controls={watchId}
                 aria-expanded={playing}
                 aria-describedby={playerSession ? sessionNoteId : undefined}
@@ -454,11 +450,7 @@ function PreorderChapter({
           </div>
           {playing && !playerSession && (
             <div id={watchId} ref={fullVideo} className="home-preorders__watch-area" tabIndex={-1}>
-              <button
-                type="button"
-                className={buttonVariants({ variant: 'outline', size: 'lg' })}
-                onClick={() => onWatch(null)}
-              >
+              <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={() => onWatch(null)}>
                 Close video
               </button>
               <iframe

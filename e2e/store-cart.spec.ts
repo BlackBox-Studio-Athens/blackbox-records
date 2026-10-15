@@ -584,7 +584,7 @@ test('Store routes warm the cart drawer so the header control opens it in the cl
   // Idle warm-up, with no pointer or focus intent on the cart control.
   await cartDrawerWarmed();
 
-  expect(await openSurfaceWithinClickTask(page, trigger, '[role="dialog"][data-tone="store"]')).toEqual({
+  expect(await openSurfaceWithinClickTask(page, trigger, '[role="dialog"].store-cart-drawer')).toEqual({
     loadingStatus: false,
     visible: true,
   });

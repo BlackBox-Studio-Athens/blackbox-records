@@ -125,18 +125,26 @@ body.is-shell-scroll-locked {
   --border: #262626;
   --input: #262626;
   --ring: #f5f5f5;
-  --services-accent: #8a495a;
-  --services-accent-hover: #a76376;
-  --services-accent-active: #c78997;
-  --services-accent-surface: rgba(138, 73, 90, 0.14);
-  --store-accent: #922f3f;
-  --store-accent-hover: #b4465a;
-  --store-accent-active: #cf6b80;
-  --store-accent-surface: rgba(146, 47, 63, 0.14);
-  /* Pre-order Sea green, the complement of Store Blood (openspec/changes/add-store-preorders) */
-  --preorder-accent: #2d766a;
-  --preorder-accent-active: #4ca999;
-  --preorder-accent-surface: rgba(45, 118, 106, 0.16);
+  /* Three fixed accent roles (openspec/changes/accent-and-button-system): Sea means pre-order, Violet means buy and
+     labels you read, Slate means listen and small marks. Titles, grounds and body copy stay ink and grey. */
+  --sea-800: #256258;
+  --sea-700: #2d766a;
+  --sea-500: #4ca999;
+  --sea-300: #7cc7b9;
+  --sea-surface: rgba(45, 118, 106, 0.16);
+  --violet-800: #664584;
+  --violet-700: #7d58a0;
+  --violet-500: #b08fd0;
+  --violet-300: #cab2e4;
+  --violet-surface: rgba(125, 88, 160, 0.16);
+  --slate-700: #366e99;
+  --slate-500: #66a2d2;
+  --slate-300: #91c4ee;
+  --slate-surface: rgba(54, 110, 153, 0.16);
+  /* Pre-order names kept as Sea aliases (openspec/changes/add-store-preorders) */
+  --preorder-accent: var(--sea-700);
+  --preorder-accent-active: var(--sea-500);
+  --preorder-accent-surface: var(--sea-surface);
   /* Public button family (openspec/changes/unify-public-buttons) */
   --control-ink: #e8e8e8;
   --control-ink-pressed: #cfcfcf;
@@ -416,7 +424,7 @@ body {
   }
 
   /* One link style for the header, the phone Menu and the footer sitemap; surface modifiers only size it.
-     Route accents appear on hover, focus, press or the current page, never at rest. */
+     Every section marks its current page the same way: an ink label over one Violet underline. */
   .site-nav-link {
     --nav-link-rest: var(--muted-foreground);
     --nav-link-hover: var(--foreground);
@@ -425,16 +433,6 @@ body {
     align-items: center;
     color: var(--nav-link-rest);
     transition: color 200ms ease-in-out;
-  }
-
-  .site-nav-link[data-nav-accent='store'] {
-    --nav-link-hover: var(--store-accent-hover);
-    --nav-link-current: var(--store-accent-active);
-  }
-
-  .site-nav-link[data-nav-accent='services'] {
-    --nav-link-hover: var(--services-accent-hover);
-    --nav-link-current: var(--services-accent-active);
   }
 
   .site-nav-link__label {
@@ -474,6 +472,10 @@ body {
 
   .site-nav-link[aria-current='page'] {
     color: var(--nav-link-current);
+  }
+
+  .site-nav-link[aria-current='page'] .site-nav-link__label::after {
+    background: var(--violet-500);
   }
 
   .site-nav-link:focus-visible .site-nav-link__label::after,
@@ -598,7 +600,7 @@ body {
     inset: 0;
     overflow: hidden;
     pointer-events: none;
-    color: rgba(199, 137, 151, 0.18);
+    color: color-mix(in srgb, var(--foreground) 10%, transparent);
   }
 
   .grid-pattern__svg {
@@ -618,7 +620,7 @@ body {
     font-size: 0.75rem;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--muted-foreground);
+    color: var(--violet-500);
   }
 
   .services-page-intro__title {
@@ -738,12 +740,12 @@ body {
   }
 
   .services-inline-link:focus-visible {
-    color: var(--services-accent-active);
+    text-decoration-color: var(--slate-500);
   }
 
   @media (hover: hover) {
     .services-inline-link:hover {
-      color: var(--services-accent-active);
+      text-decoration-color: var(--slate-500);
     }
   }
 
@@ -823,7 +825,7 @@ body {
   .services-inquiry-form__label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--services-accent-active);
+    color: var(--violet-500);
   }
 
   .services-inquiry-form__meta {
@@ -861,8 +863,8 @@ body {
   .services-inquiry-form__input:focus-visible,
   .services-inquiry-form__textarea:focus-visible,
   .services-inquiry-form__select:focus-visible {
-    border-color: rgba(199, 137, 151, 0.74);
-    box-shadow: 0 0 0 3px rgba(138, 73, 90, 0.18);
+    border-color: var(--slate-500);
+    box-shadow: 0 0 0 3px var(--slate-surface);
   }
 
   .services-inquiry-form__actions {
@@ -886,13 +888,13 @@ body {
     max-width: 42rem;
     font-size: 0.95rem;
     line-height: 1.7;
-    color: #e6ccd3;
+    color: var(--violet-300);
   }
 
   .services-inquiry-form__input[aria-invalid='true'],
   .services-inquiry-form__textarea[aria-invalid='true'],
   .services-inquiry-form__select[aria-invalid='true'] {
-    border-color: rgba(199, 137, 151, 0.9);
+    border-color: var(--violet-300);
   }
 
   .services-inquiry-form__success {
@@ -901,14 +903,14 @@ body {
     max-width: 40rem;
     margin-inline: auto;
     padding: 1.25rem;
-    border: 1px solid rgba(199, 137, 151, 0.34);
-    background: rgba(138, 73, 90, 0.08);
+    border: 1px solid var(--control-edge);
+    background: var(--secondary);
     outline: none;
   }
 
   .services-inquiry-form__success:focus-visible {
-    border-color: rgba(199, 137, 151, 0.74);
-    box-shadow: 0 0 0 3px rgba(138, 73, 90, 0.18);
+    border-color: var(--slate-500);
+    box-shadow: 0 0 0 3px var(--slate-surface);
   }
 
   .services-inquiry-form__success-title {
@@ -1070,6 +1072,10 @@ body {
   .site-footer-meta-established {
     margin: 0;
     white-space: nowrap;
+  }
+
+  .site-footer-meta-established {
+    color: var(--slate-500);
   }
 
   .site-footer-social-row {
@@ -1320,7 +1326,7 @@ body {
   }
 
   .artist-latest-teaser__label {
-    color: #a7a7a7;
+    color: var(--violet-500);
     font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
@@ -1342,7 +1348,7 @@ body {
   }
 
   .artist-latest-teaser__meta {
-    color: #949494;
+    color: var(--slate-500);
     font-size: 0.75rem;
     line-height: 1.3;
     letter-spacing: 0.22em;
@@ -1413,7 +1419,7 @@ body {
   }
 
   .artist-detail-kicker {
-    color: #bdbdbd;
+    color: var(--violet-500);
     font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
@@ -1449,8 +1455,8 @@ body {
   }
 
   .newsletter-signup-status--success {
-    --newsletter-success-ink: color-mix(in srgb, var(--foreground) 74%, var(--services-accent-active));
-    --newsletter-success-rule: color-mix(in srgb, var(--services-accent-active) 56%, transparent);
+    --newsletter-success-ink: var(--foreground);
+    --newsletter-success-rule: var(--slate-500);
 
     position: relative;
     width: fit-content;
@@ -1482,7 +1488,7 @@ body {
   }
 
   .newsletter-signup-consent-checkbox:checked {
-    accent-color: color-mix(in srgb, var(--foreground) 82%, var(--services-accent-active));
+    accent-color: var(--violet-500);
     animation: newsletter-checkbox-confirm 230ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -1610,12 +1616,16 @@ body {
   }
 
   .artist-latest-release-panel__title:focus-visible {
-    color: #f1d9dc;
+    text-decoration: underline;
+    text-decoration-color: var(--slate-500);
+    text-underline-offset: 0.2em;
   }
 
   @media (hover: hover) {
     .artist-latest-release-panel__title:hover {
-      color: #f1d9dc;
+      text-decoration: underline;
+      text-decoration-color: var(--slate-500);
+      text-underline-offset: 0.2em;
     }
   }
 
@@ -1728,12 +1738,16 @@ body {
   }
 
   .artist-previous-release:focus-visible {
-    color: #f1d9dc;
+    text-decoration: underline;
+    text-decoration-color: var(--slate-500);
+    text-underline-offset: 0.2em;
   }
 
   @media (hover: hover) {
     .artist-previous-release:hover {
-      color: #f1d9dc;
+      text-decoration: underline;
+      text-decoration-color: var(--slate-500);
+      text-underline-offset: 0.2em;
     }
   }
 
@@ -2085,7 +2099,8 @@ body {
   .store-item-card__artist-link {
     color: inherit;
     text-decoration: underline;
-    text-decoration-color: var(--border);
+    /* Artist names are labels you read: a Violet underline at rest. */
+    text-decoration-color: var(--violet-500);
     text-underline-offset: 4px;
     transition: color 150ms ease;
   }
@@ -2126,28 +2141,28 @@ body {
   }
 
   .music-listen-trigger {
-    --music-listen-border-color: rgba(245, 245, 245, 0.48);
-    --music-listen-border-color-hover: #e3b56c;
+    /* Listen is the Slate control: charcoal face, Slate edge and bars, white label. */
+    --music-listen-border-color: var(--slate-700);
+    --music-listen-border-color-hover: var(--slate-500);
     position: relative;
     isolation: isolate;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-width: 7.6rem;
+    min-width: 7rem;
     min-height: 2.75rem;
-    padding: 0.5rem 0.85rem;
+    padding: 0 1rem;
     font-family: var(--font-display-ui);
-    font-size: 0.9375rem;
+    font-size: 1rem;
     font-weight: 400;
     line-height: 1;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     border-radius: 0;
-    color: rgba(245, 245, 245, 0.9);
-    border-color: var(--music-listen-border-color);
-    background: linear-gradient(180deg, rgba(245, 245, 245, 0.035), rgba(245, 245, 245, 0.005)), rgba(9, 9, 9, 0.94);
-    box-shadow: inset 0 -0.5rem 0.9rem rgba(0, 0, 0, 0.18);
+    color: var(--foreground);
+    border: 1px solid var(--music-listen-border-color);
+    background: var(--secondary);
     white-space: nowrap;
   }
 
@@ -2160,23 +2175,19 @@ body {
   }
 
   .music-listen-trigger--standalone {
-    gap: 0.625rem;
-    min-width: 9.5rem;
     min-height: 2.75rem;
-    padding: 0.62rem 1.15rem;
-    font-size: 1.0625rem;
     cursor: pointer;
   }
 
   .music-listen-trigger:focus-visible {
-    outline: 2px solid var(--music-listen-border-color-hover);
-    outline-offset: 3px;
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
   }
 
   .music-listen-trigger[data-music-listen-session='active']:disabled {
-    border-color: #e3b56c;
-    background: #211c14;
-    color: #f2d4a5;
+    border-color: var(--slate-500);
+    background: var(--slate-surface);
+    color: var(--slate-300);
     opacity: 1;
     cursor: default;
     box-shadow: none;
@@ -2192,7 +2203,7 @@ body {
     height: 1.125rem;
     flex: none;
     overflow: visible;
-    color: #e3b56c;
+    color: var(--slate-500);
   }
 
   .music-equalizer__bar {
@@ -2269,7 +2280,7 @@ body {
 
   .release-card-year-text {
     display: block;
-    color: var(--muted-foreground);
+    color: var(--slate-500);
     font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.18em;
@@ -3216,7 +3227,7 @@ body {
   @container about-contact-row (max-width: 26rem) {
     .about-contact__link {
       grid-area: 1 / 1 / 2 / -1;
-      grid-template-columns: minmax(0, 1fr) 1.125rem 2.25rem;
+      grid-template-columns: minmax(0, 1fr) 1.125rem 2.75rem;
       gap: 0.35rem 0.5rem;
     }
 
@@ -3323,6 +3334,67 @@ body {
   }
 }
 
+/* Home hero CTA, the family's one 52px control: ink face and dark label at rest. On hover and keyboard focus a Violet
+   fill rises from the base edge in 240ms, the label turns white (5.1:1) and the arrow slides 6px inside the box.
+   Unlayered so it wins over the default variant's utilities; reduced motion switches instantly. */
+.home-hero-cta {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.home-hero-cta::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--violet-700);
+  content: '';
+  pointer-events: none;
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-hero-cta__arrow {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-hero-cta:is(:focus-visible, :active) {
+  border-color: var(--violet-700);
+  background-color: var(--control-ink);
+  color: var(--foreground);
+}
+
+.home-hero-cta:is(:focus-visible, :active)::before {
+  transform: scaleY(1);
+}
+
+.home-hero-cta:is(:focus-visible, :active) .home-hero-cta__arrow {
+  transform: translateX(6px);
+}
+
+@media (hover: hover) {
+  .home-hero-cta:hover {
+    border-color: var(--violet-700);
+    background-color: var(--control-ink);
+    color: var(--foreground);
+  }
+
+  .home-hero-cta:hover::before {
+    transform: scaleY(1);
+  }
+
+  .home-hero-cta:hover .home-hero-cta__arrow {
+    transform: translateX(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-cta::before,
+  .home-hero-cta__arrow {
+    transition: none;
+  }
+}
+
 body.is-music-streaming-service-embedded-player-modal-open {
   overflow: hidden;
 }
@@ -3346,33 +3418,20 @@ body.is-app-shell-overlay-open {
 
   .release-card-link:where(:not(.releases-page-layout *)):hover .music-listen-trigger,
   .release-card-link:where(:not(.releases-page-layout *)):focus-within .music-listen-trigger {
-    color: rgb(245, 245, 245);
-    border-color: rgb(245, 245, 245);
-    background-color: rgba(245, 245, 245, 0.14);
+    border-color: var(--music-listen-border-color-hover);
+    background-color: var(--slate-surface);
   }
 
   .music-listen-trigger:hover,
   .music-listen-trigger:focus-visible {
-    color: rgb(245, 245, 245);
     border-color: var(--music-listen-border-color-hover);
-    background:
-      radial-gradient(
-        circle at 18% 50%,
-        rgba(245, 245, 245, 0.16),
-        rgba(245, 245, 245, 0.07) 46%,
-        rgba(245, 245, 245, 0) 100%
-      ),
-      rgba(245, 245, 245, 0.12);
-    box-shadow:
-      0 0 0 1px rgba(245, 245, 245, 0.12),
-      0 0 1.05rem rgba(245, 245, 245, 0.12),
-      inset 0 0 0 1px rgba(245, 245, 245, 0.05);
+    background: var(--slate-surface);
     transform: none;
   }
 
   .music-listen-trigger:active {
-    color: rgba(245, 245, 245, 0.9);
     border-color: var(--music-listen-border-color-hover);
+    background: var(--slate-surface);
     transform: none;
   }
 
@@ -3599,25 +3658,25 @@ body.is-app-shell-overlay-open {
 }
 
 .store-category-signal__link:focus-visible {
-  border-bottom-color: color-mix(in srgb, var(--store-accent) 55%, transparent);
+  border-bottom-color: var(--control-edge-hover);
   color: var(--foreground);
-  background: color-mix(in srgb, var(--store-accent-surface) 45%, transparent);
+  background: var(--control-face-hover);
   outline: 2px solid var(--foreground);
   outline-offset: -4px;
 }
 
 @media (hover: hover) {
   .store-category-signal__link:hover {
-    border-bottom-color: color-mix(in srgb, var(--store-accent) 55%, transparent);
+    border-bottom-color: var(--control-edge-hover);
     color: var(--foreground);
-    background: color-mix(in srgb, var(--store-accent-surface) 45%, transparent);
+    background: var(--control-face-hover);
   }
 }
 
 .store-category-signal__link[aria-current='page'] {
-  border-bottom-color: var(--store-accent-active);
+  border-bottom-color: var(--violet-500);
   color: var(--foreground);
-  background: var(--store-accent-surface);
+  background: var(--violet-surface);
 }
 
 .store-category-signal__link[aria-current='page']:focus-visible {
@@ -4242,6 +4301,7 @@ body.is-app-shell-overlay-open {
 
 /* Inset, because the scrolling pane clips an outside ring. */
 .store-artists-find:focus-visible {
+  border-color: var(--slate-500);
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
@@ -4313,7 +4373,7 @@ body.is-app-shell-overlay-open {
   width: 1.125rem;
   height: 1.125rem;
   margin: 0;
-  accent-color: var(--store-accent-active);
+  accent-color: var(--violet-500);
 }
 
 .store-artists label:focus-within {
@@ -4459,7 +4519,8 @@ body.is-app-shell-overlay-open {
 
 .store-format-links a[aria-current='true'] {
   text-decoration: underline;
-  color: var(--store-accent-active);
+  text-decoration-color: var(--violet-500);
+  color: var(--foreground);
 }
 
 .store-search-toolbar {
@@ -4664,11 +4725,11 @@ body.is-app-shell-overlay-open {
   white-space: nowrap;
 }
 
-/* One tone per zero-stock state on every surface: Sold Out alone carries the Store Blood edge; Coming Soon and
+/* One tone per zero-stock state on every surface: Sold Out alone carries the Violet edge; Coming Soon and
    Repressing take a dashed neutral edge, the convention for "not here yet". */
 .store-collection-page .store-item-card__availability[data-store-listing-availability-state='sold_out'],
 .store-item-card__release-status[data-availability-state='sold_out'] {
-  border-color: var(--store-accent);
+  border-color: var(--violet-700);
 }
 
 .store-collection-page
@@ -4823,7 +4884,7 @@ body.is-app-shell-overlay-open {
 }
 
 .availability-alert__input[aria-invalid='true'] {
-  border-color: var(--store-accent-active);
+  border-color: var(--violet-300);
 }
 
 .availability-alert__consent {
@@ -4845,7 +4906,7 @@ body.is-app-shell-overlay-open {
 }
 
 .availability-alert__consent input[aria-invalid='true'] {
-  outline: 1px solid var(--store-accent-active);
+  outline: 1px solid var(--violet-300);
   outline-offset: 2px;
 }
 
@@ -4867,9 +4928,17 @@ body.is-app-shell-overlay-open {
   min-height: 0;
 }
 
+/* Errors read in Violet 300 after a visible "Error" label, so they never rely on colour alone. */
+.form-error-label {
+  margin-right: 0.5em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .availability-alert__error {
   margin: 0;
-  color: var(--store-accent-active);
+  color: var(--violet-300);
   font-size: 0.8125rem;
 }
 
@@ -4891,11 +4960,11 @@ body.is-app-shell-overlay-open {
 }
 
 /* Copies left is a status, never a control, and never animated urgency. On cards it keeps the status chip's exact box
-   and differs from Sold Out only by its Store Blood fill. On the item page it is a 28px tab fused to the top edge of
+   and differs from Sold Out only by its Violet surface. On the item page it is a 28px tab fused to the top edge of
    Add To Cart: same width, same square 1px edge and the button's display type. */
 .store-collection-page .store-item-card__availability[data-store-listing-availability-state='low_stock'] {
-  border-color: var(--store-accent);
-  background: var(--store-accent-surface);
+  border-color: var(--violet-700);
+  background: var(--violet-surface);
   font-variant-numeric: tabular-nums;
 }
 
@@ -4910,9 +4979,9 @@ body.is-app-shell-overlay-open {
   min-height: 1.75rem;
   margin: 0;
   padding: 1px 0.75rem 0;
-  border: 1px solid var(--store-accent);
+  border: 1px solid var(--violet-700);
   border-bottom: 0;
-  background: var(--store-accent-surface);
+  background: var(--violet-surface);
   color: var(--foreground);
   font-family: var(--font-display);
   font-size: 0.9375rem;
@@ -4922,21 +4991,21 @@ body.is-app-shell-overlay-open {
   text-transform: uppercase;
 }
 
-/* Pre-orders (openspec/changes/add-store-preorders). Sea green marks the wait, as Store Blood marks the shop: outline on
-   badges and a quiet edge on panels, never a fill on a resting control. Text on dark uses --preorder-accent-active
-   (6.5:1 on Charcoal Surface); the only fill is the button on hover and focus, with Ink Foreground text (4.9:1). */
+/* Pre-orders (openspec/changes/add-store-preorders, accent-and-button-system). Sea means pre-order: the filled
+   Pre-order control, plain Sea status lines (--sea-500, 6.5:1 on Charcoal Surface) and quiet edges on panels. */
 
-/* Card status chips share the availability chip's box. The pre-order badge has its own element, so a stocked pre-order
-   that is scarce keeps its Only N left chip beside it; a pre-order whose copies ran out reads like any zero-stock card. */
+/* Status is information, not a control: plain text lines without a box. The pre-order line has its own element, so a
+   stocked pre-order that is scarce keeps its Only N left chip; a pre-order whose copies ran out reads like any
+   zero-stock card. */
 .store-item-card__preorder,
 .store-item-card__release-status,
 .preorder-badge {
   align-self: center;
-  border: 1px solid var(--preorder-accent);
-  padding: 0.2rem 0.35rem;
-  color: var(--preorder-accent-active);
-  font-size: 0.75rem;
-  line-height: 1.2;
+  border: 0;
+  padding: 0;
+  color: var(--sea-500);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 
 .store-item-card__preorder {
@@ -4947,17 +5016,15 @@ body.is-app-shell-overlay-open {
 
 .store-collection-page :is(.store-item-card__preorder, .store-item-card__release-status) {
   align-self: flex-start;
-  color: var(--foreground);
   text-wrap: pretty;
 }
 
 .store-item-card__release-status {
-  border-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
-  color: var(--foreground);
+  color: var(--muted-foreground);
   white-space: nowrap;
 }
 
-/* The same outline badge outside cards: cart chip, facts, home and release pages. */
+/* The same status line outside cards: cart, facts, home and release pages. */
 .preorder-badge {
   display: inline-flex;
   align-items: center;
@@ -5047,63 +5114,41 @@ body.is-app-shell-overlay-open {
   }
 
   .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
-    border-color: var(--foreground);
-    background-color: var(--foreground);
-    box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+    border-color: var(--violet-500);
+    background-color: var(--violet-800);
   }
 
   .preorder-action:not(:disabled, [aria-disabled='true']) {
-    border-color: var(--preorder-accent);
-    background-color: var(--preorder-accent);
+    border-color: var(--sea-500);
+    background-color: var(--sea-800);
     color: var(--foreground);
-  }
-
-  /* A catalog card's Buy wears the Store card Buy chrome, so its engaged look is that chrome's hover. */
-  #releases-merchandising
-    &[data-release-role='catalog']
-    .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
-    color: rgb(245, 245, 245);
-    border-color: var(--store-accent-hover);
-    background:
-      radial-gradient(
-        circle at 18% 50%,
-        rgba(245, 245, 245, 0.16),
-        rgba(245, 245, 245, 0.07) 46%,
-        rgba(245, 245, 245, 0) 100%
-      ),
-      rgba(245, 245, 245, 0.12);
-    box-shadow:
-      0 0 0 1px rgba(245, 245, 245, 0.12),
-      0 0 1.05rem rgba(245, 245, 245, 0.12),
-      inset 0 0 0 1px rgba(245, 245, 245, 0.05);
   }
 }
 
-/* Ready ordinary Buy controls share restrained feedback across Releases and Store. */
+/* Buy is the filled Violet control with a white label and the format mark: Store card Buy, Releases Buy vinyl and
+   Add to cart (openspec/changes/accent-and-button-system). Hover and press darken the face; nothing moves. */
+.purchase-action {
+  border-color: var(--violet-700);
+  background-color: var(--violet-700);
+  color: var(--foreground);
+  box-shadow: none;
+}
+
 .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):focus-visible {
-  border-color: var(--foreground);
-  background-color: var(--foreground);
-  box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+  border-color: var(--violet-500);
+  background-color: var(--violet-800);
 }
 
 @media (hover: hover) {
   .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):hover {
-    border-color: var(--foreground);
-    background-color: var(--foreground);
-    box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+    border-color: var(--violet-500);
+    background-color: var(--violet-800);
   }
 }
 
 .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):active {
-  border-color: var(--control-ink-pressed);
-  background-color: var(--control-ink-pressed);
-  box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 22%, transparent);
-}
-
-.purchase-action:is(:disabled, [aria-disabled='true'], [aria-busy='true']) {
-  border-color: var(--control-ink);
-  background-color: var(--control-ink);
-  color: var(--primary-foreground);
+  border-color: var(--violet-800);
+  background-color: var(--violet-800);
   box-shadow: none;
 }
 
@@ -5111,72 +5156,6 @@ body.is-app-shell-overlay-open {
   .purchase-action {
     transition: none;
   }
-}
-
-/* Store card Buy borrows the Listen chrome with a Store Blood hover edge (openspec/changes/add-store-card-buy).
-   Busy and disabled read as rest. Pre-order keeps the filled primary face and shows no record mark. A Releases catalog
-   card's Buy shares the chrome (openspec/changes/stack-releases-twin-features). */
-.store-item-card--listing [data-store-card-buy].purchase-action,
-#releases-merchandising [data-release-role='catalog'] [data-release-purchase].purchase-action {
-  color: rgba(245, 245, 245, 0.9);
-  border-color: rgba(245, 245, 245, 0.48);
-  background: linear-gradient(180deg, rgba(245, 245, 245, 0.035), rgba(245, 245, 245, 0.005)), rgba(9, 9, 9, 0.94);
-  box-shadow: inset 0 -0.5rem 0.9rem rgba(0, 0, 0, 0.18);
-}
-
-.store-item-card--listing
-  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible,
-#releases-merchandising
-  [data-release-role='catalog']
-  [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible {
-  color: rgb(245, 245, 245);
-  border-color: var(--store-accent-hover);
-  background:
-    radial-gradient(
-      circle at 18% 50%,
-      rgba(245, 245, 245, 0.16),
-      rgba(245, 245, 245, 0.07) 46%,
-      rgba(245, 245, 245, 0) 100%
-    ),
-    rgba(245, 245, 245, 0.12);
-  box-shadow:
-    0 0 0 1px rgba(245, 245, 245, 0.12),
-    0 0 1.05rem rgba(245, 245, 245, 0.12),
-    inset 0 0 0 1px rgba(245, 245, 245, 0.05);
-  transform: none;
-}
-
-@media (hover: hover) {
-  .store-item-card--listing
-    [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover,
-  #releases-merchandising
-    [data-release-role='catalog']
-    [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover {
-    color: rgb(245, 245, 245);
-    border-color: var(--store-accent-hover);
-    background:
-      radial-gradient(
-        circle at 18% 50%,
-        rgba(245, 245, 245, 0.16),
-        rgba(245, 245, 245, 0.07) 46%,
-        rgba(245, 245, 245, 0) 100%
-      ),
-      rgba(245, 245, 245, 0.12);
-    box-shadow:
-      0 0 0 1px rgba(245, 245, 245, 0.12),
-      0 0 1.05rem rgba(245, 245, 245, 0.12),
-      inset 0 0 0 1px rgba(245, 245, 245, 0.05);
-    transform: none;
-  }
-}
-
-.store-item-card--listing
-  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active,
-#releases-merchandising
-  [data-release-role='catalog']
-  [data-release-purchase].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active {
-  border-color: var(--store-accent-active);
-  color: rgba(245, 245, 245, 0.9);
 }
 
 [data-store-card-buy].preorder-action .store-buy-icon {
@@ -5219,29 +5198,32 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Primary button with a 3px Sea green base line. Hover and focus fill the face; the line then disappears into it.
-   Size and footprint stay the button's own. */
+/* Pre-order is the filled Sea control with a white label: Sea means pre-order and nothing else. Hover and focus darken
+   the face and light the edge. Size and footprint stay the button's own. */
 .preorder-action {
-  padding-bottom: 3px;
-  box-shadow: inset 0 -3px 0 var(--preorder-accent);
+  border-color: var(--sea-700);
+  background-color: var(--sea-700);
+  color: var(--foreground);
+  box-shadow: none;
 }
 
-.preorder-action:focus-visible,
-.preorder-action:active {
-  border-color: var(--preorder-accent);
-  background-color: var(--preorder-accent);
+.preorder-action:focus-visible {
+  border-color: var(--sea-500);
+  background-color: var(--sea-800);
   color: var(--foreground);
 }
 
 .preorder-action:active {
-  background-color: color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
-  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
+  border-color: var(--sea-800);
+  background-color: var(--sea-800);
+  color: var(--foreground);
+  box-shadow: none;
 }
 
 @media (hover: hover) {
   .preorder-action:hover:not(:disabled, [aria-disabled='true']) {
-    border-color: var(--preorder-accent);
-    background-color: var(--preorder-accent);
+    border-color: var(--sea-500);
+    background-color: var(--sea-800);
     color: var(--foreground);
   }
 }
@@ -5523,7 +5505,9 @@ body.is-app-shell-overlay-open {
 }
 
 .store-cart-drawer__status-row .preorder-badge {
-  border-color: var(--preorder-accent);
+  border: 0;
+  padding: 0;
+  color: var(--sea-500);
 }
 
 .store-cart-drawer__remove {
@@ -5667,7 +5651,7 @@ body.is-app-shell-overlay-open {
 }
 
 .store-cart-drawer__continue {
-  border-color: var(--store-accent);
+  border-color: var(--violet-700);
   background: transparent;
 }
 
@@ -5708,13 +5692,13 @@ body.is-app-shell-overlay-open {
   border-top: 2px solid var(--preorder-accent);
 }
 
-/* Store toolbar toggle. Selected reads as the other chips do: ink border and a check mark, never colour alone. */
+/* Store toolbar toggle. Selected reads in Sea, the pre-order colour, with a check mark, never colour alone. */
 .store-preorder-filter {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   min-height: 2.75rem;
-  border: 1px solid color-mix(in srgb, var(--preorder-accent) 72%, transparent);
+  border: 1px solid var(--control-edge);
   background: var(--secondary);
   padding: 1px 0.875rem 0;
   color: var(--foreground);
@@ -5732,8 +5716,8 @@ body.is-app-shell-overlay-open {
 }
 
 .store-preorder-filter[aria-pressed='true'] {
-  border-color: var(--foreground);
-  background: var(--preorder-accent-surface);
+  border-color: var(--sea-500);
+  background: var(--sea-surface);
 }
 
 .store-preorder-filter[aria-pressed='true']::before {
@@ -5747,12 +5731,12 @@ body.is-app-shell-overlay-open {
 
 @media (hover: hover) {
   .store-preorder-filter:hover {
-    border-color: var(--preorder-accent-active);
+    border-color: var(--control-edge-hover);
     background: var(--control-face-hover);
   }
 
   .store-preorder-filter[aria-pressed='true']:hover {
-    border-color: var(--foreground);
+    border-color: var(--sea-300);
   }
 }
 
@@ -5928,16 +5912,10 @@ body.is-app-shell-overlay-open {
 
 .home-preorders :is(.preorder-badge, .store-item-card__release-status) {
   min-height: 0;
-  background: rgb(13 13 13 / 90%);
-  padding: 0.25rem 0.45rem;
-  color: var(--foreground);
-  font: 400 0.75rem/1.45 var(--font-sans);
+  padding: 0;
+  font: 400 0.8125rem/1.25rem var(--font-sans);
   letter-spacing: 0;
   text-transform: none;
-}
-
-.home-preorders .store-item-card__release-status {
-  border-color: rgb(179 179 179 / 65%);
 }
 
 .home-preorders__purchase {
@@ -5970,54 +5948,9 @@ body.is-app-shell-overlay-open {
   white-space: nowrap;
 }
 
+/* The Home Pre-order is the shared filled Sea control at the one 44px size; the sweep moved to the hero CTA. */
 .home-preorders .preorder-action {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
   width: 100%;
-  min-height: 3.375rem;
-  background-color: var(--control-ink);
-  padding: 0.75rem;
-  font-size: 1.25rem;
-  outline-offset: 0;
-}
-
-.home-preorders .preorder-action::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: var(--preorder-accent);
-  content: '';
-  pointer-events: none;
-  transform: translateY(100%);
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.home-preorders .preorder-action > span {
-  position: relative;
-  z-index: 1;
-}
-
-.home-preorders .preorder-action:is(:focus-visible, :active) {
-  background-color: var(--control-ink);
-}
-
-.home-preorders .preorder-action:is(:focus-visible, :active)::before {
-  transform: translateY(0);
-}
-
-.home-preorders .preorder-action:active::before {
-  background: color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
-}
-
-@media (hover: hover) {
-  .home-preorders .preorder-action:hover {
-    background-color: var(--control-ink);
-  }
-
-  .home-preorders .preorder-action:hover::before {
-    transform: translateY(0);
-  }
 }
 
 .home-preorders__terms {
@@ -6075,8 +6008,7 @@ body.is-app-shell-overlay-open {
   bottom: calc((2.75rem - 1.5em) / 2);
   left: 0;
   height: 1px;
-  background: currentColor;
-  opacity: 0.32;
+  background: var(--violet-500);
   content: '';
   pointer-events: none;
 }
@@ -6228,15 +6160,6 @@ body.is-app-shell-overlay-open {
 
 .home-preorders__listen.music-listen-trigger--standalone {
   align-self: start;
-  gap: 0.75rem;
-  width: 10.75rem;
-  height: 3.375rem;
-  font: 400 1.1875rem/1 var(--font-display-ui);
-  letter-spacing: 0.12em;
-}
-
-.home-preorders__listen [data-music-listen-label] {
-  margin-right: -0.12em;
 }
 
 .home-preorders__watch-area {
@@ -6804,14 +6727,14 @@ body.is-app-shell-overlay-open {
 }
 
 .store-format-links a:focus-visible {
-  color: var(--store-accent-active);
-  background: var(--store-accent-surface);
+  color: var(--foreground);
+  background: var(--control-face-hover);
 }
 
 @media (hover: hover) {
   .store-format-links a:hover {
-    color: var(--store-accent-active);
-    background: var(--store-accent-surface);
+    color: var(--foreground);
+    background: var(--control-face-hover);
   }
 }
 
@@ -6898,42 +6821,11 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Public button family: outlined buttons take the section tone declared once on a surface. */
-[data-tone='store'] .site-button--outline:not(.site-button--icon) {
-  border-color: color-mix(in srgb, var(--store-accent) 72%, transparent);
-}
-
-[data-tone='store'] .site-button--outline:not(.site-button--icon):active {
-  border-color: var(--store-accent-active);
-  background-color: color-mix(in srgb, var(--store-accent) 24%, transparent);
-}
-
-[data-tone='services'] .site-button--outline:not(.site-button--icon) {
-  border-color: color-mix(in srgb, var(--services-accent) 72%, transparent);
-}
-
-[data-tone='services'] .site-button--outline:not(.site-button--icon):active {
-  border-color: var(--services-accent-active);
-  background-color: color-mix(in srgb, var(--services-accent) 24%, transparent);
-}
-
-@media (hover: hover) {
-  [data-tone='store'] .site-button--outline:not(.site-button--icon):hover {
-    border-color: var(--store-accent-hover);
-    background-color: var(--store-accent-surface);
-  }
-
-  [data-tone='services'] .site-button--outline:not(.site-button--icon):hover {
-    border-color: var(--services-accent-hover);
-    background-color: var(--services-accent-surface);
-  }
-}
-
 /* The header reserves the cart control's box so the navigation never shifts when it appears. */
 [data-store-cart-header-root] {
   display: inline-flex;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
 }
@@ -7318,7 +7210,9 @@ body.is-app-shell-overlay-open {
 }
 
 .checkout-summary__identity .preorder-badge {
-  border-color: var(--preorder-accent);
+  border: 0;
+  padding: 0;
+  color: var(--sea-500);
 }
 
 .checkout-summary__editor {
@@ -7628,7 +7522,7 @@ body.is-app-shell-overlay-open {
   align-self: flex-start;
   height: 44px;
   padding-inline: 2rem;
-  border-color: var(--store-accent);
+  border-color: var(--violet-700);
   background: transparent;
   font: 400 1rem/1.1 var(--font-display-ui);
   letter-spacing: 0.08em;
@@ -7777,18 +7671,13 @@ body.is-app-shell-overlay-open {
   align-self: flex-start;
   max-width: 100%;
   border: 0;
-  padding: 0.35rem 0.5rem 0.3rem;
-  background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
-  color: var(--foreground);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  line-height: 1.4;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
   white-space: normal;
   text-wrap: balance;
   overflow-wrap: break-word;
-  text-transform: uppercase;
 }
 #releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state] {
   border: 1px dashed #8c8c8c;
@@ -7796,11 +7685,10 @@ body.is-app-shell-overlay-open {
 }
 #releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state='sold_out'] {
   border-style: solid;
-  border-color: var(--store-accent);
+  border-color: var(--violet-700);
 }
 #releases-merchandising [data-release-badges] .preorder-badge {
-  background-color: var(--preorder-accent-surface);
-  color: var(--preorder-accent-active);
+  color: var(--sea-500);
 }
 #releases-merchandising [data-release-shipping] {
   margin-top: 0.5rem;

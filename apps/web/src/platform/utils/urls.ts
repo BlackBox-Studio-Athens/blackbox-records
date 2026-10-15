@@ -16,14 +16,13 @@ export function isCurrentPath(pathname: string, itemUrl: string) {
 }
 
 // One link model for the header, the phone Menu and the footer: a page link keeps the same
-// address, accent and current-page state on every surface. Astro and React spread it alike.
+// address and current-page state on every surface; no section has its own accent. Astro and React spread it alike.
 export function navigationLinkAttributes(url: SitePagePath | '/withdrawal/', currentPathname: string) {
   return {
     href: createProjectRelativeUrl(url),
     'aria-current': isCurrentPath(currentPathname, url) ? ('page' as const) : undefined,
     // Empty selects Astro's default prefetch strategy; "true" would match no strategy.
     'data-astro-prefetch': '',
-    'data-nav-accent': url.startsWith('/store/') ? 'store' : url === '/services/' ? 'services' : undefined,
     'data-nav-link': url,
   };
 }

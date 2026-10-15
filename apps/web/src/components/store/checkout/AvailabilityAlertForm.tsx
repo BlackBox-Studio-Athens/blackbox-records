@@ -144,7 +144,6 @@ export default function AvailabilityAlertForm({
         ref={triggerRef}
         type="button"
         variant="ghost"
-        size="lg"
         className="availability-alert__open"
         data-availability-alert-open
         onClick={() => setStep('open')}
@@ -210,7 +209,6 @@ export default function AvailabilityAlertForm({
         />
         <Button
           type="submit"
-          size="lg"
           className="availability-alert__send"
           disabled={sending}
           aria-busy={sending ? 'true' : undefined}
@@ -220,6 +218,7 @@ export default function AvailabilityAlertForm({
       </div>
       {errors.email && (
         <p id={emailErrorId} className="availability-alert__error">
+          <span className="form-error-label">Error</span>
           {errors.email}
         </p>
       )}
@@ -241,6 +240,7 @@ export default function AvailabilityAlertForm({
       </label>
       {errors.consent && (
         <p id={consentErrorId} className="availability-alert__error">
+          <span className="form-error-label">Error</span>
           {errors.consent}
         </p>
       )}
@@ -273,6 +273,7 @@ export default function AvailabilityAlertForm({
       </p>
       {errors.form && (
         <p className="availability-alert__error" role="alert">
+          <span className="form-error-label">Error</span>
           {errors.form}
         </p>
       )}

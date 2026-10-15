@@ -125,7 +125,7 @@ export default function CheckoutOfferStatus({
     'checkout-review__badge rounded-none',
     view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
     view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
-    view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
+    view.tone === 'error' && 'border-[var(--violet-700)] bg-[var(--violet-surface)] text-[var(--violet-300)]',
     view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
   );
 
@@ -293,7 +293,6 @@ export default function CheckoutOfferStatus({
 
               <Button
                 type="button"
-                size="lg"
                 variant={payView.variant}
                 className={cn(
                   'checkout-review__pay whitespace-normal',
@@ -335,9 +334,10 @@ export default function CheckoutOfferStatus({
           {checkoutError && (
             <div className="space-y-3">
               <p
-                className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
+                className="border border-[var(--violet-700)] bg-[var(--violet-surface)] p-3 text-xs leading-relaxed text-[var(--violet-300)]"
                 role="alert"
               >
+                <span className="form-error-label">Error</span>
                 {checkoutError}
               </p>
               {checkoutAttemptTerminal && (

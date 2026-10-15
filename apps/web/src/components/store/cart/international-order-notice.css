@@ -12,7 +12,7 @@
 .international-order-notice--card {
   display: flex;
   background: var(--secondary);
-  border: 1px solid var(--store-accent);
+  border: 1px solid var(--violet-700);
 }
 
 .international-order-notice[data-border-tone='neutral'] {
@@ -28,7 +28,7 @@
 
 .international-order-notice__label {
   flex-shrink: 0;
-  color: var(--store-accent-active);
+  color: var(--violet-500);
   font-size: 0.6875rem;
   font-weight: 500;
   line-height: normal;
@@ -96,7 +96,7 @@
 
 .international-order-notice--line > svg,
 .international-order-notice--line .international-order-notice__rule {
-  color: var(--store-accent-active);
+  color: var(--violet-500);
 }
 
 .international-order-notice--line .international-order-notice__link {
@@ -111,7 +111,7 @@
 
 .international-order-notice__title {
   margin: 0;
-  color: var(--store-accent-active);
+  color: var(--foreground);
   font-family: var(--font-display-ui);
   font-size: 1.375rem;
   font-weight: 400;

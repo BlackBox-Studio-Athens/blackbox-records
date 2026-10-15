@@ -247,13 +247,13 @@ export function StoreArtistControls({ choices, resultsId }: StoreArtistControlsP
           <h2 id="store-artists-sheet-title" tabIndex={-1}>
             Artists
           </h2>
-          <Button type="button" variant="outline" size="icon-lg" aria-label="Close" data-store-artists-sheet-close>
+          <Button type="button" variant="outline" size="icon" aria-label="Close" data-store-artists-sheet-close>
             <X aria-hidden="true" />
           </Button>
         </div>
         <div className="store-artists-sheet__body" data-lenis-scroll-root data-store-artists-sheet-body />
         <div className="store-artists-sheet__foot">
-          <Button type="button" size="lg" className="store-artists-sheet__show" data-store-artists-sheet-done>
+          <Button type="button" className="store-artists-sheet__show" data-store-artists-sheet-done>
             Show items
           </Button>
         </div>
@@ -416,7 +416,6 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
         <Button
           type="button"
           variant="chip"
-          size="lg"
           className="store-artists-trigger"
           aria-haspopup="dialog"
           aria-controls="store-artists-sheet"
@@ -429,7 +428,6 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
         <Button
           type="button"
           variant="chip"
-          size="lg"
           className="store-preorder-filter"
           aria-pressed="false"
           aria-controls={resultsId}

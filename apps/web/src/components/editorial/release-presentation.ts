@@ -119,7 +119,6 @@ export const RELEASE_DETAIL_LINK_CLASS = 'release-detail-link';
 export function releaseActionClassName(presentation: ReleasePresentation) {
   return presentation.state === 'preorder' || presentation.state === 'available'
     ? buttonVariants({
-        size: 'lg',
         className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
       })
     : RELEASE_DETAIL_LINK_CLASS;

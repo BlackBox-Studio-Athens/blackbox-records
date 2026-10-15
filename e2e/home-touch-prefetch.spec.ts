@@ -1,6 +1,6 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-test('@phone Home Browse keeps its compact outline and full tap target', async ({ page }) => {
+test('@phone Home Browse is the 52px ink hero CTA within the gutter', async ({ page }) => {
   await page.goto('./');
   await waitForShell(page);
   const browse = page.locator('#homepage-hero-section').getByRole('link', { name: 'Browse the Store' });
@@ -12,37 +12,36 @@ test('@phone Home Browse keeps its compact outline and full tap target', async (
     await page.evaluate(() => document.fonts.ready);
     const layout = await browse.evaluate((link) => {
       const rect = link.getBoundingClientRect();
-      const halo = getComputedStyle(link, '::before');
       const x = rect.x + rect.width / 2;
       return {
-        width: rect.width,
+        right: rect.right,
         height: rect.height,
         cssHeight: getComputedStyle(link).height,
         left: rect.left,
         logoLeft: document.querySelector('header img')!.getBoundingClientRect().left,
         fontSize: getComputedStyle(link).fontSize,
-        padding: [getComputedStyle(link).paddingLeft, getComputedStyle(link).paddingRight],
-        haloHeight: parseFloat(halo.height),
-        edgeHits: [rect.top - 7, rect.bottom + 7].map((y) => link.contains(document.elementFromPoint(x, y))),
+        face: getComputedStyle(link).backgroundColor,
+        label: getComputedStyle(link).color,
+        edgeHits: [rect.top + 2, rect.bottom - 2].map((y) => link.contains(document.elementFromPoint(x, y))),
         overflow: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    // The content-sized label varies slightly with browser/platform font metrics.
-    expect(Math.abs(layout.width - 100), `${width}px drawn width difference`).toBeLessThanOrEqual(2);
     // DOMRect rounds translated edges independently; the CSS height must remain exact.
-    expect(layout.cssHeight, `${width}px CSS height`).toBe('28px');
-    expect(layout.height, `${width}px drawn height`).toBeCloseTo(28, 4);
-    expect(layout.fontSize).toBe('12px');
-    expect(layout.padding).toEqual(['8px', '8px']);
+    expect(layout.cssHeight, `${width}px CSS height`).toBe('52px');
+    expect(layout.height, `${width}px drawn height`).toBeCloseTo(52, 4);
+    expect(layout.fontSize).toBe('20px');
+    // Ink face with a dark label at rest; touch never shows the hover sweep.
+    expect(layout.face).toBe('rgb(232, 232, 232)');
+    expect(layout.label).toBe('rgb(9, 9, 9)');
     expect(layout.left, `${width}px gutter`).toBeCloseTo(layout.logoLeft, 0);
-    expect(layout.haloHeight, `${width}px tap target`).toBeGreaterThanOrEqual(44);
+    expect(layout.right, `${width}px right gutter`).toBeLessThanOrEqual(width - layout.logoLeft + 0.5);
     expect(layout.edgeHits, `${width}px target edges`).toEqual([true, true]);
     expect(layout.overflow, `${width}px overflow`).toBe(false);
   }
 
   await plantSentinel(page);
   const box = (await browse.boundingBox())!;
-  await page.touchscreen.tap(box.x + box.width / 2, box.y - 7);
+  await page.touchscreen.tap(box.x + box.width / 2, box.y + 4);
   await expect(page).toHaveURL(/\/store\/$/);
   await waitForShell(page);
   expect(await sentinelIntact(page)).toBe(true);

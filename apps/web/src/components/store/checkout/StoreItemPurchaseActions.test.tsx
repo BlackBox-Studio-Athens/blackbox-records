@@ -204,13 +204,13 @@ describe('StoreItemPurchaseActions', () => {
     expect(renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />)).toBe('');
   });
 
-  it('renders Sold Out as a solid Store Blood status, not a disabled button, with no line or Notify me', () => {
+  it('renders Sold Out as a solid Violet status, not a disabled button, with no line or Notify me', () => {
     const html = renderToStaticMarkup(
       <StoreItemPurchaseStatus state={readStoreItemPurchaseStatus(soldOutOffer)} storeItemSlug="item" />,
     );
     expect(html).toMatch(/^<p role="status"/);
     expect(html).toContain('>Sold Out</p>');
-    expect(html).toContain('border-[var(--store-accent)]');
+    expect(html).toContain('border-[var(--violet-700)]');
     expect(html).toContain('data-store-item-purchase-tone="sold-out"');
     expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
@@ -232,7 +232,7 @@ describe('StoreItemPurchaseActions', () => {
       );
       expect(html).toContain('data-store-item-purchase-tone="incoming"');
       expect(html).toContain('border-dashed');
-      expect(html).not.toContain('border-[var(--store-accent)]');
+      expect(html).not.toContain('border-[var(--violet-700)]');
       expect(html).toContain(icon);
       expect(html).toMatch(/<svg[^>]*width="14"/);
       expect(html).toContain(`${label}</p>`);
@@ -545,9 +545,11 @@ describe('Notify me', () => {
     const emailError = /<input[^>]*type="email"[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
     const consentError = /<input type="checkbox"[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
     expect(html.match(/aria-invalid="true"/g)).toHaveLength(2);
-    expect(html).toContain(`id="${emailError}" class="availability-alert__error">Enter a valid email.</p>`);
     expect(html).toContain(
-      `id="${consentError}" class="availability-alert__error">Tick the box so we can email you.</p>`,
+      `id="${emailError}" class="availability-alert__error"><span class="form-error-label">Error</span>Enter a valid email.</p>`,
+    );
+    expect(html).toContain(
+      `id="${consentError}" class="availability-alert__error"><span class="form-error-label">Error</span>Tick the box so we can email you.</p>`,
     );
   });
 
@@ -605,7 +607,9 @@ describe('Notify me', () => {
     );
     expect(retry).toContain('value="listener@example.com"');
     expect(retry).toMatch(/<input type="checkbox" name="consent" checked=""/);
-    expect(retry).toContain('role="alert">Couldn&#x27;t save that. Try again.</p>');
+    expect(retry).toContain(
+      'role="alert"><span class="form-error-label">Error</span>Couldn&#x27;t save that. Try again.</p>',
+    );
   });
 
   it('joins the newsletter with the trimmed email and reads its failure without undoing the alert', async () => {

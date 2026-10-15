@@ -123,7 +123,6 @@ export default function NewsletterSignupForm({
         />
         <Button
           type="submit"
-          size="lg"
           className="min-w-36"
           disabled={disabled}
           aria-busy={view.isSubmitting ? 'true' : undefined}
@@ -171,11 +170,16 @@ export default function NewsletterSignupForm({
         aria-atomic="true"
         className={
           view.errorMessage
-            ? 'text-sm leading-relaxed text-[color:var(--store-accent-active)]'
+            ? 'text-sm leading-relaxed text-[color:var(--violet-300)]'
             : 'accessibility-visually-hidden-text'
         }
       >
-        {view.errorMessage}
+        {view.errorMessage && (
+          <>
+            <span className="form-error-label">Error</span>
+            {view.errorMessage}
+          </>
+        )}
       </p>
     </form>
   );
