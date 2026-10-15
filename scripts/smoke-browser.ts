@@ -14,9 +14,22 @@ export async function authenticateUatBrowser(context: BrowserContext, siteUrl: s
   if (!Object.keys(headers).length) return;
   const origin = new URL(siteUrl).origin;
   await context.route(`${origin}/**`, async (route) => {
-    // Fulfill a single hop, so redirects to Stripe or another origin never inherit the service token.
-    const response = await route.fetch({ headers: { ...route.request().headers(), ...headers }, maxRedirects: 0 });
-    await route.fulfill({ response });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        // Fulfill a single hop, so redirects to Stripe or another origin never inherit the service token.
+        const response = await route.fetch({ headers: { ...route.request().headers(), ...headers }, maxRedirects: 0 });
+        await route.fulfill({ response });
+        return;
+      } catch (error) {
+        if (attempt === 0 && /ECONNRESET|ECONNREFUSED|socket hang up|timed?\s*out/i.test(String(error))) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          continue;
+        }
+        // Let the browser try without token headers, which would also follow cross-origin redirects.
+        await route.continue().catch(() => undefined);
+        return;
+      }
+    }
   });
 }
 

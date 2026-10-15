@@ -23,7 +23,7 @@ export function publicSmokeRoutes(paths: RepresentativePaths): ReadonlyArray<rea
     [paths.news, []],
     ['/store/', ['Store']],
     ['/store/blackbox-releases/', ['BlackBox Releases']],
-    ['/store/distro/', ['Distro', 'Browse Distro formats']],
+    ['/store/distro/', ['Distro', 'Formats']],
     [paths.storeItem, ['Back to Store']],
     ['/services/', ['Services']],
     ['/about/', []],
