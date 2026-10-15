@@ -5816,23 +5816,6 @@ body.is-app-shell-overlay-open {
   background: var(--background);
 }
 
-.home-preorders__header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  border-bottom: 1px solid var(--control-edge);
-  padding: 1.75rem var(--home-preorders-gutter);
-}
-
-.home-preorders--starts-video > .home-preorders__header {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 2;
-  border-bottom: 0;
-}
-
 .home-preorders__all,
 .home-preorders__next {
   display: inline-flex;
@@ -6365,6 +6348,13 @@ body.is-app-shell-overlay-open {
   display: none;
 }
 
+/* Ends the section in the slot each earlier chapter gives its next-chapter arrow. */
+.home-preorders__all {
+  display: flex;
+  width: fit-content;
+  margin: 0.75rem var(--home-preorders-gutter) 0.75rem auto;
+}
+
 .home-preorders__next {
   position: relative;
   z-index: 1;
@@ -6412,18 +6402,6 @@ body.is-app-shell-overlay-open {
 @media (max-width: 50rem) {
   .home-preorders {
     --home-preorders-gutter: 1rem;
-  }
-
-  .home-preorders__header,
-  .home-preorders--starts-video > .home-preorders__header {
-    position: relative;
-    inset: auto;
-    border-bottom: 1px solid var(--control-edge);
-    padding-block: 1.375rem;
-  }
-
-  .home-preorders__header .home-section-header__title {
-    font-size: 1.6875rem;
   }
 
   .home-preorders__film-scene {

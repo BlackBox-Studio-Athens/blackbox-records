@@ -125,22 +125,12 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
   }, [items]);
 
   if (items.length === 0) return null;
-  const firstHasVideo = Boolean(items[0]?.firstClipId || items[0]?.clips?.length);
   return (
-    <section
-      ref={section}
-      id="preorders"
-      className={'home-preorders' + (firstHasVideo ? ' home-preorders--starts-video' : '')}
-      aria-labelledby="home-preorders-title"
-    >
-      <div className="home-preorders__header">
-        <h2 id="home-preorders-title" className="home-section-header__title">
-          Pre-orders
-        </h2>
-        <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
-          All pre-orders
-        </a>
-      </div>
+    <section ref={section} id="preorders" className="home-preorders" aria-labelledby="home-preorders-title">
+      {/* Each chapter's Pre-order action says what these are; the title stays for assistive technology. */}
+      <h2 id="home-preorders-title" className="sr-only">
+        Pre-orders
+      </h2>
       {items.map((item, index) => (
         <PreorderChapter
           key={item.slug}
@@ -155,6 +145,9 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
           playerSession={playerSession}
         />
       ))}
+      <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
+        All pre-orders
+      </a>
     </section>
   );
 }
