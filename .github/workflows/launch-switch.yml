@@ -89,24 +89,39 @@ jobs:
           writeFileSync('.codex-artifacts/launch/stripe-dashboard-review.json', JSON.stringify(review));
           NODE
       - name: Restore cutover snapshot
-        if: needs.request.outputs.stage != 'cutover'
         env:
           GH_TOKEN: ${{ github.token }}
+          STAGE: ${{ needs.request.outputs.stage }}
         run: |
           node --input-type=commonjs <<'NODE'
           const assert = require('node:assert/strict');
           const { execFileSync } = require('node:child_process');
-          const { copyFileSync } = require('node:fs');
+          const { copyFileSync, existsSync, rmSync } = require('node:fs');
           const path = require('node:path');
           const gh = (...args) => execFileSync('gh', [...args, '--repo', process.env.GITHUB_REPOSITORY], { encoding: 'utf8' });
           // shortcut: searches 100 recent runs; paginate if launch operations exceed that window.
           const runs = JSON.parse(gh('run', 'list', '--workflow', 'launch-switch.yml', '--branch', 'main', '--limit', '100', '--json', 'databaseId,displayTitle'));
-          // Include failed cutovers: DNS may have changed before the failure. Dry-runs have no snapshot.
-          const cutover = runs.find((run) => run.displayTitle === 'Launch cutover (live)');
-          assert.ok(cutover, 'No real cutover run found; rollback/finalize requires its launch-state artifact.');
+          // Failed or refused live cutovers may retain the original snapshot; ignore dry-runs.
+          const cutovers = runs.filter((run) => run.displayTitle === 'Launch cutover (live)');
           const directory = path.join(process.env.RUNNER_TEMP, 'launch-cutover-state');
-          gh('run', 'download', String(cutover.databaseId), '--name', 'launch-state', '--dir', directory);
-          copyFileSync(path.join(directory, 'snapshot.json'), '.codex-artifacts/launch/snapshot.json');
+          let restored = false;
+          for (const cutover of cutovers) {
+            if (existsSync(directory)) rmSync(directory, { recursive: true });
+            try {
+              gh('run', 'download', String(cutover.databaseId), '--name', 'launch-state', '--dir', directory);
+            } catch (error) {
+              if (!/no valid artifacts found to download|no artifact matches any of the names or patterns provided/.test(String(error.stderr))) throw error;
+              continue;
+            }
+            const snapshot = path.join(directory, 'snapshot.json');
+            if (!existsSync(snapshot)) continue;
+            copyFileSync(snapshot, '.codex-artifacts/launch/snapshot.json');
+            restored = true;
+            break;
+          }
+          assert.ok(restored || process.env.STAGE === 'cutover', cutovers.length
+            ? 'Missing snapshot in recent real cutover artifacts; rollback/finalize requires snapshot.json.'
+            : 'No real cutover run found; rollback/finalize requires its launch-state artifact.');
           NODE
       - name: Run launch stage
         env:
