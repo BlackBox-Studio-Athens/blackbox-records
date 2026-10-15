@@ -8,7 +8,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 
 - **GIVEN** the listing projection reports a ready price and stocked availability for a card's Store Item
 - **WHEN** the card's price row is presented
-- **THEN** Buy appears beside the price with a Violet #7d58a0 filled face, white label and existing white format mark, while the noninteractive status remains distinct
+- **THEN** Buy appears beside the price with a Flint #626e72 filled face, white label and existing white format mark, while the noninteractive status remains distinct
 - **AND** the card keeps its height, because the price row reserves Buy's height
 - **AND** the Store Crate's item in hand shows Buy in its visible purchase row at every width.
 
@@ -46,7 +46,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 - **THEN** Buy reads Adding, keeps its width and is marked busy while the Worker Store Offer is read
 - **AND** a buyable offer adds one unit to StoreCart and opens the cart drawer
 - **AND** Buy reads Added for the confirmation period, then Buy
-- **AND** Adding and Added keep the format mark and the Violet purchase treatment
+- **AND** Adding and Added keep the format mark and the Flint purchase treatment
 - **AND** closing the drawer returns focus to Buy.
 
 #### Scenario: Item stopped being buyable
@@ -63,7 +63,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 
 ### Requirement: Store cards use the shared availability vocabulary
 
-Store collection cards SHALL show Coming Soon, Repressing or Sold Out in the slot beside the retained price for the matching availabilityState, with a shown expected month inside the same chip as "Coming Soon · Nov 2026". Sold Out SHALL use the Violet #7d58a0 edge and rgba(125,88,160,.16) surface; the existing Only N left notice SHALL use that same treatment. Coming Soon and Repressing SHALL retain dashed neutral boxes. An unavailable record, or a state the browser does not recognise, SHALL show the price with no status and no Buy.
+Store collection cards SHALL show Coming Soon, Repressing or Sold Out in the slot beside the retained price for the matching availabilityState, with a shown expected month inside the same chip as "Coming Soon · Nov 2026". Sold Out SHALL use the Flint #626e72 edge and rgba(98,110,114,.16) surface; the existing Only N left notice SHALL use that same treatment. Coming Soon and Repressing SHALL retain dashed neutral boxes. An unavailable record, or a state the browser does not recognise, SHALL show the price with no status and no Buy.
 
 #### Scenario: First pressing has not arrived
 
@@ -84,12 +84,12 @@ Store collection cards SHALL show Coming Soon, Repressing or Sold Out in the slo
 
 ### Requirement: Availability states keep one tone on every surface
 
-Each shopper availability state SHALL use the same tone wherever it appears: Store cards, the Store item page, Releases badges, the cart and checkout. Sold Out and Only N left SHALL use a solid Violet #7d58a0 edge and rgba(125,88,160,.16) surface; Coming Soon and Repressing SHALL keep dashed neutral boxes; Pre-order keeps Preorder Sea Green. Size and shape SHALL follow the surface, a compact chip or the item page's purchase control. Notify me SHALL be a quiet text action, never an outlined or red control.
+Each shopper availability state SHALL use the same tone wherever it appears: Store cards, the Store item page, Releases badges, the cart and checkout. Sold Out and Only N left SHALL use a solid Flint #626e72 edge and rgba(98,110,114,.16) surface; Coming Soon and Repressing SHALL keep dashed neutral boxes; Pre-order keeps Preorder Sea Green. Size and shape SHALL follow the surface, a compact chip or the item page's purchase control. Notify me SHALL be a quiet text action, never an outlined or red control.
 
 #### Scenario: Sold Out appears on several surfaces
 
 - **WHEN** one variant reads Sold Out on its Store card, item page, Releases card and a cart line
-- **THEN** each shows the Violet #7d58a0 edge and Violet surface, and none shows that treatment for Coming Soon or Repressing.
+- **THEN** each shows the Flint #626e72 edge and Flint surface, and none shows that treatment for Coming Soon or Repressing.
 
 #### Scenario: Notify me sits under a Coming Soon status
 
@@ -99,5 +99,5 @@ Each shopper availability state SHALL use the same tone wherever it appears: Sto
 #### Scenario: Existing copies-left notice renders
 
 - **WHEN** current authoritative data enables Only N left on a stocked item
-- **THEN** the existing notice uses the same Violet edge and surface as Sold Out
+- **THEN** the existing notice uses the same Flint edge and surface as Sold Out
 - **AND** the count, opt-in threshold and purchase eligibility remain unchanged.

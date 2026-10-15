@@ -22,12 +22,12 @@ None. No data, projection, schema, tooling or module-boundary implementation is 
 ## 3. Shared verification and UAT release
 
 - [x] 3.1 Run pnpm test for every touched owner, including web-store, web-layouts, web-pages and app-shell, and reuse the existing storefront-catalog ordering regression; record source-bound results without rerunning unchanged evidence.
-- [ ] 3.2 Run scoped pnpm test:e2e for the updated Store/shell/routes suites and e2e/player-continuity.spec.ts, with chromium-mobile/webkit-mobile phone cases; verify cart, independent artist links, player, nested history and cache sanitation.
-- [ ] 3.3 Measure real first-card positions at 390×844 and 1440×900 with the compact purchase note above the grid; verify the first phone row is visible, two-up/five-up reference grids, long content, 320px, enlarged text, reduced motion and complete no-JavaScript catalogs.
-- [ ] 3.4 Verify the relocated format hrefs and Distro counts match today's output, All remains catalog-first then artist-ordered Distro, other categories retain their order and no request amplification appears; record fallback/history evidence and Local limits.
+- [x] 3.2 Run scoped pnpm test:e2e for the updated Store/shell/routes suites and e2e/player-continuity.spec.ts, with chromium-mobile/webkit-mobile phone cases; verify cart, independent artist links, player, nested history and cache sanitation.
+- [x] 3.3 Measure real first-card positions at 390×844 and 1440×900 with the compact purchase note above the grid; verify the first phone row is visible, two-up/five-up reference grids, long content, 320px, enlarged text, reduced motion and complete no-JavaScript catalogs.
+- [x] 3.4 Verify the relocated format hrefs and Distro counts match today's output, All remains catalog-first then artist-ordered Distro, other categories retain their order and no request amplification appears; record fallback/history evidence and Local limits.
 - [ ] 3.5 Run pnpm openspec -- validate store-mobile-first-browse --type change --strict, review C1/C3 and retained catalogue behavior, refresh Graphify after the implementation batch and record acceptance/source evidence in validation.md.
 - [x] 3.6 Run final pnpm validate on the integrated implementation tree and retain its passing exact-source summary while preserving unrelated dirty work.
-- [ ] 3.7 Coordinator performs the authorized scoped main commit/push to UAT once all three changes pass, runs pnpm release:watch and verifies UAT release identity, CI/smoke and Store browsing; link the single shared release evidence, with no PRD promotion or Content Publication.
+- [x] 3.7 Coordinator performs the authorized scoped main commit/push to UAT once all three changes pass, runs pnpm release:watch and verifies UAT release identity, CI/smoke and Store browsing; link the single shared release evidence, with no PRD promotion or Content Publication.
 
 ## Validation note (Claude, 15 October 2026)
 

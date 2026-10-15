@@ -12,6 +12,8 @@ Use the approved composition with complete artwork and natural document flow. Ke
 
 ## Decisions
 
+The approved 16 October 2026 revision inherits C1's Flint cool gray family (OKLCH hue 215, chroma 0.012 to 0.016): #626e72 purchase faces/edges, #4d595c hover/pressed faces, #889396 labels and underlines, #c1cbce hover/form-error text and rgba(98,110,114,.16) surfaces. Sea remains pre-order only and Slate remains Listen and small marks. Error red (#bc4945 edges, #e4706a icons/text, rgba(188,73,69,.16) defined surface) belongs only to the non-Greek buyer's item page notice, Store strip, cart drawer and checkout card, whose faces stay Charcoal; never to a control face or form validation error.
+
 ### Page frame
 
 Retain `--page-gutter: 16px` below 640px, 24px from 640px and 32px from 1024px, never smaller than the safe-area inset. At 390px content is between x=16 and x=374. Retain the existing 72rem editorial/header/footer frame and Store's 90rem maximum; this change removes bleed, not the explicit Store width allowance.
@@ -47,7 +49,7 @@ Artist counter becomes inline “1 Releases” (current wording retained) adjace
 
 Home Artists/News still swipe below 40rem and keep desktop grids. Clip the row at the right content edge; the next-card peek remains inside that frame (approximately 42px for the approved News reference). Each dot has a 44×44 target, with the small current mark in Slate #66a2d2, position name and aria-current. Retain script-free fade fallback and reduced motion; no page horizontal scrolling.
 
-Phone footer targets about 290px at 390px, down from the measured 417px. Keep the production logo with social icons beside it, preserve all copy, destinations and link order including Delivery information, and use inline wrapping sitemap links with 44px tap rows. Hide the Sitemap label visually on phones; retain its desktop Violet treatment. At the reference width, arrange the two-line meta beside Slate Est. 2026. Social icon controls remain 44×44 and link hover underlines use Slate. Compact gaps, not targets or legal copy. Preserve Staff text's natural wrapping, allow additional height at enlarged text or narrower widths, and keep the footer visible above the minimized player.
+Phone footer targets about 290px at 390px, down from the measured 417px. Keep the production logo with social icons beside it, preserve all copy, destinations and link order including Delivery information, and use inline wrapping sitemap links with 44px tap rows. Hide the Sitemap label visually on phones; retain its desktop Flint 500 #889396 treatment. At the reference width, arrange the two-line meta beside Slate Est. 2026. Social icon controls remain 44×44 and link hover underlines use Slate. Compact gaps, not targets or legal copy. Preserve Staff text's natural wrapping, allow additional height at enlarged text or narrower widths, and keep the footer visible above the minimized player.
 
 ### Research backing and alternatives
 
@@ -63,16 +65,16 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | ---- | ------------------------------------------------------------------------------------ | -------------------------------- |
 | F1   | Remove Store Blood and Services Rose                                                 | C1                               |
 | F2   | Replace amber Listen edge, bars and session state with Slate                         | C1                               |
-| F3   | Keep Sea exclusively for pre-orders; add Violet and Slate                            | C1                               |
+| F3   | Keep Sea exclusively for pre-orders; add Flint and Slate                             | C1                               |
 | F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                     | C1                               |
 | F5   | Use named accents at rest within monochrome grounds                                  | C1                               |
-| F6   | Violet news tags and Read News inverse edge                                          | C1                               |
+| F6   | Flint news tags and Read News inverse edge                                           | C1                               |
 | F7   | Remove desktop Store side pane                                                       | C2                               |
 | F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
 | F9   | 44px controls, only hero CTA 52px                                                    | C1                               |
-| F10  | Sea Pre-order and Violet Buy filled at rest                                          | C1                               |
+| F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
 | F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 52px Browse the Store with Violet sweep                                    | C1; C3 preserves hero frame      |
+| F12  | Ink-faced 52px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
 | F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
 | F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
 | F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
@@ -81,12 +83,12 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F18  | Compact phone footer, approximately 290px at 390px, with 44px tap rows               | C3                               |
 | F19  | Inline artist release counter                                                        | C3                               |
 | F20  | Release actions beside one another near cover; compact hierarchy                     | C1 pair contract; C3 composition |
-| F21  | Violet Buy keeps the format mark; context-specific label                             | C1; C2 Store placement           |
+| F21  | Flint Buy keeps the format mark; context-specific label                              | C1; C2 Store placement           |
 | F22  | Hidden Store H1; one sheet relocates existing Distro format links and filters        | C2                               |
 
 ## Resolved open items and remaining evidence
 
-The owner settled hero-film bleed, 16px gutters, approximately 290px footer with 44px tap rows, inline count, retained 44px phone film pause/resume, adjacent pairs, ink Veneer titles, Slate marks and Violet Error text. C1 owns the hero CTA's 52px exception and global error/colour rules. Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
+The owner settled hero-film bleed, 16px gutters, approximately 290px footer with 44px tap rows, inline count, retained 44px phone film pause/resume, adjacent pairs, ink Veneer titles, Slate marks and Flint 300 form-error text beside Error; error red is reserved for international restriction notices. C1 owns the hero CTA's 52px exception and global error/colour rules. Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
 
 The approved photo/poster crop is the default. Exact wrapping, long-content height, final image crop and typography need rendered implementation verification, not another palette decision. Catalog desktop was not drawn in the supplied Store/Releases board set; preserve the existing 32.8px catalog title and grid as recorded in those notes.
 

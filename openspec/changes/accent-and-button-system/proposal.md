@@ -2,11 +2,12 @@
 
 ## Why
 
-The approved 15 October 2026 redesign gives public controls consistent size and meaning. The Local audit found seven rendered heights, route-specific pink accents and an amber Listen treatment that conflict with that direction.
+The approved 15 October 2026 redesign gives public controls consistent size and meaning. The Local audit found seven rendered heights, route-specific pink accents and an amber Listen treatment that conflict with that direction. The 16 October 2026 revision uses Flint cool gray for buying and labels to preserve the monochrome character, with a separate error red reserved for international restriction notices.
 
 ## What Changes
 
-- Replace Store Blood, Services Rose and Listen amber with fixed Sea Green, Violet and Slate roles; retain ink Veneer titles.
+- Replace Store Blood, Services Rose, Listen amber and the superseded purchase accent with fixed Sea Green, Flint and Slate roles; retain ink Veneer titles.
+- Reserve error red for the non-Greek buyer's item page notice, Store strip, cart drawer and checkout card; keep form-error text Flint 300 and never use red as a control face.
 - Establish one 44px control family, with the 52px Browse the Store hero action as its only height exception, white labels except on neutral ink faces, and one visible focus treatment.
 - Define filled purchase actions, outlined secondary actions, adjacent action pairs, existing Buy format icons, tags, kickers, navigation markers, date/catalog lines and labelled form errors.
 - Update the conflicting public-control, listening, purchase-status and pre-order contracts and assign the corresponding DESIGN.md rewrite to Claude.
@@ -21,8 +22,8 @@ The approved 15 October 2026 redesign gives public controls consistent size and 
 
 - `public-controls`: size, labels, focus, fixed accent roles and paired actions.
 - `app-shell-and-player`: navigation accents, Listen session styling and hero CTA.
-- `commerce-checkout`: consistent purchase geometry and Violet Sold Out and Only N left edges/surfaces.
-- `release-catalog-presentation`: Violet Buy controls with format marks.
+- `commerce-checkout`: consistent purchase geometry and Flint Sold Out and Only N left edges/surfaces.
+- `release-catalog-presentation`: Flint Buy controls with format marks.
 - `store-catalog-categories`: category control size/colour and availability edges.
 - `store-listing-price-presentation`: filled Buy and shared availability tones.
 - `store-preorders`: Sea Green resting purchase fills and plain status lines.

@@ -25,7 +25,7 @@ The public site SHALL build one main navigation in which Home is structural and 
 
 - **WHEN** a Store or Services link does not target the current page
 - **THEN** it uses the neutral link colour without a side stripe
-- **AND** its label stays white, the current-page underline is Violet #b08fd0, hover underlines use Slate #66a2d2 and keyboard focus uses the shared ink ring, without route-specific accents.
+- **AND** its label stays white, the current-page underline is Flint #889396, hover underlines use Slate #66a2d2 and keyboard focus uses the shared ink ring, without route-specific accents.
 
 #### Scenario: Shopper uses the Menu button
 
@@ -118,5 +118,5 @@ The homepage hero SHALL show, under the motto, a Browse the Store link to `/stor
 
 - **WHEN** Browse the Store renders
 - **THEN** it is the sole 52px control, with a #e8e8e8 face, #090909 label, Bebas Neue 20px capitals and trailing arrow
-- **AND** hover or keyboard focus raises a #7d58a0 fill from the base in 240ms, makes the label white and moves the arrow 6px inside the fixed box
+- **AND** hover or keyboard focus raises a #626e72 fill from the base in 240ms, makes the label white and moves the arrow 6px inside the fixed box
 - **AND** reduced motion uses the same final state instantly and native Store navigation remains unchanged.

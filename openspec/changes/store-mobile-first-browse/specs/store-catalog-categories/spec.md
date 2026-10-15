@@ -58,7 +58,7 @@ Store cards SHALL present complete artwork, actual format, source-cased ink Vene
 
 - **WHEN** a Store listing card renders an item such as Disintegration by Afterwise
 - **THEN** its title retains source casing, existing underline, tracking and line height, using Veneer weight 900 at its existing responsive 20–24px size
-- **AND** the artist/label name uses Inter medium 16px on phones and 17px on desktop in ink, with muted “by ” and a Violet underline for verified artist links
+- **AND** the artist/label name uses Inter medium 16px on phones and 17px on desktop in ink, with muted “by ” and a Flint underline for verified artist links
 - **AND** actual format precedes the title as plain Inter semibold 13px/16px capitals in ink, without a leading mark; Buy retains its existing format icon.
 
 #### Scenario: Linked and unlinked credits remain usable

@@ -22,7 +22,7 @@ The storefront SHALL show explicit loading feedback while Store Item purchase ac
 
 - **GIVEN** the Store Offer resolves to Sold Out, Out of Stock or another non-buyable label
 - **WHEN** the purchase slot renders
-- **THEN** it shows the label as status text with the Violet #7d58a0 edge and rgba(125,88,160,.16) surface for Sold Out and a dashed neutral box otherwise
+- **THEN** it shows the label as status text with the Flint #626e72 edge and rgba(98,110,114,.16) surface for Sold Out and a dashed neutral box otherwise
 - **AND** the element is not focusable, is exposed as status and keeps the purchase geometry.
 
 ### Requirement: Purchase status is clear without duplicate messaging
@@ -59,12 +59,12 @@ The storefront SHALL display the resolved non-buyable label in the approved comp
 
 - **WHEN** the action changes between Checking availability, Add To Cart, Coming Soon, Repressing, Sold Out or Checkout Paused
 - **THEN** the control remains 224px wide and 44px high on desktop and fills the available action width on mobile
-- **AND** the enabled Add To Cart state uses the Violet filled treatment while resolved statuses remain outlined, nonfocusable information rather than disabled buttons.
+- **AND** the enabled Add To Cart state uses the Flint filled treatment while resolved statuses remain outlined, nonfocusable information rather than disabled buttons.
 
 #### Scenario: Inventory states have a subtle visual distinction
 
 - **WHEN** effective online stock is exhausted
-- **THEN** Sold Out uses a solid Violet #7d58a0 edge and rgba(125,88,160,.16) surface
+- **THEN** Sold Out uses a solid Flint #626e72 edge and rgba(98,110,114,.16) surface
 - **AND** Coming Soon and Repressing use a dashed neutral outline, the convention for "not here yet", with a small leading icon (a disc for Coming Soon, a circular arrow for Repressing) and a short line below: "First pressing on its way" or "More copies being pressed", followed by any shown expected month
 - **AND** Checkout Paused uses the neutral gray outline, and an unavailable offer renders no status control
 - **AND** styling does not determine purchase eligibility.

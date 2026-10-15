@@ -25,6 +25,6 @@ Pre-order actions SHALL use Sea #2d766a resting fills with white labels, #256258
 #### Scenario: Home purchase information and Base sweep render
 
 - **WHEN** a shopper views or interacts with a Home pre-order action
-- **THEN** the action stays Sea-filled at rest and changes to its darker Sea hover/pressed face without shifting text or geometry; the upward sweep belongs only to the Violet hero CTA
+- **THEN** the action stays Sea-filled at rest and changes to its darker Sea hover/pressed face without shifting text or geometry; the upward sweep belongs only to the Flint hero CTA
 - **AND** reduced motion uses an immediate state change and touch has press feedback
 - **AND** the Home section retains truthful shipping information and an existing terms link instead of repeated payment/whole-parcel copy; purchase and checkout disclosures remain unchanged.

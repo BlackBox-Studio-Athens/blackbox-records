@@ -8,7 +8,7 @@ The Store SHALL present its discoverable category links as one square-edged Sign
 
 - **WHEN** a Store collection route renders
 - **THEN** its current category link exposes `aria-current="page"`
-- **AND** it uses stronger text, a 2px Violet #b08fd0 current underline and white label, without a route-coloured face
+- **AND** it uses stronger text, a 2px Flint #889396 current underline and white label, without a route-coloured face
 - **AND** colour is not the only cue that distinguishes the current category.
 
 #### Scenario: Category targets remain accessible
@@ -62,5 +62,5 @@ All Store categories SHALL use one native link covering each card except its ind
 #### Scenario: A depleted item appears
 
 - **WHEN** fresh listing data reports coming_soon, repressing or sold_out
-- **THEN** Coming Soon, Repressing or Sold Out appears beside the retained price with readable text, followed by any shown expected month, with the Violet #7d58a0 edge and rgba(125,88,160,.16) surface for Sold Out and the dashed neutral box otherwise
+- **THEN** Coming Soon, Repressing or Sold Out appears beside the retained price with readable text, followed by any shown expected month, with the Flint #626e72 edge and rgba(98,110,114,.16) surface for Sold Out and the dashed neutral box otherwise
 - **AND** artwork, listening, image previews and card navigation remain usable on mobile, desktop, zoomed layouts and every Store browsing view.

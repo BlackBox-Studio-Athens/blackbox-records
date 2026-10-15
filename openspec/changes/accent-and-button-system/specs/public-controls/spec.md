@@ -22,7 +22,7 @@ Public buttons, chips, icon controls, navigation targets and text-action rows SH
 
 - **WHEN** a control renders at rest, selected or as In player
 - **THEN** its label is #f5f5f5
-- **AND** a neutral #e8e8e8 face instead uses #090909 text, returning to white when the hero face becomes Violet
+- **AND** a neutral #e8e8e8 face instead uses #090909 text, returning to white when the hero face becomes Flint
 - **AND** static metadata, placeholders, counts and marks retain their assigned non-label colours.
 
 ### Requirement: Focus and hover are visible and finite
@@ -43,7 +43,7 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 #### Scenario: Hero animates inside a stationary control
 
 - **WHEN** Browse the Store receives pointer hover or keyboard focus
-- **THEN** the 52px control stays fixed while its Violet fill rises and its arrow moves 6px inside the box over 240ms
+- **THEN** the 52px control stays fixed while its Flint fill rises and its arrow moves 6px inside the box over 240ms
 - **AND** reduced motion shows the final state immediately.
 
 ## REMOVED Requirements
@@ -62,12 +62,12 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 
 ### Requirement: Accent roles are fixed
 
-Public controls SHALL use Sea Green for pre-order purchases, Violet for ordinary Buy and Add to cart, Violet outlines for browse actions, Slate edges and bars for Listen, and neutral ink faces for hero and submission actions. Generic icon controls SHALL remain neutral. No section SHALL override these roles.
+Public controls SHALL use Sea Green for pre-order purchases, Flint for ordinary Buy and Add to cart, Flint outlines for browse actions, Slate edges and bars for Listen, and neutral ink faces for hero and submission actions. Generic icon controls SHALL remain neutral. No section SHALL override these roles.
 
 #### Scenario: Purchase and browse controls render
 
 - **WHEN** Buy, Pre-order, Listen, Read News and View Full Roster render
-- **THEN** their respective treatments are Violet fill, Sea fill, Slate outline, Violet inverse outline and Violet inverse outline
+- **THEN** their respective treatments are Flint fill, Sea fill, Slate outline, Flint inverse outline and Flint inverse outline
 - **AND** Buy retains its white format mark, Store cards say Buy and Releases say Buy vinyl, Buy CD or Buy cassette.
 
 #### Scenario: Neutral submission controls render
@@ -88,7 +88,7 @@ Two adjacent action controls SHALL form one filled primary and one outlined seco
 #### Scenario: Release purchase actions render
 
 - **WHEN** a Release offers Buy vinyl, Buy CD, Buy cassette or Pre-order vinyl beside Listen
-- **THEN** one Violet or Sea purchase fill pairs with one Slate outline
+- **THEN** one Flint or Sea purchase fill pairs with one Slate outline
 - **AND** neither action is duplicated elsewhere in the card.
 
 #### Scenario: Price is beside one purchase control

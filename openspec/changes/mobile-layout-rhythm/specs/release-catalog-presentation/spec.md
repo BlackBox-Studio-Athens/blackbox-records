@@ -58,7 +58,7 @@ Release cards SHALL keep independent purchase, listening and detail targets whil
 
 - **WHEN** a buyable featured or catalog card renders below 40rem
 - **THEN** its purchase and Listen controls sit 12px below the cover, each 44px high and half the row with a 16px gap
-- **AND** the filled Violet Buy or Sea Pre-order pairs with the Slate outline; missing listening data adds no placeholder control.
+- **AND** the filled Flint Buy or Sea Pre-order pairs with the Slate outline; missing listening data adds no placeholder control.
 
 ### Requirement: Stacked twin rows reflow without content loss
 
