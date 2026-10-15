@@ -19,8 +19,3 @@ Tags: `[Claude]` contains UI work; `[Codex]` is media preparation without UI.
 
 - [x] 3.1 [Claude] Browser checks at 320, 390, 768, 1440 and 2560 px; inspect the result against the probes.
 - [x] 3.2 [Claude] Record the decision in DESIGN.md and run `pnpm validate`; write `validation.md`.
-
-## 4. Higher resolution
-
-- [x] 4.1 [Codex] Upscale the logo-free crops 2× with three candidates and record provenance, comparisons, flicker proxies and encode probes in `.codex-artifacts/hero-video/upscale/`.
-- [x] 4.2 [Claude] Choose the film-preserving upscale, ship AV1 with an H.264 fallback, raise the file ceilings and cover the AV1 fallback in e2e.

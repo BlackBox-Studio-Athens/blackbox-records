@@ -12,9 +12,7 @@ import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
 import { readOpenPreorders } from '@/lib/open-preorders';
 import { preorderShowcaseItems } from './_preorder-showcase';
-import heroFilmLandscapeAv1Url from './_assets/home-hero/home-hero-intro-landscape-av1.mp4?url';
 import heroFilmLandscapeUrl from './_assets/home-hero/home-hero-intro-landscape.mp4?url';
-import heroFilmPortraitAv1Url from './_assets/home-hero/home-hero-intro-portrait-av1.mp4?url';
 import heroFilmPortraitUrl from './_assets/home-hero/home-hero-intro-portrait.mp4?url';
 
 const artistProfiles = await listArtistRosterProfiles();
@@ -33,10 +31,7 @@ const preorderItems = await preorderShowcaseItems(readOpenPreorders());
     tagline={homeContent.hero.tagline}
     image={homeContent.hero.image}
     imageAlt={homeContent.hero.image_alt}
-    film={{
-      portrait: { av1Url: heroFilmPortraitAv1Url, h264Url: heroFilmPortraitUrl },
-      landscape: { av1Url: heroFilmLandscapeAv1Url, h264Url: heroFilmLandscapeUrl },
-    }}
+    film={{ portraitUrl: heroFilmPortraitUrl, landscapeUrl: heroFilmLandscapeUrl }}
   />
 
   {preorderItems.length > 0 && (

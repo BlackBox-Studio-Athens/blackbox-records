@@ -27,13 +27,7 @@ When prepared hero film files exist, the homepage hero SHALL play a silent loopi
 
 - **WHEN** the hero film files are built
 - **THEN** each file excludes the measured studio-logo bounding box by at least 32 source pixels
-- **AND** each crop ships as a silent AV1 file (landscape 2560 × 1440 under 5 MiB, portrait 1080 × 1920 under 2.75 MiB) and a silent H.264 file (landscape 1920 × 1080 under 5.5 MiB, portrait 810 × 1440 under 3 MiB), all with a fast-start header.
-
-#### Scenario: The browser cannot play AV1
-
-- **WHEN** the browser reports no AV1 support, or its AV1 file fails to load or decode
-- **THEN** the hero plays the H.264 file for the current orientation instead
-- **AND** a failure of that H.264 file keeps the still.
+- **AND** the portrait file is under 2 MiB and the landscape file is under 4 MiB, both silent H.264 with a fast-start header.
 
 ## MODIFIED Requirements
 

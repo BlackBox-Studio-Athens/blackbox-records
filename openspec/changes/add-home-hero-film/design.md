@@ -6,13 +6,11 @@ The owner asked to reuse the Sidus processing. Live probes of colour, plain gray
 
 ### Studio logo
 
-The owner ruled that the BlackBox Studio logo must never appear on the site. Its bounding box is measured across every source frame; each delivered file's crop window excludes it by at least 32 source pixels, recorded geometrically and visually in the media evidence. The first release kept the native crop resolution; the third UAT revision (15 October 2026) upscales the same crops 2× because no higher-resolution master exists (see below).
+The owner ruled that the BlackBox Studio logo must never appear on the site. Its bounding box is measured across every source frame; each delivered file's crop window excludes it by at least 32 source pixels, recorded geometrically and visually in the media evidence. The landscape file keeps its native crop resolution instead of upscaling.
 
 ### Files and selection
 
-Portrait screens get a 608 × 1080 centre crop and other screens a landscape crop, selected by `(orientation: portrait)` and swapped on change. A full-viewport phone hero shows only about a quarter of a 16:9 frame's width, so a 1280 × 720 file (the Sidus small profile) would be soft there while carrying unseen pixels. The first release's ceilings were portrait under 2 MiB and landscape under 4 MiB (the existing desktop film ceiling). The full montage loops because its first and last shots join.
-
-Higher resolution (owner request, 15 October 2026: higher-resolution content is the goal, AI upscaling one route). The only master is 1080p, so each logo-free crop is upscaled 2× with Real-ESRGAN general-x4v3 at denoise 0.4 (official weights, hashes in `.codex-artifacts/hero-video/upscale/provenance.json`). Of three candidates it removed the source's macroblocking, kept edges clean and showed the least frame-to-frame variation; the stronger x2plus restoration added grain-like texture and flicker, and a plain spline resample kept the blocks. H.264 at 2560 × 1440 needs about 10 MiB for comparable quality, so AV1 carries the full resolution (landscape 2560 × 1440, portrait 1080 × 1920, CRF 30, VMAF about 92) and H.264 is a lighter-resolution fallback (1920 × 1080 and 810 × 1440, CRF 26) for browsers without AV1, mainly Safari on Apple hardware older than M3/A17 Pro. The controller picks AV1 when `canPlayType('video/mp4; codecs="av01.0.12M.08"')` is not empty and retries once with H.264 if the AV1 file errors.
+Portrait screens get a 608 × 1080 centre crop and other screens a landscape crop, selected by `(orientation: portrait)` and swapped on change. A full-viewport phone hero shows only about a quarter of a 16:9 frame's width, so a 1280 × 720 file (the Sidus small profile) would be soft there while carrying unseen pixels. Ceilings: portrait under 2 MiB, landscape under 4 MiB (the existing desktop film ceiling). The full montage loops because its first and last shots join.
 
 ### Playback
 

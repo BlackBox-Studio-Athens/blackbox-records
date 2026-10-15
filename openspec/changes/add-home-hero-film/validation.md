@@ -62,3 +62,7 @@ The owner asked for higher-resolution content (AI upscaling as one route). No ma
 - `pnpm test:e2e e2e/home-hero-film.spec.ts`: 5 passed (desktop landscape AV1 playback, AV1 decode failure falling back to H.264, reduced motion, phone portrait crop, phone rotation). `pnpm validate` on the final tree: PASSED.
 
 - UAT release: run [38708979410](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38708979410) for `45077c0a` (film commit `fca995b0`) concluded `success`. Its first attempt lost e2e shard 1 to an unreachable Ubuntu package mirror while installing browsers; re-running that job passed. The earlier run 38707638296 for `fed5c860` deployed the same film but failed staff previews (fixture release without a catalog number) and its Store Durable Object check, which ran while the object still reported the previous release.
+
+### Upscale discarded
+
+The owner reviewed the upscaled film on UAT and discarded it on 15 October 2026. `git revert` of `fca995b0` restores the native-crop H.264 files (landscape 1664 × 936, 3,870,044 bytes; portrait 608 × 1080, 1,873,449 bytes), the single-codec controller, the 4 MiB / 2 MiB ceilings and the earlier e2e film tests. The evidence above stays as the record of the attempt; its candidates remain under `.codex-artifacts/hero-video/upscale/`.
