@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import {
   createEditorialDraft,
+  readReleaseCatalogNumbers,
+  EditorialApiError,
   editorialMediaUrl,
   editorialRequest,
   editorialSlug,
@@ -11,6 +13,59 @@ import {
 } from './editorial-api';
 
 afterEach(() => vi.unstubAllGlobals());
+
+it('reads catalog availability through the authenticated private blackbox endpoint', async () => {
+  const data = {
+    items: [
+      {
+        catalogNumber: 'BBR#002',
+        releaseId: 'release',
+        slug: 'disintegration',
+        title: 'Disintegration',
+        status: 'published',
+      },
+    ],
+    nextFreeNumber: 'BBR#003',
+  };
+  const signal = new AbortController().signal;
+  const fetch = vi.fn(async () => Response.json({ success: true, data }));
+  vi.stubGlobal('fetch', fetch);
+  expect(await readReleaseCatalogNumbers('https://staff.invalid', signal)).toEqual(data);
+  expect(fetch).toHaveBeenCalledWith(
+    'https://staff.invalid/_emdash/api/blackbox/release-catalog-numbers',
+    expect.objectContaining({
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal,
+      headers: { 'X-EmDash-Request': '1' },
+    }),
+  );
+});
+
+it('keeps the clashing catalog field and server message on a rejected save', async () => {
+  const message = 'BBR#002 is already used by Disintegration.';
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      Response.json(
+        {
+          success: false,
+          detail: message,
+          error: { message: `catalog_number: ${message}` },
+          fieldErrors: { catalog_number: message },
+        },
+        { status: 422 },
+      ),
+    ),
+  );
+  const error = await editorialRequest('', 'content/releases/new', { data: { catalog_number: 'BBR#002' } }).catch(
+    (error: unknown) => error,
+  );
+  expect(error).toBeInstanceOf(EditorialApiError);
+  expect(error).toMatchObject({ status: 422, fieldErrors: { catalog_number: message } });
+  expect((error as Error).message).toContain(message);
+});
 
 it('rejects unsupported artwork before decoding or uploading it', async () => {
   const fetch = vi.fn();

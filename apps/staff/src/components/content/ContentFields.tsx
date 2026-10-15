@@ -46,12 +46,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
-import {
-  catalogNumberInput,
-  contentFieldErrors,
-  youtubeVideoId,
-  type ContentValidation,
-} from '../publication/content-validation';
+import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
+import CatalogNumberField from './CatalogNumberField';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
@@ -81,6 +77,7 @@ export default function ContentFields({
   onChange,
   base,
   editorIdentity,
+  recordId,
   onAppendGalleryImages,
   onUploadPendingChange,
   onBandcampPendingChange,
@@ -94,6 +91,8 @@ export default function ContentFields({
   onChange(data: ContentData): void;
   base: string;
   editorIdentity?: string;
+  /** The saved record being edited, so its own catalog number reads as current rather than taken. */
+  recordId?: string;
   onAppendGalleryImages?: (request: {
     editorIdentity: string;
     collection: 'releases' | 'distro';
@@ -675,10 +674,15 @@ export default function ContentFields({
           onBlur={() => touch('artist')}
           onSelect={(item) => set('artist', item.id)}
         />
-        {field('catalog_number', 'Catalog number', { normalize: catalogNumberInput })}
-        <FieldDescription className="col-span-full">
-          The label number, such as BBR#001. Each release has its own, and the Store lists releases in this order.
-        </FieldDescription>
+        <CatalogNumberField
+          base={base}
+          value={data.catalog_number}
+          recordId={recordId}
+          errors={errors('catalog_number')}
+          disabled={disabled}
+          onChange={(next) => set('catalog_number', next)}
+          onBlur={() => touch('catalog_number')}
+        />
         <Field>
           <FieldLabel htmlFor="content-release_stage" icon={CalendarDays}>
             Release stage

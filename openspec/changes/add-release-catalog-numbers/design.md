@@ -6,7 +6,7 @@ UAT and PRD read independent accepted snapshots from R2 at runtime. Repository r
 
 ## Goals / Non-Goals
 
-Make valid catalog numbers explicit across editorial validation and Store ordering. Preserve accepted legacy content for the confirmed identities. Public rendering gains no catalog-number text. Category pages other than All and commerce identity remain unchanged.
+Make valid catalog numbers explicit across editorial validation and Store ordering. Preserve accepted legacy content for the confirmed identities. Public rendering shows the number subtly in the existing date line of the release page and every Releases card (owner-approved option 1, 15 October 2026). Category pages other than All and commerce identity remain unchanged.
 
 ## Decisions
 
@@ -16,6 +16,32 @@ Make valid catalog numbers explicit across editorial validation and Store orderi
 - Shared releaseCatalogNumberClashes checks the complete candidate, including unsellable editorial Releases. Strict snapshot parsing rejects clashes with slugs and CMS ids. Publication review adds the same message to affected selected Releases after the full selection is assembled, allowing simultaneous reassignment without transient clashes.
 - Draft schema derivation already permits absent/null/empty unfinished fields. The new required publication field inherits that behavior while rejecting malformed supplied values.
 - Upgrade only accepted snapshot reads, after checksum verification. Match snapshot record.slug, not environment-specific CMS record.id: publishedCollection emits release ids from slug, and Store Item projections reference that same slug. The owner-confirmed assignments are caregivers=BBR#001, disintegration=BBR#002, anarchotribal=BBR#003 and lotus=BBR#004. On 2026-10-15 the owner assigned LOTUS (`lotus`, Sidus, released 2026-10-02) BBR#004. The CMS backfill uses this same shared table. Upgrade absent fields only; explicit invalid/null values still fail. Raw R2 bytes and their checksum/pointer never change. New candidates use strict parseContentSnapshot and cannot receive legacy defaults.
+
+## Structured Staff contract (15 October 2026)
+
+- The shared `catalogNumberFromOrdinal(number)` accepts positive safe integers only, pads to at least three digits and returns `CatalogNumber | null`. `catalogNumberOrdinal(CatalogNumber)` returns `number | null`; null preserves the existing parser's support for legacy canonical strings beyond the safe integer range. `nextFreeCatalogNumber(Iterable<CatalogNumber>)` computes maximum plus one using BigInt, starting at BBR#001 and preserving gaps. The stored value remains a branded canonical string. Staff must disable numeric editing/suggestions outside the safe integer range rather than round them.
+- Authenticated editorial staff (role >= 30) use GET `/_emdash/api/blackbox/release-catalog-numbers`. All responses use `Cache-Control: private, no-store`. A successful response is `{ success: true, data: { items: [{ catalogNumber, releaseId, slug, title, status: 'published' | 'draft' }], nextFreeNumber } }`. The Staff client is `readReleaseCatalogNumbers(base, signal?)` in `apps/staff/src/lib/backend/editorial-api.ts`; its resolved value is the inner data, typed as shared `ReleaseCatalogNumbers`.
+- The inventory follows every native content cursor and reads current draft and live revisions. Distinct draft/live numbers produce two rows for the same release; an identical number appears once as published. Empty/malformed numbers are omitted. Failed lists, failed revisions and revision ownership mismatches fail the read rather than advertising numbers as free. No revision history or unsaved browser text reserves a number. This reads native saved CMS records; it does not manufacture legacy assignments or change accepted snapshots.
+- Native release POST/PUT validates uniqueness before forwarding to EmDash. Updating by id or slug resolves the current id; its own numbers remain allowed. Another release's live or private draft number rejects the save with status 422, `code: 'invalid_editorial_save'`, `success: false`, `fieldErrors: { catalog_number: 'BBR#002 is already used by Disintegration.' }`, `detail` containing that message, and `error: { message: 'catalog_number: BBR#002 is already used by Disintegration.' }` within the existing problem-details envelope. `EditorialApiError` retains status, message and optional fieldErrors. Publication checks remain in place. Incomplete drafts still allow absent/null/empty numbers; malformed supplied numbers retain the existing schema rejection.
+- The CMS Durable Object serializes release saves from inventory check through native persistence, including failures, so simultaneous Staff saves cannot both claim a free number. Inventory failures reject a save with private status 503 and `Release catalog numbers could not be checked. Retry.` The read's retry message is `Release catalog numbers could not be loaded. Retry.` Availability is advisory until a successful save; refetch after a save or clash. Existing separately authorized migration/backfill procedures must continue to pause editorial writes.
+- UI handoff: compose the stored string with `catalogNumberFromOrdinal`; read the numeric input using `catalogNumberOrdinal`. For availability, match all items by canonical number, prioritizing another release over the current release if historical duplicates exist. Show `Free`, `Taken by <title>`, or `This release's current number`. “Use next free number” selects the returned nextFreeNumber after checking its safe ordinal. The existing malformed-number message remains `catalogNumberMessage`. UI components and browser checks belong to the coordinator.
+
+A clashing native save returns `Content-Type: application/problem+json` and this body (with the actual number and other Release title, or its slug when its title is empty):
+
+```json
+{
+  "success": false,
+  "type": "/problems/invalid_editorial_save",
+  "title": "Invalid editorial save.",
+  "status": 422,
+  "detail": "BBR#002 is already used by Disintegration.",
+  "code": "invalid_editorial_save",
+  "error": { "message": "catalog_number: BBR#002 is already used by Disintegration." },
+  "fieldErrors": { "catalog_number": "BBR#002 is already used by Disintegration." }
+}
+```
+
+The Staff client's `EditorialApiError.message` uses the plain `detail`, and `fieldErrors.catalog_number` contains the same plain message for inline display. Native requests continue using `X-EmDash-Request: 1`, same-origin credentials and the existing revision payload for updates.
 
 ## Risks / Trade-offs
 

@@ -19,3 +19,13 @@ Every publication-complete BlackBox Release SHALL have exactly one unique positi
 
 - **WHEN** a publication candidate contains duplicate catalog numbers
 - **THEN** validation rejects it and identifies the number and clashing Releases, including editorial-only records.
+
+### Requirement: Releases show their catalog number in the date line
+
+The release page and every Releases card SHALL show the release's catalog number at the end of the existing date line, after a middle-dot separator, in the line's own muted uppercase style. Screen readers SHALL hear it as "Catalog number BBR#…"; the separator SHALL be hidden from them. The number SHALL wrap as a unit rather than overflow. No other public surface SHALL change.
+
+#### Scenario: Visitor reads a release
+
+- **WHEN** a visitor opens Disintegration's release page or the Releases page
+- **THEN** the page date line reads "Release date / Jun 9, 2026 · BBR#002" and the card date line reads "Jun 2026 · BBR#002"
+- **AND** the number is announced as "Catalog number BBR#002".

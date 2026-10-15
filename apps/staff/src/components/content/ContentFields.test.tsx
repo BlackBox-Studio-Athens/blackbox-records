@@ -161,7 +161,7 @@ test('Releases order stays optional, validates positive whole numbers and edits 
   expect(data.releases_priority).toBeNull();
 });
 
-test('Catalog number is a required release field that stores the typed label number in canonical case', () => {
+test('Catalog number takes digits only behind a fixed BBR# prefix and stores the canonical number', () => {
   let data: ComponentProps<typeof ContentFields>['data'] = { title: 'Record' };
   const render = () => {
     controls.inputs = [];
@@ -170,6 +170,7 @@ test('Catalog number is a required release field that stores the typed label num
         collection="releases"
         data={data}
         base=""
+        recordId="release-1"
         validation={getContentValidation('releases', data)}
         validationAttempt={0}
         onChange={(next) => {
@@ -180,16 +181,24 @@ test('Catalog number is a required release field that stores the typed label num
   };
   const html = render();
   expect(html.indexOf('Catalog number')).toBeLessThan(html.indexOf('Release stage'));
+  expect(html).toContain('BBR#');
   const field = () => controls.inputs.find((input) => input['data-content-path'] === 'catalog_number')!;
-  expect(field().required).toBe(true);
-  for (const [typed, stored, valid] of [
-    ['bbr #004', 'BBR#004', true],
-    ['BBR#0', 'BBR#0', false],
-    ['BBR#000', 'BBR#000', false],
+  expect(field()['aria-required']).toBe(true);
+  expect(field().inputMode).toBe('numeric');
+  for (const [typed, shown, stored, valid] of [
+    ['bbr #4', '004', 'BBR#004', true],
+    ['12', '012', 'BBR#012', true],
+    ['1000', '1000', 'BBR#1000', true],
+    ['0', '0', 'BBR#0', false],
+    ['000', '000', 'BBR#000', false],
+    ['', '', '', false],
   ] as const) {
     field().onChange!({ target: { value: typed } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
     render();
     expect(data.catalog_number).toBe(stored);
+    // A fresh mount shows the stored number's digits, padded once it is valid.
+    expect(String(field().value)).toBe(shown);
+    // Publication needs a real number; an emptied field reads as missing like other required fields.
     expect(getContentValidation('releases', data).byPath.catalog_number === undefined).toBe(valid);
     expect(data.title).toBe('Record');
   }

@@ -2,6 +2,11 @@
 export { handleBandcampResolution, bandcampResolutionPath } from './bandcamp-resolution';
 export { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
 export { readPriceDrafts } from './price-drafts';
+export {
+  readReleaseCatalogNumbers,
+  releaseCatalogNumberSaveError,
+  releaseCatalogNumbersResponse,
+} from './release-catalog-numbers';
 export { staffAssetResponse } from './staff-assets';
 export { readInventoryArtwork } from './inventory-artwork';
 export { prepareCatalogSchema } from './catalog-schema';

@@ -8,7 +8,7 @@ BlackBox Releases need a valid, unique catalog identity independent of dates and
 
 - The owner supplied the complete table directly on 2026-10-15: caregivers (Chronoboros)=BBR#001, disintegration (Afterwise)=BBR#002, anarchotribal (Ouranopithecus)=BBR#003, lotus (Sidus)=BBR#004. Numbers do not follow release date: Anarchotribal is out 6 June and Disintegration 9 June.
 - Require canonical positive catalog numbers on published Releases; allow incomplete private drafts.
-- Order Store All by catalog number for BlackBox Releases, followed by the existing Distro artist order. Render no new public field.
+- Order Store All by catalog number for BlackBox Releases, followed by the existing Distro artist order. Show the number in the release date line on release pages and Releases cards (owner-approved on 15 October 2026 after reviewing three placements).
 - **BREAKING**: New publication candidates require catalog_number. Accepted legacy snapshots use only the four owner-confirmed slug assignments (caregivers=BBR#001, disintegration=BBR#002, anarchotribal=BBR#003, lotus=BBR#004); unknown legacy releases fail clearly. The planned release targets UAT only; PRD promotion remains separate.
 - Prepare the CMS field and supply an explicit backfill step without running it.
 

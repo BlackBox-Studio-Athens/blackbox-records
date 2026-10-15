@@ -18,3 +18,15 @@
 - [x] 3.2 Document rollout findings, staff input contract and e2e expectations in design.md and handover.md.
 - [x] 3.3 Coordinator adds staff input/default handling and updates e2e tests; run browser acceptance.
 - [ ] 3.4 Owner prepares schema, reviews/applies the full CMS inventory backfill, releases compatible code to UAT only and accepts next publication. The 2026-10-15 PRD public listing and owner UAT confirmation cover the four assigned Releases including LOTUS BBR#004; private CMS revision checks and rollout remain pending. PRD promotion requires separate authorization.
+
+## 4. Structured Staff catalog-number operations (15 October 2026)
+
+- [x] 4.1 Add safe ordinal construction/read operations and BigInt maximum-plus-one suggestions; add bounds and round-trip tests without changing the stored canonical string or legacy parser range.
+- [x] 4.2 Add the authenticated private catalog-number inventory and typed Staff backend read, including pagination, saved draft/live reservation, ownership failures and client tests.
+- [x] 4.3 Reject another release's number on native Staff draft saves with field-scoped named errors; allow self/empty values, serialize simultaneous release saves, and retain publication validation. Add worker regression tests.
+- [x] 4.4 Run focused checks and strict change validation, refresh Graphify, and record exact results and the UI contract in design.md/validation.md. All three focused test commands passed after Nx startup failures; scoped lint/format/LF checks passed. No full validation, commit, push, hosted mutation or UI implementation was performed for this follow-up.
+
+## 5. Public display and Staff input (15 October 2026)
+
+- [x] 5.1 [Claude] Review three subtle public placements with the owner; build the approved date-line placement on release pages and Releases cards with an accessible name and an e2e check.
+- [x] 5.2 [Claude] Replace the Staff free-text input with the structured catalog-number field (BBR# prefix, digits only, availability, next free number) in the Release editor and new-release setup; unit tests and a visual check of every state.

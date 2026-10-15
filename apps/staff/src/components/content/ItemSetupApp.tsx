@@ -23,7 +23,6 @@ import {
   Disc3,
   Euro,
   FileText,
-  Hash,
   Package,
   RefreshCw,
   Type,
@@ -36,7 +35,7 @@ import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import ProductSafetyFields from './ProductSafetyFields';
 import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
-import { catalogNumberInput } from '../publication/content-validation';
+import CatalogNumberField from './CatalogNumberField';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
 import ZeroStockStateControl, { isZeroStockState, type ZeroStockState } from '../stock/ZeroStockStateControl';
@@ -625,26 +624,13 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                       setArtistName(String(item.data.title));
                     }}
                   />
-                  <div className="grid gap-2">
-                    <label htmlFor="setup-catalog-number" className="flex items-center gap-2">
-                      <Hash className="size-4 text-muted-foreground" aria-hidden="true" />
-                      Catalog number
-                    </label>
-                    <Input
-                      id="setup-catalog-number"
-                      required
-                      placeholder="BBR#001"
-                      value={catalogNumber}
-                      aria-invalid={(!!catalogNumber && !parseCatalogNumber(catalogNumber)) || undefined}
-                      aria-describedby="setup-catalog-number-help"
-                      onChange={(event) => setCatalogNumber(catalogNumberInput(event.target.value))}
-                    />
-                    <p id="setup-catalog-number-help" className="text-sm text-muted-foreground">
-                      {catalogNumber && !parseCatalogNumber(catalogNumber)
-                        ? catalogNumberMessage
-                        : 'Each release has its own. The Store lists releases in this order.'}
-                    </p>
-                  </div>
+                  <CatalogNumberField
+                    base={backendBaseUrl}
+                    value={catalogNumber}
+                    recordId={draftDocument.current?.item.id}
+                    disabled={locked}
+                    onChange={setCatalogNumber}
+                  />
                   <label className="grid gap-2">
                     <span className="flex items-center gap-2">
                       <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />

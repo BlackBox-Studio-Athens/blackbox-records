@@ -70,6 +70,9 @@ import {
   readRevisionContent,
   readPriceDrafts,
   readStaffWorkspace,
+  readReleaseCatalogNumbers,
+  releaseCatalogNumberSaveError,
+  releaseCatalogNumbersResponse,
   reconcileItemPublications,
   releasePreviewContext,
   renderPreviewPage,
@@ -192,6 +195,7 @@ export default {
 
 // ponytail: one editorial site per object; split by site only if we host more sites.
 export class CmsRuntime extends DurableObject<CmsBindings> {
+  private releaseSaveTask: Promise<void> = Promise.resolve();
   private publicationTask: Promise<void> | undefined;
   private staffSnapshotCache: StaffSnapshotCache = {};
 
@@ -490,6 +494,26 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   }
 
   async fetchWithBindings(request: Request, config: CommerceRuntimeConfig): Promise<Response> {
+    if (
+      !['POST', 'PUT'].includes(request.method) ||
+      !/^\/_emdash\/api\/content\/releases(?:\/[A-Za-z0-9_-]+)?$/.test(new URL(request.url).pathname)
+    )
+      return this.fetchRequest(request, config);
+    // Hold the inventory check through native persistence so concurrent releases cannot claim the same number.
+    const previous = this.releaseSaveTask;
+    let release!: () => void;
+    this.releaseSaveTask = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await this.fetchRequest(request, config);
+    } finally {
+      release();
+    }
+  }
+
+  private async fetchRequest(request: Request, config: CommerceRuntimeConfig): Promise<Response> {
     const bindings = { ...this.env, ...commerceRuntimeConfigFromBindings(config) };
     const url = new URL(request.url);
     if (isPreviewHost(request, bindings)) return this.previewRead(request, bindings);
@@ -536,9 +560,14 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       const { withEmDashRuntime } = await import('emdash/middleware');
       return withEmDashRuntime(prepareCatalogSchema);
     }
+    if (url.pathname === '/_emdash/api/blackbox/release-catalog-numbers')
+      return releaseCatalogNumbersResponse(request, identity, async () => {
+        const { withEmDashRuntime } = await import('emdash/middleware');
+        return withEmDashRuntime(readReleaseCatalogNumbers);
+      });
     if (['/_emdash/api/blackbox/workspace', '/_emdash/api/blackbox/inventory-artwork'].includes(url.pathname)) {
       if (!identity || identity.role < 30 || request.method !== 'GET')
-        return new Response('Forbidden', { status: 403 });
+        return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
       try {
         const { withEmDashRuntime } = await import('emdash/middleware');
         if (url.pathname.endsWith('/inventory-artwork'))
@@ -825,6 +854,19 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
+          if (editorialWrite[1] === 'releases' && identity && identity.role >= 30) {
+            const { withEmDashRuntime } = await import('emdash/middleware');
+            const clash = await withEmDashRuntime((runtime) =>
+              releaseCatalogNumberSaveError(runtime, draftData, editorialWrite[2]),
+            ).catch(() =>
+              cmsNestedProblemResponse(
+                503,
+                { message: 'Release catalog numbers could not be checked. Retry.' },
+                { headers: { 'Cache-Control': 'private, no-store' } },
+              ),
+            );
+            if (clash) return clash;
+          }
           const writeHeaders = new Headers(request.headers);
           writeHeaders.delete('Content-Length');
           request = new Request(request, { headers: writeHeaders, body: JSON.stringify(payload) });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 declare const catalogNumberBrand: unique symbol;
-/** Canonical JSON string; the parser is the only constructor. */
+/** Canonical JSON string, constructed through the validated operations below. */
 export type CatalogNumber = string & { readonly [catalogNumberBrand]: true };
 
 export const catalogNumberMessage = 'Enter a catalog number such as BBR#001 (starting at 001).';
@@ -25,6 +25,40 @@ export const catalogNumberSchema = z
 export function formatCatalogNumber(value: CatalogNumber): string {
   return value;
 }
+
+export function catalogNumberFromOrdinal(ordinal: number): CatalogNumber | null {
+  return Number.isSafeInteger(ordinal) && ordinal > 0
+    ? parseCatalogNumber(`BBR#${String(ordinal).padStart(3, '0')}`)
+    : null;
+}
+
+/** Legacy canonical strings may exceed the numeric input's safe integer range. */
+export function catalogNumberOrdinal(value: CatalogNumber): number | null {
+  const ordinal = Number(value.slice(4));
+  return Number.isSafeInteger(ordinal) && ordinal > 0 ? ordinal : null;
+}
+
+export function nextFreeCatalogNumber(used: Iterable<CatalogNumber>): CatalogNumber {
+  let maximum = 0n;
+  for (const value of used) {
+    const ordinal = BigInt(value.slice(4));
+    if (ordinal > maximum) maximum = ordinal;
+  }
+  return parseCatalogNumber(`BBR#${String(maximum + 1n).padStart(3, '0')}`)!;
+}
+
+export type ReleaseCatalogNumberUsage = {
+  catalogNumber: CatalogNumber;
+  releaseId: string;
+  slug: string;
+  title: string;
+  status: 'published' | 'draft';
+};
+
+export type ReleaseCatalogNumbers = {
+  items: ReleaseCatalogNumberUsage[];
+  nextFreeNumber: CatalogNumber;
+};
 
 export function compareCatalogNumbers(left: CatalogNumber, right: CatalogNumber): number {
   const a = BigInt(left.slice(4));

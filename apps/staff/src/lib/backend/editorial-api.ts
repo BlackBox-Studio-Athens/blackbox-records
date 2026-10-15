@@ -1,4 +1,5 @@
 import { extractSafeProblemDetail } from './problem-details';
+import type { ReleaseCatalogNumbers } from '@blackbox/content-model';
 
 // Price drafts live in the EmDash `blackbox-editorial` plugin. A draft is never Price Authority:
 // only the confirmed price command below changes what shoppers pay.
@@ -151,6 +152,7 @@ export class EditorialApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly fieldErrors?: Record<string, string>,
   ) {
     super(message);
   }
@@ -184,6 +186,13 @@ export async function editorialRequest<T>(
       response.status === 409
         ? 'Someone changed this entry. Your text is still here. Load the saved version before saving again.'
         : (validation ?? 'We could not confirm this request. Check your connection and try again.'),
+      validation && details?.fieldErrors && typeof details.fieldErrors === 'object'
+        ? Object.fromEntries(
+            Object.entries(details.fieldErrors).filter(
+              (entry): entry is [string, string] => typeof entry[1] === 'string',
+            ),
+          )
+        : undefined,
     );
   }
   const result = (await response.json()) as { success: boolean; data: T };
@@ -195,6 +204,10 @@ export async function editorialRequest<T>(
   )
     window.dispatchEvent(new Event('staff:editorial-change'));
   return result.data;
+}
+
+export function readReleaseCatalogNumbers(base: string, signal?: AbortSignal): Promise<ReleaseCatalogNumbers> {
+  return editorialRequest(base, 'blackbox/release-catalog-numbers', undefined, 'GET', signal);
 }
 
 export async function createEditorialDraft(

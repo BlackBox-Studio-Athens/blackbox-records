@@ -1,5 +1,37 @@
 # Validation
 
+## Structured Staff catalog-number backend — 15 October 2026
+
+Scope: shared ordinal operations, saved Release number inventory, native Staff release POST/PUT uniqueness validation, typed Staff backend read/error handling and their non-UI tests. No Staff components, e2e, public presentation, hero files, protected harness documents, module policy or concurrent-session changes were edited. No commit, push, hosted request to a product environment, migration, publication or deployment was performed. HEAD observed during the checks: `4ad90e4324c4d3583bb43c7a6fab0c70534e99a7`; source includes this task's uncommitted files and the concurrent shared tree.
+
+The exact UI endpoint, response types, field error shape, safe ordinal behavior and reusable messages are in design.md under Structured Staff contract. Publication-time checks remain active. Full validation and UI/browser acceptance were explicitly excluded by the owner; passing scoped checks do not establish native hosted persistence or release acceptance.
+
+- `pnpm openspec:guard`: passed before edits on main.
+- Graphify's first broad query was truncated. Focused `graphify explain "validateCmsDraft" --budget 2500` and `graphify explain "readStaffWorkspace" --budget 2500` resolved the validation/read relationships, followed by CodeGraph exact-source/caller exploration. CodeGraph did not return some named plugin/client files; scoped exact reads supplied those gaps.
+- `pnpm test apps/web/src/lib/catalog-number.test.ts` (run through `& C:/Users/SVall/.local/bin/rtk.exe test`): final run passed, exit 0. The first run failed before tests when Nx's package-json plugin worker did not receive its load message within 10 seconds; the first retry also failed before assertions when three Nx plugin workers exited during startup/before connection. No test-runner or sandbox bypass was used. The passing final run covers safe ordinal bounds, round trips, empty inventory, gaps, padding rollover and precise legacy large-integer handling.
+- `pnpm test apps/staff/src/lib/backend/editorial-api.test.ts` (same RTK test wrapper): passed, exit 0. Includes typed private read request/abort behavior and the server's field-scoped uniqueness error retained as EditorialApiError.
+- `pnpm test apps/backend/src/cms/release-catalog-numbers.worker.test.ts` (same RTK test wrapper): final run passed, exit 0, including the blank-title/slug error regression. The first run failed before tests with the same Nx package-json startup timeout. The first retry also passed, exit 0, after waiting for another process's graph construction; the final run was necessary because the last edge-case assertion was added during that retry. Worker regressions cover paginated live/private draft reservations, empty inventory, same-release saves by id/slug, incomplete values, named field errors, missing/mismatched inventory, permissions, method restrictions and private no-store outcomes.
+- `pnpm openspec -- validate add-release-catalog-numbers --strict`: passed, exit 0; change is valid.
+- `& C:/Users/SVall/.local/bin/rtk.exe lint pnpm exec eslint packages/content-model/src/catalog-number.ts apps/web/src/lib/catalog-number.test.ts apps/backend/src/cms/release-catalog-numbers.ts apps/backend/src/cms/release-catalog-numbers.worker.test.ts apps/backend/src/cms/index.ts apps/backend/src/cms-worker.ts apps/staff/src/lib/backend/editorial-api.ts apps/staff/src/lib/backend/editorial-api.test.ts --max-warnings=0`: passed, exit 0. After the blank-title fallback/test addition, `& C:/Users/SVall/.local/bin/rtk.exe lint pnpm exec eslint apps/backend/src/cms/release-catalog-numbers.ts apps/backend/src/cms/release-catalog-numbers.worker.test.ts --max-warnings=0` also passed, exit 0.
+- Scoped `rtk prettier --write` on the eight source/test files and the design/tasks/editorial spec delta: passed. Final documentation formatting and the LF check on all twelve owned files passed.
+- `git diff --check`: passed on the final shared diff.
+- `graphify update .`: passed, exit 0; 28,700 nodes and 46,036 edges. It reports the existing missing SQL grammar and partial `scripts/pages-workflow-contract.test.ts` parse; no LLM enrichment was requested.
+
+Owned source/test fingerprint (the eight changed code/test files, each path followed by its raw LF bytes, concatenated in the order below): `e8ec231443e0e6d42859651f76d9316b2fbbe3487e98732d786d383382f569d6`. These files use LF and the final shared `git diff --check` passed. OpenSpec/documentation evidence edits do not change that code fingerprint.
+
+1. `packages/content-model/src/catalog-number.ts`
+2. `apps/web/src/lib/catalog-number.test.ts` (shared-model tests follow the existing web test ownership; no public UI changes)
+3. `apps/backend/src/cms/release-catalog-numbers.ts`
+4. `apps/backend/src/cms/release-catalog-numbers.worker.test.ts`
+5. `apps/backend/src/cms/index.ts`
+6. `apps/backend/src/cms-worker.ts`
+7. `apps/staff/src/lib/backend/editorial-api.ts`
+8. `apps/staff/src/lib/backend/editorial-api.test.ts`
+
+The other four changed files are this change's `design.md`, `tasks.md`, `specs/emdash-editorial-operations/spec.md` and `validation.md`.
+
+Work-state writes were denied by the active tool approval policy; execution evidence stays in this OpenSpec change. Unverified: simultaneous-save behavior against a running native CMS, browser/UI behavior, hosted data and rollout. The coordinator owns Staff UI and final shared-tree validation.
+
 ## Owner catalog correction — 2026-10-15
 
 The owner supplied the complete table directly: caregivers (Chronoboros)=BBR#001, disintegration (Afterwise)=BBR#002, anarchotribal (Ouranopithecus)=BBR#003, lotus (Sidus)=BBR#004. Numbers do not follow release dates (Anarchotribal: 6 June; Disintegration: 9 June). The shared legacy reader/CMS backfill table, two release records, non-UI fixtures and Store All order assertions now follow that table. Store All begins Caregivers, Disintegration, Anarchotribal, then Distro by artist.
