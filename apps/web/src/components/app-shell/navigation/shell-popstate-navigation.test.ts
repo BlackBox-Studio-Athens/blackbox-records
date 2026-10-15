@@ -6,6 +6,7 @@ vi.mock('astro:config/client', () => ({
 }));
 
 import { routeShellPopStateNavigation } from './shell-popstate-navigation';
+import { connectSurfaceHistory } from '@/platform/lib/surface-history';
 
 function createOptions(overrides: Partial<Parameters<typeof routeShellPopStateNavigation>[0]> = {}) {
   return {
@@ -32,6 +33,41 @@ function createOptions(overrides: Partial<Parameters<typeof routeShellPopStateNa
 const releasesHref = 'https://example.test/blackbox-records/releases/';
 
 describe('shell popstate navigation', () => {
+  it('dismisses a player before its registered page surface without routing the page', () => {
+    let state: Record<string, unknown> = {};
+    vi.stubGlobal('window', {
+      location: { href: releasesHref },
+      history: {
+        get state() {
+          return state;
+        },
+        pushState(next: Record<string, unknown>) {
+          state = next;
+        },
+      },
+    });
+    const change = vi.fn();
+    const surface = connectSurfaceHistory('crate', change);
+    surface.push();
+    const options = createOptions({ currentHref: releasesHref, currentPathname: '/blackbox-records/releases/' });
+    try {
+      expect(
+        routeShellPopStateNavigation({ ...options, historyState: { ...state, __appShellPlayerModal: true } }),
+      ).toBe('player-modal');
+      expect(change).not.toHaveBeenCalled();
+      expect(routeShellPopStateNavigation({ ...options, historyState: state })).toBe('player-modal');
+      expect(change).not.toHaveBeenCalled();
+      expect(routeShellPopStateNavigation(options)).toBe('page-surface');
+      expect(change).toHaveBeenLastCalledWith(undefined);
+      expect(routeShellPopStateNavigation({ ...options, historyState: state })).toBe('page-surface');
+      expect(change).toHaveBeenLastCalledWith(true);
+      expect(options.openShellSectionHref).not.toHaveBeenCalled();
+      expect(options.openOverlayHref).not.toHaveBeenCalled();
+    } finally {
+      surface.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
   it('restores overlay history entries before shell section navigation', () => {
     const options = createOptions({
       historyState: {

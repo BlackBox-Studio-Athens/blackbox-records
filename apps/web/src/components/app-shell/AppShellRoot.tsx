@@ -798,6 +798,7 @@ export default function AppShellRoot({
         scheduleOverlayContentFocus({
           getCloseButton: () => overlayCloseButtonRef.current,
           getScrollContainer: () => overlayScrollContainerRef.current,
+          isOverlayOpen: () => overlayStateRef.current !== null,
           scheduler: window,
         });
       },
@@ -857,7 +858,7 @@ export default function AppShellRoot({
       scheduler: window,
       scrollToTargetId,
       setOverlayTriggerElement: (element) => {
-        overlayTriggerElementRef.current = element;
+        if (!overlayStateRef.current) overlayTriggerElementRef.current = element;
       },
       shellSheetHistoryHrefRef,
       stopPlayerSession,
@@ -1018,6 +1019,7 @@ export default function AppShellRoot({
               scheduleOverlayContentFocus({
                 getCloseButton: () => overlayCloseButtonRef.current,
                 getScrollContainer: () => overlayScrollContainerRef.current,
+                isOverlayOpen: () => overlayStateRef.current !== null,
                 scheduler: window,
               });
             }}

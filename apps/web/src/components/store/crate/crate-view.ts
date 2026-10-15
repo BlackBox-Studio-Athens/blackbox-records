@@ -5,6 +5,7 @@
  * sits on its own elements, so leaving the route and calling destroy() leaves nothing behind.
  */
 import { readRootScrollPaddingTop } from '@/platform/lib/lenis-scroll';
+import { connectSurfaceHistory, readHistoryEntryMarker } from '@/platform/lib/surface-history';
 import { BIN_WORDS, BINS, type Bin } from './crate-bins';
 import {
   advanceWheelGesture,
@@ -392,6 +393,21 @@ export function mountStoreCrate(
   let handCard: HTMLElement | null = null;
   let riffle: Running | null = null;
   const disposers: (() => void)[] = [];
+  let gridScrollY =
+    typeof history.state?.storeCrateGridScrollY === 'number' ? history.state.storeCrateGridScrollY : window.scrollY;
+  let closeTo: string | null = null;
+  let closingWithControl = false;
+  const surfaceHistory = connectSurfaceHistory('__storeCrate', (isOpen) => {
+    if (isOpen) {
+      if (!restoreCrate()) open(true);
+    } else {
+      close(closeTo, true, !closingWithControl);
+      closeTo = null;
+      if (!closingWithControl) window.scrollTo({ top: gridScrollY, behavior: 'instant' });
+      closingWithControl = false;
+    }
+  });
+  disposers.push(() => surfaceHistory.dispose());
 
   const listen = <K extends keyof HTMLElementEventMap>(
     el: HTMLElement,
@@ -1089,7 +1105,7 @@ export function mountStoreCrate(
     if (serialised === recorded) return;
     recorded = serialised;
     const current = (history.state ?? {}) as Record<string, unknown>;
-    history.replaceState({ ...current, storeCrate: record }, '');
+    history.replaceState({ ...current, storeCrate: record, storeCrateGridScrollY: gridScrollY }, '');
   }
   function remember() {
     clearTimeout(recordTimer);
@@ -1336,9 +1352,10 @@ export function mountStoreCrate(
     flying = [];
   }
 
-  function open() {
+  function open(fromHistory = false) {
     land();
     if (state.mode.view === 'crate') return;
+    if (!fromHistory) gridScrollY = window.scrollY;
     const ids = visibleIds();
     const shown = onScreen(ids);
     const rects = new Map<ItemId, DOMRect>();
@@ -1348,6 +1365,7 @@ export function mountStoreCrate(
     }
     const next = reduce(state, { type: 'openCrate', grid: ids, onScreen: shown, format: host.format() }, cat);
     if (next === state) return;
+    if (!fromHistory) surfaceHistory.push();
     const prev = state;
     state = next;
     enterLayout();
@@ -1361,11 +1379,18 @@ export function mountStoreCrate(
     }
     flyIn(rects);
     schedule();
-    remember();
+    writeRecord();
     stage!.focus({ preventScroll: true });
   }
 
-  function close(to: string | null = null) {
+  function close(to: string | null = null, fromHistory = false, preserveScroll = false) {
+    if (!fromHistory && readHistoryEntryMarker(history.state, '__storeCrate')) {
+      writeRecord();
+      closeTo = to;
+      closingWithControl = true;
+      surfaceHistory.close(() => close(to, true));
+      return;
+    }
     land();
     stopRiffle(false);
     if (state.mode.view !== 'crate') return;
@@ -1384,7 +1409,8 @@ export function mountStoreCrate(
     const held = state.mode.view === 'grid' ? state.mode.held : null;
     const heldCard = held === null ? null : cards[held];
     if (heldCard && !heldCard.hasAttribute('data-distro-search-hidden')) {
-      heldCard.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
+      if (!preserveScroll)
+        heldCard.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
       flyOut(rects, held);
       heldCard.querySelector<HTMLElement>('.prose-card-link')?.focus({ preventScroll: true });
     } else settle([]);
@@ -1454,7 +1480,7 @@ export function mountStoreCrate(
   disposers.push(() => motion.removeEventListener('change', onMotion));
 
   // Back from an item page reopens the Crate where it was, still and without the fly-in.
-  if (options.restore) {
+  function restoreCrate() {
     const record = readRecord((history.state as { storeCrate?: unknown } | null)?.storeCrate);
     const restored = record ? restoreState(record, cat) : null;
     if (restored) {
@@ -1464,8 +1490,11 @@ export function mountStoreCrate(
       render(prev);
       recorded = JSON.stringify(recordOf(state, cat));
       root.setAttribute('data-store-crate-settled', '');
+      return true;
     }
+    return false;
   }
+  if (options.restore) restoreCrate();
 
   return {
     get isOpen() {

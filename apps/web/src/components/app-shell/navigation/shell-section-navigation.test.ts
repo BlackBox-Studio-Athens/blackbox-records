@@ -57,6 +57,29 @@ function createOptions(overrides: Partial<OpenShellSectionNavigationOptions> = {
 }
 
 describe('shell section navigation', () => {
+  it('cancels a pending page swap when history returns to the still-rendered page', async () => {
+    const options = createOptions();
+    let releaseFrames: (() => void) | undefined;
+    options.waitForAnimationFrames = () =>
+      new Promise<void>((resolve) => {
+        releaseFrames = resolve;
+      });
+    const outgoing = openShellSectionNavigation(options);
+    const pending = options.activeAbortControllerRef.current!;
+
+    await openShellSectionNavigation({
+      ...options,
+      href: 'https://example.test/blackbox-records/releases/',
+      historyMode: 'none',
+      source: 'history',
+    });
+    expect(pending.signal.aborted).toBe(true);
+    expect(options.shellSectionTransition.reset).toHaveBeenCalledOnce();
+    releaseFrames!();
+    await outgoing;
+    expect(options.applyShellPageSnapshot).not.toHaveBeenCalled();
+    expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
+  });
   it('ignores hrefs that are not shell sections', async () => {
     const options = createOptions({
       href: 'https://example.test/blackbox-records/not-a-section/',

@@ -1,4 +1,5 @@
 import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
+import { togglePageSurfaceHistoryEntry } from '@/platform/lib/surface-history';
 
 import {
   isPlayerModalHistoryState,
@@ -41,7 +42,13 @@ type ShellPopStateNavigationOptions = {
 };
 
 export type ShellPopStateNavigationResult =
-  'cached-shell-page' | 'closed-overlay' | 'overlay' | 'player-modal' | 'shell-section' | 'shell-sheet';
+  | 'cached-shell-page'
+  | 'closed-overlay'
+  | 'overlay'
+  | 'page-surface'
+  | 'player-modal'
+  | 'shell-section'
+  | 'shell-sheet';
 
 // A surface entry shares its page's URL: stepping off or back onto it only toggles the surface, because routing the
 // same URL again would scroll the page to the top or re-apply its snapshot. `entryHref` holds the href of the entry
@@ -104,6 +111,8 @@ export function routeShellPopStateNavigation({
   ) {
     return 'shell-sheet';
   }
+
+  if (togglePageSurfaceHistoryEntry(historyState, currentHref)) return 'page-surface';
 
   const nextOverlayRoute = parseOverlayRoute(currentPathname);
   const nextShellSectionRoute = parseShellSectionRoute(currentPathname);

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { createExactFirstSearcher } from '@/lib/exact-first-search';
 import { acquireLenisModalLock, scrollElementWithLenis } from '@/platform/lib/lenis-scroll';
 
+import { connectSurfaceHistory } from '@/platform/lib/surface-history';
 import {
   filterStoreArtistOptions,
   normalizeStoreArtist,
@@ -299,17 +300,18 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
     };
     const onClick = (event: Event) => {
       const button = event.target instanceof Element ? event.target.closest('button') : null;
-      if (sheet && event.target === sheet) sheet.close();
+      if (sheet && event.target === sheet) closeSheet();
       else if (button?.hasAttribute('data-store-artist-clear')) onArtistsChange(new Set());
-      else if (button?.matches('[data-store-artists-sheet-close], [data-store-artists-sheet-done]')) sheet?.close();
+      else if (button?.matches('[data-store-artists-sheet-close], [data-store-artists-sheet-done]')) closeSheet();
     };
     const onFind = () => filterStoreArtistOptions(fieldset, find?.value ?? '');
-    const openSheet = () => {
+    const openSheet = (fromHistory = false) => {
       if (!sheet || !sheetBody || sheet.open) return;
+      if (!fromHistory) surfaceHistory.push();
       sheetBody.append(fieldset);
       sheet.showModal();
       releaseScroll = acquireLenisModalLock(sheet);
-      sheet.querySelector<HTMLElement>('#store-artists-sheet-title')?.focus();
+      sheet.querySelector<HTMLElement>('#store-artists-sheet-title')?.focus({ preventScroll: true });
     };
     const returnList = () => {
       sheet?.before(fieldset);
@@ -318,16 +320,27 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
     };
     const onClose = () => {
       returnList();
-      trigger?.focus();
+      trigger?.focus({ preventScroll: true });
+    };
+    const surfaceHistory = connectSurfaceHistory('__storeArtists', (open) => {
+      if (open) openSheet(true);
+      else sheet?.close();
+    });
+    const closeSheet = () => surfaceHistory.close(() => sheet?.close());
+    const onOpen = () => openSheet();
+    const onCancel = (event: Event) => {
+      event.preventDefault();
+      closeSheet();
     };
     const onViewport = (event: MediaQueryListEvent) => {
-      if (event.matches) sheet?.close();
+      if (event.matches && sheet?.open) closeSheet();
     };
     host.addEventListener('change', onChange);
     host.addEventListener('click', onClick);
     find?.addEventListener('input', onFind);
     find?.addEventListener('keydown', blurOnEnter);
-    trigger?.addEventListener('click', openSheet);
+    trigger?.addEventListener('click', onOpen);
+    sheet?.addEventListener('cancel', onCancel);
     sheet?.addEventListener('close', onClose);
     desktop.addEventListener('change', onViewport);
     fieldset.disabled = false;
@@ -337,7 +350,9 @@ const StoreArtistPicker = memo(function StoreArtistPicker({
       host.removeEventListener('click', onClick);
       find?.removeEventListener('input', onFind);
       find?.removeEventListener('keydown', blurOnEnter);
-      trigger?.removeEventListener('click', openSheet);
+      trigger?.removeEventListener('click', onOpen);
+      sheet?.removeEventListener('cancel', onCancel);
+      surfaceHistory.dispose();
       sheet?.removeEventListener('close', onClose);
       desktop.removeEventListener('change', onViewport);
       if (sheet?.open) sheet.close();

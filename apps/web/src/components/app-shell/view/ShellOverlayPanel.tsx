@@ -62,7 +62,7 @@ export default function ShellOverlayPanel({
   });
 
   React.useEffect(() => {
-    onReadyRef.current();
+    if (overlayState) onReadyRef.current();
   }, [overlayState?.href, overlayState?.html, overlayState?.isLoading]);
 
   // The detail names the dialog and the document while it is open; the background title returns on close.

@@ -12,6 +12,142 @@ import {
 
 const main = 'main[data-app-shell-main]';
 
+test('rapid Back and Forward cancel stale page swaps', async ({ page }) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  await page.locator('header [data-nav-link="/store/"]').evaluate((element: HTMLElement) => element.click());
+  await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
+  await page.goBack();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
+  await expect(page.getByRole('heading', { level: 1, name: 'Releases' })).toHaveCount(0);
+});
+
+test('Back preserves the scrolled release listing through nested details and Forward', async ({ page }) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
+  const offset = await page.evaluate(() => window.scrollY);
+  expect(offset).toBeGreaterThan(100);
+  const card = page.locator(`${main} a[href*="/releases/"]`).first();
+  // Activate without Playwright scrolling the card into view first.
+  await card.evaluate((element: HTMLElement) => element.click());
+  const close = page.getByRole('button', { name: 'Close detail view' });
+  await expect(close).toBeVisible();
+  await page.goBack();
+  await expect(close).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
+  await page.goForward();
+  await expect(close).toBeVisible();
+  await page.getByRole('dialog').locator('a[href*="/artists/"]').first().click();
+  await expect(page).toHaveURL(/\/artists\/[^/]+\/$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/releases\/[^/]+\/$/);
+  await page.goBack();
+  await expect(close).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
+  await expect(card).toBeFocused();
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
+test('Back closes Crate, Forward restores it and Grid consumes its entry', async ({ page }) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  await page.locator('header [data-nav-link="/store/"]').evaluate((element: HTMLElement) => element.click());
+  await expect(page).toHaveURL(/\/store\/$/);
+  const crate = page.locator('.store-crate');
+  await expect(crate).toHaveAttribute('data-store-crate-ready', '');
+  const offset = await page.evaluate(() => window.scrollY);
+  await page.getByRole('button', { name: /^Crate/ }).click();
+  await expect(crate).toHaveAttribute('data-store-crate', 'open');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(crate).toHaveAttribute('data-store-crate', 'grid');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
+  await page.goForward();
+  await expect(crate).toHaveAttribute('data-store-crate', 'open');
+  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  await expect(crate).toHaveAttribute('data-store-crate', 'grid');
+  await page.goBack();
+  await expect(page).toHaveURL(/\/releases\/$/);
+});
+
+test('Back closes phone Artists and every dismissal consumes its entry', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Native Artists sheet is offered on phones.');
+  await page.goto('releases/');
+  await waitForShell(page);
+  await page.locator('header [data-nav-link="/store/"]').evaluate((element: HTMLElement) => element.click());
+  await expect(page).toHaveURL(/\/store\/$/);
+  const trigger = page.locator('[data-store-artists-trigger]');
+  const sheet = page.locator('#store-artists-sheet');
+  await expect(trigger).toBeEnabled();
+  await trigger.click();
+  await expect(sheet).toBeVisible();
+  const offset = await page.evaluate(() => window.scrollY);
+  await page.goBack();
+  await expect(sheet).toBeHidden();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(offset, 0);
+  await page.goForward();
+  await expect(sheet).toBeVisible();
+  for (const dismissal of ['done', 'close', 'escape', 'backdrop']) {
+    if (dismissal === 'done') await sheet.locator('[data-store-artists-sheet-done]').click();
+    else if (dismissal === 'close') await sheet.getByRole('button', { name: 'Close', exact: true }).click();
+    else if (dismissal === 'escape') await page.keyboard.press('Escape');
+    else await page.mouse.click(1, 1);
+    await expect(sheet).toBeHidden();
+    await page.goBack();
+    await expect(page).toHaveURL(/\/releases\/$/);
+    if (dismissal !== 'backdrop') {
+      await page.goForward();
+      await expect(page).toHaveURL(/\/store\/$/);
+      await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
+      await trigger.click();
+      await expect(sheet).toBeVisible();
+    }
+  }
+});
+
+test('Back closes full video, Forward restores it and Close consumes its entry', async ({ page }) => {
+  // Supply a video to the real Home island independently of the local server's pre-order projection.
+  await page.route(/\/blackbox-records\/(?:\?.*)?$/, async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text())
+      .replaceAll('&quot;firstClipId&quot;:[0,null]', '&quot;firstClipId&quot;:[0,&quot;dQw4w9WgXcQ&quot;]')
+      // This fixture changes the props, so mount this island client-only instead of hydrating mismatched SSR.
+      .replace(
+        /<astro-island\b[^>]*component-url="[^"]*StorePreorderShowcase[^>]*>/,
+        (island) =>
+          '<script>window.Astro ||= {}; window.Astro.only = async (load) => (await load())();</script>' +
+          island.replace('client="idle"', 'client="only"'),
+      );
+    await route.fulfill({ response, body });
+  });
+  await page.route('https://www.youtube-nocookie.com/**', (route) =>
+    route.fulfill({ body: '<p>Video fixture</p>', contentType: 'text/html' }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  await page.goto('./');
+  const watch = page.getByRole('button', { name: 'Watch full video', exact: true }).first();
+  await expect(watch).toBeVisible();
+  await watch.click();
+  const close = page.getByRole('button', { name: 'Close video', exact: true });
+  await expect(close).toBeVisible();
+  await page.goBack();
+  await expect(close).toBeHidden();
+  await expect(watch).toBeFocused();
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  await page.goForward();
+  await expect(close).toBeVisible();
+  await close.click();
+  await expect(close).toBeHidden();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/releases\/$/);
+});
+
 test('News sits before Who we are and preserves the player through navigation and article overlays', async ({
   page,
   isMobile,

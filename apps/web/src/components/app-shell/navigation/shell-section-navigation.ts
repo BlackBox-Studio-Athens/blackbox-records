@@ -114,6 +114,11 @@ export async function openShellSectionNavigation({
   // and sanitizing a large main element takes tens of milliseconds and must not sit inside the click task.
   const activePathname = getRenderedPathname();
   if (route.pathname === activePathname) {
+    // Rapid Back/Forward can return before the outgoing snapshot is applied.
+    activeAbortControllerRef.current?.abort();
+    activeAbortControllerRef.current = null;
+    shellSectionTransition.reset();
+    stopRouteLoadingSoon();
     syncShellNavigationState(activePathname);
     await scrollToDestination();
     if (historyMode === 'replace') {

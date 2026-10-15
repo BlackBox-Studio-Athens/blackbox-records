@@ -66,6 +66,22 @@ describe('restoreConnectedOverlayTriggerFocus', () => {
 });
 
 describe('overlay focus scheduling', () => {
+  it('does not focus or scroll a connected exit panel after its overlay closes', () => {
+    const scheduler = createScheduler();
+    const closeButton = createFocusableElement();
+    const scrollContainer = createScrollContainer();
+    let open = true;
+    scheduleOverlayContentFocus({
+      getCloseButton: () => closeButton,
+      getScrollContainer: () => scrollContainer as unknown as HTMLElement,
+      isOverlayOpen: () => open,
+      scheduler,
+    });
+    open = false;
+    scheduler.flush();
+    expect(scrollContainer.scrollTo).not.toHaveBeenCalled();
+    expect(closeButton.focus).not.toHaveBeenCalled();
+  });
   it('restores trigger focus on the next animation frame', () => {
     const scheduler = createScheduler();
     const triggerElement = createFocusableElement();
@@ -97,6 +113,7 @@ describe('overlay focus scheduling', () => {
 
     expect(scrollContainer.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
     expect(closeButton.focus).toHaveBeenCalledOnce();
+    expect(closeButton.focus).toHaveBeenCalledWith({ preventScroll: true });
   });
 
   it.each(['removed', 'disconnected'] as const)('does not move the page after the overlay is %s', (state) => {

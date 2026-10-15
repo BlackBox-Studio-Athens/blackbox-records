@@ -6,6 +6,7 @@ import MusicEqualizer from '@/components/music/MusicEqualizer';
 import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
+import { connectSurfaceHistory, readHistoryEntryMarker } from '@/platform/lib/surface-history';
 
 // Home builds these at render from the accepted snapshot; only Store Items the open pre-order projection lists appear.
 export type StorePreorderShowcaseCandidate = {
@@ -45,6 +46,26 @@ type ShowcaseItem = StorePreorderShowcaseItem;
 export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [watching, setWatching] = useState<string | null>(null);
+  const videoHistory = useRef<ReturnType<typeof connectSurfaceHistory> | null>(null);
+  useEffect(() => {
+    const savedVideo = readHistoryEntryMarker(window.history.state, '__homePreorderVideo');
+    if (typeof savedVideo === 'string') setWatching(savedVideo);
+    const history = connectSurfaceHistory('__homePreorderVideo', (slug) =>
+      setWatching(typeof slug === 'string' ? slug : null),
+    );
+    videoHistory.current = history;
+    return () => {
+      history.dispose();
+      videoHistory.current = null;
+    };
+  }, []);
+  const onWatch = (slug: string | null) => {
+    if (slug === null) videoHistory.current?.close(() => setWatching(null));
+    else {
+      videoHistory.current?.push(slug);
+      setWatching(slug);
+    }
+  };
   const [playerSession, setPlayerSession] = useState(false);
   const [automaticMotion, setAutomaticMotion] = useState(false);
   const [desktopVideo, setDesktopVideo] = useState(false);
@@ -127,7 +148,7 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
           next={items[index + 1]}
           active={watching === null && activeScene === item.slug}
           playing={watching === item.slug}
-          onWatch={setWatching}
+          onWatch={onWatch}
           automaticMotion={automaticMotion}
           desktopVideo={desktopVideo}
           documentVisible={documentVisible}
@@ -166,6 +187,7 @@ function PreorderChapter({
   const video = useRef<HTMLVideoElement>(null);
   const fullVideo = useRef<HTMLDivElement>(null);
   const watchButton = useRef<HTMLButtonElement>(null);
+  const wasPlaying = useRef(false);
   const filmTitle = useRef<HTMLHeadingElement>(null);
   const clips = item.clips?.length
     ? item.clips
@@ -247,7 +269,14 @@ function PreorderChapter({
     if (playing && !playerSession) {
       fullVideo.current?.scrollIntoView({ behavior: 'instant', block: 'center' });
       fullVideo.current?.focus({ preventScroll: true });
+    } else if (wasPlaying.current) {
+      requestAnimationFrame(() => {
+        if (!watchButton.current?.isConnected) return;
+        watchButton.current.scrollIntoView({ behavior: 'instant', block: 'center' });
+        watchButton.current.focus({ preventScroll: true });
+      });
     }
+    wasPlaying.current = playing;
   }, [playing, playerSession]);
 
   const cover = (
@@ -435,11 +464,7 @@ function PreorderChapter({
               <button
                 type="button"
                 className={buttonVariants({ variant: 'outline', size: 'lg' })}
-                onClick={() => {
-                  onWatch(null);
-                  watchButton.current?.scrollIntoView({ behavior: 'instant', block: 'center' });
-                  watchButton.current?.focus({ preventScroll: true });
-                }}
+                onClick={() => onWatch(null)}
               >
                 Close video
               </button>

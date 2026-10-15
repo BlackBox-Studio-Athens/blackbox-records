@@ -28,18 +28,21 @@ export function scheduleOverlayTriggerFocusRestore({
 export function scheduleOverlayContentFocus({
   getCloseButton,
   getScrollContainer,
+  isOverlayOpen = () => true,
   scheduler,
 }: {
   getCloseButton: () => FocusableElement | null;
   getScrollContainer: () => OverlayScrollContainer | null;
+  isOverlayOpen?: () => boolean;
   scheduler: OverlayFocusScheduler;
 }) {
   scheduler.requestAnimationFrame(() => {
+    if (!isOverlayOpen()) return;
     const scrollContainer = getScrollContainer();
     // A late frame after unmount must not turn a missing panel into the document scroll root.
     if (!scrollContainer?.isConnected) return;
     scrollWithLenis(scrollContainer, 0, { immediate: true });
-    getCloseButton()?.focus();
+    getCloseButton()?.focus({ preventScroll: true });
   });
 }
 
