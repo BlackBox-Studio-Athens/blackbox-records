@@ -10,8 +10,14 @@ interface Props {
   tagline: import('@blackbox/content-model').Prose;
   image: ImageMetadata;
   imageAlt: string;
-  /** Prepared silent loop over the still: a centre portrait crop for phones and a landscape file for wider screens. */
-  film?: { portraitUrl: string; landscapeUrl: string };
+  /**
+   * Prepared silent loop over the still: a centre portrait crop for phones and a landscape file for wider screens, each
+   * as a sharper AV1 file and a lighter-resolution H.264 file for browsers without AV1.
+   */
+  film?: {
+    portrait: { av1Url: string; h264Url: string };
+    landscape: { av1Url: string; h264Url: string };
+  };
 }
 
 const { tagline, image, imageAlt, film } = Astro.props;
@@ -34,8 +40,10 @@ const heroImageWidths = [900, 1400];
       <video
         class="homepage-hero-section__film"
         data-home-hero-film
-        data-portrait-src={film.portraitUrl}
-        data-landscape-src={film.landscapeUrl}
+        data-portrait-src={film.portrait.h264Url}
+        data-portrait-av1-src={film.portrait.av1Url}
+        data-landscape-src={film.landscape.h264Url}
+        data-landscape-av1-src={film.landscape.av1Url}
         muted
         playsinline
         loop

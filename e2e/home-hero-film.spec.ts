@@ -35,8 +35,9 @@ test('the hero film plays the landscape loop, pauses on request and out of view,
   await expect(film(page)).toHaveAttribute('data-ready', '', { timeout: 15_000 });
   const playing = await filmState(page);
   expect(playing).toMatchObject({ paused: false, muted: true });
-  expect(playing.source).toContain('home-hero-intro-landscape');
-  expect(requests.every((url) => url.includes('landscape'))).toBe(true);
+  // Desktop Chromium and Firefox decode AV1, so they get the 2560 × 1440 file.
+  expect(playing.source).toContain('home-hero-intro-landscape-av1');
+  expect(requests.every((url) => url.includes('landscape-av1'))).toBe(true);
   // The still stays the hero's eager image; the film is decoration only.
   await expect(page.locator('.homepage-hero-section__media-image')).toHaveAttribute('fetchpriority', 'high');
   await expect(page.locator('.homepage-hero-section__media-layer')).toHaveAttribute('aria-hidden', 'true');
@@ -64,6 +65,20 @@ test('the hero film plays the landscape loop, pauses on request and out of view,
   await expect(film(page)).toHaveAttribute('data-ready', '', { timeout: 15_000 });
   expect((await filmState(page)).paused).toBe(false);
   expect(await sentinelIntact(page)).toBe(true);
+});
+
+test('an AV1 film the browser cannot decode falls back to the H.264 file', async ({ page }) => {
+  // A browser can report AV1 support and still fail to decode it; an unreadable file stands in for that.
+  await page.route('**/*home-hero-intro-landscape-av1*', (route) =>
+    route.fulfill({ contentType: 'video/mp4', body: 'not a video' }),
+  );
+  await page.goto('./');
+  await waitForShell(page);
+  await expect(film(page)).toHaveAttribute('data-ready', '', { timeout: 15_000 });
+  const playing = await filmState(page);
+  expect(playing.paused).toBe(false);
+  expect(playing.source).toContain('home-hero-intro-landscape');
+  expect(playing.source).not.toContain('-av1');
 });
 
 test('reduced motion keeps the still without requesting the film', async ({ page }) => {

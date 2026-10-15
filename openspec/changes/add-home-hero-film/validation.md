@@ -48,3 +48,15 @@ The owner found the first grade dark and hazy on UAT. The gamma lift flattened b
 - The motto cycle runs a tad faster: first hold 1.2 s, holds 2.3 s, scrub 1.1 s (was 1.5 / 2.8 / 1.4 s).
 - `pnpm test:e2e e2e/home-hero-film.spec.ts` (4 passed) and `e2e/home-motto.spec.ts` (5 passed).
 - Release run [38630630150](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38630630150) for `1c4cc649`: all checks and suites passed; the first `deploy-uat` smoke saw the new `global` stylesheet 404 about 14 s after the Pages upload (the hash changed with this commit). Re-running the job redeployed the same build and every step passed, so the run concluded `success`. Log: `.codex-artifacts/hero-video/uat-deploy-failed.log`.
+
+## Third UAT review revision: higher resolution
+
+The owner asked for higher-resolution content (AI upscaling as one route). No master above 1080p exists, so Codex upscaled the unchanged logo-free crop/cadence intermediates 2× on the local RTX 3070 Ti: Real-ESRGAN general-x4v3 at denoise 0.4 (A), RealESRGAN_x2plus (B) and a zscale spline36 baseline (C). Official weights, versions and hashes: `.codex-artifacts/hero-video/upscale/provenance.json`; comparisons: `.codex-artifacts/hero-video/upscale/comparisons/`; flicker proxy: `flicker-metrics.json` (A 0.94× C, B 1.27× C on landscape). A was chosen: it removes the source macroblocking that C keeps in dark areas and keeps edges clean without B's grain-like texture. Grade for A: `hqdn3d=0.5:0.5:1:1,hue=s=0,curves=master='0/0 0.06/0.03 0.2/0.26 0.45/0.62 0.75/0.9 1/1',unsharp=5:5:0.15`.
+
+- `home-hero-intro-landscape-av1.mp4`: AV1 Main, 2560 × 1440, CRF 30, 708 frames, 4,761,423 bytes, VMAF 92.9, SHA-256 `11c4c949fb12f186f5f72da85a9a73b8637ba661fac9003c7626306046ebda62`.
+- `home-hero-intro-portrait-av1.mp4`: AV1 Main, 1080 × 1920, CRF 30, 708 frames, 2,525,006 bytes, VMAF 91.8, SHA-256 `448702ecb85127882320a056ebf02f21cf57fab8f385f7ffdcd437d7ca1bcf0a`.
+- `home-hero-intro-landscape.mp4`: H.264 High, 1920 × 1080, CRF 26, 708 frames, 5,418,650 bytes, SHA-256 `65f34344373233989c329309d78f60deba64590187e7d18aa287a90842709785`.
+- `home-hero-intro-portrait.mp4`: H.264 High, 810 × 1440, CRF 26, 708 frames, 2,926,638 bytes, SHA-256 `0fbd6e617f1a75940a04c3c6d3d6525e65829dce397167552b425a72a7e28f55`.
+- All four are grayscale (mean U/V 128), BT.709 limited range, silent, with `moov` before `mdat`. Crops are unchanged, so the logo proof still holds; Codex also inspected the upscaled crop edges.
+- H.264 at 2560 × 1440 needed about 10.3 MiB (CRF 24) for the quality AV1 reaches at 4.5 MiB, so H.264 is the lighter-resolution fallback only.
+- `pnpm test:e2e e2e/home-hero-film.spec.ts`: 5 passed (desktop landscape AV1 playback, AV1 decode failure falling back to H.264, reduced motion, phone portrait crop, phone rotation). `pnpm validate` on the final tree: PASSED.
