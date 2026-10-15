@@ -69,7 +69,17 @@ Inspect the signed-in live Stripe Dashboard through the Chrome extension: busine
 
 Stripe's saved Checkout policy URLs have no supported read API. The script matches the reviewed account to `/v1/account` and requires the review to be no more than 24 hours old. Refresh it for finalization after the rollback window. Never retain unrelated business/customer details, credentials or screenshots exposing them.
 
-## Run stages
+## Run from GitHub Actions
+
+On your phone, open [Launch switch](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/workflows/launch-switch.yml) in a browser, or use **Repository → Actions → Workflows → Launch switch** in the [GitHub app](https://github.blog/changelog/2024-07-30-run-workflows-set-as-workflow_dispatch-manually/). Select **Run workflow**, branch **main**, and stage **cutover**, **rollback** or **finalize**. Leave **dry_run** checked for a rehearsal; uncheck it to apply the selected stage, then tap **Run workflow**. The `prd-launch` environment permits only `main`; it holds the four required launch secrets and the non-secret `STRIPE_DASHBOARD_REVIEW` variable.
+
+The one-off real cutover is scheduled for **2026-10-16 at 10:00 Athens time (07:00 UTC)**. The annual cron is guarded by that exact UTC date and does nothing on other dates. GitHub can [delay or drop scheduled runs under load](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows); 10:00 is the intended start, not a guaranteed completion time. Check the run before dispatching manually, and remove the schedule during launch-switch-day task 2.1.
+
+Open the run and its **Summary** to read the launch status, step results, errors and manual follow-up links. Under **Artifacts**, tap **launch-state** to download the ZIP (sign in and use the browser if the app does not expose it). It is retained for 90 days, including failed runs. A real cutover's artifact is the source of `snapshot.json`; rollback and finalize automatically restore it from the most recent real cutover, including a failed cutover, while ignoring dry-runs. They fail if that run has no usable artifact/snapshot. For a later **local** rollback or finalize, download that artifact first and place its `snapshot.json` at `.codex-artifacts/launch/snapshot.json`; preserve any existing local recovery evidence before replacing it. A dry-run does not create a rollback snapshot.
+
+Finalize still requires at least 24 hours after cutover and a Stripe Dashboard review refreshed within the preceding 24 hours. After reviewing the live Dashboard again, update **Settings → Environments → prd-launch → Environment variables → STRIPE_DASHBOARD_REVIEW** with the review JSON above. The review from `2026-10-15T16:13:10Z` covers only until **2026-10-16T16:13:10Z** and will need refreshing for finalize. Neither the workflow nor its schedule promotes code to PRD.
+
+## Run locally
 
 Before hosted checks, record the current shared Cloudflare Free headroom using [the Free-tier rule](cloudflare-free-tier.md). Reserve up to 200 requests per invocation and keep the ordinary daily reserve intact; the command's per-run ceiling does not establish account-wide quota headroom.
 
