@@ -275,6 +275,8 @@ Requested 14 October 2026, after reviewing live probes. The owner's session mont
 
 Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Scale above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
+Release catalog numbers (approved 15 October 2026, "option 1, date line") sit at the end of the existing date line on the release page and every Releases card, after a middle dot: `Jun 2026 · BBR#002`. They take the line's muted uppercase style and add no badge, stamp or new row. Never set them over cover artwork.
+
 ## Staff workspace
 
 Staff uses its own dark, sans-serif product surface built on EmDash APIs. The living [backoffice reference](docs/backoffice-design.md) supersedes the older Content landing, staging, refresh, preview-default and all-sidebar decisions.

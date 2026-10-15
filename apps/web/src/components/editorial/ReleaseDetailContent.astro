@@ -121,6 +121,11 @@ const galleryImages =
           ) : (
             <span>{releaseDate}</span>
           )}
+          <span aria-hidden="true"> · </span>
+          <span class="whitespace-nowrap" data-release-catalog-number>
+            <span class="sr-only">Catalog number </span>
+            {release.data.catalog_number}
+          </span>
         </p>
         {release.data.summary && (
           <Prose

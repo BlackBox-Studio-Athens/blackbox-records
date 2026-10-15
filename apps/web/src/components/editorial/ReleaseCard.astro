@@ -212,12 +212,19 @@ const dataAttributes = embeddedPlayerData
               : 'release-card-copy space-y-2 p-5'
       }
     >
-      <p class="release-card-year-text">
-        {releaseDateMachineValue ? (
-          <time datetime={releaseDateMachineValue}>{releaseDate}</time>
-        ) : (
-          <span>{releaseDate}</span>
-        )}
+      <p class="release-card-year-text whitespace-normal">
+        <span class="whitespace-nowrap">
+          {releaseDateMachineValue ? (
+            <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+          ) : (
+            <span>{releaseDate}</span>
+          )}
+        </span>{' '}
+        <span class="whitespace-nowrap" data-release-catalog-number>
+          <span aria-hidden="true">· </span>
+          <span class="sr-only">Catalog number </span>
+          {release.data.catalog_number}
+        </span>
       </p>
       <HeadingTag
         class={`brand-card-title text-foreground${isPrincipal ? ' releases-feature__title' : ''}`}

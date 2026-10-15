@@ -5,6 +5,21 @@ import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
 
+test('releases show their catalog number in the date line on the page and on every card', async ({ page }) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  const numbers = page.locator('[data-release-catalog-number]');
+  await expect(numbers).toHaveText([/BBR#002$/, /BBR#003$/, /BBR#001$/]);
+  // The number is announced with its name; the separator stays visual.
+  await expect(numbers.first()).toContainText('Catalog number BBR#002');
+  await page.goto('releases/disintegration/');
+  await waitForShell(page);
+  await expect(page.locator('p', { hasText: /^Release date/ }).locator('[data-release-catalog-number]')).toHaveText(
+    /Catalog number BBR#002$/,
+  );
+  await expectNoHorizontalOverflow(page);
+});
+
 test('release backdrop dismissal restores mouse-wheel scrolling', async ({ page }) => {
   await page.goto('releases/');
   await waitForShell(page);
