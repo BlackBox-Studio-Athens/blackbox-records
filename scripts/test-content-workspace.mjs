@@ -78,6 +78,7 @@ const data = {
   releases: {
     title: 'Barren Point',
     artist: 'artists-1',
+    catalog_number: 'BBR#001',
     release_date: '2026-09-01',
     cover_image: { id: media[1].id },
     cover_image_alt: 'Barren Point sleeve',
@@ -183,7 +184,8 @@ if (sellingJourney)
     ...structuredClone(records.releases[0]),
     id: 'releases-retained',
     slug: 'retained',
-    data: { ...structuredClone(data.releases), title: 'Retained stocked CD' },
+    // Catalog numbers are unique across releases.
+    data: { ...structuredClone(data.releases), title: 'Retained stocked CD', catalog_number: 'BBR#002' },
   });
 const sellingFixture = {
   amount: null,
