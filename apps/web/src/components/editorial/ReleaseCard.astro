@@ -98,8 +98,11 @@ const physicalState = physicalBadgeState(presentation);
 // A native edition's Store path is the one destination the artwork and the edition action share, together with
 // their hover and focus feedback; without one the artwork keeps the release detail link and nothing is shared.
 const editionHref = isReleaseShowcase && commerceLink?.isNativeStoreLink ? commerceLink.href : undefined;
-// Catalog Buy carries the Store card's record mark for its format; it shows only while the action reads Buy.
+// Buy carries the Store card's record mark for its format; it shows only while the action reads Buy.
 const buyIconFormatGroup = physicalFormat === 'cd' ? 'CDs' : physicalFormat === 'cassette' ? 'Tapes' : 'Vinyl 12-inch';
+// Below 40rem a featured summary longer than about three phone lines starts clamped; the native disclosure expands it
+// without script, and wider screens show it whole.
+const summaryDisclosure = isPrincipal && (release.data.summary?.length ?? 0) > 140;
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -212,6 +215,41 @@ const dataAttributes = embeddedPlayerData
               : 'release-card-copy space-y-2 p-5'
       }
     >
+      {isReleaseShowcase && (
+        <div class="release-card-actions" data-release-actions>
+          {editionHref ? (
+            <a
+              class={releaseActionClassName(presentation)}
+              href={editionHref}
+              aria-label={`${presentation.action}, ${release.data.title}`}
+              data-astro-prefetch
+              data-release-purchase
+            >
+              <StoreBuyIcon formatGroup={buyIconFormatGroup} />
+              <span data-release-purchase-label>{presentation.action}</span>
+            </a>
+          ) : (
+            commerceLink && (
+              <a
+                class={buttonVariants({ variant: 'outline' })}
+                href={commerceLink.href}
+                rel={commerceLink.rel}
+                target={commerceLink.target}
+                data-release-purchase
+              >
+                {commerceLink.label}
+              </a>
+            )
+          )}
+          {embeddedPlayerData && (
+            <MusicStreamingServiceListenTrigger
+              embeddedPlayerData={embeddedPlayerData}
+              includePlayerData={false}
+              context={`${release.data.title} by ${artistName}`}
+            />
+          )}
+        </div>
+      )}
       <p class="release-card-year-text whitespace-normal">
         <span class="whitespace-nowrap">
           {releaseDateMachineValue ? (
@@ -260,23 +298,14 @@ const dataAttributes = embeddedPlayerData
       )}
       {isReleaseShowcase && (
         <>
-          {embeddedPlayerData && (
-            <MusicStreamingServiceListenTrigger
-              embeddedPlayerData={embeddedPlayerData}
-              includePlayerData={false}
-              context={`${release.data.title} by ${artistName}`}
-            />
-          )}
-          {release.data.summary && (
-            <div
-              data-release-summary
-              hidden={!isPrincipal}
-              class={isPrincipal ? 'releases-feature__summary' : undefined}
-            >
-              <Prose value={release.data.summary} rich={release.data.summary_rich} />
-            </div>
-          )}
-          {release.data.formats?.length && <p class="release-card-formats">{release.data.formats.join(' / ')}</p>}
+          <div class="release-card-format-row">
+            {release.data.formats?.length && <p class="release-card-formats">{release.data.formats.join(' / ')}</p>}
+            {editionHref && (
+              <p class="release-card-price" data-release-price hidden={!presentation.price}>
+                {presentation.price}
+              </p>
+            )}
+          </div>
           <div class="flex flex-wrap gap-2" data-release-badges>
             {presentation.badges.map((badge, index) => (
               <span
@@ -292,47 +321,37 @@ const dataAttributes = embeddedPlayerData
           <p class="text-sm text-muted-foreground" data-release-shipping hidden={!presentation.shipping}>
             {presentation.shipping}
           </p>
-          <div class="release-card-actions" data-release-actions>
-            {editionHref ? (
-              <>
-                <p class="release-card-price" data-release-price hidden={!presentation.price}>
-                  {presentation.price}
-                </p>
-                <a
-                  class={releaseActionClassName(presentation)}
-                  href={editionHref}
-                  aria-label={`${presentation.action}, ${release.data.title}`}
-                  data-astro-prefetch
-                  data-release-purchase
-                >
-                  {!isPrincipal && <StoreBuyIcon formatGroup={buyIconFormatGroup} />}
-                  <span data-release-purchase-label>{presentation.action}</span>
-                </a>
-              </>
-            ) : (
-              commerceLink && (
-                <a
-                  class={buttonVariants({ variant: 'outline' })}
-                  href={commerceLink.href}
-                  rel={commerceLink.rel}
-                  target={commerceLink.target}
-                  data-release-purchase
-                >
-                  {commerceLink.label}
-                </a>
-              )
-            )}
-          </div>
-          {isPrincipal && editionHref && (
-            <a
-              class="releases-feature__terms"
-              href={createProjectRelativeUrl('/terms/')}
-              data-astro-prefetch
-              data-release-terms
-              inert={presentation.state !== 'preorder'}
+          {release.data.summary && (
+            <div
+              data-release-summary
+              hidden={!isPrincipal}
+              class={isPrincipal ? 'releases-feature__summary' : undefined}
             >
-              Pre-order &amp; delivery information
-            </a>
+              <Prose value={release.data.summary} rich={release.data.summary_rich} />
+            </div>
+          )}
+          {isPrincipal && (summaryDisclosure || editionHref) && (
+            <div class="releases-feature__links">
+              {summaryDisclosure && (
+                <details class="releases-feature__more" data-release-more>
+                  <summary>
+                    <span>Read more</span>
+                    <span>Show less</span>
+                  </summary>
+                </details>
+              )}
+              {editionHref && (
+                <a
+                  class="releases-feature__terms"
+                  href={createProjectRelativeUrl('/terms/')}
+                  data-astro-prefetch
+                  data-release-terms
+                  inert={presentation.state !== 'preorder'}
+                >
+                  Pre-order &amp; delivery information
+                </a>
+              )}
+            </div>
           )}
         </>
       )}

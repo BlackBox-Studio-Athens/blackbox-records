@@ -213,7 +213,7 @@ describe('StorePreorderShowcase presentation', () => {
       render([item({ ...photo, coverSrcSet, artistPhotoSrcSet: '/band-800.webp 800w, /band-1800.webp 1800w' })]),
     );
     expect(html).toContain(
-      `srcSet="${coverSrcSet}" sizes="(max-width: 50rem) 13.75rem, (max-width: 62.5rem) 17.5rem, 21.25rem"`,
+      `srcSet="${coverSrcSet}" sizes="(max-width: 50rem) 8rem, (max-width: 62.5rem) 17.5rem, 21.25rem"`,
     );
     expect(html).toContain('srcSet="/band-800.webp 800w, /band-1800.webp 1800w" sizes="100vw"');
   });

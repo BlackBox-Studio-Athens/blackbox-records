@@ -97,8 +97,13 @@ for (const width of [1440, 390]) {
     await expect(email).toHaveCSS('font-size', width === 390 ? '16px' : '15.2px');
 
     await send.click();
-    await expect(form.getByText('Enter a valid email.', { exact: true })).toBeVisible();
-    await expect(form.getByText('Tick the box so we can email you.', { exact: true })).toBeVisible();
+    // Each explanation follows its visible Error label (accent-and-button-system) and describes its control.
+    const errors = form.locator('.availability-alert__error');
+    await expect(errors.filter({ hasText: 'Enter a valid email.' })).toHaveText(/^Error\s*Enter a valid email\.$/);
+    await expect(errors.filter({ hasText: 'Tick the box so we can email you.' })).toHaveText(
+      /^Error\s*Tick the box so we can email you\.$/,
+    );
+    await expect(email).toHaveAccessibleDescription(/Enter a valid email\./);
     await expect(email).toHaveAttribute('aria-invalid', 'true');
     await expect(consent).toHaveAttribute('aria-invalid', 'true');
     expect(requests).toHaveLength(0);

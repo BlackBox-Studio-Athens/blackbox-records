@@ -83,13 +83,45 @@ for (const width of [320, 390, 430, 768, 1440]) {
     const delivery = footer.getByRole('link', { name: 'Delivery information', exact: true });
     await expect(delivery).toBeVisible();
     if (width < 768) {
-      expect(
-        await footer.locator('.site-footer-nav-list').evaluate((element) => getComputedStyle(element).columnCount),
-      ).toBe('2');
+      // Three columns of 44px rows keep sitemap order without an isolated last row. The messages carry the measured
+      // geometry and computed styles, so a failure on the production build shows what differs from the dev server.
+      const layout = await footer.locator('.site-footer-nav-list').evaluate((list) => {
+        const style = (element: Element) => {
+          const computed = getComputedStyle(element);
+          return {
+            display: computed.display,
+            alignItems: computed.alignItems,
+            alignSelf: computed.alignSelf,
+            verticalAlign: computed.verticalAlign,
+            minHeight: computed.minHeight,
+            lineHeight: computed.lineHeight,
+            fontFamily: computed.fontFamily,
+          };
+        };
+        const link = list.querySelector('a')!;
+        return {
+          columns: getComputedStyle(list).gridTemplateColumns,
+          list: style(list),
+          li: style(link.parentElement!),
+          link: { ...style(link), className: link.className },
+        };
+      });
+      const diagnostics = JSON.stringify({
+        ...layout,
+        boxes: boxes.map((box) => [
+          box.text,
+          Math.round(box.x),
+          Math.round(box.y),
+          Math.round(box.width),
+          Math.round(box.height),
+        ]),
+      });
+      expect(layout.columns.split(' ').length, diagnostics).toBe(3);
       const deliveryBox = boxes.find((box) => box.text === 'Delivery information')!;
-      expect(boxes.some((box) => Math.abs(box.y - deliveryBox.y) < 1 && Math.abs(box.x - deliveryBox.x) > 1)).toBe(
-        true,
-      );
+      expect(
+        boxes.some((box) => Math.abs(box.y - deliveryBox.y) < 1 && Math.abs(box.x - deliveryBox.x) > 1),
+        diagnostics,
+      ).toBe(true);
     }
     await expectNoHorizontalOverflow(page);
     await plantSentinel(page);

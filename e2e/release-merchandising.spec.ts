@@ -285,6 +285,11 @@ for (const width of [320, 360, 390, 430, 768]) {
             const rect = action.getBoundingClientRect();
             return { x: rect.x, right: rect.right, height: rect.height };
           }),
+          pair: [...card.querySelectorAll('[data-release-actions] > *')].map((action) => {
+            const rect = action.getBoundingClientRect();
+            const textLink = action.classList.contains('release-detail-link');
+            return { x: rect.x, y: rect.y, right: rect.right, width: rect.width, textLink };
+          }),
         };
       }),
     );
@@ -298,10 +303,17 @@ for (const width of [320, 360, 390, 430, 768]) {
       }
       expect(card.artwork.x).toBe(gutter);
       if (width < 640) {
-        // Phones stack every release the same way: a full-width cover, then its copy.
+        // Phones stack every release the same way: a full-width cover, then the purchase/Listen pair 12px below it,
+        // half the row each with a 16px gap, then the rest of the copy.
         expect(card.artwork.width).toBe(contentWidth - 32);
         expect(card.copy.x).toBe(16);
         expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+        expect(card.pair[0]!.y - card.artwork.bottom).toBeCloseTo(12, 0);
+        // Two controls share the row equally; a non-buyable edition's bracketed text link is not a control face.
+        if (card.pair.length === 2 && !card.pair[0]!.textLink) {
+          expect(card.pair[0]!.width).toBeCloseTo(card.pair[1]!.width, 0);
+          expect(card.pair[1]!.x - card.pair[0]!.right).toBeCloseTo(16, 0);
+        }
       } else if (card.role !== 'catalog') {
         // From 40rem each featured row splits into equal halves with a 1.5rem gap.
         expect(card.copy.x).toBeCloseTo(card.artwork.right + 24, 1);
@@ -363,12 +375,19 @@ for (const width of [390, 1280]) {
     await expect(status).toHaveCSS('font-family', /Inter/);
     await expect(status).toHaveCSS('text-transform', 'none');
     await expect(status).toHaveCSS('border-width', '0px');
-    // Status sits with the buying facts: after the formats, before the price and action.
+    // Status follows the formats line; the purchase/Listen pair sits under the cover on phones and after the artist on
+    // wider screens (mobile-layout-rhythm).
     const badges = await lead.locator('[data-release-badges]').boundingBox();
     const formats = await lead.locator('.release-card-formats').boundingBox();
-    const actions = await lead.locator('[data-release-actions]').boundingBox();
+    const action = await lead.locator('[data-release-purchase]').boundingBox();
+    const cover = await lead.locator('.releases-cover').boundingBox();
+    const artist = await lead.locator('.release-card-artist-text').boundingBox();
     expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
-    expect(actions!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
+    if (width < 640) expect(action!.y - cover!.y - cover!.height).toBeCloseTo(12, 0);
+    else {
+      expect(action!.y).toBeGreaterThanOrEqual(artist!.y + artist!.height);
+      expect(formats!.y).toBeGreaterThanOrEqual(action!.y + action!.height);
+    }
     expect(await sentinelIntact(page)).toBe(true);
     await expectNoHorizontalOverflow(page);
   });
@@ -481,7 +500,9 @@ for (const width of [320, 390, 1280]) {
     await expect(lead).toBeVisible();
     await page.screenshot({ path: `.codex-artifacts/e2e/release-merchandising-${width}.png`, fullPage: true });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    expect(await lead.locator('img').evaluate((element) => getComputedStyle(element).transform)).toBe('none');
+    expect(
+      await lead.locator('.releases-cover__image').evaluate((element) => getComputedStyle(element).transform),
+    ).toBe('none');
     if (width === 390) {
       await page.addStyleTag({ content: 'html { font-size: 200%; }' });
       const overflow = await page.evaluate(() =>
@@ -538,6 +559,43 @@ test('Releases changes buying actions while retaining placement on a fresh offer
   await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText('Vinyl edition');
   await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
   await expect(page.locator('[data-release-price]:visible')).toHaveCount(0);
+});
+
+test('a long featured summary opens from three lines on phones and stays whole on desktop @phone', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [{ ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' }] }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  const lead = page.locator('[data-release-role="lead"]');
+  const summary = lead.locator('[data-release-summary]');
+  const more = lead.locator('[data-release-more] summary');
+  const lineHeight = await summary.evaluate((element) => parseFloat(getComputedStyle(element).lineHeight));
+  const clamped = (await summary.boundingBox())!.height;
+  expect(clamped).toBeLessThanOrEqual(lineHeight * 3 + 1);
+  // Read more and the terms link share one 44px row.
+  await expect.poll(() => more.innerText()).toBe('Read more');
+  const [moreBox, termsBox] = await Promise.all([
+    more.boundingBox(),
+    lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true }).boundingBox(),
+  ]);
+  expect(moreBox!.height).toBeGreaterThanOrEqual(44);
+  expect(Math.abs(moreBox!.y - termsBox!.y)).toBeLessThan(1);
+  await more.focus();
+  await page.keyboard.press('Enter');
+  await expect(lead.locator('[data-release-more]')).toHaveAttribute('open', '');
+  await expect.poll(() => more.innerText()).toBe('Show less');
+  await expect(more).toBeFocused();
+  expect((await summary.boundingBox())!.height).toBeGreaterThan(clamped + lineHeight);
+  await page.keyboard.press('Enter');
+  await expect.poll(() => more.innerText()).toBe('Read more');
+  // The catalog adds no summary; desktop shows the featured summary whole without the disclosure.
+  await expect(page.locator('[data-release-role="catalog"] [data-release-summary]')).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(lead.locator('[data-release-more]')).toBeHidden();
+  expect((await summary.boundingBox())!.height).toBeGreaterThan(lineHeight * 3 + 1);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('Releases keeps native destinations distinct from inert copy and status', async ({ page }) => {
@@ -603,6 +661,9 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.locator('.release-vinyl-peek')).toHaveCount(0);
   await expect(artwork).toHaveAttribute('href', (await purchase.getAttribute('href'))!);
+  // The pair sits beside the price after the artist now, so park the pointer before reading the resting face.
+  await page.mouse.move(0, 0);
+  await expect(purchase).toHaveCSS('background-color', 'rgb(45, 118, 106)');
   const restingAction = await purchase.evaluate((element) => getComputedStyle(element).backgroundColor);
   for (const target of [purchase, artwork]) {
     await target.hover();
@@ -616,9 +677,9 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await expect(artwork).toHaveAttribute('tabindex', '-1');
   await expect(title).toHaveAccessibleName(/disintegration/i);
   await expect(lead.locator('[data-release-actions]').getByRole('link')).toHaveCount(1);
-  await title.focus();
-  // Listen sits with the identity, before the description and the buying facts.
-  for (const control of [title, artist, listen, purchase]) {
+  await purchase.focus();
+  // The purchase/Listen pair leads the copy (under the cover on phones), then the title and artist links.
+  for (const control of [purchase, listen, title, artist]) {
     await expect(control).toBeFocused();
     expect(await control.evaluate((element) => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThan(0);
     await page.keyboard.press('Tab');

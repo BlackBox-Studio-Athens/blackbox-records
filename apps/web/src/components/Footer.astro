@@ -24,7 +24,7 @@ const footerLabel = labelSettings.label_name || siteConfig.title;
 const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.url.trim() !== '#');
 ---
 
-<footer class="site-footer-shell mt-12 border-t border-border">
+<footer class="site-footer-shell mt-12">
   <div class="layout-container site-footer-top site-footer-content-shell">
     <div class="site-footer-brand">
       <div class="site-footer-brand-topbar">
@@ -70,7 +70,7 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
     </div>
   </div>
 
-  <div class="layout-container site-footer-meta border-t border-[#2b2b2b] py-3 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+  <div class="layout-container site-footer-meta py-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
     <p class="site-footer-meta-copy">
       <span>
         &copy; {copyrightYears} {footerLabel.toUpperCase()}.

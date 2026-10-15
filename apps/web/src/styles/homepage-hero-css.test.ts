@@ -78,10 +78,11 @@ describe('Homepage hero CSS', () => {
     expect(shadeRule).toMatch(/border-bottom:\s*1px solid/i);
     const heroMarkup = readFileSync(new URL('../components/editorial/HomeHero.astro', import.meta.url), 'utf8');
     expect(heroMarkup).toMatch(/<section class="homepage-hero-section" id="homepage-hero-section">/);
-    expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(20 20 20 \/ 78%\)/i);
+    // Veils still span the fixed photo edge to edge; their rules stop at the page gutters (mobile-layout-rhythm).
+    expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(13 13 13 \/ 78%\)/i);
     expect(newsletterVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 74%\)/i);
     expect(cardRule).toMatch(/background-color:\s*#141414/i);
-    expect(footerRule).toMatch(/background-color:\s*#141414/i);
+    expect(footerRule).toMatch(/background-color:\s*var\(--background\)/i);
 
     expect(scrollIndicatorRule).not.toMatch(/transition/i);
     expect(scrolledIndicatorRule).toMatch(/opacity:\s*0/i);

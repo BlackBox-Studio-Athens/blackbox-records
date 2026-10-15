@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/components/ui/utils';
 
 // Dot indicator for a native scroll-snap row. Look and timing follow ReUI c-carousel-11 (https://reui.io,
-// MIT License, Copyright (c) 2025 Keenthemes Inc); each dot sits in a 24px button to meet WCAG 2.5.8.
+// MIT License, Copyright (c) 2025 Keenthemes Inc); each dot sits in a 44px button (openspec/changes/mobile-layout-rhythm).
 // The row scrolls natively; the dots only read its scroll position, so swiping never waits for this island.
 
 export function currentRowIndex({
@@ -91,7 +91,7 @@ export function SwipeRowDots({ className, count, label, rowId }: SwipeRowDotsPro
           aria-current={index === current}
           onClick={() => showCard(index)}
           className={cn(
-            'grid size-6 cursor-pointer place-items-center outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-foreground',
+            'grid size-11 cursor-pointer place-items-center outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-foreground',
             'after:block after:h-2 after:rounded-full after:transition-all after:duration-500 after:ease-in-out motion-reduce:after:transition-none',
             index === current
               ? 'after:w-4 after:bg-slate-500'

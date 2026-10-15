@@ -66,14 +66,22 @@ describe('Releases page layout', () => {
     expect(card.match(/data-release-detail\b/g)).toHaveLength(1);
   });
 
-  it('places Listen below the artist in every card, with nothing over Releases artwork', () => {
+  it('pairs the purchase action with Listen directly after the cover, with nothing over Releases artwork', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
+    const css = readFileSync(globalCssPath, 'utf8');
     // Releases artwork carries no scrim or Listen overlay; the other variants keep theirs.
     expect(card).not.toContain('data-release-artwork-scrim');
     expect(card).not.toMatch(/isReleaseShowcase && !isPrincipal && \(\s*<div class="release-card-meta-row/s);
     expect(card).toMatch(/\{!isReleaseShowcase && \(\s*<div class="release-card-meta-row/s);
+    // Phones read the pair first in the copy (12px under the cover); from 40rem the copy grid moves it after the artist.
     expect(card).toMatch(
-      /release-card-artist-link[\s\S]*?\{isReleaseShowcase && \(\s*<>\s*\{embeddedPlayerData && \(\s*<MusicStreamingServiceListenTrigger[\s\S]*?context=\{`\$\{release\.data\.title\} by \$\{artistName\}`\}/,
+      /<div class="release-card-actions" data-release-actions>[\s\S]*?data-release-purchase[\s\S]*?<MusicStreamingServiceListenTrigger[\s\S]*?context=\{`\$\{release\.data\.title\} by \$\{artistName\}`\}[\s\S]*?<p class="release-card-year-text/,
+    );
+    expect(css).toMatch(
+      /#releases-merchandising \.release-card-actions\s*{\s*display:\s*grid;\s*grid-auto-columns:\s*minmax\(0, 1fr\);\s*grid-auto-flow:\s*column;/,
+    );
+    expect(css).toMatch(
+      /@media \(width >= 40rem\)[\s\S]*?#releases-merchandising :is\(\.release-card-actions > \*, \.release-card-price\)\s*{\s*grid-row:\s*4;/,
     );
   });
 
@@ -113,13 +121,19 @@ describe('Releases page layout', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
     expect(card).toMatch(/releasePresentation\(presentationEntry, projected && projectedListing\(projected\)\)/);
     expect(card).toContain('data-release-projected={projected ? JSON.stringify(projected) : undefined}');
-    expect(card).toMatch(/<p class="release-card-price" data-release-price hidden=\{!presentation\.price\}>/);
+    // One price, beside the formats on phones and beside the action from 40rem.
     expect(card).toMatch(
-      /\{isPrincipal && editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert=\{presentation\.state !== 'preorder'\}/s,
+      /<div class="release-card-format-row">[\s\S]*?<p class="release-card-price" data-release-price hidden=\{!presentation\.price\}>/,
+    );
+    expect(card.match(/data-release-price /g)).toHaveLength(1);
+    expect(card).toMatch(
+      /\{editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert=\{presentation\.state !== 'preorder'\}/s,
     );
     expect(card).toContain('<span data-release-purchase-label>{presentation.action}</span>');
     expect(card).toContain('aria-label={`${presentation.action}, ${release.data.title}`}');
-    expect(card).toMatch(/\{!isPrincipal && <StoreBuyIcon formatGroup=\{buyIconFormatGroup\} \/>\}/);
+    // Featured Buy vinyl carries the format mark too; CSS hides it on Pre-order and edition links.
+    expect(card).toContain('<StoreBuyIcon formatGroup={buyIconFormatGroup} />');
+    expect(card).not.toContain('!isPrincipal && <StoreBuyIcon');
   });
 
   it('links each release artist name to the artist page', () => {

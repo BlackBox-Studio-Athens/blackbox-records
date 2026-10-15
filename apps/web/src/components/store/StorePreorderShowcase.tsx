@@ -276,8 +276,8 @@ function PreorderChapter({
     <img
       src={item.coverUrl}
       srcSet={item.coverSrcSet}
-      // The still-art slot (global.css): 13.75rem on phones, 17.5rem on tablets, 21.25rem above.
-      sizes={item.coverSrcSet && '(max-width: 50rem) 13.75rem, (max-width: 62.5rem) 17.5rem, 21.25rem'}
+      // The still-art slot (global.css): 8rem on phones, 17.5rem on tablets, 21.25rem above.
+      sizes={item.coverSrcSet && '(max-width: 50rem) 8rem, (max-width: 62.5rem) 17.5rem, 21.25rem'}
       alt={item.title + ' cover'}
       className="home-preorders__sleeve"
       width={340}
@@ -331,25 +331,31 @@ function PreorderChapter({
       </span>
     </button>
   );
+  // Format and price share one row; the Sea Pre-order and the Slate Listen share the next, half each.
   const purchase = (
     <div className="home-preorders__purchase">
       <div className="home-preorders__price-block">
         <span className="home-preorders__option">{item.option}</span>
         <span className="home-preorders__price">{item.displayPrice}</span>
       </div>
-      <a href={item.storePath} data-astro-prefetch className={buttonVariants({ className: 'preorder-action' })}>
-        <span>Pre-order</span>
-      </a>
+      <div className="home-preorders__actions">
+        <a href={item.storePath} data-astro-prefetch className={buttonVariants({ className: 'preorder-action' })}>
+          <span>Pre-order</span>
+        </a>
+        {listen}
+      </div>
       {clip && !badges.some((badge) => estimate && badge.includes(estimate)) && (
         <p className="home-preorders__shipping">
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
       )}
       <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
-      <a href={createProjectRelativeUrl('/terms/')} data-astro-prefetch className="home-preorders__terms">
-        Pre-order &amp; delivery information
-      </a>
     </div>
+  );
+  const terms = (
+    <a href={createProjectRelativeUrl('/terms/')} data-astro-prefetch className="home-preorders__terms">
+      Pre-order &amp; delivery information
+    </a>
   );
 
   return (
@@ -399,10 +405,10 @@ function PreorderChapter({
               </h3>
               {badgeList}
               {purchase}
+              {terms}
               <div className="home-preorders__hero-sleeve">{cover}</div>
             </div>
             <div className="home-preorders__film-tools">
-              {listen}
               {background && automaticMotion && !failed && !autoplayBlocked && (
                 <button
                   type="button"
@@ -493,31 +499,31 @@ function PreorderChapter({
                 {artist}
                 <h3 id={chapterId + '-title'}>{item.title}</h3>
                 {badgeList}
-                {listen}
               </div>
             </div>
           </div>
-          <dl className="home-preorders__facts home-preorders__facts--still">
-            <div>
-              <dt>Format</dt>
-              <dd>{item.option}</dd>
-            </div>
-            <div>
-              <dt>Tracks</dt>
-              <dd>{item.trackCount ?? 'To be confirmed'}</dd>
-            </div>
-            <div>
-              <dt>Recorded and mixed</dt>
-              <dd>{item.recording ?? 'To be confirmed'}</dd>
-            </div>
-            <div>
-              <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
-              <dd>{shipping}</dd>
-            </div>
-          </dl>
           <div className="home-preorders__buy">
-            {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
             {purchase}
+            <dl className="home-preorders__facts home-preorders__facts--still">
+              <div>
+                <dt>Format</dt>
+                <dd>{item.option}</dd>
+              </div>
+              <div>
+                <dt>Tracks</dt>
+                <dd>{item.trackCount ?? 'To be confirmed'}</dd>
+              </div>
+              <div>
+                <dt>Recorded and mixed</dt>
+                <dd>{item.recording ?? 'To be confirmed'}</dd>
+              </div>
+              <div>
+                <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
+                <dd>{shipping}</dd>
+              </div>
+            </dl>
+            {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
+            {terms}
           </div>
         </>
       )}

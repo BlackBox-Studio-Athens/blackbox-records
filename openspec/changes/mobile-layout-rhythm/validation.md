@@ -24,3 +24,27 @@ No dedicated Codex implementation is identified. Claude owns UI, UI tests and DE
 ## Acceptance not claimed
 
 This is planning validation, not implementation or browser acceptance. The supplied audit measured Local fixtures; revised geometry, native-link fallback, pause interaction and footer wrapping still require implementation verification. Full `pnpm validate` is deferred to integration because its local formatter can modify unrelated dirty files in the shared checkout. No PRD promotion or Content Publication is implied.
+
+# Implementation validation (Claude, UI)
+
+Recorded 15 October 2026 on `main` at `42f4c2e7` plus the uncommitted C3 tree. Final `pnpm validate`: PASSED, `mode: local`, source fingerprint `384f1788240601fbfd3724bfebdf12e7ed2ffb701a4d883e93a555ad2255dbc1` (37 files, before = after), summary `.codex-artifacts/validation/2026-10-15T18-36-31-997Z-48672-68ad63/summary.json`. Product Environment: Local, Astro dev with `BLACKBOX_PREORDER_PROJECTION=e2e/preorder-projection.json` and stubbed listing reads; no UAT or PRD claim.
+
+## Measured at 390×844 (before → after)
+
+- Home pre-order chapter (photo chapter): 1211 → 887px; media 358×201 inside x=16..374; Pre-order and Listen 171×44 each, 16px apart, under the price.
+- Releases featured: lead 1042 → 795px, supporting 1093 → 820px, catalog 660 → 621px; pair 12px under the cover; desktop lead row 547 → 496px with the 464px cover.
+- Footer: 417 → about 301px at 390px; the sitemap fills three fixed 44px rows down three columns, so no link sits alone on a row for any count from four up (eight links locally; seven on the production fixture, where Privacy information is gated on approved purchase information). DOM and reading order stay the sitemap order; the visual order runs down each column. Top rule at the gutters.
+- Artist count: 106×82 box → 28px inline line. Swipe rows clipped at x=16..374, next News card peeks about 42px; dots 44×44.
+- No horizontal overflow at 390 or 1440 on Home, Releases or Artists.
+
+## Checks
+
+- Unit: web-store, web-pages, web-editorial, web-layouts, web-artists, app-shell, ui-foundation, storefront-catalog and commerce-web-integration pass through `pnpm validate`; updated `_releases-page-layout`, `StorePreorderShowcase`, `homepage-hero-css`, `swipe-row-dots`, and added the inline-count test in `_artist-roster-layout`.
+- e2e (each spec alone, all projects): release-merchandising 45/46 then the failing Firefox case 2/2 after a test fix (adds the phone summary disclosure case), home-preorders 16/16, home-swipe-rows 8/8, catalog-video-contact 14/14, shell-navigation 49/51 then the footer case 2/2 after a test fix (it covers 390, 320 and 125% text), player-continuity 12/12, routes 65/65, home-hero-film 4/4, public-image-fallback 3/3, availability-alerts 6/6, international-order-item 5/5.
+- `pnpm openspec -- validate mobile-layout-rhythm --type change --strict`: valid. `pnpm format:check`: clean.
+
+## Not established
+
+- Film chapter on phones: Local content has no pre-order film, so the retained 44×44 pause/resume icon, Watch and film-tools layout were not rendered; the code path is unchanged and its unit/e2e cases pass.
+- 3.3 stress (long content, data saving, refused media) and a visual comparison beyond the 390/1440 screenshots; the eager JavaScript budget (`pnpm performance:bundles`) needs the production build CI runs. The Home showcase gained one wrapper element.
+- 3.4 Graphify refresh and the combined F1–F22 review; 3.6 UAT release belongs to the coordinator.

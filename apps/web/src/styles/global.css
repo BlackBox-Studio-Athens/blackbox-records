@@ -1077,21 +1077,43 @@ body {
     background: rgb(13 13 13 / 76%);
   }
 
+  /* The veil still spans the fixed hero photo edge to edge, but the section's rule stops at the page gutters. */
   .artists-surface-section {
-    background-color: rgb(20 20 20 / 78%);
-    border-top-color: #2b2b2b !important;
+    background-color: rgb(13 13 13 / 78%);
+  }
+
+  .artists-surface-section::before {
+    position: absolute;
+    top: 0;
+    right: max(var(--page-gutter), env(safe-area-inset-right), (100% - var(--page-max-width)) / 2 + var(--page-gutter));
+    left: max(var(--page-gutter), env(safe-area-inset-left), (100% - var(--page-max-width)) / 2 + var(--page-gutter));
+    height: 1px;
+    background: var(--control-edge);
+    content: '';
   }
 
   #newsletter-signup-area::before {
     background: rgb(13 13 13 / 74%);
   }
 
+  /* The ground stays edge to edge over the fixed hero photo; the top rule stops at the gutters and the meta row has
+     none (openspec/changes/mobile-layout-rhythm). */
   .site-footer-shell {
-    background-color: #141414;
-    border-top-color: #2b2b2b !important;
+    background-color: var(--background);
+  }
+
+  .site-footer-top::before {
+    position: absolute;
+    top: 0;
+    right: max(var(--page-gutter), env(safe-area-inset-right));
+    left: max(var(--page-gutter), env(safe-area-inset-left));
+    height: 1px;
+    background: var(--control-edge);
+    content: '';
   }
 
   .site-footer-top {
+    position: relative;
     display: grid;
     gap: 1.35rem;
     padding-top: 1.5rem;
@@ -1138,20 +1160,37 @@ body {
     gap: 0.1rem 0.85rem;
   }
 
+  /* Phones: three fixed rows of 44px filled down each of three columns, so for any count from four up no link
+     (Delivery information last) sits alone in a row; DOM and reading order stay the sitemap order and a long label
+     wraps inside its cell. Cells are top-aligned and each item owns the 44px box as a flex container, which blockifies
+     the link whatever display other rules give it, so a wrapped label never drops below its row-mates. */
   @media (width < 48rem) {
     .site-footer-nav-list {
-      display: block;
-      column-count: 2;
-      column-gap: 0.85rem;
+      display: grid;
+      grid-template-rows: repeat(3, minmax(2.75rem, auto));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-flow: column;
+      align-items: start;
+      gap: 0 0.75rem;
     }
 
     .site-footer-nav-list > li {
-      break-inside: avoid;
+      display: flex;
+      min-width: 0;
+      min-height: 2.75rem;
+    }
+
+    /* A long word (information at 200% text) breaks inside its column instead of pushing the page wider. */
+    .site-footer-nav-list :is(.site-nav-link--footer, .site-nav-link__label) {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .site-footer-nav-list .site-nav-link--footer {
+      display: flex;
       width: 100%;
       min-height: 2.75rem;
+      line-height: 1.25;
     }
   }
 
@@ -1369,27 +1408,26 @@ body {
     -webkit-box-orient: vertical;
   }
 
+  /* The release count is inline information beside Latest: a Bebas number with its label, no box
+     (openspec/changes/mobile-layout-rhythm). The pair wraps when text grows. */
   .artist-roster-card__context {
-    display: grid;
-    grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
-    gap: 1rem;
-    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
   }
 
   .artist-release-stat {
-    display: grid;
-    align-content: center;
-    justify-items: center;
-    gap: 0.18rem;
-    border: 1px solid #2b2b2b;
-    background: linear-gradient(180deg, rgba(19, 19, 19, 0.98) 0%, rgba(11, 11, 11, 0.98) 100%), #101010;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
     color: var(--foreground);
   }
 
   .artist-release-stat__value {
     font-family: var(--font-display);
-    font-size: 2.2rem;
-    line-height: 0.84;
+    font-size: 1.75rem;
+    line-height: 1;
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
@@ -1402,12 +1440,6 @@ body {
     text-transform: uppercase;
   }
 
-  .artist-release-stat--roster {
-    min-width: 5.1rem;
-    min-height: 5.1rem;
-    padding: 0.65rem 0.55rem;
-  }
-
   .artist-latest-teaser {
     display: flex;
     min-width: 0;
@@ -1416,8 +1448,8 @@ body {
   }
 
   .artist-latest-teaser--roster {
+    flex: 1 1 10rem;
     justify-content: center;
-    min-height: 100%;
     border-left: 1px solid #2b2b2b;
     padding-left: 1rem;
   }
@@ -2940,11 +2972,16 @@ body {
     opacity: 1;
   }
 
-  /* Sideways phones: the default padding made the hero taller than the screen. */
+  /* Sideways phones: the default padding made the hero taller than the screen; the 52px CTA keeps its size and the
+     space above and below it tightens instead. */
   @media (orientation: landscape) and (max-height: 480px) {
     .homepage-hero-section .homepage-hero-section__content-block {
       padding-top: calc(var(--header-height) + 1.5rem);
-      padding-bottom: 3.5rem;
+      padding-bottom: 3rem;
+    }
+
+    .homepage-hero-section .homepage-hero-section__actions {
+      margin-top: 1rem;
     }
   }
 
@@ -2969,7 +3006,8 @@ body {
     position: absolute;
     inset: 0;
     z-index: 1;
-    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, #050505);
+    /* Transparent, so the shade itself fills the last pixel; the visible rule is ::after, inside the page gutters. */
+    border-bottom: 1px solid transparent;
     background:
       linear-gradient(
         180deg,
@@ -2987,6 +3025,16 @@ body {
         rgba(5, 5, 5, 0.82) 100%
       );
     pointer-events: none;
+  }
+
+  .homepage-hero-section__shade-layer::after {
+    position: absolute;
+    right: max(var(--page-gutter), env(safe-area-inset-right), (100% - var(--page-max-width)) / 2 + var(--page-gutter));
+    bottom: -1px;
+    left: max(var(--page-gutter), env(safe-area-inset-left), (100% - var(--page-max-width)) / 2 + var(--page-gutter));
+    height: 1px;
+    background: color-mix(in oklab, var(--border) 70%, #050505);
+    content: '';
   }
 
   /* Footage is darker than the still, so the film hero keeps shade only where the tagline and header need it. */
@@ -3597,19 +3645,26 @@ body.is-app-shell-overlay-open {
     line-height: 1.62;
   }
 
+  /* Compact phone footer: the logo with the social icons beside it, the tagline, the sitemap rows (label hidden),
+     then the copyright in two short lines beside Est. 2026. */
   .site-footer-top {
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.1rem;
-    padding-top: 1.25rem;
-    padding-bottom: 1rem;
+    gap: 0.375rem;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
   }
 
   .site-footer-brand {
-    gap: 0.75rem;
+    gap: 0.625rem;
   }
 
   .site-footer-brand-topbar {
     gap: 0.75rem;
+  }
+
+  .site-footer-logo {
+    width: 2.75rem;
+    height: 2.75rem;
   }
 
   .site-footer-description {
@@ -3617,17 +3672,28 @@ body.is-app-shell-overlay-open {
   }
 
   .site-footer-heading {
-    letter-spacing: 0.24em;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .site-footer-meta {
+    align-items: flex-start;
     gap: 0.55rem;
+    padding-top: 0.5rem;
     letter-spacing: 0.05em;
   }
 
   .site-footer-meta-copy {
     min-width: 0;
     white-space: normal;
+  }
+
+  .site-footer-meta-copy > span {
+    display: block;
   }
 
   .home-section-header--centered {
@@ -3645,26 +3711,17 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Home News and Artists on phones: one native scroll-snap row each. The row bleeds to the screen edges; its padding
-   keeps the first card on the page gutter, and the next card stays partly visible as the swipe cue. Artists cards are
-   narrower because their 3:4 photos make them tall. */
+/* Home News and Artists on phones: one native scroll-snap row each, clipped at the page gutters; the next card peeks
+   about 42px inside the frame as the swipe cue. Artists cards are narrower because their 3:4 photos make them tall. */
 @media (width < 40rem) {
   .home-swipe-row {
-    --home-swipe-row-gutter-left: max(var(--page-gutter), env(safe-area-inset-left));
-    --home-swipe-row-gutter-right: max(var(--page-gutter), env(safe-area-inset-right));
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 82%;
+    grid-auto-columns: calc(100% - 3.5rem);
     gap: 0.875rem;
     align-items: start;
-    margin-right: calc(var(--home-swipe-row-gutter-right) * -1);
-    margin-left: calc(var(--home-swipe-row-gutter-left) * -1);
-    padding-right: var(--home-swipe-row-gutter-right);
-    padding-left: var(--home-swipe-row-gutter-left);
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    scroll-padding-right: var(--home-swipe-row-gutter-right);
-    scroll-padding-left: var(--home-swipe-row-gutter-left);
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
   }
@@ -6012,10 +6069,23 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* The section's opaque ground still covers the fixed hero photo edge to edge, but its padding keeps the page frame:
+   chapter photos, films, facts and rules stop at the gutters (only the header and the hero film bleed).
+   --home-preorders-gutter is the inset of copy over the media on wider screens. */
 .home-preorders {
   --home-preorders-gutter: clamp(1.5rem, 6vw, 5.5rem);
   position: relative;
   z-index: 1;
+  padding-right: max(
+    var(--page-gutter),
+    env(safe-area-inset-right),
+    (100% - var(--page-max-width)) / 2 + var(--page-gutter)
+  );
+  padding-left: max(
+    var(--page-gutter),
+    env(safe-area-inset-left),
+    (100% - var(--page-max-width)) / 2 + var(--page-gutter)
+  );
   scroll-margin-top: 1.5rem;
   background: var(--background);
 }
@@ -6034,9 +6104,8 @@ body.is-app-shell-overlay-open {
 .home-preorders__chapter {
   position: relative;
   min-width: 0;
+  padding-top: 2rem;
   scroll-margin-top: -0.5rem;
-  border-top: 1px solid var(--control-edge);
-  background: var(--secondary);
 }
 
 .home-preorders__film-scene {
@@ -6168,9 +6237,16 @@ body.is-app-shell-overlay-open {
   white-space: nowrap;
 }
 
-/* The Home Pre-order is the shared filled Sea control at the one 44px size; the sweep moved to the hero CTA. */
-.home-preorders .preorder-action {
-  width: 100%;
+/* The Sea Pre-order and the Slate Listen share one row at the one 44px size, half each, 16px apart. */
+.home-preorders__actions {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 1rem;
+}
+
+.home-preorders__actions > * {
+  min-width: 0;
 }
 
 .home-preorders__terms {
@@ -6192,9 +6268,10 @@ body.is-app-shell-overlay-open {
   margin-bottom: 0.875rem;
 }
 
-.home-preorders__film-copy .preorder-action {
-  width: 18.75rem;
+.home-preorders__film-copy .home-preorders__actions {
+  width: 22rem;
   max-width: 100%;
+  margin-inline: auto;
 }
 
 .home-preorders__film-copy .home-preorders__terms {
@@ -6378,10 +6455,6 @@ body.is-app-shell-overlay-open {
   color: var(--preorder-accent-active);
 }
 
-.home-preorders__listen.music-listen-trigger--standalone {
-  align-self: start;
-}
-
 .home-preorders__watch-area {
   width: min(65rem, calc(100% - 2 * var(--home-preorders-gutter)));
   margin: 0 auto;
@@ -6426,10 +6499,10 @@ body.is-app-shell-overlay-open {
   pointer-events: none;
   background: linear-gradient(
     0deg,
-    var(--secondary),
-    rgb(20 20 20 / 96%) 10%,
-    rgb(20 20 20 / 30%) 38%,
-    rgb(20 20 20 / 6%) 70%
+    var(--background),
+    rgb(13 13 13 / 96%) 10%,
+    rgb(13 13 13 / 30%) 38%,
+    rgb(13 13 13 / 6%) 70%
   );
 }
 
@@ -6465,18 +6538,38 @@ body.is-app-shell-overlay-open {
 }
 
 .home-preorders__facts--still {
-  margin: 0;
-  padding-inline: var(--home-preorders-gutter);
+  margin: 0 0 2.25rem;
 }
 
+/* Wide screens: facts across, then the summary beside the purchase column and its terms link. */
 .home-preorders__buy {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 17.5rem;
-  align-items: center;
-  gap: 4rem;
+  align-items: start;
+  column-gap: 4rem;
   max-width: 81.25rem;
   margin-inline: auto;
-  padding: 2.25rem var(--home-preorders-gutter) 2.5rem;
+  padding: 0 var(--home-preorders-gutter) 2.5rem;
+}
+
+@media (min-width: 50.0625rem) {
+  .home-preorders__buy > .home-preorders__facts {
+    grid-column: 1 / -1;
+  }
+
+  .home-preorders__buy > .home-preorders__purchase {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .home-preorders__buy > .home-preorders__summary {
+    grid-row: 2 / span 2;
+    grid-column: 1;
+  }
+
+  .home-preorders__buy > .home-preorders__terms {
+    grid-column: 2;
+  }
 }
 
 .home-preorders__buy .home-preorders__summary {
@@ -6542,9 +6635,12 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* Phones: one column inside the 16px gutters. Media is a contained 16:9 frame; the sleeve overlaps its lower left
+   corner beside the artist; then title, plain status lines, format and price, the Pre-order + Listen pair, compact
+   facts, summary and the terms link. */
 @media (max-width: 50rem) {
   .home-preorders {
-    --home-preorders-gutter: 1rem;
+    --home-preorders-gutter: 0px;
   }
 
   .home-preorders__film-scene {
@@ -6554,7 +6650,7 @@ body.is-app-shell-overlay-open {
   .home-preorders__media {
     position: relative;
     height: auto;
-    aspect-ratio: 2.388 / 1;
+    aspect-ratio: 16 / 9;
   }
 
   .home-preorders__film-shade {
@@ -6564,7 +6660,7 @@ body.is-app-shell-overlay-open {
   .home-preorders__film-copy {
     width: auto;
     margin: 0;
-    padding: 2rem 1rem 1.625rem;
+    padding: 2rem 0 1.625rem;
     background: var(--background);
   }
 
@@ -6581,8 +6677,8 @@ body.is-app-shell-overlay-open {
     justify-content: space-between;
   }
 
-  .home-preorders__film-copy .preorder-action {
-    width: 100%;
+  .home-preorders__film-copy .home-preorders__actions {
+    width: auto;
   }
 
   .home-preorders__hero-sleeve {
@@ -6594,8 +6690,7 @@ body.is-app-shell-overlay-open {
     gap: 0.75rem;
   }
 
-  .home-preorders__film-tools .site-button:not(.site-button--icon),
-  .home-preorders__film-tools .home-preorders__listen {
+  .home-preorders__film-tools .site-button:not(.site-button--icon) {
     flex: 1;
     min-width: 7.5rem;
     white-space: normal;
@@ -6604,14 +6699,13 @@ body.is-app-shell-overlay-open {
 
   .home-preorders__clips {
     gap: 0 0.75rem;
-    padding: 0 1rem 1.5rem;
+    padding-bottom: 1.5rem;
   }
 
   .home-preorders__band-photo {
     position: relative;
     height: auto;
-    aspect-ratio: 3 / 2;
-    object-fit: contain;
+    aspect-ratio: 16 / 9;
   }
 
   .home-preorders__still-shade {
@@ -6620,64 +6714,92 @@ body.is-app-shell-overlay-open {
 
   .home-preorders__still-grid,
   .home-preorders__still-scene--cover-only .home-preorders__still-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.75rem;
-    padding: 0 1rem 2rem;
+    grid-template-columns: 8.75rem minmax(0, 1fr);
+    align-items: end;
+    gap: 0 1rem;
+    padding: 0;
   }
 
   .home-preorders__still-art {
-    width: 13.75rem;
-    max-width: 75%;
-    margin: -2.625rem auto 0;
+    width: 8rem;
+    margin: -4rem 0 0 0.75rem;
   }
 
   .home-preorders__still-scene--cover-only .home-preorders__still-art {
-    margin-top: 2rem;
+    margin-top: 0;
+  }
+
+  .home-preorders__identity {
+    display: contents;
   }
 
   .home-preorders__identity .home-preorders__artist {
-    font-size: 0.75rem;
+    --home-preorders-artist-spacing: 0.24em;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
   }
 
   .home-preorders__identity h3 {
+    grid-column: 1 / -1;
+    margin: 1.25rem 0 0;
     font-size: clamp(2.125rem, 11.5vw, 3.5rem);
   }
 
-  .home-preorders__facts--still {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .home-preorders__facts > div {
-    padding: 1rem 0.75rem;
-  }
-
-  .home-preorders__facts--still > div:nth-child(odd) {
-    border-left: 0;
-    padding-left: 0;
-  }
-
-  .home-preorders__facts--still > div:nth-child(n + 3) {
-    border-top: 1px solid var(--control-edge);
+  .home-preorders__identity .home-preorders__badges {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    margin: 0.75rem 0 0;
+    text-align: left;
   }
 
   .home-preorders__buy {
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.75rem;
-    padding: 1.75rem 1rem 2rem;
+    padding: 1.25rem 0 2rem;
+  }
+
+  .home-preorders__option {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+
+  .home-preorders__price-block {
+    margin-bottom: 0.75rem;
+  }
+
+  .home-preorders__facts--still {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 1.5rem 0 0;
+    border-bottom: 0;
+    padding-top: 1rem;
+  }
+
+  .home-preorders__facts > div,
+  .home-preorders__facts > div:first-child {
+    padding: 0;
+  }
+
+  .home-preorders__facts > div + div {
+    border-left: 0;
+  }
+
+  .home-preorders__facts dt {
+    letter-spacing: 0.12em;
+  }
+
+  .home-preorders__facts dd {
+    margin-top: 0.25rem;
   }
 
   .home-preorders__summary {
-    font-size: 0.875rem;
+    margin-top: 1.5rem;
   }
 
-  .home-preorders__purchase {
-    grid-column: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-preorders .preorder-action::before {
-    transition: none;
+  .home-preorders__terms {
+    margin-top: 0.5rem;
   }
 }
 
@@ -7774,12 +7896,17 @@ body.is-app-shell-overlay-open {
   outline: 2px solid var(--foreground);
   outline-offset: -2px;
 }
+/* Phones read cover, the purchase/Listen pair 12px below it, date and catalog line, title, artist, formats with the
+   price at the right, status and the summary; from 40rem a grid moves the pair after the artist, beside the price. */
 #releases-merchandising .release-card-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: flex-start;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
+}
+#releases-merchandising .release-card-year-text {
+  color: var(--slate-500);
 }
 #releases-merchandising .releases-feature__copy {
   container-type: inline-size;
@@ -7789,7 +7916,7 @@ body.is-app-shell-overlay-open {
   margin: 0.5rem 0 0;
 }
 #releases-merchandising .releases-feature__title {
-  font-size: clamp(2.35rem, 16cqi, 4.15rem);
+  font-size: 2.35rem;
   line-height: 0.94;
   letter-spacing: 0.025em;
 }
@@ -7820,30 +7947,35 @@ body.is-app-shell-overlay-open {
   line-height: 1.625rem;
   letter-spacing: 0.01em;
 }
-#releases-merchandising .release-card-copy > .music-listen-trigger {
-  margin-top: 0.75rem;
-}
-#releases-merchandising .releases-feature__copy > .music-listen-trigger {
-  margin-top: 1rem;
-}
 #releases-merchandising .releases-feature__summary {
   max-width: 36em;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   color: rgba(214, 214, 214, 0.86);
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.65;
   text-wrap: pretty;
 }
+#releases-merchandising .release-card-format-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-self: stretch;
+  justify-content: space-between;
+  column-gap: 1rem;
+  margin-top: 1rem;
+}
+#releases-merchandising .release-card-format-row:empty {
+  display: none;
+}
 #releases-merchandising .release-card-formats {
-  margin: 1rem 0 0;
+  margin: 0;
   color: rgba(245, 245, 245, 0.66);
   font-size: 0.8125rem;
   line-height: 1.5;
   text-wrap: pretty;
 }
 #releases-merchandising .releases-feature__copy .release-card-formats {
-  margin-top: 1.5rem;
   font-size: 0.875rem;
 }
 #releases-merchandising [data-release-badges] {
@@ -7883,28 +8015,31 @@ body.is-app-shell-overlay-open {
 #releases-merchandising [data-release-shipping] {
   margin-top: 0.5rem;
 }
-/* The price and the edition action share the last row; the price arrives with the offer read. */
+/* The pair: the filled Buy or Pre-order and the Slate Listen, half the row each, 16px apart. The price arrives with
+   the offer read. */
 #releases-merchandising .release-card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   align-self: stretch;
-  gap: 0.5rem 0.75rem;
-  margin-top: 0.75rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
-#releases-merchandising .releases-feature__copy .release-card-actions {
-  column-gap: 1rem;
+#releases-merchandising .release-card-actions:empty {
+  display: none;
+}
+#releases-merchandising .release-card-actions > * {
+  min-width: 0;
 }
 #releases-merchandising .release-card-price {
-  margin: 0;
+  margin: 0 0 0 auto;
   color: var(--foreground);
   font: 400 1.5rem/1.2 var(--font-display-ui);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 #releases-merchandising .releases-feature__copy .release-card-price {
-  min-width: 5.5rem;
-  font-size: 2.375rem;
+  font-size: 1.75rem;
 }
 /* Catalog Buy wears the Store card Buy chrome and record mark; the mark shows only while the action reads Buy. */
 #releases-merchandising [data-release-role='catalog'] [data-release-purchase].purchase-action {
@@ -7914,12 +8049,53 @@ body.is-app-shell-overlay-open {
 #releases-merchandising [data-release-purchase]:not(.purchase-action) .store-buy-icon {
   display: none;
 }
+/* Read more (phones) and the terms link share one 44px row that can wrap. */
+#releases-merchandising .releases-feature__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+#releases-merchandising .releases-feature__more summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--foreground);
+  font: 500 0.8125rem/1.5 var(--font-sans);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--foreground) 30%, transparent);
+  text-underline-offset: 4px;
+  list-style: none;
+  cursor: pointer;
+}
+#releases-merchandising .releases-feature__more summary::-webkit-details-marker {
+  display: none;
+}
+#releases-merchandising .releases-feature__more[open] summary > :first-child,
+#releases-merchandising .releases-feature__more:not([open]) summary > :last-child {
+  display: none;
+}
+#releases-merchandising .releases-feature__more summary:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+@media (width < 40rem) {
+  #releases-merchandising
+    .releases-feature__copy:has(> .releases-feature__links > [data-release-more]:not([open]))
+    > [data-release-summary] {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}
 #releases-merchandising .releases-feature__terms {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
   min-height: 2.75rem;
-  margin-top: 0.25rem;
   color: var(--muted-foreground);
   font: 400 0.8125rem/1.5 var(--font-sans);
   text-decoration: underline;
@@ -7946,21 +8122,15 @@ body.is-app-shell-overlay-open {
   #releases-merchandising .releases-feature__terms:hover {
     color: var(--foreground);
   }
+  #releases-merchandising .releases-feature__more summary:hover {
+    text-decoration-color: var(--slate-500);
+  }
 }
 #releases-merchandising .releases-catalog-section {
   padding-top: 2.5rem;
 }
 #releases-merchandising .releases-catalog-grid {
   gap: 2rem 1.5rem;
-}
-@media (width < 40rem) {
-  /* Phones give a featured action the full width under its price; catalog actions fill the row beside it. */
-  #releases-merchandising .releases-feature__copy [data-release-purchase]:not(.release-detail-link) {
-    flex: 1 1 100%;
-  }
-  #releases-merchandising .releases-tile__copy [data-release-purchase]:not(.release-detail-link) {
-    flex: 1 1 auto;
-  }
 }
 @media (width < 64rem) {
   #releases-merchandising :is(.release-card-title-link, .release-card-artist-link) {
@@ -7969,10 +8139,6 @@ body.is-app-shell-overlay-open {
     max-width: 100%;
     min-height: 2.75rem;
     overflow-wrap: anywhere;
-  }
-  /* The artist link's 44px row already spaces Listen. */
-  #releases-merchandising .release-card-copy > .music-listen-trigger {
-    margin-top: 0.25rem;
   }
 }
 @media (width >= 40rem) {
@@ -7983,6 +8149,55 @@ body.is-app-shell-overlay-open {
   }
   #releases-merchandising .releases-feature__copy {
     padding-top: 0;
+  }
+  #releases-merchandising .releases-feature__title {
+    font-size: clamp(2.35rem, 16cqi, 4.15rem);
+  }
+  #releases-merchandising .releases-feature__copy .release-card-price {
+    font-size: 2.375rem;
+  }
+  #releases-merchandising .releases-feature__summary {
+    margin-top: 1.5rem;
+  }
+  #releases-merchandising .releases-feature__more {
+    display: none;
+  }
+  /* The pair follows the artist: price, the filled action and Listen share row 4 of the copy grid. */
+  #releases-merchandising .release-card-copy {
+    display: grid;
+    grid-template-columns: auto auto auto minmax(0, 1fr);
+    align-content: start;
+    justify-items: start;
+  }
+  #releases-merchandising .release-card-copy > * {
+    grid-column: 1 / -1;
+  }
+  #releases-merchandising :is(.release-card-actions, .release-card-format-row) {
+    display: contents;
+  }
+  #releases-merchandising :is(.release-card-actions > *, .release-card-price) {
+    grid-row: 4;
+    align-self: center;
+    margin-top: 1rem;
+  }
+  #releases-merchandising .release-card-price {
+    grid-column: 1;
+    margin-right: 1rem;
+  }
+  #releases-merchandising .release-card-actions > * {
+    grid-column: 2;
+    min-width: 7rem;
+  }
+  #releases-merchandising .release-card-actions > * + * {
+    grid-column: 3;
+    margin-left: 1rem;
+  }
+  #releases-merchandising .release-card-formats {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+  }
+  #releases-merchandising .releases-feature__copy .release-card-formats {
+    margin-top: 1.5rem;
   }
   #releases-merchandising .releases-catalog-section {
     padding-top: 3rem;

@@ -25,7 +25,7 @@ describe('currentRowIndex', () => {
 });
 
 describe('SwipeRowDots', () => {
-  it('renders one labelled 24px button per card with the first current', () => {
+  it('renders one labelled 44px button per card with the first current', () => {
     const html = renderToStaticMarkup(<SwipeRowDots rowId="row" count={3} label="Artists position" />);
 
     expect(html).toContain('role="group"');
@@ -33,7 +33,7 @@ describe('SwipeRowDots', () => {
     expect(html.match(/<button/g)).toHaveLength(3);
     expect(html).toContain('aria-label="Show 1 of 3" aria-current="true"');
     expect(html).toContain('aria-label="Show 2 of 3" aria-current="false"');
-    expect(html).toContain('size-6');
+    expect(html).toContain('size-11');
   });
 
   it('renders nothing for a single card', () => {

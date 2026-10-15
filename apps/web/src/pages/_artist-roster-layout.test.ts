@@ -39,6 +39,22 @@ describe('Artists roster layout', () => {
     expect(card.indexOf('<h3')).toBeGreaterThan(card.indexOf('</div>', card.indexOf('artist-photo-frame')));
   });
 
+  it('shows the source-derived release count inline beside Latest, without a statistic box', () => {
+    const card = readFileSync(artistCardPath, 'utf8');
+    const css = readFileSync(globalCssPath, 'utf8');
+    const rule = (selector: string) =>
+      new RegExp(`\\n  ${selector.replace(/\./g, '\\.')} \\{([^}]*)\\}`).exec(css)?.[1];
+
+    expect(card).toMatch(
+      /<div class="artist-release-stat">\s*<span class="artist-release-stat__value">\{releaseCount\}<\/span>\s*<span class="artist-release-stat__label">Releases<\/span>/,
+    );
+    expect(rule('.artist-release-stat')).not.toMatch(/border|background|min-(width|height)/);
+    expect(rule('.artist-release-stat__value')).toMatch(/font-size:\s*1\.75rem/);
+    expect(rule('.artist-roster-card__context')).toMatch(/flex-wrap:\s*wrap/);
+    expect(rule('.artist-latest-teaser__label')).toContain('var(--violet-500)');
+    expect(rule('.artist-latest-teaser__meta')).toContain('var(--slate-500)');
+  });
+
   it('fills the artist detail frame with a blurred copy of the photo', () => {
     const frame = readPhotoFrame(readFileSync(artistDetailPath, 'utf8'), 'artist-detail-hero__image-frame');
     const css = readFileSync(globalCssPath, 'utf8');

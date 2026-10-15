@@ -545,9 +545,15 @@ test('the Menu closes when the desktop layout starts', async ({ page, isMobile }
 
 test('footer sitemap wraps with touch-sized links on small phones', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'Touch-sized sitemap links apply to the phone layout.');
-  for (const width of [390, 320]) {
+  for (const [width, textScale] of [
+    [390, 1],
+    [320, 1],
+    [390, 1.25],
+  ] as const) {
     await page.setViewportSize({ width, height: 800 });
     await page.goto('./');
+    await page.evaluate((scale) => (document.documentElement.style.fontSize = `${scale * 100}%`), textScale);
+    const footer = page.locator('footer.site-footer-shell');
     const sitemap = page.locator('.site-footer-nav-list');
     await sitemap.scrollIntoViewIfNeeded();
     const sitemapBox = await sitemap.boundingBox();
@@ -558,6 +564,18 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
         (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
       );
     }
+    // Compact at the 390px reference (about 290px, 417px before); enlarged text grows it instead of clipping.
+    const height = (await footer.boundingBox())?.height ?? 0;
+    if (width === 390 && textScale === 1) expect(height).toBeLessThanOrEqual(320);
+    await expect(footer.getByText('All rights reserved.')).toBeVisible();
+    // The top rule stops at the page gutters (1rem, so it follows enlarged text).
+    const rule = await footer.locator('.site-footer-top').evaluate((element) => {
+      const before = getComputedStyle(element, '::before');
+      const own = getComputedStyle(element);
+      return [before.left, before.right, own.paddingLeft, own.paddingRight];
+    });
+    expect(rule.slice(0, 2)).toEqual(rule.slice(2));
+    if (textScale === 1) expect(rule[0]).toBe('16px');
     await expectNoHorizontalOverflow(page);
   }
 });

@@ -12,12 +12,11 @@ import {
 const artistsRow = (page: Page) => page.locator('#home-artists-row');
 const artistsDots = (page: Page) => page.getByRole('group', { name: 'Artists position' }).getByRole('button');
 
-// Distance of a card's left edge from the row's padding edge, which sits on the page gutter. Adding 0 turns -0 into 0.
+// Distance of a card's left edge from the row's left edge, which sits on the page gutter. Adding 0 turns -0 into 0.
 const offsetFromGutter = (page: Page, index: number) =>
   artistsRow(page).evaluate(
     (row, cardIndex) =>
-      Math.round(row.children[cardIndex].getBoundingClientRect().left - parseFloat(getComputedStyle(row).paddingLeft)) +
-      0,
+      Math.round(row.children[cardIndex].getBoundingClientRect().left - row.getBoundingClientRect().left) + 0,
     index,
   );
 
@@ -38,11 +37,26 @@ test('phone rows swipe card by card, and their dots follow after shell navigatio
   expect(cardCount).toBeGreaterThan(1);
   await expect(dots).toHaveCount(cardCount);
   await expect(dots.first()).toHaveAttribute('aria-current', 'true');
+  // Each dot is a 44px target; the current one shows a small Slate mark.
+  const dotBox = await dots.first().boundingBox();
+  expect([dotBox?.width, dotBox?.height]).toEqual([44, 44]);
+  expect(await dots.first().evaluate((dot) => getComputedStyle(dot, '::after').backgroundColor)).toBe(
+    'rgb(102, 162, 210)',
+  );
   await expect(page.getByRole('group', { name: 'News position' })).toBeVisible();
 
-  // The next card is partly visible and the page itself never scrolls sideways.
+  // The next card peeks inside the frame: both rows are clipped at the 16px gutters and the page never scrolls sideways.
   const secondCardLeft = await artistsRow(page).evaluate((row) => row.children[1].getBoundingClientRect().left);
-  expect(secondCardLeft).toBeLessThan(390);
+  expect(secondCardLeft).toBeLessThan(374);
+  for (const row of [artistsRow(page), page.locator('#home-news-row')]) {
+    const box = await row.boundingBox();
+    expect(box?.x).toBe(16);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBe(374);
+  }
+  const newsPeek = await page
+    .locator('#home-news-row')
+    .evaluate((row) => row.getBoundingClientRect().right - row.children[1].getBoundingClientRect().left);
+  expect(newsPeek).toBeGreaterThan(30);
   await expectNoHorizontalOverflow(page);
 
   await dots.nth(1).click();

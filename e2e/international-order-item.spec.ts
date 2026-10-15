@@ -57,10 +57,10 @@ for (const width of [1440, 390]) {
     await expect(email).toBeVisible();
     const notice = email.locator('..');
     await expect(notice).toContainText('Ships within Greece only. Outside Greece?');
-    await expect(notice.locator(':scope > svg')).toHaveCSS('color', 'rgb(207, 107, 128)');
+    await expect(notice.locator(':scope > svg')).toHaveCSS('color', 'rgb(176, 143, 208)');
     await expect(notice.getByText('Ships within Greece only.', { exact: true })).toHaveCSS(
       'color',
-      'rgb(207, 107, 128)',
+      'rgb(176, 143, 208)',
     );
     await expect(notice.locator(':scope > span')).toHaveCSS('color', 'rgb(179, 179, 179)');
     await expect(email).toHaveCSS('color', 'rgb(245, 245, 245)');
