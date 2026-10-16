@@ -255,7 +255,7 @@ The system MUST treat the user's explicit approval as the only final go/no-go au
 - **WHEN** the user accepts stability evidence
 - **THEN** holding-only workflow, source, artifact, and branch dependencies may be retired
 - **AND** holding-only `noindex` remnants are removed
-- **AND** final evidence is recorded before this change is archived.
+- **AND** final evidence is recorded in `launch-switch-day` before that change is archived; the replaced readiness checklist may be archived after its open launch tasks are transferred there.
 
 ### Requirement: Launch evidence safety
 
