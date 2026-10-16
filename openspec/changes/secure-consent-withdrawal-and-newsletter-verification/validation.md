@@ -37,3 +37,15 @@ The broader CMS real-workerd Local invalidation fixture hit its 30-second timeou
 Migration `0036_email_consent_capabilities.sql` follows existing `0035_order_dispatch.sql`. Reconcile sibling migration allocations before combining changes. The new private records and technical cleanup policy need the privacy sibling's review. No real editorial/controller data was replaced; proposed narrow publication copy and exact Claude edit points are in [handover.md](handover.md). Official legal/provider sources and the chosen operational policy rationale are in [design.md](design.md).
 
 Parent reviewed and accepted the atomic all-capability invalidation, two-token regression, exact recipient preservation, provider guard and corrected in-flight/maintenance limits. Six local backend/handover tasks are complete; tasks 4.1–4.3 remain open for Claude UI, actual CMS publication and separately authorized hosted acceptance. Parent owns integration into main and combined-tree validation.
+
+## Owner correction: automatic newsletter confirmation, 16 October 2026
+
+The owner authorized this scoped UI fix in a new worktree, merge to main and PRD Software Release. A well-formed newsletter email link now clears its fragment, submits the existing POST automatically, and renders Email confirmed only after success. No second confirmation is required. Malformed, expired, used, unavailable and offline states remain truthful; only connection failure offers Try again. Availability withdrawal stays explicit. Existing unsubscribe preferences and all backend token rules remain unchanged.
+
+- Base: `0962e1f117f0325343966a75046b4ccfbd63688b`; isolated worktree `newsletter-confirm-success`.
+- `pnpm test apps/web/src/components/store/checkout/email-preferences.test.ts`: passed all 9 affected project tasks.
+- `pnpm test:e2e e2e/email-preferences.spec.ts`: 9 passed, 0 failed or flaky, including delayed-response success, automatic single POST, URL/storage/referrer protection, final server errors, manual offline retry, 320/390px success reflow, and explicit mobile alert withdrawal. Evidence: `.codex-artifacts/e2e/summary.json` in the worktree.
+- `pnpm validate`: passed 21 tasks; local summary `.codex-artifacts/validation/2026-10-16T14-07-26-139Z-57700-bfee38/summary.json`; matching before/after source fingerprint `3d84f459584ec876837c33cb3af56a774beb5bec54f51df4e10bd25a42c9b664`.
+- `pnpm build:web`, strict guarded OpenSpec validation and local AST-only Graphify update: passed. No migrations, new dependencies or provider configuration changes.
+- Acceptance rows: email/checkout presentation and release. No shell routing or active-player behavior changed; the email document remains standalone. CMS/publication and live inbox/provider acceptance are outside this fix. UAT/PRD evidence follows after deployment.
+- Trade-off accepted by the requested behavior: a mail scanner that executes JavaScript may consume a single-use confirmation capability. A plain GET still performs no consent mutation.

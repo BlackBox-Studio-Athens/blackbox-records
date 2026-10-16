@@ -68,7 +68,10 @@ async function stub(
 const actionStatus = (page: Page) => page.locator('[data-email-preferences-action-status]');
 const actionError = (page: Page) => page.locator('[data-email-preferences-action-error]');
 
-test('a newsletter link waits for Confirm, removes its fragment and confirms by POST', async ({ page, requests }) => {
+test('a newsletter link confirms automatically by POST and shows success only after the answer', async ({
+  page,
+  requests,
+}) => {
   let release!: () => void;
   const answered = new Promise<void>((resolve) => (release = resolve));
   const bodies = await stub(
@@ -79,12 +82,11 @@ test('a newsletter link waits for Confirm, removes its fragment and confirms by 
   );
   await open(page, newsletterLink);
 
-  // The capability is gone from the address bar and from storage, and nothing was posted on load.
+  // The capability is removed before the automatic POST and is never persisted.
   expect(new URL(page.url()).hash).toBe('');
   expect(page.url()).toMatch(/\/email-preferences\/$/);
-  await page.waitForLoadState('networkidle');
-  expect(bodies).toEqual([]);
-  expect(requests.filter((request) => request.method() !== 'GET')).toEqual([]);
+  await expect.poll(() => bodies).toEqual([{ token }]);
+  expect(requests.filter((request) => request.method() !== 'GET').map((request) => request.method())).toEqual(['POST']);
   expect(
     await page.evaluate(() => JSON.stringify([{ ...localStorage }, { ...sessionStorage }, history.state])),
   ).not.toContain('0123456789abcdef');
@@ -92,20 +94,21 @@ test('a newsletter link waits for Confirm, removes its fragment and confirms by 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'no-referrer');
   await expect(page.locator('[data-app-shell-main], iframe, astro-island')).toHaveCount(0);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Confirm newsletter request');
-  await expect(page.getByText('Confirm that this address asked for BlackBox Records')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Newsletter confirmation');
+  await expect(page.getByText('Confirming your email address…')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Request a new link' })).toBeHidden();
   // Live regions exist, empty, before anything is announced.
   await expect(actionStatus(page)).toHaveAttribute('aria-live', 'polite');
   await expect(actionError(page)).toHaveAttribute('aria-live', 'assertive');
   await expect(actionStatus(page)).toBeEmpty();
 
-  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
-  await confirm.focus();
-  await page.keyboard.press('Enter');
+  const confirm = page.getByRole('button', { name: 'Try again', exact: true, includeHidden: true });
+  await expect(confirm).toBeHidden();
   await expect(confirm).toBeDisabled();
   await expect(confirm).toHaveAttribute('aria-busy', 'true');
   release();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Email confirmed');
+  await expect(page.locator('[data-email-preferences-intro]')).toBeHidden();
   await expect(actionStatus(page)).toBeFocused();
   await expect(actionStatus(page)).toContainText(
     'Your email address has been confirmed. Existing unsubscribe preferences remain in place.',
@@ -126,22 +129,21 @@ for (const [status, message] of [
   test(`a newsletter ${status} answer is final and never resubmits the token`, async ({ page }) => {
     const bodies = await stub(page, '/api/newsletter/confirmations', [{ status }]);
     await open(page, newsletterLink);
-    await page.getByRole('button', { name: 'Confirm', exact: true }).click();
     await expect(actionError(page)).toHaveText(message);
     await expect(actionError(page)).toBeFocused();
-    await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toBeHidden();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Unable to confirm');
+    await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeHidden();
     expect(bodies).toHaveLength(1);
   });
 }
 
-test('a lost connection keeps Confirm available and busy only while submitting', async ({ page }) => {
+test('a lost connection offers Try again after the automatic confirmation fails', async ({ page }) => {
   const bodies = await stub(page, '/api/newsletter/confirmations', [
     'offline',
     { status: 200, json: { status: 'confirmed' } },
   ]);
   await open(page, newsletterLink);
-  const confirm = page.getByRole('button', { name: 'Confirm', exact: true });
-  await confirm.click();
+  const confirm = page.getByRole('button', { name: 'Try again', exact: true });
   await expect(actionError(page)).toHaveText("Couldn't reach BlackBox Records. Check your connection and try again.");
   await expect(confirm).toBeEnabled();
   await expect(confirm).not.toHaveAttribute('aria-busy', /.*/);
@@ -220,9 +222,9 @@ test('manage alerts opens the recovery form directly and it validates before sen
 test('a malformed newsletter link posts nothing and points to a fresh sign-up', async ({ page, requests }) => {
   await open(page, `email-preferences/#action=newsletter&token=${token.slice(1)}`);
   expect(new URL(page.url()).hash).toBe('');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Confirm newsletter request');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Newsletter confirmation');
   await expect(page.getByText('Sign up again from the newsletter form to get a new link.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Confirm', exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeHidden();
   await page.waitForLoadState('networkidle');
   expect(requests.filter((request) => request.method() !== 'GET')).toEqual([]);
 });
@@ -230,8 +232,10 @@ test('a malformed newsletter link posts nothing and points to a fresh sign-up', 
 for (const width of [320, 390]) {
   test(`email-preference states fit ${width}px without horizontal scrolling`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
+    await stub(page, '/api/newsletter/confirmations', [{ status: 200, json: { status: 'confirmed' } }]);
     for (const path of [newsletterLink, withdrawalLink, 'email-preferences/']) {
       await open(page, path);
+      if (path === newsletterLink) await expect(page.getByRole('heading', { level: 1 })).toHaveText('Email confirmed');
       await expectNoHorizontalOverflow(page, `${path} at ${width}px`);
     }
     await page.getByLabel('Email').fill('x');

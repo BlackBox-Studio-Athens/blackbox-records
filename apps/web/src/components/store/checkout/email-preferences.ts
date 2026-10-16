@@ -10,9 +10,9 @@ export const EMAIL_PREFERENCES_SUPPORT_ADDRESS = 'orders@blackboxrecordsathens.c
 
 export const EMAIL_PREFERENCES_COPY = {
   newsletter: {
-    title: 'Confirm newsletter request',
-    intro: 'Confirm that this address asked for BlackBox Records release, distro and event updates.',
-    submit: 'Confirm',
+    title: 'Newsletter confirmation',
+    intro: 'Confirming your email address…',
+    submit: 'Try again',
   },
   withdrawal: {
     title: 'Availability alerts',
@@ -119,7 +119,7 @@ export async function requestWithdrawalLink(
 
 /**
  * Wires the standalone email-preferences document. The capability fragment is read into memory and removed from the
- * address bar before anything else runs; nothing is posted until a button is pressed.
+ * address bar before anything else runs. Newsletter links confirm on arrival; alert withdrawal stays explicit.
  */
 export function mountEmailPreferences(doc: Document = document): void {
   const link = readEmailPreferencesFragment(doc.location.hash);
@@ -144,7 +144,7 @@ export function mountEmailPreferences(doc: Document = document): void {
   if (link.token) {
     intro.textContent = copy.intro;
     submit.textContent = copy.submit;
-    submit.hidden = false;
+    submit.hidden = link.action === 'newsletter';
   } else if (arrivedWithoutLink) {
     intro.hidden = true;
   } else {
@@ -191,6 +191,11 @@ export function mountEmailPreferences(doc: Document = document): void {
     const result =
       link.action === 'newsletter' ? await confirmNewsletter(link.token) : await withdrawAlerts(link.token);
     busy(submit, false);
+    if (link.action === 'newsletter') {
+      title.textContent = result.tone === 'status' ? 'Email confirmed' : 'Unable to confirm';
+      intro.hidden = true;
+      submit.hidden = result.final;
+    }
     // Hide the control before focusing the result so focus never lands on a dead button.
     if (result.final) submit.hidden = true;
     show('action', result).focus();
@@ -221,4 +226,5 @@ export function mountEmailPreferences(doc: Document = document): void {
     event.preventDefault();
     void recover();
   });
+  if (link.action === 'newsletter' && link.token) void act();
 }

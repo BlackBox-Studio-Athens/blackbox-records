@@ -17,6 +17,8 @@
 
 ## 4. Separate acceptance
 
+- [ ] 4.4 Owner correction, 16 October 2026: remove the second newsletter confirmation, automatically POST after fragment removal and render truthful success/error states; verify focused unit/browser checks, merge main and release the verified candidate to PRD. Alert withdrawal stays explicit.
+
 - [x] 4.0 Close audit gaps found on 14 October 2026: truthful signup/alert success copy, one consent label on every surface (`blackbox-newsletter-v1` = "I agree to receive BlackBox Records release, distro, and event updates. I can unsubscribe anytime."), `availability-alert-form` consent source, case-insensitive confirmation cooldown and withdrawal notice in the alert fine print; verify focused backend/web tests and the shell-islands and availability-alerts browser specs.
 
 - [ ] 4.1 Claude Desktop implements the email-preferences page and truthful form copy after required preview approval; verify browser, accessibility and player continuity checks.

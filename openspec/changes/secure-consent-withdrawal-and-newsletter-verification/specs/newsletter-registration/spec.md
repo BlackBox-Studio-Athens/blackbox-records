@@ -72,8 +72,9 @@ The system SHALL acknowledge successful embedded newsletter requests in the exis
 #### Scenario: Dedicated success route is considered
 
 - **WHEN** the mailbox link opens the dedicated email-preferences route
-- **THEN** no consent mutation occurs on a GET or automatically on page load
-- **AND** the visitor explicitly confirms through a POST
+- **THEN** the page removes the capability fragment and automatically confirms through the existing POST without another confirmation button
+- **AND** GET requests never mutate consent, and success is displayed only after the POST succeeds
+- **AND** malformed, expired, used and unavailable links show truthful errors; only a connection failure offers a manual retry
 - **AND** embedded homepage/about forms retain in-context acknowledgement.
 
 ## ADDED Requirements
