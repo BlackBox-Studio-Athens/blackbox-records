@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import type { Page } from 'playwright/test';
 import {
   expect,
@@ -47,9 +50,11 @@ test('Home video fixture requires the UAT build marker @phone', async ({ page })
 });
 
 // Exercise the shipped component and real media without changing accepted Local catalog content.
-async function mountFilmChapter(page: Page) {
+async function mountFilmChapter(page: Page, source?: string) {
   await waitForIsland(page, 'StorePreorderShowcase');
-  await page.evaluate(async () => {
+  // A discrete event completes React's pending hydration before the fixture unmounts this root.
+  await page.locator('#home-preorders-title').dispatchEvent('click');
+  await page.evaluate(async (backgroundVideoUrl) => {
     const island = document.querySelector<HTMLElement>('astro-island[component-url*="StorePreorderShowcase"]')!;
     const { default: Component } = await import(island.getAttribute('component-url')!);
     const { default: render } = await import(island.getAttribute('renderer-url')!);
@@ -79,7 +84,7 @@ async function mountFilmChapter(page: Page) {
                 id: 'MOA5YZDOR6A',
                 title: 'Local film',
                 posterUrl,
-                backgroundVideoUrl: film.dataset.portraitSrc,
+                backgroundVideoUrl: backgroundVideoUrl ?? film.dataset.portraitSrc + '?preorder-fixture=1',
               },
             ],
           },
@@ -88,7 +93,7 @@ async function mountFilmChapter(page: Page) {
       {},
       { client: 'only' },
     );
-  });
+  }, source);
   const video = page.locator('#preorders video');
   await expect(video).toHaveCount(1);
   await video.scrollIntoViewIfNeeded();
@@ -149,7 +154,77 @@ test('preorder film starts and resumes without reloading its source @phone', asy
   await advancing();
 });
 
+test('preorder film preserves pause rules while a cold source is delayed @phone', async ({ page }) => {
+  const bytes = readFileSync('apps/web/src/pages/_assets/home-hero/home-hero-intro-portrait.mp4');
+  let release = () => {};
+  const ready = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let requested = false;
+  // WebKit media requests bypass page.route; delay a real Local response in every engine.
+  const server = createServer(async (_request, response) => {
+    requested = true;
+    await ready;
+    if (!response.destroyed)
+      response
+        .writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': bytes.length, Connection: 'close' })
+        .end(bytes);
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    await page.goto('./');
+    const video = await mountFilmChapter(page, `http://127.0.0.1:${(server.address() as AddressInfo).port}/film.mp4`);
+    await expect.poll(() => requested).toBe(true);
+    await expect(video).not.toHaveAttribute('data-playing', 'true');
+    await page.evaluate(() => document.documentElement.setAttribute('data-music-player-session', ''));
+    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+    await video.dispatchEvent('canplay');
+    expect(await video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+    await page.evaluate(() => document.documentElement.removeAttribute('data-music-player-session'));
+    release();
+    await expect(video).toHaveAttribute('data-playing', 'true');
+    const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
+    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.currentTime)).not.toBe(time);
+  } finally {
+    release();
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
 for (const rejection of ['AbortError', 'NotAllowedError']) {
+  test(`preorder film ignores a late ${rejection} while already playing @phone`, async ({ page }) => {
+    await page.addInitScript((name) => {
+      const play = HTMLMediaElement.prototype.play;
+      let first = true;
+      HTMLMediaElement.prototype.play = function () {
+        const result = play.call(this);
+        if (!first || !this.matches('.home-preorders__film')) return result;
+        first = false;
+        // Hold the first result to exercise an old startup result arriving after real playback.
+        return result.then(
+          () =>
+            new Promise<void>((_resolve, reject) => {
+              Object.assign(window, { rejectFilmStart: () => reject(new DOMException('Late startup fixture', name)) });
+            }),
+        );
+      };
+    }, rejection);
+    await page.goto('./');
+    const video = await mountFilmChapter(page);
+    await expect(video).toHaveAttribute('data-playing', 'true');
+    await expect
+      .poll(() => page.evaluate(() => typeof (window as unknown as { rejectFilmStart: unknown }).rejectFilmStart))
+      .toBe('function');
+    await page.evaluate(async () => {
+      (window as unknown as { rejectFilmStart: () => void }).rejectFilmStart();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    await expect(video).toHaveAttribute('data-playing', 'true');
+    const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
+    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.currentTime)).not.toBe(time);
+  });
+
   test(`preorder film handles ${rejection} at startup @phone`, async ({ page }) => {
     await page.addInitScript((name) => {
       const play = HTMLMediaElement.prototype.play;

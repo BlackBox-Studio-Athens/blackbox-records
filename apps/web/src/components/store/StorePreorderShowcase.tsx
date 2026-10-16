@@ -124,6 +124,7 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
     return () => observer.disconnect();
   }, [items]);
 
+  const ambientAllowed = automaticMotion && documentVisible && !playerSession && watching === null;
   if (items.length === 0) return null;
   return (
     <section ref={section} id="preorders" className="home-preorders" aria-labelledby="home-preorders-title">
@@ -136,12 +137,10 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
           key={item.slug}
           item={item}
           next={items[index + 1]}
-          active={watching === null && activeScene === item.slug}
+          active={ambientAllowed && activeScene === item.slug}
           playing={watching === item.slug}
           onWatch={onWatch}
-          automaticMotion={automaticMotion}
           desktopVideo={desktopVideo}
-          documentVisible={documentVisible}
           playerSession={playerSession}
         />
       ))}
@@ -158,9 +157,7 @@ function PreorderChapter({
   active,
   playing,
   onWatch,
-  automaticMotion,
   desktopVideo,
-  documentVisible,
   playerSession,
 }: {
   item: ShowcaseItem;
@@ -168,9 +165,7 @@ function PreorderChapter({
   active: boolean;
   playing: boolean;
   onWatch: (slug: string | null) => void;
-  automaticMotion: boolean;
   desktopVideo: boolean;
-  documentVisible: boolean;
   playerSession: boolean;
 }) {
   const [ambientPlaying, setAmbientPlaying] = useState(false);
@@ -198,16 +193,7 @@ function PreorderChapter({
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
   const background = (desktopVideo && clip?.backgroundVideoDesktopUrl) || clip?.backgroundVideoUrl;
-  const shouldPlay = Boolean(
-    background &&
-    active &&
-    documentVisible &&
-    !playerSession &&
-    !playing &&
-    !failed &&
-    !autoplayBlocked &&
-    automaticMotion,
-  );
+  const shouldPlay = Boolean(background && active && !failed && !autoplayBlocked);
   const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
   const shipping = estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed';
   const badges = preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() });
@@ -239,7 +225,7 @@ function PreorderChapter({
 
   useEffect(() => {
     const media = video.current;
-    if (!media || !shouldPlay || !clip || !background) {
+    if (!media || !shouldPlay || !background) {
       media?.pause();
       return;
     }
@@ -247,8 +233,7 @@ function PreorderChapter({
     const play = () => {
       if (cancelled || !media.paused) return;
       void media.play().catch((error: unknown) => {
-        if (cancelled) return;
-        setAmbientPlaying(false);
+        if (cancelled || !media.paused) return;
         // A source load or pause can interrupt startup without refusing autoplay.
         if (error instanceof DOMException && error.name === 'NotAllowedError') setAutoplayBlocked(true);
       });

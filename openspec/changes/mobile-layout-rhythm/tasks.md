@@ -25,6 +25,8 @@ No production domain, projection, schema or module-boundary change is required. 
 
 - [x] 2.2 Owner's 17 October AFK request: provide a UAT-only video-test link that mirrors PRD's two film chapters with existing prepared test footage, without CMS access or catalog/stock changes. Require the UAT build marker plus explicit query opt-in, keep sample purchases inside the UAT Store, verify real SSR/hydrated playback and refresh in Firefox/Chromium, and push/verify UAT for owner testing. PRD and normal UAT content remain unchanged. Release 609 and hosted evidence are recorded in validation.md; physical Firefox Android remains the owner's acceptance check.
 
+- [ ] 2.3 Owner's 17 October Ponytail follow-up: simplify ambient playback with one shared eligibility rule and media-event-owned presentation; ignore obsolete rejection results after playback starts. Preserve source retention, native loading/readiness recovery, all automatic pause/preference/failure rules, explicit Watch/history/focus, truthful commerce facts and the UAT-only fixture. Verify cold load, late results and existing browser/player cases in Chromium, Firefox and WebKit, then complete the already-authorized local commit and UAT release. The owner reports first-load success in physical Firefox Android on release 609; first-load stills in the Codex mobile app browser remain an unproven device-specific observation.
+
 ## 3. Shared verification and UAT release
 
 - [x] 3.1 Run pnpm test for each touched owner, including web-editorial, web-artists, web-store, app-shell, web-layouts, web-pages and storefront-catalog; reuse only matching-source test evidence.

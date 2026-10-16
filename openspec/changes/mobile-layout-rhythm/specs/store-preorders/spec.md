@@ -123,6 +123,18 @@ The Home pre-order film SHALL omit all manual background motion controls on ever
 - **THEN** it pauses while retaining its selected source, and resumes when eligible without restarting resource selection
 - **AND** initial reduced-motion and data-saving visits do not attach or request the film source.
 
+#### Scenario: A cold film loads before playback can begin
+
+- **WHEN** an eligible film has not buffered enough data to play
+- **THEN** it loads its selected source and keeps the poster until media readiness starts muted playback
+- **AND** native startup can initiate loading even when preload hints are ignored; readiness can resume interrupted startup without a timer or polling.
+
+#### Scenario: A delayed startup result arrives after playback
+
+- **WHEN** an older play request rejects after the film has started playing
+- **THEN** the rejection cannot conceal or pause current playback
+- **AND** media playing, pause and error events own the shown film state; genuine refusal while paused keeps the poster without recurring retries.
+
 #### Scenario: Owner tests PRD-style film chapters on UAT without CMS access
 
 - **WHEN** a UAT-marked build receives Home with `preorder-video-test=1`
