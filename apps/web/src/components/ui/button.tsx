@@ -38,10 +38,10 @@ const buttonVariantClasses = cva('site-button', {
     { variant: ['default', 'outline', 'inverse'], size: 'default', class: 'min-w-28' },
     { variant: 'ghost', size: 'default', class: 'px-1.5' },
     {
-      // Text actions stay in the reading face: Inter 13/500 in a 44px row, faint underline at rest, Slate on hover.
+      // Text actions stay in the reading face: Inter 13/500 in a 44px row, faint underline at rest, amber on hover.
       variant: 'link',
       class:
-        'min-h-11 min-w-0 border-0 bg-transparent px-0 pt-0 font-sans text-[13px] font-medium tracking-normal text-muted-foreground normal-case underline decoration-foreground/30 decoration-1 underline-offset-4 hover:text-foreground hover:decoration-slate-500 active:text-control-muted-pressed',
+        'min-h-11 min-w-0 border-0 bg-transparent px-0 pt-0 font-sans text-[13px] font-medium tracking-normal text-muted-foreground normal-case underline decoration-foreground/30 decoration-1 underline-offset-4 hover:text-foreground hover:decoration-amber-500 active:text-control-muted-pressed',
     },
   ],
   defaultVariants: {

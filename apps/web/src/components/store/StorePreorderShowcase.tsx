@@ -331,7 +331,7 @@ function PreorderChapter({
       </span>
     </button>
   );
-  // Format and price share one row; the Sea Pre-order and the Slate Listen share the next, half each.
+  // Format and price share one row; the Sea Pre-order and the amber Listen share the next, half each.
   const purchase = (
     <div className="home-preorders__purchase">
       <div className="home-preorders__price-block">

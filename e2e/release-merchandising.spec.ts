@@ -432,7 +432,7 @@ for (const width of [320, 390, 1280]) {
     await expect(lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true })).toBeVisible();
     const status = lead.locator('[data-release-badges] .store-item-card__release-status');
     await expect(status).toHaveCSS('font-family', /Inter/);
-    await expect(status).toHaveCSS('color', 'rgb(179, 179, 179)');
+    await expect(status).toHaveCSS('color', 'rgb(171, 181, 184)');
     await expect(status).toHaveCSS('border-width', '0px');
     await expect(lead.locator('.preorder-badge')).toHaveCSS('color', 'rgb(76, 169, 153)');
     const [badges, formats] = await Promise.all([

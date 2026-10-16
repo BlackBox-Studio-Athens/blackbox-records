@@ -316,7 +316,7 @@ export default function ServicesInquiryForm({
           <Input
             {...fieldError('name')}
             autoComplete="name"
-            className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
+            className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
             disabled={isSubmitting}
             maxLength={100}
             name="name"
@@ -331,7 +331,7 @@ export default function ServicesInquiryForm({
           <Input
             {...fieldError('email')}
             autoComplete="email"
-            className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
+            className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
             disabled={isSubmitting}
             maxLength={254}
             name="email"
@@ -344,7 +344,7 @@ export default function ServicesInquiryForm({
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Band / Project</span>
           <Input
-            className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
+            className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
             disabled={isSubmitting}
             maxLength={160}
             name="band-or-project"
@@ -358,7 +358,7 @@ export default function ServicesInquiryForm({
           </label>
           <select
             {...fieldError('service')}
-            className="services-inquiry-form__select h-11 w-full rounded-none border border-[#2b2b2b] bg-[#111111] px-3 text-base md:text-[0.95rem] text-foreground outline-none"
+            className="services-inquiry-form__select h-11 w-full rounded-none border border-flint-850 bg-[#111111] px-3 text-base md:text-[0.95rem] text-foreground outline-none"
             disabled={isSubmitting}
             id="services-inquiry-service"
             name="service"
@@ -385,7 +385,7 @@ export default function ServicesInquiryForm({
         <span className="services-inquiry-form__label">{detailPrompt.label}</span>
         <Input
           aria-describedby="services-inquiry-details-hint"
-          className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
+          className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
           disabled={isSubmitting}
           id="services-inquiry-details"
           maxLength={300}
@@ -393,7 +393,7 @@ export default function ServicesInquiryForm({
           value={serviceDetails}
           onChange={(event) => dispatch({ field: 'serviceDetails', type: 'change', value: event.target.value })}
         />
-        <span className="text-sm leading-6 text-[#b3b3b3]" id="services-inquiry-details-hint">
+        <span className="text-sm leading-6 text-muted-foreground" id="services-inquiry-details-hint">
           {detailPrompt.hint}
         </span>
       </label>
@@ -402,7 +402,7 @@ export default function ServicesInquiryForm({
         <span className="services-inquiry-form__label">Message</span>
         <Textarea
           {...fieldError('message')}
-          className="services-inquiry-form__textarea rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
+          className="services-inquiry-form__textarea rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
           disabled={isSubmitting}
           maxLength={2000}
           name="message"

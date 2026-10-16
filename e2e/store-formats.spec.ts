@@ -290,7 +290,7 @@ test('Store listing cards lead with format, a Veneer title and a promoted artist
       await expect(credit).toHaveCSS('font-family', /Inter/);
       // The artist credit is promoted: Inter medium in ink, 16px on phones and 17px on desktop, with a muted by.
       await expect(credit).toHaveCSS('font-weight', '500');
-      await expect(credit).toHaveCSS('color', 'rgb(179, 179, 179)');
+      await expect(credit).toHaveCSS('color', 'rgb(171, 181, 184)');
       await expect(name).toHaveCSS('font-family', /Inter/);
       await expect(name).toHaveCSS('font-weight', '500');
       await expect(name).toHaveCSS('color', 'rgb(245, 245, 245)');
@@ -697,12 +697,14 @@ test('phone Store shows the whole first card row in the first viewport @phone', 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/');
   await waitForShell(page);
-  // Hidden H1, category links, the compact purchase note, then Search and Filter: no visible header or side pane.
+  // Hidden H1, category links, then Search and Filter, with no visible header or side pane; the note follows the grid.
   await expect(page.getByRole('heading', { level: 1, name: 'All', exact: true })).toHaveClass(/sr-only/);
-  await expect(page.getByText(/^Shipping calculated in your cart/)).toBeVisible();
+  const note = page.getByText(/^Shipping calculated in your cart/);
+  await expect(note).toBeVisible();
   const first = page.locator('.store-item-card--listing').first();
   const box = (await first.boundingBox())!;
-  // Measured 298 with the purchase note above the grid (was 674): artwork and identity of the first row fit.
-  expect(box.y).toBeLessThan(320);
+  expect((await note.boundingBox())!.y).toBeGreaterThan(box.y + box.height);
+  // Measured 243 with the purchase note below the grid (298 with it above, 674 before): the first row fits.
+  expect(box.y).toBeLessThan(260);
   expect((await first.locator('h2').boundingBox())!.y).toBeLessThan(844);
 });

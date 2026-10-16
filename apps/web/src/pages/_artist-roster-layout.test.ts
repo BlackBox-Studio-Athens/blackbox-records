@@ -52,7 +52,7 @@ describe('Artists roster layout', () => {
     expect(rule('.artist-release-stat__value')).toMatch(/font-size:\s*1\.75rem/);
     expect(rule('.artist-roster-card__context')).toMatch(/flex-wrap:\s*wrap/);
     expect(rule('.artist-latest-teaser__label')).toContain('var(--flint-500)');
-    expect(rule('.artist-latest-teaser__meta')).toContain('var(--slate-500)');
+    expect(rule('.artist-latest-teaser__meta')).toContain('var(--amber-500)');
   });
 
   it('fills the artist detail frame with a blurred copy of the photo', () => {

@@ -5,7 +5,9 @@ for (const category of [
   { path: 'store/blackbox-releases/', label: 'BlackBox Releases' },
   { path: 'store/distro/', label: 'Distro' },
 ]) {
-  test(`international shipping strip precedes ${category.label} Store results`, async ({ page }) => {
+  test(`international shipping strip follows ${category.label} Store results and the purchase note`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 1080 });
     await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
     await page.goto(category.path);
@@ -23,11 +25,15 @@ for (const category of [
         const results = document.querySelector('[data-store-search-root], [data-distro-search-root]')!;
         return {
           afterCategories: Boolean(categories.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING),
-          beforeResults: Boolean(element.compareDocumentPosition(results) & Node.DOCUMENT_POSITION_FOLLOWING),
+          afterResults: Boolean(results.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING),
+          afterNote: Boolean(
+            document.querySelector('.store-purchase-note')!.compareDocumentPosition(element) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
           outsideFilters: element.closest('[data-store-search-root], [data-distro-search-root]') === null,
         };
       }),
-    ).toEqual({ afterCategories: true, beforeResults: true, outsideFilters: true });
+    ).toEqual({ afterCategories: true, afterResults: true, afterNote: true, outsideFilters: true });
     const email = notice.getByRole('link', { name: 'Email us to order', exact: true });
     const mailto = new URL((await email.getAttribute('href'))!);
     expect(mailto.protocol).toBe('mailto:');

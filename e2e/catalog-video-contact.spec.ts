@@ -83,7 +83,7 @@ for (const width of [320, 390, 430, 768, 1440]) {
     const delivery = footer.getByRole('link', { name: 'Delivery information', exact: true });
     await expect(delivery).toBeVisible();
     if (width < 768) {
-      // Three columns of 44px rows keep sitemap order without an isolated last row. The messages carry the measured
+      // Four columns of two 44px rows keep sitemap order without an isolated last row. The messages carry the measured
       // geometry and computed styles, so a failure on the production build shows what differs from the dev server.
       const layout = await footer.locator('.site-footer-nav-list').evaluate((list) => {
         const style = (element: Element) => {
@@ -116,7 +116,7 @@ for (const width of [320, 390, 430, 768, 1440]) {
           Math.round(box.height),
         ]),
       });
-      expect(layout.columns.split(' ').length, diagnostics).toBe(3);
+      expect(layout.columns.split(' ').length, diagnostics).toBe(4);
       const deliveryBox = boxes.find((box) => box.text === 'Delivery information')!;
       expect(
         boxes.some((box) => Math.abs(box.y - deliveryBox.y) < 1 && Math.abs(box.x - deliveryBox.x) > 1),

@@ -37,11 +37,11 @@ test('phone rows swipe card by card, and their dots follow after shell navigatio
   expect(cardCount).toBeGreaterThan(1);
   await expect(dots).toHaveCount(cardCount);
   await expect(dots.first()).toHaveAttribute('aria-current', 'true');
-  // Each dot is a 44px target; the current one shows a small Slate mark.
+  // Each dot is a 44px target; the current one shows a small amber mark.
   const dotBox = await dots.first().boundingBox();
   expect([dotBox?.width, dotBox?.height]).toEqual([44, 44]);
   expect(await dots.first().evaluate((dot) => getComputedStyle(dot, '::after').backgroundColor)).toBe(
-    'rgb(102, 162, 210)',
+    'rgb(227, 181, 108)',
   );
   await expect(page.getByRole('group', { name: 'News position' })).toBeVisible();
 

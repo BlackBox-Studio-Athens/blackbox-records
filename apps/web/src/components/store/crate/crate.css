@@ -33,7 +33,7 @@
 /* Grid and Crate read as one 44px switch; the pressed side takes the ink face. */
 .store-crate-view-switch {
   gap: 0.25rem;
-  border: 1px solid #333333;
+  border: 1px solid var(--flint-700);
   padding: 3px;
   background: var(--secondary);
   transition:
@@ -291,7 +291,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #2b2b2b;
+  border: 1px solid var(--flint-850);
   background: var(--secondary);
   transform-origin: 50% 100%;
   pointer-events: none;
@@ -323,7 +323,7 @@
 .store-crate-rack {
   position: absolute;
   box-sizing: border-box;
-  border: 1px solid #2b2b2b;
+  border: 1px solid var(--flint-850);
   border-bottom: 0;
   background: #111111;
 }
@@ -364,7 +364,7 @@
   gap: 0.5em;
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid #2b2b2b;
+  border: 1px solid var(--flint-850);
   background: #161616;
   color: #e8e8e8;
   font-family: var(--font-display-ui);

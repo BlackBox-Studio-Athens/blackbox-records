@@ -62,7 +62,7 @@ for (const width of [1440, 390]) {
       'color',
       'rgb(228, 112, 106)',
     );
-    await expect(notice.locator(':scope > span')).toHaveCSS('color', 'rgb(179, 179, 179)');
+    await expect(notice.locator(':scope > span')).toHaveCSS('color', 'rgb(171, 181, 184)');
     await expect(email).toHaveCSS('color', 'rgb(245, 245, 245)');
     await expect(email.locator('svg')).toHaveCount(0);
 

@@ -564,9 +564,9 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
         (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
       );
     }
-    // Compact at the 390px reference (about 290px, 417px before); enlarged text grows it instead of clipping.
+    // Compact at the 390px reference (198px measured; 301 and 417 before); enlarged text grows it instead of clipping.
     const height = (await footer.boundingBox())?.height ?? 0;
-    if (width === 390 && textScale === 1) expect(height).toBeLessThanOrEqual(320);
+    if (width === 390 && textScale === 1) expect(height).toBeLessThanOrEqual(200);
     await expect(footer.getByText('All rights reserved.')).toBeVisible();
     // The top rule stops at the page gutters (1rem, so it follows enlarged text).
     const rule = await footer.locator('.site-footer-top').evaluate((element) => {

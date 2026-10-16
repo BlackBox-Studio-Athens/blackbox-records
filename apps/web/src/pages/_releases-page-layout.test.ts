@@ -101,7 +101,7 @@ describe('Releases page layout', () => {
       /releases-latest-feature|releases-page-layout--single-column|repeat\(12, minmax\(0, 1fr\)\)/,
     );
     expect(css).toMatch(
-      /#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);[^}]*border-top:\s*1px solid #2b2b2b/s,
+      /#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);[^}]*border-top:\s*1px solid var\(--flint-850\)/s,
     );
     expect(css).toMatch(
       /@media \(width >= 40rem\)\s*{\s*#releases-merchandising \.releases-feature\s*{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);[^}]*column-gap:\s*1\.5rem/s,
@@ -111,7 +111,7 @@ describe('Releases page layout', () => {
     );
     // The catalog shares the featured gap, so from 40rem its tiles equal the featured halves.
     expect(page).toContain('class="releases-catalog-grid grid sm:grid-cols-2 lg:grid-cols-3"');
-    expect(css).toMatch(/#releases-merchandising \.releases-catalog-grid\s*{[^}]*gap:\s*2rem 1\.5rem/s);
+    expect(css).toMatch(/#releases-merchandising \.releases-catalog-grid\s*{[^}]*gap:\s*1\.5rem;/s);
     expect(css).toMatch(
       /#releases-merchandising \.releases-cover__image\s*{[^}]*object-fit:\s*contain;[^}]*transform:\s*none/s,
     );

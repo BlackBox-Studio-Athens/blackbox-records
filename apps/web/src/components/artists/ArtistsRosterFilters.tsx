@@ -97,7 +97,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
             // Results filter live, so Return only closes a phone keyboard that covers them.
             if (event.key === 'Enter') event.currentTarget.blur();
           }}
-          className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-base md:text-[0.95rem]"
+          className="artists-roster-filters-panel__input h-11 rounded-none border-flint-850 bg-[#111111] pr-3 pl-10 text-base md:text-[0.95rem]"
           aria-label="Search artists"
         />
       </div>
@@ -114,7 +114,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
       </div>
 
       {visibleCount === 0 ? (
-        <div className="artists-roster-empty-state rounded-none border border-[#2b2b2b] bg-[#141414] px-5 py-6">
+        <div className="artists-roster-empty-state rounded-none border border-flint-850 bg-[#141414] px-5 py-6">
           <p className="text-sm tracking-[0.04em] text-muted-foreground">No artists match the current filters.</p>
         </div>
       ) : null}

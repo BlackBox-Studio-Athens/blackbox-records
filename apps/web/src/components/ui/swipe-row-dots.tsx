@@ -94,7 +94,7 @@ export function SwipeRowDots({ className, count, label, rowId }: SwipeRowDotsPro
             'grid size-11 cursor-pointer place-items-center outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-foreground',
             'after:block after:h-2 after:rounded-full after:transition-all after:duration-500 after:ease-in-out motion-reduce:after:transition-none',
             index === current
-              ? 'after:w-4 after:bg-slate-500'
+              ? 'after:w-4 after:bg-amber-500'
               : 'after:w-2 after:bg-muted-foreground after:opacity-30 hover:after:opacity-50',
           )}
         />

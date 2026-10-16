@@ -34,16 +34,6 @@ const catalogId = 'all-store-catalog';
     {/* One visually hidden H1, as on Releases: the category links and the toolbar orient the shopper. */}
     <h1 class="sr-only">{category.heading}</h1>
     <StoreCategoryNavigation activeCategoryId={category.id} categories={discoverableCategories} />
-    <p class="layout-container store-purchase-note">
-      {priceDisclosure}{' '}
-      <a class="underline" href={createProjectRelativeUrl('/terms/')}>
-        Delivery rates and terms
-      </a>
-      .
-    </p>
-    <div class="layout-container has-[aside]:mb-4 md:has-[aside]:mb-6">
-      <InternationalOrderNotice variant="strip" client:load />
-    </div>
     {category.id === 'distro' ? (
       <slot name="distro" />
     ) : (
@@ -98,5 +88,16 @@ const catalogId = 'all-store-catalog';
         </section>
       </div>
     )}
+    {/* The purchase note and the international strip follow the grid on every viewport; both precede checkout. */}
+    <p class="layout-container store-purchase-note">
+      {priceDisclosure}{' '}
+      <a class="underline" href={createProjectRelativeUrl('/terms/')}>
+        Delivery rates and terms
+      </a>
+      .
+    </p>
+    <div class="layout-container">
+      <InternationalOrderNotice variant="strip" client:load />
+    </div>
   </div>
 </SiteLayout>

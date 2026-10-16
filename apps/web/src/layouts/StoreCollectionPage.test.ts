@@ -41,6 +41,11 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).not.toContain('InternalPageHero');
     expect(collectionPageSource).not.toContain('store-category-description');
     expect(collectionPageSource).toContain('data-store-result-total');
+    // The purchase note and the international strip follow the grid (and the Distro slot) on every viewport.
+    const note = collectionPageSource.indexOf('class="layout-container store-purchase-note"');
+    expect(note).toBeGreaterThan(collectionPageSource.indexOf('<slot name="distro" />'));
+    expect(note).toBeGreaterThan(collectionPageSource.indexOf('</StoreCrate>'));
+    expect(collectionPageSource.indexOf('<InternationalOrderNotice variant="strip"')).toBeGreaterThan(note);
     expect(collectionPageSource).toContain('aria-label="Browse Distro formats"');
     expect(collectionPageSource).toContain('createStoreDistroGroupHeadingId(group.groupName)');
     expect(collectionPageSource).toContain("selectStoreCollectionEntries(entries, 'distro')");

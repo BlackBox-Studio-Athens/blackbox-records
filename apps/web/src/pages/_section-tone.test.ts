@@ -7,7 +7,7 @@ function read(path: string) {
 }
 
 // Accent roles are fixed (openspec/changes/accent-and-button-system): Sea for pre-order, Flint for buying and labels,
-// Slate for Listen and small marks. No surface declares a section tone that recolours the controls inside it.
+// amber for Listen and small marks. No surface declares a section tone that recolours the controls inside it.
 describe('section tone declarations', () => {
   it.each([
     '../layouts/StoreCollectionPage.astro',

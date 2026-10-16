@@ -17,7 +17,7 @@ function rule(selector: string) {
   return globalCss.slice(start, globalCss.indexOf('}', start));
 }
 
-// openspec/changes/accent-and-button-system: Sea means pre-order, Flint means buy and labels, Slate means Listen.
+// openspec/changes/accent-and-button-system: Sea means pre-order, Flint means buy and labels, amber means Listen.
 describe('accent roles', () => {
   it('defines the three accent scales', () => {
     for (const token of [
@@ -28,17 +28,19 @@ describe('accent roles', () => {
       '--flint-700: #626e72',
       '--flint-500: #889396',
       '--flint-300: #c1cbce',
-      '--slate-700: #366e99',
-      '--slate-500: #66a2d2',
-      '--slate-300: #91c4ee',
+      '--amber-500: #e3b56c',
+      '--amber-300: #f0d7b0',
+      '--amber-surface: rgba(227, 181, 108, 0.16)',
     ]) {
       expect(globalCss).toContain(token);
     }
   });
 
-  it('retires Store Blood, Services Rose and the Listen amber', () => {
+  it('retires Store Blood, Services Rose and Slate', () => {
     for (const css of publicCss) {
-      expect(css).not.toMatch(/--store-accent|--services-accent|#922f3f|#cf6b80|#b4465a|#8a495a|#e3b56c/i);
+      expect(css).not.toMatch(
+        /--store-accent|--services-accent|#922f3f|#cf6b80|#b4465a|#8a495a|#366e99|#66a2d2|#91c4ee/i,
+      );
     }
   });
 
@@ -56,11 +58,31 @@ describe('accent roles', () => {
     expect(publicCss[2]).not.toMatch(/background[^;]*var\(--error-/);
   });
 
-  it('makes Listen the Slate control', () => {
+  it('makes Listen the amber control', () => {
+    expect(globalCss).toContain('--listen-bars: var(--amber-500);');
+    expect(globalCss).toContain('--listen-edge: var(--amber-500);');
+    expect(globalCss).toContain('--listen-text: var(--amber-300);');
+    expect(globalCss).not.toContain('--listen-accent');
     const listen = rule('.music-listen-trigger');
-    expect(listen).toContain('--music-listen-border-color: var(--slate-700);');
+    expect(listen).toContain('--music-listen-border-color: var(--listen-edge);');
     expect(listen).toContain('color: var(--foreground);');
-    expect(rule('.music-equalizer')).toContain('color: var(--slate-500);');
+    expect(rule('.music-equalizer')).toContain('color: var(--listen-bars);');
+  });
+
+  it('tints the informational neutrals with Flint at their former lightness', () => {
+    for (const token of [
+      '--flint-400: #abb5b8',
+      '--flint-850: #262c2e',
+      '--flint-900: #212729',
+      '--flint-950: #1a2022',
+      '--muted-foreground: var(--flint-400)',
+      '--border: var(--flint-900)',
+      '--control-edge: var(--flint-850)',
+      '--control-edge-quiet: var(--flint-950)',
+    ]) {
+      expect(globalCss).toContain(token);
+    }
+    for (const css of publicCss) expect(css).not.toMatch(/#2b2b2b|#b3b3b3/i);
   });
 
   it('shows status as plain lines, with pre-order in Sea', () => {

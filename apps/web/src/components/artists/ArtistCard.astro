@@ -32,11 +32,11 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
   </a>
   <Card
     className={cn(
-      'catalog-tile-card relative rounded-none border-[#2b2b2b] bg-[#141414] shadow-none',
+      'catalog-tile-card relative rounded-none border-flint-850 bg-[#141414] shadow-none',
       isRosterDetailedVariant ? 'artist-roster-card' : 'catalog-tile-card--featured-roster',
     )}
   >
-    <div class="artist-photo-frame aspect-[3/4] border-b border-[#2b2b2b]">
+    <div class="artist-photo-frame aspect-[3/4] border-b border-flint-850">
       <Image
         src={artist.data.image}
         alt=""
@@ -54,7 +54,7 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
         width={largestImageWidth(artist.data.image, artistCardImageWidths)}
         sizes={
           isRosterDetailedVariant
-            ? '(min-width: 1280px) 31vw, (min-width: 768px) 48vw, 100vw'
+            ? '(min-width: 1280px) 31vw, (min-width: 360px) 48vw, 100vw'
             : '(min-width: 80rem) 31vw, (min-width: 40rem) 48vw, 74vw'
         }
         loading={imageLoading}
@@ -65,7 +65,7 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
     <CardContent
       className={
         isRosterDetailedVariant
-          ? 'artist-roster-card__body space-y-4 p-5 pt-5'
+          ? 'artist-roster-card__body p-3 sm:space-y-4 sm:p-5'
           : 'home-featured-roster-card__content p-5 sm:p-6'
       }
     >
@@ -83,7 +83,7 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
               data-content-path="bio"
             />
           )}
-          <div class="artist-roster-card__context border-t border-[#2b2b2b] pt-4">
+          <div class="artist-roster-card__context border-t border-flint-850 pt-2.5 sm:pt-4">
             <div class="artist-release-stat">
               <span class="artist-release-stat__value">{releaseCount}</span>
               <span class="artist-release-stat__label">Releases</span>
