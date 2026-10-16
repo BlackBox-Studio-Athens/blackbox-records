@@ -422,18 +422,7 @@ function PreorderChapter({
                   if (!document.documentElement.hasAttribute('data-music-player-session')) onWatch(item.slug);
                 }}
               >
-                {/* Phones show only this icon in the film band's corner; wider screens show only the label. */}
-                <svg
-                  className="home-preorders__watch-icon"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path d="m8 5 11 7-11 7Z" />
-                </svg>
-                <span className="home-preorders__watch-label">Watch full video</span>
+                Watch full video
               </button>
             </div>
             <div className="home-preorders__clips" role="group" aria-label="Official video">

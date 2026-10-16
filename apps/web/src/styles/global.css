@@ -6900,14 +6900,13 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* Phones below 48rem: the film strip (owner's choice, 16 October 2026). A clean 16:9 band (the film, else its poster or
-   the artist photograph) carries only the Watch full video icon in its lower right corner. Under it a 96px sleeve sits
-   beside the artist, title and the format and price row, then the status line, the Pre-order + Listen pair, the
-   shipping and international lines and the terms link. A release with neither video nor photograph leads with a 160px
+/* Phones below 48rem: the film strip (owner's choice, 16 October 2026). Nothing renders over the 16:9 band (the film,
+   else its poster or the artist photograph). Under it a 96px sleeve sits beside the artist, title and the format and
+   price row, then the status line, the Pre-order + Listen pair, the shipping and international lines, and one row with
+   the terms link and, when a full video exists, Watch full video as a text link. A release with neither video nor photograph leads with a 160px
    sleeve. Each chapter is one grid: its wrappers use display: contents, so film and photo chapters share it. The facts
    and summary stay on the Store Item page. */
 @media (width >= 48rem) {
-  .home-preorders__watch-icon,
   .home-preorders__buy .home-preorders__shipping {
     display: none;
   }
@@ -7058,28 +7057,23 @@ body.is-app-shell-overlay-open {
     margin: 0.25rem 0 0;
   }
 
-  /* The only thing over the film: a 44px icon in the band's lower right corner, named Watch full video. */
+  /* Watch full video follows the terms link in its row, styled like it, so keyboard order matches the eye. */
   .home-preorders .home-preorders__film-tools .site-button {
-    z-index: 1;
-    grid-area: media;
-    align-self: end;
+    grid-area: links;
     justify-self: end;
     flex: none;
-    width: 2.75rem;
     min-width: 0;
-    height: 2.75rem;
     min-height: 2.75rem;
-    margin: 0 0.5rem 0.5rem 0;
+    margin: 0.25rem 0 0;
+    border: 0;
+    background: transparent;
     padding: 0;
-  }
-
-  .home-preorders .home-preorders__watch-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    color: var(--muted-foreground);
+    font: 400 0.8125rem/1.5 var(--font-sans);
+    letter-spacing: 0;
+    text-transform: none;
+    text-decoration: underline;
+    text-underline-offset: 4px;
   }
 
   .home-preorders .home-preorders__media-note {

@@ -298,6 +298,25 @@ test('Home photo chapter on a phone is a clean photo band with the identity and 
   expect(sleeve.y).toBeGreaterThanOrEqual(band.y + band.height);
   expect(sleeve.width).toBeCloseTo(96, 0);
   await expect(release.getByRole('button', { name: 'Watch full video' })).toHaveCount(0);
+  // Nothing renders over the band: no visible control or text box overlaps it.
+  const overBand = await release.evaluate((article, box) => {
+    const photo = article.querySelector('.home-preorders__band-photo');
+    return [...article.querySelectorAll('*')]
+      .filter((element) => element !== photo && !element.contains(photo) && element.getClientRects().length)
+      .filter((element) => getComputedStyle(element).visibility !== 'hidden')
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          rect.top < box.y + box.height - 1 &&
+          rect.bottom > box.y + 1 &&
+          rect.left < box.x + box.width - 1 &&
+          rect.right > box.x + 1
+        );
+      })
+      .map((element) => element.className);
+  }, band);
+  expect(overBand).toEqual([]);
   await expect(release.locator('dl')).toBeHidden();
   const pair = await Promise.all(
     [

@@ -260,8 +260,9 @@ describe('StorePreorderShowcase presentation', () => {
   });
 });
 
-// Phones (global.css, below 48rem) lay each chapter out as a film strip from this markup: the band first, the one
-// Watch control in it, then the identity and purchase; a release with neither video nor photograph leads with its sleeve.
+// Phones (global.css, below 48rem) lay each chapter out as a film strip from this markup: the band first with nothing
+// over it, then the identity, the purchase and a row with the terms link and Watch full video; a release with neither
+// video nor photograph leads with its sleeve.
 describe('StorePreorderShowcase phone film strip', () => {
   const native = {
     ...clip,
@@ -276,16 +277,20 @@ describe('StorePreorderShowcase phone film strip', () => {
     ],
   };
 
-  it('puts the film band before the title and its only control, an icon named Watch full video, in the band tools', () => {
+  it('puts the film band before the title with no control in it, and Watch full video after the terms link', () => {
     const html = renderToStaticMarkup(render([item(native)]));
     expect(html).toContain('home-preorders__chapter home-preorders__chapter--video');
-    expect(html.indexOf('data-preorder-ambient=')).toBeLessThan(html.indexOf('<h3'));
-    expect(html).toMatch(/<video[^>]*class="home-preorders__film"/);
+    const media = html.slice(html.indexOf('data-preorder-ambient='), html.indexOf('home-preorders__film-shade'));
+    expect(media).toMatch(/<video[^>]*class="home-preorders__film"/);
+    expect(media).not.toMatch(/<(?:button|a)\b/);
+    expect(html.indexOf('home-preorders__film-shade')).toBeLessThan(html.indexOf('<h3'));
     const tools = html.slice(html.indexOf('home-preorders__film-tools'), html.indexOf('home-preorders__clips'));
     expect(tools.match(/<button/g)).toHaveLength(1);
-    expect(tools).toMatch(/aria-controls="preorder-clip-vinyl-video" aria-expanded="false"/);
-    expect(tools).toMatch(/<svg class="home-preorders__watch-icon"[^>]*aria-hidden="true"/);
-    expect(tools).toContain('<span class="home-preorders__watch-label">Watch full video</span>');
+    expect(tools).toMatch(
+      /aria-controls="preorder-clip-vinyl-video" aria-expanded="false"[^>]*>Watch full video<\/button>/,
+    );
+    // Phones show the two in one row in this order, so keyboard order follows the visual order.
+    expect(html.indexOf('Pre-order &amp; delivery information')).toBeLessThan(html.indexOf('Watch full video'));
   });
 
   it('shows a clip without a film as its poster, else the artist photograph, with Watch', () => {
