@@ -3035,6 +3035,27 @@ body {
     opacity: 1;
   }
 
+  /* Film-capable visits (the head script's html[data-hero-film]) never paint the still before the film: the dark
+     ground waits up to 2.5 s, then the still shows; [data-still] shows it at once when the film cannot play. Once
+     the film has faded in, the still stays hidden so an orientation swap never flashes it. */
+  html[data-hero-film]
+    .homepage-hero-section:not([data-still])
+    .homepage-hero-section__media-image:has(+ .homepage-hero-section__film) {
+    animation: homepage-hero-still-wait 2.5s;
+  }
+
+  .homepage-hero-section__media-image:has(+ .homepage-hero-section__film[data-ready]) {
+    visibility: hidden;
+    transition: visibility 0s 0.6s;
+  }
+
+  @keyframes homepage-hero-still-wait {
+    0%,
+    100% {
+      visibility: hidden;
+    }
+  }
+
   /* Sideways phones: the default padding made the hero taller than the screen; the 52px CTA keeps its size and the
      space above and below it tightens instead. */
   @media (orientation: landscape) and (max-height: 480px) {

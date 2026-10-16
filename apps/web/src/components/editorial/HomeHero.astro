@@ -31,18 +31,32 @@ const heroImageWidths = [900, 1400];
       quality={editorialImageQuality}
     />
     {film && (
-      <video
-        class="homepage-hero-section__film"
-        data-home-hero-film
-        data-portrait-src={film.portraitUrl}
-        data-landscape-src={film.landscapeUrl}
-        muted
-        playsinline
-        loop
-        preload="none"
-        disablepictureinpicture
-        disableRemotePlayback
-      />
+      <>
+        <video
+          class="homepage-hero-section__film"
+          data-home-hero-film
+          data-portrait-src={film.portraitUrl}
+          data-landscape-src={film.landscapeUrl}
+          muted
+          playsinline
+          loop
+          autoplay
+          preload="auto"
+          disablepictureinpicture
+          disableRemotePlayback
+        />
+        <script is:inline>
+          // The film starts loading while the page parses; <home-hero-film> takes over after hydration.
+          (() => {
+            const video = document.currentScript.previousElementSibling;
+            if (!document.documentElement.hasAttribute('data-hero-film')) return;
+            video.onplaying = () => video.setAttribute('data-ready', '');
+            video.src = matchMedia('(orientation: portrait)').matches
+              ? video.dataset.portraitSrc
+              : video.dataset.landscapeSrc;
+          })();
+        </script>
+      </>
     )}
   </div>
   <div class="homepage-hero-section__shade-layer" aria-hidden="true"></div>

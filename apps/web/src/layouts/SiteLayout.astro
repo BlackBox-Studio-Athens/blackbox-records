@@ -115,6 +115,11 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       />
     )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      // Before first paint: the Home hero keeps its still unpainted until the film plays (shell visits to Home too).
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !navigator.connection?.saveData)
+        document.documentElement.setAttribute('data-hero-film', '');
+    </script>
     <meta name="theme-color" content={siteThemeColor} />
     <meta name="color-scheme" content="dark" />
     <title>{htmlTitle}</title>

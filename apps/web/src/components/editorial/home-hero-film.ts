@@ -1,8 +1,6 @@
 export type HomeHeroFilmConditions = {
   /** No reduced-motion preference and no data saving. */
   automaticMotion: boolean;
-  /** The hero image has loaded, so the film never competes with it for bandwidth. */
-  stillLoaded: boolean;
   inView: boolean;
   documentVisible: boolean;
   musicSession: boolean;
@@ -13,7 +11,6 @@ export type HomeHeroFilmConditions = {
 export function shouldPlayHomeHeroFilm(conditions: HomeHeroFilmConditions) {
   return (
     conditions.automaticMotion &&
-    conditions.stillLoaded &&
     conditions.inView &&
     conditions.documentVisible &&
     !conditions.musicSession &&
@@ -34,12 +31,13 @@ const ElementBase = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement;
 
 /**
  * Plays the hero's silent loop under the approved Home motion rules: muted and inline, only while the hero is in view
- * and the tab is visible, and paused during a shell music session. Reduced motion and data saving keep the still. The
- * element sits in the hero; the film is in its aria-hidden media layer.
+ * and the tab is visible, and paused during a shell music session. Reduced motion and data saving keep the still. On a
+ * full load HomeHero's inline script has already started the film; shell visits get their source here. The section's
+ * [data-still] reveals the still when the film cannot play. The film is in the hero's aria-hidden media layer.
  */
 class HomeHeroFilm extends ElementBase {
+  #section: HTMLElement | null = null;
   #video: HTMLVideoElement | null = null;
-  #still: HTMLImageElement | null = null;
   #observer: IntersectionObserver | null = null;
   #session: MutationObserver | null = null;
   #reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -55,17 +53,20 @@ class HomeHeroFilm extends ElementBase {
   };
 
   connectedCallback() {
-    const section = this.closest('section');
-    this.#video = section?.querySelector<HTMLVideoElement>('video[data-home-hero-film]') ?? null;
-    this.#still = section?.querySelector<HTMLImageElement>('.homepage-hero-section__media-image') ?? null;
-    if (!section || !this.#video) return;
+    const section = (this.#section = this.closest('section'));
+    const video = (this.#video = section?.querySelector<HTMLVideoElement>('video[data-home-hero-film]') ?? null);
+    if (!section || !video) return;
 
-    // A shell snapshot can return the markup as this element last left it.
-    this.#video.removeAttribute('data-ready');
-    this.#video.muted = true;
-    this.#video.addEventListener('playing', this.#ready);
-    this.#video.addEventListener('error', this.#fail);
-    this.#still?.addEventListener('load', this.#sync);
+    // A shell snapshot can return the markup as this element last left it; a full load can already show the film.
+    section.removeAttribute('data-still');
+    if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) video.removeAttribute('data-ready');
+    video.muted = true;
+    video.addEventListener('playing', this.#ready);
+    video.addEventListener('error', this.#fail);
+    if (video.error) this.#unavailable = true;
+    // Measured now so a visible hero plays without waiting for the observer's first callback.
+    const { top, bottom, height } = section.getBoundingClientRect();
+    this.#inView = Math.min(bottom, innerHeight) - Math.max(top, 0) >= height * HOME_HERO_FILM_VISIBLE_RATIO;
     this.#observer = new IntersectionObserver(
       ([entry]) => {
         this.#inView = Boolean(entry && entry.intersectionRatio >= HOME_HERO_FILM_VISIBLE_RATIO);
@@ -93,7 +94,6 @@ class HomeHeroFilm extends ElementBase {
     this.#inView = false;
     this.#video?.removeEventListener('playing', this.#ready);
     this.#video?.removeEventListener('error', this.#fail);
-    this.#still?.removeEventListener('load', this.#sync);
     document.removeEventListener('visibilitychange', this.#sync);
     this.#reducedMotion.removeEventListener('change', this.#sync);
     this.#portrait.removeEventListener('change', this.#sync);
@@ -110,10 +110,13 @@ class HomeHeroFilm extends ElementBase {
 
     // A paused film keeps its frame; without automatic motion or a playable source the still returns.
     if (!automaticMotion || this.#unavailable) video.removeAttribute('data-ready');
+    // Without a film frame to keep, a music session shows the still instead of the dark ground.
+    if (!automaticMotion || this.#unavailable || (musicSession && !video.hasAttribute('data-ready'))) {
+      this.#section?.setAttribute('data-still', '');
+    }
 
     const play = shouldPlayHomeHeroFilm({
       automaticMotion,
-      stillLoaded: this.#still?.complete ?? true,
       inView: this.#inView,
       documentVisible,
       musicSession,
@@ -125,11 +128,8 @@ class HomeHeroFilm extends ElementBase {
     }
     const source = this.#portrait.matches ? video.dataset.portraitSrc : video.dataset.landscapeSrc;
     if (!source) return;
-    if (video.getAttribute('src') !== source) {
-      // An orientation change swaps the crop; the still covers the gap until the new file plays.
-      video.removeAttribute('data-ready');
-      video.src = source;
-    }
+    // An orientation change swaps the crop; [data-ready] stays, so the still never shows in between.
+    if (video.getAttribute('src') !== source) video.src = source;
     void video.play().catch((error: unknown) => {
       // A pause racing a pending play rejects with AbortError; only a refused autoplay leaves the still for good.
       if (error instanceof DOMException && error.name === 'NotAllowedError') this.#fail();
