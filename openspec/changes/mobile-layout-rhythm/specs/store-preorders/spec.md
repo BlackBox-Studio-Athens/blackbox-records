@@ -110,3 +110,15 @@ The Home pre-order film SHALL omit all manual background motion controls on ever
 
 - **WHEN** reduced motion or data saving applies, or ambient playback fails
 - **THEN** the complete poster remains available without a text background-play control
+
+#### Scenario: Eligible film startup is interrupted
+
+- **WHEN** an eligible muted film's initial play is interrupted while its media loads
+- **THEN** media readiness can resume playback without requiring a tab visibility change or a page refresh
+- **AND** an interruption is not treated as a permanent autoplay refusal; genuine autoplay refusal or a failed source retains the poster without a retry loop.
+
+#### Scenario: Loaded film is temporarily paused
+
+- **WHEN** an already activated film becomes ineligible because it is off screen, the document is hidden, a music session exists or the full video is open
+- **THEN** it pauses while retaining its selected source, and resumes when eligible without restarting resource selection
+- **AND** initial reduced-motion and data-saving visits do not attach or request the film source.

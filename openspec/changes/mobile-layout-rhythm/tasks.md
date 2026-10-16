@@ -1,6 +1,6 @@
 # Tasks
 
-All boxes track future implementation. Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests; no dedicated Codex implementation is needed. This planning pass does not stage, commit or push.
+Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests except for the owner's task-scoped Codex playback override in task 2.1. The owner subsequently authorized a local commit after checks; no push or deployment is authorized.
 
 Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1.4, 1.6 and 1.8 remain open: the supplied renders establish amber presentation, but do not directly verify the specified Releases height/gaps, Artists height/columns/reflow or footer height/layout/wrapping/player-clearance checks. Task 3.4 remains open because the supplied evidence does not establish the combined F1–F22 review, Graphify refresh or complete source/screenshots/acceptance-row record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
 
@@ -17,9 +17,11 @@ Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1
 - [x] 1.9 Update DESIGN.md's page frame, Home chapter/motion, Releases hierarchy/price/summary, artist counter and footer rules; verify it agrees with C1/C2 and retains production copy/content ownership.
 - [x] 1.10 Update and run e2e/release-merchandising.spec.ts and e2e/routes.spec.ts for the rebuilt cards, hidden headings, containment, control sizes and overflow; retain existing detail/purchase/artist navigation assertions.
 
-## 2. Codex (non-UI)
+## 2. Codex (task-scoped playback override)
 
-None. No data, projection, schema, tooling or module-boundary implementation is required by the revised scope. Existing contracts are covered by shared verification; UI tests and documentation belong to Claude.
+- [x] 2.1 Under the owner's task-scoped 16 October 2026 override (Claude quota exhausted), repair preorder film startup/recovery without changing the approved layout. Preserve the selected source across ordinary pauses, retry interrupted startup when media becomes ready, retain genuine autoplay-refusal fallback and preference gates, and verify real advancing playback plus scroll/visibility/music/full-video recovery in Chromium and Firefox at phone width. Record the physical Firefox Android acceptance limit. Local evidence is in validation.md; physical Android and hosted acceptance remain unverified.
+
+No data, projection, schema, tooling or module-boundary implementation is required. The owner explicitly assigned the playback repair and its UI tests to Codex for this task only; other UI ownership stays with Claude.
 
 ## 3. Shared verification and UAT release
 

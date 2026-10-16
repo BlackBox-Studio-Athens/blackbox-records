@@ -1,10 +1,186 @@
 import type { Page } from 'playwright/test';
-import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 // The e2e build renders Home from e2e/preorder-projection.json: Disintegration vinyl is an open pre-order at €28.00.
-// Its accepted content gives a photo chapter; video and ambience behavior is covered by the component tests.
+// Its accepted content gives a photo chapter; the media cases below mount a local film fixture through its renderer.
 const storePath = /\/store\/disintegration-black-vinyl-lp\/$/;
 const acceptedImage = /\/_image\?|\/_astro\/|\/media\/content\/[a-f\d]{64}$/;
+
+// Exercise the shipped component and real media without changing accepted Local catalog content.
+async function mountFilmChapter(page: Page) {
+  await waitForIsland(page, 'StorePreorderShowcase');
+  await page.evaluate(async () => {
+    const island = document.querySelector<HTMLElement>('astro-island[component-url*="StorePreorderShowcase"]')!;
+    const { default: Component } = await import(island.getAttribute('component-url')!);
+    const { default: render } = await import(island.getAttribute('renderer-url')!);
+    const film = document.querySelector<HTMLVideoElement>('video[data-home-hero-film]')!;
+    const coverUrl = island.querySelector<HTMLImageElement>('.home-preorders__sleeve')!.src;
+    const posterUrl = island.querySelector<HTMLImageElement>('.home-preorders__band-photo')!.src;
+    const mount = document.createElement('div');
+    mount.setAttribute('ssr', '');
+    island.dispatchEvent(new CustomEvent('astro:unmount'));
+    island.replaceWith(mount);
+    render(mount)(
+      Component,
+      {
+        storeUrl: '/blackbox-records/store/',
+        items: [
+          {
+            slug: 'playback-fixture',
+            title: 'Playback fixture',
+            artist: 'Local band',
+            option: 'Vinyl',
+            coverUrl,
+            storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+            displayPrice: '€28.00',
+            shipEstimate: null,
+            clips: [
+              {
+                id: 'MOA5YZDOR6A',
+                title: 'Local film',
+                posterUrl,
+                backgroundVideoUrl: film.dataset.portraitSrc,
+              },
+            ],
+          },
+        ],
+      },
+      {},
+      { client: 'only' },
+    );
+  });
+  const video = page.locator('#preorders video');
+  await expect(video).toHaveCount(1);
+  await video.scrollIntoViewIfNeeded();
+  return video;
+}
+
+test('preorder film starts and resumes without reloading its source @phone', async ({ page }) => {
+  await page.route('https://www.youtube-nocookie.com/embed/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>Local full-video fixture</p>' }),
+  );
+  await page.goto('./');
+  const video = await mountFilmChapter(page);
+  const advancing = async () => {
+    await expect(video).toHaveAttribute('data-playing', 'true');
+    const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
+    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.currentTime)).not.toBe(time);
+    expect(await video.evaluate((media: HTMLVideoElement) => media.muted)).toBe(true);
+  };
+  await advancing();
+  const source = await video.getAttribute('src');
+  await page.evaluate(() => Object.assign(window, { filmLoads: 0 }));
+  await video.evaluate((media) =>
+    media.addEventListener('loadstart', () => {
+      Object.assign(window, { filmLoads: (window as unknown as { filmLoads: number }).filmLoads + 1 });
+    }),
+  );
+  for (const pause of ['scroll', 'visibility', 'music']) {
+    if (pause === 'scroll') await page.evaluate(() => window.scrollTo(0, 0));
+    if (pause === 'visibility')
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+    if (pause === 'music')
+      await page.evaluate(() => document.documentElement.setAttribute('data-music-player-session', ''));
+    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+    await expect(video).toHaveAttribute('src', source!);
+    if (pause === 'scroll') await video.scrollIntoViewIfNeeded();
+    if (pause === 'visibility')
+      await page.evaluate(() => {
+        delete (document as unknown as { hidden?: boolean }).hidden;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+    if (pause === 'music')
+      await page.evaluate(() => document.documentElement.removeAttribute('data-music-player-session'));
+    await advancing();
+  }
+  await page.getByRole('button', { name: 'Watch full video', exact: true }).click();
+  await expect(page.locator('#preorders iframe')).toHaveCount(1);
+  await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+  await expect(video).toHaveAttribute('src', source!);
+  await page.getByRole('button', { name: 'Close video', exact: true }).click();
+  await expect(page.locator('#preorders iframe')).toHaveCount(0);
+  await advancing();
+  expect(await page.evaluate(() => (window as unknown as { filmLoads: number }).filmLoads)).toBe(0);
+  await page.reload();
+  await mountFilmChapter(page);
+  await advancing();
+});
+
+for (const rejection of ['AbortError', 'NotAllowedError']) {
+  test(`preorder film handles ${rejection} at startup @phone`, async ({ page }) => {
+    await page.addInitScript((name) => {
+      const play = HTMLMediaElement.prototype.play;
+      let calls = 0;
+      HTMLMediaElement.prototype.play = function () {
+        if (this.matches('.home-preorders__film')) {
+          Object.assign(window, { filmPlayCalls: ++calls });
+          if (calls === 1 || name === 'NotAllowedError') {
+            // An interrupted native play has already started resource selection/loading.
+            if (name === 'AbortError') {
+              this.preload = 'auto';
+              this.load();
+            }
+            return Promise.reject(new DOMException('Startup fixture', name));
+          }
+        }
+        return play.call(this);
+      };
+    }, rejection);
+    await page.goto('./');
+    const video = await mountFilmChapter(page);
+    if (rejection === 'AbortError') {
+      await expect(video).toHaveAttribute('data-playing', 'true');
+      const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
+      await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.currentTime)).not.toBe(time);
+    } else {
+      await expect
+        .poll(() => page.evaluate(() => (window as unknown as { filmPlayCalls: number }).filmPlayCalls))
+        .toBe(1);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await video.scrollIntoViewIfNeeded();
+      await video.dispatchEvent('canplay');
+      expect(await video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+      await expect(video).not.toHaveAttribute('data-playing', 'true');
+      await expect(page.locator('#preorders .home-preorders__video-poster')).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Pre-order', exact: true })).toBeVisible();
+      expect(await page.evaluate(() => (window as unknown as { filmPlayCalls: number }).filmPlayCalls)).toBe(1);
+    }
+  });
+}
+
+for (const preference of ['reduced-motion', 'save-data']) {
+  test(`preorder film never loads with ${preference} @phone`, async ({ page }) => {
+    if (preference === 'reduced-motion') await page.emulateMedia({ reducedMotion: 'reduce' });
+    else
+      await page.addInitScript(() =>
+        Object.defineProperty(navigator, 'connection', {
+          configurable: true,
+          value: Object.assign(new EventTarget(), { saveData: true }),
+        }),
+      );
+    await page.goto('./');
+    const video = await mountFilmChapter(page);
+    await video.dispatchEvent('canplay');
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      document.documentElement.setAttribute('data-music-player-session', '');
+    });
+    await page.evaluate(() => document.documentElement.removeAttribute('data-music-player-session'));
+    await expect(video).not.toHaveAttribute('src', /.+/);
+    expect(await video.evaluate((media: HTMLVideoElement) => media.paused)).toBe(true);
+  });
+}
 
 // Home's pre-order state is in its HTML: no listing, candidate or video provider request decides it.
 function watchShowcase(page: Page) {

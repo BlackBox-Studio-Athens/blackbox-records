@@ -239,19 +239,28 @@ function PreorderChapter({
 
   useEffect(() => {
     const media = video.current;
-    if (!media || !shouldPlay || !clip) {
+    if (!media || !shouldPlay || !clip || !background) {
       media?.pause();
       return;
     }
     let cancelled = false;
-    void media.play().catch(() => {
-      if (!cancelled) {
+    const play = () => {
+      if (cancelled || !media.paused) return;
+      void media.play().catch((error: unknown) => {
+        if (cancelled) return;
         setAmbientPlaying(false);
-        setAutoplayBlocked(true);
-      }
-    });
+        // A source load or pause can interrupt startup without refusing autoplay.
+        if (error instanceof DOMException && error.name === 'NotAllowedError') setAutoplayBlocked(true);
+      });
+    };
+    media.muted = true;
+    // Keep the loaded source across ordinary pauses; only eligible scenes start a download.
+    media.addEventListener('canplay', play);
+    if (media.getAttribute('src') !== background) media.src = background;
+    play();
     return () => {
       cancelled = true;
+      media.removeEventListener('canplay', play);
       media.pause();
     };
   }, [shouldPlay, clip?.id, background]);
@@ -377,7 +386,6 @@ function PreorderChapter({
                   key={clip.id}
                   ref={video}
                   className="home-preorders__film"
-                  src={shouldPlay ? background : undefined}
                   muted
                   playsInline
                   loop
