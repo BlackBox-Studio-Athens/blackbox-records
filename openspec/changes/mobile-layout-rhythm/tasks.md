@@ -21,7 +21,9 @@ Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1
 
 - [x] 2.1 Under the owner's task-scoped 16 October 2026 override (Claude quota exhausted), repair preorder film startup/recovery without changing the approved layout. Preserve the selected source across ordinary pauses, retry interrupted startup when media becomes ready, retain genuine autoplay-refusal fallback and preference gates, and verify real advancing playback plus scroll/visibility/music/full-video recovery in Chromium and Firefox at phone width. Record the physical Firefox Android acceptance limit. Local evidence is in validation.md; physical Android and hosted acceptance remain unverified.
 
-No data, projection, schema, tooling or module-boundary implementation is required. The owner explicitly assigned the playback repair and its UI tests to Codex for this task only; other UI ownership stays with Claude.
+No production domain, projection, schema or module-boundary change is required. Task 2.2 adds sample presentation data only in the opt-in UAT view. The owner explicitly assigned this playback work and its UI tests to Codex; other UI ownership stays with Claude.
+
+- [ ] 2.2 Owner's 17 October AFK request: provide a UAT-only video-test link that mirrors PRD's two film chapters with existing prepared test footage, without CMS access or catalog/stock changes. Require the UAT build marker plus explicit query opt-in, keep sample purchases inside the UAT Store, verify real SSR/hydrated playback and refresh in Firefox/Chromium, and push/verify UAT for owner testing. PRD and normal UAT content remain unchanged.
 
 ## 3. Shared verification and UAT release
 
