@@ -23,8 +23,7 @@ const homeContent = await getHomeContent();
 const homeNews = homeContent.news;
 const homeArtists = homeContent.artists;
 // Pre-orders are in this HTML or absent; nothing is inserted after paint.
-const videoTest =
-  import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true' && Astro.url.searchParams.get('preorder-video-test') === '1';
+const videoTest = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 const preorderItems = videoTest
   ? (await import('./_preorder-video-test')).preorderVideoTestItems()
   : await preorderShowcaseItems(readOpenPreorders());

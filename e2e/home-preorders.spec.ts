@@ -16,14 +16,14 @@ import {
 const storePath = /\/store\/disintegration-black-vinyl-lp\/$/;
 const acceptedImage = /\/_image\?|\/_astro\/|\/media\/content\/[a-f\d]{64}$/;
 
-test('Home video fixture requires the UAT build marker @phone', async ({ page }) => {
+test('Home defaults to sample films only with the UAT build marker @phone', async ({ page }) => {
   await page.route('https://images.blackboxrecordsathens.com/**', (route) =>
     route.fulfill({
       contentType: 'image/svg+xml',
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720"><rect width="720" height="720" fill="#141414"/></svg>',
     }),
   );
-  await page.goto('./?preorder-video-test=1');
+  await page.goto('./');
   await waitForShell(page);
   const note = page.getByText('Video playback test. Sample pre-order details; purchase links open the UAT Store.');
   if (process.env.SHOW_REVIEW_SITE_MARKER !== 'true') {

@@ -2,7 +2,7 @@
 
 ### Requirement: The home page presents current pre-orders
 
-The home page SHALL show a Pre-orders section after its existing introduction and above News only while the rendered open pre-order projection lists a label-release pre-order. The section SHALL be in the page's HTML response, never inserted after paint. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent. The explicitly selected, UAT-marked video-test view is the sole sample-data exception; it labels its details as samples and cannot activate selling or alter accepted content.
+The home page SHALL show a Pre-orders section after its existing introduction and above News only while the rendered open pre-order projection lists a label-release pre-order. The section SHALL be in the page's HTML response, never inserted after paint. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent. UAT-marked Home defaults to the two sample film chapters as its sole sample-data exception; it labels its details as samples and cannot activate selling or alter accepted content.
 
 #### Scenario: Pre-orders exist
 
@@ -137,6 +137,6 @@ The Home pre-order film SHALL omit all manual background motion controls on ever
 
 #### Scenario: Owner tests PRD-style film chapters on UAT without CMS access
 
-- **WHEN** a UAT-marked build receives Home with `preorder-video-test=1`
+- **WHEN** a UAT-marked build receives Home
 - **THEN** it renders the two PRD-style chapters with prepared test footage through the normal server markup and playback component, clearly labels the sample details and directs purchase links to the UAT Store
-- **AND** the fixture changes no accepted content, stock, prices or publication pointer; normal Home remains projection-driven, and builds without the UAT marker ignore the query.
+- **AND** no query switch is required; the fixture changes no accepted content, stock, prices or publication pointer, and builds without the UAT marker remain projection-driven.
