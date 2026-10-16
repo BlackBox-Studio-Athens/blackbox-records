@@ -1,6 +1,6 @@
 # Tasks
 
-Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests except for the owner's task-scoped Codex playback override in task 2.1. The owner subsequently authorized a local commit after checks; no push or deployment is authorized.
+Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests except for the owner's task-scoped Codex playback override in task 2.1. The owner subsequently authorized a local commit, a push to UAT and a UAT-only test-film publication. PRD remains outside this authorization.
 
 Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1.4, 1.6 and 1.8 remain open: the supplied renders establish amber presentation, but do not directly verify the specified Releases height/gaps, Artists height/columns/reflow or footer height/layout/wrapping/player-clearance checks. Task 3.4 remains open because the supplied evidence does not establish the combined F1–F22 review, Graphify refresh or complete source/screenshots/acceptance-row record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
 
