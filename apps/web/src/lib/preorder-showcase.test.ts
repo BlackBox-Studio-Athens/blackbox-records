@@ -152,7 +152,7 @@ describe('pre-order showcase candidates', () => {
     expect(home.indexOf('<HomeHero')).toBeLessThan(home.indexOf('<StorePreorderShowcase'));
     expect(home.indexOf('<StorePreorderShowcase')).toBeLessThan(home.indexOf('id="news"'));
     expect(home).toMatch(
-      /preorderItems\.length > 0 && \(\s*<StorePreorderShowcase client:idle items=\{preorderItems\}/,
+      /preorderItems\.length > 0 && \(\s*<StorePreorderShowcase\s+client:idle\s+items=\{preorderItems\}/,
     );
     expect(home).toContain("from '@/lib/open-preorders'");
     expect(existsSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url))).toBe(false);
