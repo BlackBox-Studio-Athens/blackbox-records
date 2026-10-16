@@ -80,3 +80,7 @@ Read-only release checks at approximately 16:29 UTC: PRD `/release.json` reports
 - The signed-in BlackBox Chrome successfully loaded both production Stats ranges. At their reads, each showed 68 visits on 16 October (7d total 68; 30d total 78). These existing-release figures preserve the earlier history, including ten older visits; the backfill is intentionally absent until separately authorized production release. Live acceptance of the added estimate remains unverified.
 
 The following evidence-only commit records this completed outcome without changing the UAT candidate. It receives the same scoped-formatting validation runner and strict OpenSpec check before push; its final receipt stays in the ignored capture directory to avoid self-referential evidence changes.
+
+## PRD release — 2026-10-16
+
+The owner authorized the release after the docs-only blocker `59eb5884` was reviewed. [Promotion 38941551219](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38941551219) succeeded; the apex Home, `/releases/`, `/releases/lotus/` and `/store/` return 200 with `X-Release-SHA` `6f0b1e77179b19778cf057d39a9f26f150c3df30`. `prd-launch.LAUNCH_ACCEPT_RELEASE` is that SHA. Production Staff Stats at 17:44 UTC report 123 visits on 16 October for both 7d and 30d, against 68 before the release: the 50-visit estimate plus later live visits. No other source or day changed.
