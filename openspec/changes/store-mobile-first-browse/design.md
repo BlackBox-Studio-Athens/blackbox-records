@@ -14,6 +14,8 @@ Sort control is out of scope; consider it only in a separately requested follow-
 
 ## Decisions
 
+The owner chose pre-redesign amber for Listen and small marks on 16 October 2026: --amber-500 #e3b56c for resting/hover edges, equalizer bars and small marks; --amber-300 #f0d7b0 for the In player label; --amber-surface rgba(227, 181, 108, 0.16) for focus rings, Listen hover and In player surfaces. --listen-bars and --listen-edge are var(--amber-500); --listen-text is var(--amber-300). The Flint neutral system also applies: 400 #abb5b8 muted text/inactive navigation, 850 #262c2e edges/borders, 900 #212729 border/input, 950 #1a2022 quiet edges, and 700 #626e72 Store search and Grid/Crate frames. Grounds, ink, Flint, Sea and restriction-only error red retain their values.
+
 ### Entry and toolbar
 
 Store retains one visually hidden H1: All on /store/, or the existing category name on other routes. Canonical metadata and category links remain. Remove the visible Store/category hero and desktop 208px pane.
@@ -44,12 +46,12 @@ Retain Crate's existing bin threshold, supported formats, explicit activation, g
 
 ### Card hierarchy and exact presentation
 
-Use C1's approved 16 October 2026 tokens: Sea #2d766a/#4ca999 only for pre-orders; Flint #626e72 purchase faces/edges, #4d595c hover/pressed faces, #889396 label text/selected chip edges/artist underlines, #c1cbce hover/form-error text and rgba(98,110,114,.16) surface; Slate #366e99/#66a2d2 for Listen. Flint's OKLCH hue 215 and chroma 0.012 to 0.016 keep it a cool gray within the monochrome page. Labels stay #f5f5f5 except neutral Show N items (#090909 on #e8e8e8); the white label on Flint 700 is 4.82:1, and Flint 500 text on #141414 is 5.84:1, darker than muted #b3b3b3. Focus is 2px ink at 2px, with a Slate input edge.
+Use C1's approved 16 October 2026 tokens: Sea #2d766a/#4ca999 only for pre-orders; Flint #626e72 purchase faces/edges, #4d595c hover/pressed faces, #889396 label text/selected chip edges/artist underlines, #c1cbce hover/form-error text and rgba(98,110,114,.16) surface; amber #e3b56c for Listen edges/bars and small marks, #f0d7b0 for the In player label, and rgba(227, 181, 108, 0.16) for focus/hover/session surfaces. Flint's OKLCH hue 215 and chroma 0.012 to 0.016 keep it a cool gray within the monochrome page. Labels stay #f5f5f5 except the #f0d7b0 In player status label and neutral Show N items (#090909 on #e8e8e8); the white label on Flint 700 is 4.82:1, and Flint 500 text on #141414 is 5.84:1, darker than muted Flint 400 #abb5b8. Focus is 2px ink at 2px, with an amber input edge.
 
 Error red (#bc4945 edges, #e4706a icons/text, rgba(188,73,69,.16) defined surface) is reserved for the non-Greek buyer's item page notice, Store strip, cart drawer and checkout card. Those notices keep their Charcoal faces; red never fills a control, and form validation uses Flint 300 beside Error.
 
 1. Complete square artwork with Listen at bottom-left. Phone Listen is 44×44, named “Listen to <title> by <artist>”; desktop is labelled from 112×44. In player keeps its source-qualified state. No source means no control.
-2. Format above title: plain Inter 13px/16px semibold capitals in ink, without a leading Slate mark.
+2. Format above title: plain Inter 13px/16px semibold capitals in ink, without a leading amber mark.
 3. Source-cased Veneer title 20px phone / 24px desktop in ink, retaining the item link.
 4. Artist immediately below: Inter medium 16px phone / 17px desktop, ink name, muted “by”, Flint underline for verified artist links.
 5. Plain Inter 13px/20px digital/pre-order lifecycle text: Digital out now muted; Pre-order and shipping Sea. Sold Out and Only N left use the Flint #626e72 edge and rgba(98,110,114,.16) surface; Coming Soon and Repressing keep their dashed neutral boxes.
@@ -57,9 +59,9 @@ Error red (#bc4945 edges, #e4706a icons/text, rgba(188,73,69,.16) defined surfac
 
 At 390px, 16px gutters leave 358px for two 171px cards and a 16px gap. At 1440px, retain the Store's 90rem maximum and 32px gutters; the approved desktop target is five 259.2px columns with 20px gaps. Reduce columns before identities or actions clip; one column remains available below 360px. D3p's isolated 271px card is a comparison frame, not the grid calculation.
 
-Keep “Shipping calculated in your cart...” above the grid as one compact line with its existing links and meaning. It remains above an empty state too. At narrower widths or enlarged text, allow wrapping instead of clipping or changing disclosure copy. Item, cart and checkout purchase information remains unchanged.
+Place “Shipping calculated in your cart...” and the international notice strip below the product grid on every category, including below an empty state, with existing links, copy and restriction meaning. At narrower widths or enlarged text, allow wrapping instead of clipping or changing disclosure copy. Item, cart and checkout purchase information remains unchanged.
 
-The earlier y=228/224 targets assumed the note was below results and are withdrawn. Measure the revised composition with the note present; the first row's artwork and identity must still be visible in the reference 390×844 first viewport. Card-height estimates are not fixed CSS heights. Long content and text zoom grow naturally.
+The 16 October round-2 Local reference places the first card at approximately y=243 at 390px and y=234 at 1440px with both notices below results. These supersede the earlier above-grid composition and y=298/270 measurements. The first row's artwork and identity must still be visible in the reference 390×844 first viewport. Positions and card-height estimates are not fixed CSS heights. Long content and text zoom grow naturally.
 
 ### Research backing and rejected patterns
 
@@ -76,8 +78,8 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | Item | Approved answer                                                                      | Owning change                    |
 | ---- | ------------------------------------------------------------------------------------ | -------------------------------- |
 | F1   | Remove Store Blood and Services Rose                                                 | C1                               |
-| F2   | Replace amber Listen edge, bars and session state with Slate                         | C1                               |
-| F3   | Keep Sea exclusively for pre-orders; add Flint and Slate                             | C1                               |
+| F2   | Use chosen amber for Listen edge, bars, session state and small marks                | C1                               |
+| F3   | Keep Sea exclusively for pre-orders; add Flint and amber                             | C1                               |
 | F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                     | C1                               |
 | F5   | Use named accents at rest within monochrome grounds                                  | C1                               |
 | F6   | Flint news tags and Read News inverse edge                                           | C1                               |
@@ -92,7 +94,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
 | F16  | Keep approved 16px phone gutter; remove double insets                                | C3                               |
 | F17  | Contain rules/media; header and hero film are the only bleed exceptions              | C3                               |
-| F18  | Compact phone footer, approximately 290px at 390px, with 44px tap rows               | C3                               |
+| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows               | C3                               |
 | F19  | Inline artist release counter                                                        | C3                               |
 | F20  | Release actions beside one another near cover; compact hierarchy                     | C1 pair contract; C3 composition |
 | F21  | Flint Buy keeps the format mark; context-specific label                              | C1; C2 Store placement           |
@@ -100,7 +102,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 
 ## Resolved decisions and follow-ups
 
-The orchestrator retained current catalogue ordering, Distro format destinations/counts, existing filter semantics and the above-grid purchase note. The Store format line loses the leading Slate mark; Buy keeps its icon. The visible header and desktop pane still go, and Listen still moves to the artwork corner.
+The orchestrator retained current catalogue ordering, Distro format destinations/counts, existing filter semantics and the below-grid purchase note and international strip. The Store format line loses the leading amber mark; Buy keeps its icon. The visible header and desktop pane still go, and Listen still moves to the artwork corner.
 
 Sort control is a separate follow-up, not an implementation task or a data prerequisite. There are no Codex data tasks and no dedicated tooling/boundary changes identified. Claude owns the remaining presentation work; verification stays shared.
 

@@ -58,7 +58,7 @@ Release cards SHALL keep independent purchase, listening and detail targets whil
 
 - **WHEN** a buyable featured or catalog card renders below 40rem
 - **THEN** its purchase and Listen controls sit 12px below the cover, each 44px high and half the row with a 16px gap
-- **AND** the filled Flint Buy or Sea Pre-order pairs with the Slate outline; missing listening data adds no placeholder control.
+- **AND** the filled Flint Buy or Sea Pre-order pairs with the amber outline; missing listening data adds no placeholder control.
 
 ### Requirement: Stacked twin rows reflow without content loss
 
@@ -74,6 +74,12 @@ The featured rows and the remaining catalog SHALL use intrinsic sizing for title
 
 - **WHEN** enlarged text or zoom wraps content
 - **THEN** rows and tiles grow intrinsically without overlap or clipping
+
+#### Scenario: Round-two phone spacing is compact
+
+- **WHEN** Releases renders at 390px with the round-2 reference content
+- **THEN** cards use smaller gaps and padding, with a supplied page-height comparison of approximately 2556px instead of 2748px
+- **AND** complete artwork, identity, status, disclosures and 44px actions remain intact without a fixed page height.
 
 #### Scenario: Preserved actions remain operable
 

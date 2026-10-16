@@ -33,7 +33,7 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 
 - **WHEN** focus reaches menu, cart, Listen or another public action
 - **THEN** the same ink ring remains visible against its ground
-- **AND** a field's Slate #66a2d2 focus edge supplements rather than replaces that ring.
+- **AND** a field's amber #e3b56c focus edge supplements rather than replaces that ring.
 
 #### Scenario: Touch device after a tap
 
@@ -62,12 +62,12 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 
 ### Requirement: Accent roles are fixed
 
-Public controls SHALL use Sea Green for pre-order purchases, Flint for ordinary Buy and Add to cart, Flint outlines for browse actions, Slate edges and bars for Listen, and neutral ink faces for hero and submission actions. Generic icon controls SHALL remain neutral. No section SHALL override these roles.
+Public controls SHALL use Sea Green for pre-order purchases, Flint for ordinary Buy and Add to cart, Flint outlines for browse actions, and neutral ink faces for hero and submission actions. Listen SHALL use the owner's chosen amber tokens defined in accent-colour-roles for edges, bars, In player text and focus/hover/session surfaces. Generic icon controls SHALL remain neutral. No section SHALL override these roles.
 
 #### Scenario: Purchase and browse controls render
 
 - **WHEN** Buy, Pre-order, Listen, Read News and View Full Roster render
-- **THEN** their respective treatments are Flint fill, Sea fill, Slate outline, Flint inverse outline and Flint inverse outline
+- **THEN** their respective treatments are Flint fill, Sea fill, amber outline, Flint inverse outline and Flint inverse outline
 - **AND** Buy retains its white format mark, Store cards say Buy and Releases say Buy vinyl, Buy CD or Buy cassette.
 
 #### Scenario: Neutral submission controls render
@@ -83,12 +83,12 @@ Two adjacent action controls SHALL form one filled primary and one outlined seco
 #### Scenario: Home pre-order actions render
 
 - **WHEN** a Home chapter offers Pre-order and Listen
-- **THEN** Sea-filled Pre-order and Slate-outlined Listen share the paired row.
+- **THEN** Sea-filled Pre-order and amber-outlined Listen share the paired row.
 
 #### Scenario: Release purchase actions render
 
 - **WHEN** a Release offers Buy vinyl, Buy CD, Buy cassette or Pre-order vinyl beside Listen
-- **THEN** one Flint or Sea purchase fill pairs with one Slate outline
+- **THEN** one Flint or Sea purchase fill pairs with one amber outline
 - **AND** neither action is duplicated elsewhere in the card.
 
 #### Scenario: Price is beside one purchase control

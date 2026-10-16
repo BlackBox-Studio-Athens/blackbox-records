@@ -152,16 +152,16 @@ Each populated Store category SHALL offer one multi-artist selection derived fro
 
 ### Requirement: Store collections show the first row on a phone first viewport
 
-Store collection entry SHALL put records in the first phone viewport by removing the visible introduction, side pane, outside format-chip rows and separate view bar. At 390×844 with the reference content, the first row's artwork and identity SHALL remain visible in the initial viewport with two cards and the compact purchase note above the grid. Required copy, targets and long-content reflow SHALL NOT be clipped to reach an obsolete position target.
+Store collection entry SHALL put records in the first phone viewport by removing the visible introduction, side pane, outside format-chip rows and separate view bar. At 390×844 with the reference content, the first row's artwork and identity SHALL remain visible in the initial viewport with two cards. The purchase note and international notice strip SHALL sit below the product grid on every category. Required copy, targets and long-content reflow SHALL NOT be clipped to reach a position target.
 
 #### Scenario: Shopper opens the Store on a phone
 
 - **WHEN** `/store/` loads at 390 × 844
 - **THEN** the first row's artwork and identity are visible within the first viewport
-- **AND** category navigation, Search, Filter and one result count remain available above it with the purchase note above the grid as one compact line, allowing natural wrapping for narrow or enlarged text.
+- **AND** category navigation, Search, Filter and one result count remain available above it; the reference first-card top is approximately 243px at 390px and 234px at 1440px, without enforcing fixed coordinates.
 
-#### Scenario: Collection purchase note remains before buying choices
+#### Scenario: Collection purchase information follows the results
 
 - **WHEN** a collection renders on a phone or desktop, including a zero-result state
-- **THEN** the existing Shipping calculated in your cart note and links remain above the grid or empty state in one compact line at the reference width
-- **AND** copy, targets and natural reflow are preserved; no below-grid duplicate is introduced.
+- **THEN** the existing Shipping calculated in your cart note and links and the international notice strip appear below the product grid or empty state on every category
+- **AND** their copy, restriction meaning, links, targets and natural reflow are preserved without an above-grid duplicate.

@@ -2,7 +2,7 @@
 
 ### Requirement: Ordinary buying actions share restrained purchase feedback
 
-Enabled ordinary Buy actions on Releases and Store SHALL use the shared Flint filled treatment, white labels and existing white format marks. They SHALL retain finite hover, visible keyboard focus, busy/disabled states and reduced-motion behavior without moving their footprint or surrounding artwork. Pre-order SHALL remain Sea and Listen SHALL remain Slate.
+Enabled ordinary Buy actions on Releases and Store SHALL use the shared Flint filled treatment, white labels and existing white format marks. They SHALL retain finite hover, visible keyboard focus, busy/disabled states and reduced-motion behavior without moving their footprint or surrounding artwork. Pre-order SHALL remain Sea and Listen SHALL remain amber.
 
 #### Scenario: Visitor hovers Buy
 

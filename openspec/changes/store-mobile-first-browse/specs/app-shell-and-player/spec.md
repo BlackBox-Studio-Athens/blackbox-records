@@ -2,7 +2,7 @@
 
 ### Requirement: Every listening action identifies the existing session
 
-The shell SHALL mark shared controls for the active editorial source as full-opacity disabled In player status with a white label, Slate #66a2d2 bars/edge and the translucent Slate surface across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Stop SHALL end the session on its first activation without confirmation. Status MUST NOT claim verified playback.
+The shell SHALL mark shared controls for the active editorial source as full-opacity disabled In player status with a white action label, amber #e3b56c bars/edge, #f0d7b0 In player status label and the translucent amber rgba(227, 181, 108, 0.16) surface across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Stop SHALL end the session on its first activation without confirmation. Status MUST NOT claim verified playback.
 
 #### Scenario: A session is minimized and its source appears elsewhere
 

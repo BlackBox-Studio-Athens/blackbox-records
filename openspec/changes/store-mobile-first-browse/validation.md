@@ -34,7 +34,7 @@ This is planning validation, not implementation or browser acceptance. The suppl
 
 ## Palette revision (16 October 2026)
 
-Mirrored the approved palette from DESIGN.md and the implementer's gray-notes.md into this change and its two active siblings. Flint replaces the superseded purchase/editorial accent throughout: 800 #4d595c hover/pressed, 700 #626e72 purchase faces and edges, 500 #889396 text and underlines, 300 #c1cbce hover/form-error text, and rgba(98,110,114,.16) surface. The cool gray uses OKLCH hue 215 and chroma 0.012 to 0.016; #f5f5f5 on Flint 700 is 4.82:1, and Flint 500 on #141414 is 5.84:1 and darker than muted #b3b3b3. Sea Green and Slate are unchanged.
+Mirrored the approved palette from DESIGN.md and the implementer's gray-notes.md into this change and its two active siblings. Flint replaces the superseded purchase/editorial accent throughout: 800 #4d595c hover/pressed, 700 #626e72 purchase faces and edges, 500 #889396 text and underlines, 300 #c1cbce hover/form-error text, and rgba(98,110,114,.16) surface. The cool gray uses OKLCH hue 215 and chroma 0.012 to 0.016; #f5f5f5 on Flint 700 is 4.82:1, and Flint 500 on #141414 is 5.84:1 and darker than muted #b3b3b3. Sea Green is unchanged; the owner's 16 October 2026 decision assigns Listen and small marks to amber #e3b56c, the In player label to #f0d7b0 and focus/hover/session surfaces to rgba(227, 181, 108, 0.16).
 
 The shared accent-colour-roles delta now requires error red only for international restriction notices in the non-Greek buyer flow: item page notice, Store strip, cart drawer and checkout card. Error 700 #bc4945 edges and 500 #e4706a icons/text remain on Charcoal faces; rgba(188,73,69,.16) is defined but unapplied. No control has a red face, and form errors remain Flint 300 beside the visible Error label.
 
@@ -45,3 +45,11 @@ This is documentation-only synchronization. Earlier implementation and release e
 - Palette search: no superseded accent name, token or hex/surface value remains in the three active changes.
 - Scoped formatting: `pnpm format:check` PASS on the 18 files listed for this revision.
 - Scope: only those 18 OpenSpec files were edited; no direct Git commands, source changes, implementation tests, publication or deployment were performed. Excluded files, archive and product copy were left untouched.
+
+## 16 October 2026 — round-2 owner decisions
+
+The purchase note (Shipping calculated in your cart…) and international notice strip now belong below the product grid on every category, including below an empty state, with copy, links and restriction meaning preserved. Supplied Local first-card tops are approximately 243px at 390px and 234px at 1440px, superseding the earlier above-grid 298/270px composition. There is no shopper-purchase-information delta in this change; the existing store-catalog-categories delta owns this revision.
+
+This section supersedes earlier composition notes where they conflict. Measurements are supplied by the UI implementer, not newly measured in this documentation/test pass. Round-2 UI verification tasks are reopened where the acceptance target changed; prior release evidence does not accept the new revision. The owner chose pre-redesign amber for Listen and small marks on 16 October 2026: --amber-500 #e3b56c for resting/hover edges, equalizer bars and small marks; --amber-300 #f0d7b0 for the In player label; --amber-surface rgba(227, 181, 108, 0.16) for focus rings, Listen hover and In player surfaces. --listen-bars and --listen-edge are var(--amber-500); --listen-text is var(--amber-300). No publication or deployment is authorized by this synchronization.
+
+The isolated unknown-offer presentation test uses an October 2099 release fixture because its selector accepts no injected clock; its stock/pre-order/buying assertions retain their intent. The focused test command passed. Guard passed before edits; strict change validation, changed-file formatting and the single final pnpm validate run are recorded in this pass's completion evidence under .codex-artifacts/round2-non-ui-20261016/.

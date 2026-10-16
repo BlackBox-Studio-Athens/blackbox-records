@@ -11,7 +11,7 @@ At 390×844 the measured Store puts its first card at y=674, after 594px of chro
 - Move today's Distro format links and their existing Distro counts into the phone Filter sheet and desktop Formats popover, retaining their destinations, enhanced Distro behavior and reachable no-JavaScript fallback.
 - Keep today's catalogue order, local search, multi-artist filtering, Pre-orders, Crate mechanics and counts.
 - Rebuild card hierarchy and move Listen to the artwork corner, 44×44 with an accessible name on phones and labelled on desktop. The format line is plain ink Inter; Buy retains its existing format icon.
-- Keep the purchase note above the grid as one compact line.
+- Place the purchase note and international notice strip below the product grid on every category; the round-2 first-card tops are approximately 243px at 390px and 234px at 1440px.
 
 ## Capabilities
 
@@ -24,7 +24,7 @@ None.
 - `section-page-identity`: visually hidden Store H1 on all viewports.
 - `catalog-discovery`: one responsive toolbar and shared Filter surface.
 - `distro-format-jump-navigation`: placement of existing Distro links and Artists controls, with progressive access.
-- `store-catalog-categories`: toolbar, card hierarchy, grid and compact above-grid purchase note.
+- `store-catalog-categories`: toolbar, card hierarchy, grid and below-grid purchase note and international strip.
 - `store-preorders`: existing filter placement and updated card composition.
 - `app-shell-and-player`: Store Listen placement while preserving session semantics.
 

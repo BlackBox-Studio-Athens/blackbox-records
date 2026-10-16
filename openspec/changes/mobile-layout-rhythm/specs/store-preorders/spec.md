@@ -92,7 +92,7 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 
 - **WHEN** a Home chapter renders below 40rem
 - **THEN** it shows contained media, complete sleeve, artist, ink Veneer title, plain lifecycle lines and format/price with truthful shipping once
-- **AND** Sea-filled Pre-order and Slate-outlined Listen share an equal-width 44px row with a 16px gap, omitting Listen when no source exists
+- **AND** Sea-filled Pre-order and amber-outlined Listen share an equal-width 44px row with a 16px gap, omitting Listen when no source exists
 - **AND** facts, summary and existing delivery/All pre-orders links follow without duplicate purchase bands, full-bleed rules or a fixed height that clips content.
 
 ### Requirement: Home background playback has no text play control

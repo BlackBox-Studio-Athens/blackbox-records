@@ -20,7 +20,7 @@ Below a 40rem viewport, the Home News and Artists sections SHALL each present th
 
 ### Requirement: Swipe rows show their position
 
-Each Home swipe row SHALL show a dot per card under the row, marking the card aligned to the gutter as current. Each dot SHALL be a button of 44 by 44 CSS pixels that scrolls the row to its card, labelled with its position, and the current mark SHALL use Slate #66a2d2 and be exposed with `aria-current`. The dots SHALL render the same in every supported browser and keep working after shell navigation to Home.
+Each Home swipe row SHALL show a dot per card under the row, marking the card aligned to the gutter as current. Each dot SHALL be a button of 44 by 44 CSS pixels that scrolls the row to its card, labelled with its position, and the current mark SHALL use amber #e3b56c and be exposed with `aria-current`. The dots SHALL render the same in every supported browser and keep working after shell navigation to Home.
 
 #### Scenario: Visitor taps a dot
 
@@ -38,5 +38,5 @@ Each Home swipe row SHALL show a dot per card under the row, marking the card al
 #### Scenario: Dots are used with a phone or keyboard
 
 - **WHEN** a visitor taps or focuses a dot
-- **THEN** the target is 44×44 with the shared visible ink focus ring and a small Slate current mark
+- **THEN** the target is 44×44 with the shared visible ink focus ring and a small amber current mark
 - **AND** position is conveyed by its accessible name and current state, not colour alone.

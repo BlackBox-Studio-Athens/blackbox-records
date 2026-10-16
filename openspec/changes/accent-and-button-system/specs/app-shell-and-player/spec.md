@@ -24,8 +24,8 @@ The public site SHALL build one main navigation in which Home is structural and 
 #### Scenario: Store and Services links are not current
 
 - **WHEN** a Store or Services link does not target the current page
-- **THEN** it uses the neutral link colour without a side stripe
-- **AND** its label stays white, the current-page underline is Flint #889396, hover underlines use Slate #66a2d2 and keyboard focus uses the shared ink ring, without route-specific accents.
+- **THEN** it uses Flint 400 #abb5b8 without a side stripe
+- **AND** the current-page underline is Flint #889396, hover underlines use amber #e3b56c and keyboard focus uses the shared ink ring, without route-specific accents.
 
 #### Scenario: Shopper uses the Menu button
 
@@ -48,7 +48,7 @@ The public site SHALL build one main navigation in which Home is structural and 
 
 ### Requirement: Every listening action identifies the existing session
 
-The shell SHALL mark shared controls for the active editorial source as full-opacity disabled In player status with a white label, Slate #66a2d2 bars/edge and the translucent Slate surface across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Stop SHALL end the session on its first activation without confirmation. Status MUST NOT claim verified playback.
+The shell SHALL mark shared controls for the active editorial source as full-opacity disabled In player status with a white action label, amber #e3b56c bars/edge, #f0d7b0 In player status label and the translucent amber rgba(227, 181, 108, 0.16) surface across Store, Releases and details. Other sources SHALL retain Listen. The floating player's Open and Stop actions SHALL remain available on desktop and mobile. Stop SHALL end the session on its first activation without confirmation. Status MUST NOT claim verified playback.
 
 #### Scenario: A session is minimized and its source appears elsewhere
 
