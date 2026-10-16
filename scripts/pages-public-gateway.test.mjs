@@ -143,7 +143,7 @@ test('unknown document paths get the static 404 page with one asset read and no 
   const page = await gateway.fetch(new Request('https://site.invalid/artistz/?fbclid=1', { headers: html }), env);
   assert.equal(page.status, 404);
   assert.equal(page.headers.get('Content-Type'), 'text/html; charset=utf-8');
-  assert.equal(page.headers.get('Cache-Control'), 'no-store, no-transform');
+  assert.equal(page.headers.get('Cache-Control'), 'no-store');
   assert.equal(await page.text(), '<!doctype html><title>404</title>');
   const head = await gateway.fetch(new Request('https://site.invalid/old/', { method: 'HEAD', headers: html }), env);
   assert.equal(head.status, 404);
@@ -175,7 +175,7 @@ test('a missing 404 asset falls back to the plain-text 404', async () => {
   assert.equal(await response.text(), 'Not found');
 });
 
-test('HTML and conditional replies prevent automatic injection without weakening cache or privacy headers', async () => {
+test('HTML and conditional replies preserve cache and privacy headers for automatic analytics', async () => {
   const gateway = createPublicGateway(['^/$', '^/email-preferences/$']);
   for (const [path, method, status, cache] of [
     ['/', 'GET', 200, 'public, max-age=0, s-maxage=30, stale-while-revalidate=30'],
@@ -199,10 +199,7 @@ test('HTML and conditional replies prevent automatic injection without weakening
       });
     const response = await gateway.fetch(new Request(`https://site.invalid${path}`, { method }), env);
     assert.equal(response.status, status);
-    assert.equal(
-      response.headers.get('Cache-Control'),
-      cache.includes('no-transform') ? cache : `${cache}, no-transform`,
-    );
+    assert.equal(response.headers.get('Cache-Control'), cache);
     assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');
     assert.equal(response.headers.get('X-Robots-Tag'), 'noindex');
     assert.equal(response.headers.get('ETag'), 'W/"same-content"');

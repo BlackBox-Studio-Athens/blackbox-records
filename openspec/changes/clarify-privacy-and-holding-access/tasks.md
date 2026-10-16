@@ -21,6 +21,9 @@
 
 - [x] 4.1 Select the prospective review cadence, case-handling and purpose-specific retention procedure in `operations.md`; distinguish adoption from actual execution and preserve unknown statutory/account facts.
 - [x] 4.2 Defer automatic optional analytics in public gateway HTML/304 headers while preserving cache/private/no-store rules, images and approved UI; reconcile the analytics specification and cover conditional/private/error cases.
+
+  Superseded by the owner's 2026-10-16 decision to re-enable automatic Cloudflare Web Analytics after launch. The gateway no longer adds `no-transform`; the site-analytics baseline and this change's delta reflect that reversal. All other cache/privacy/image behavior remains unchanged. Hosted beacon and shell page-view acceptance requires the analytics release.
+
 - [x] 4.3 Complete source-bound final validation and local commit; record any failed build or unrun native/hosted acceptance without marking it passed.
 
 Task 3.2's routine policy choices are delegated and selected. Its account/statutory evidence portion remains open; no renewed owner questionnaire is required to choose a workflow. Tasks 3.3-3.4 remain separate content/release acceptance.

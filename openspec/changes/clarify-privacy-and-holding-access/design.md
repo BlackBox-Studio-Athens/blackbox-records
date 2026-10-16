@@ -22,4 +22,6 @@ After the local review, the owner asked Codex to handle remaining work with the 
 
 ## Approved Holding link (owner, 14 October 2026)
 
+Owner reversal, 2026-10-16: task 4.2's analytics deferral is superseded. Restore automatic Cloudflare Web Analytics by removing the gateway-added `no-transform` from HTML, HTML 404 and 304 replies; preserve every other cache/privacy directive, ETag and image behavior. The published notice already names Cloudflare Web Analytics. This operational decision does not supply missing legal/account assessment evidence. Ship the reversal as an isolated analytics commit; verify beacon injection, shell page views and absence of analytics cookies after its separately authorized promotion.
+
 Preview v3 approved one quiet muted PRIVACY link in a separate "Legal" navigation under the contact actions, linking `/privacy/` (served by the prepared 302). Terms is not linked from Holding because Holding sells nothing; the `/terms` redirects remain for saved URLs. `check-prd-holding.ts` accepts `/privacy/` as the only relative anchor and requires it; `scripts/holding-legal-routes.test.ts` covers both.

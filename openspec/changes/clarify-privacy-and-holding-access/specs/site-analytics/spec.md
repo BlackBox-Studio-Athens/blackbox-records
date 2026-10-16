@@ -2,19 +2,19 @@
 
 ### Requirement: Visits are measured without cookies
 
-Optional client-side measurement is deferred while its data-protection assessment is unresolved. The public Pages gateway SHALL append `no-transform` to HTML and conditional responses to prevent automatic optional beacon injection. It SHALL preserve existing cache, no-store, referrer and indexing restrictions; image/binary responses SHALL retain their existing behavior. No consent banner or replacement tracker is introduced. Existing staff aggregate reads and necessary delivery/security processing remain available. Cookie-free behavior alone MUST NOT be treated as a legal exemption. Any later measurement activation requires an evidenced assessment and accurate coordinated privacy wording.
+Following the owner's 2026-10-16 decision, the gateway SHALL permit automatic Cloudflare Web Analytics by no longer adding `no-transform` to HTML and conditional replies. It SHALL preserve other cache/privacy directives, ETags, bodyless 304s and image behavior. Visits and shell navigation SHALL be measured without analytics cookies or an application-inserted beacon.
 
 #### Scenario: Visitor browses the production site
 
 - **WHEN** a visitor receives HTML through the public gateway
-- **THEN** its response includes `no-transform` alongside the existing cache directives
-- **AND** the application adds no optional beacon, including on checkout, email-preferences and HTML 404 replies.
+- **THEN** the gateway preserves existing cache directives without adding `no-transform`
+- **AND** production acceptance verifies the automatic beacon and a Home-to-Store shell page-view request without analytics cookies.
 
 #### Scenario: Conditional or private HTML is returned
 
 - **WHEN** a document response is a conditional 304 or carries private/no-store restrictions
-- **THEN** the gateway preserves its status, ETag and privacy directives while retaining `no-transform`
-- **AND** deployment acceptance separately verifies that the actual edge response does not inject a beacon.
+- **THEN** the gateway preserves its status, ETag and privacy directives without adding `no-transform`
+- **AND** HTML 404 responses retain `no-store` and image/binary responses retain their existing cache behavior.
 
 #### Scenario: Cookie-free collection is assessed
 

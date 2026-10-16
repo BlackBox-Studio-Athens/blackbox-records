@@ -418,9 +418,7 @@ it('reuses published HTML through the public gateway and retires it on publicati
     expect(await head.text()).toBe('');
     const etag = head.headers.get('ETag')!;
     expect(etag).toMatch(/^W\/"[a-f0-9]{64}"$/);
-    expect(head.headers.get('Cache-Control')).toBe(
-      'public, max-age=0, s-maxage=30, stale-while-revalidate=30, no-transform',
-    );
+    expect(head.headers.get('Cache-Control')).toBe('public, max-age=0, s-maxage=30, stale-while-revalidate=30');
     const initial = await read('/');
     expect(initial.headers.get('X-Content-SHA256')).toBe(old.snapshotSha256);
     expect(initial.headers.get('Cache-Tag')).toBe(publicPublicationTags(release, old.snapshotSha256).join(','));
@@ -433,7 +431,7 @@ it('reuses published HTML through the public gateway and retires it on publicati
       expect(conditional.status).toBe(304);
       expect(await conditional.text()).toBe('');
       expect(conditional.headers.get('ETag')).toBe(etag);
-      expect(conditional.headers.get('Cache-Control')).toContain('no-transform');
+      expect(conditional.headers.get('Cache-Control')).toBe(head.headers.get('Cache-Control'));
     }
     expect((await stats()).renders['/']).toBe(1);
     await worker.dispatchFetch('http://site.invalid/__test/restart').catch(() => {});
@@ -516,9 +514,7 @@ it('reuses published HTML through the public gateway and retires it on publicati
       '/release.json',
     ]) {
       const response = await read(path);
-      expect(response.headers.get('Cache-Control')).toBe(
-        ['/private/', '/?query=1'].includes(path) ? 'no-store, no-transform' : 'no-store',
-      );
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
       expect(response.headers.get('ETag')).toBeNull();
     }
     for (const host of ['private', 'no-store', 'cookie', 'error']) {

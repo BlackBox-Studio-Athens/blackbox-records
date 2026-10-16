@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Verify the production domain with search engines and let staff read existing aggregate site analytics without a Cloudflare login. Optional client-side measurement is deferred pending its data-protection assessment.
+Verify the production domain with search engines, measure visits through automatic Cloudflare Web Analytics and let staff read aggregate site analytics without a Cloudflare login.
 
 ## Requirements
 
@@ -18,7 +18,7 @@ The production domain SHALL be verified in Google Search Console as a Domain pro
 
 ### Requirement: Visits are measured without cookies
 
-The public Pages gateway SHALL append `no-transform` to HTML and conditional responses to prevent automatic optional beacon injection while the assessment is unresolved. It SHALL preserve existing cache, no-store, referrer and indexing restrictions; image/binary responses SHALL retain their existing behavior. No consent banner or replacement tracker is introduced. Existing staff aggregate reads and necessary delivery/security processing remain available. A claim that consent is unnecessary MUST be supported by the applicable GDPR and terminal-access assessment; cookie-free behavior alone does not establish that conclusion. Any later measurement activation requires an evidenced assessment and accurate coordinated privacy wording.
+Following the owner's 2026-10-16 decision, the gateway SHALL permit automatic Cloudflare Web Analytics by no longer adding `no-transform` to HTML and conditional replies. It SHALL preserve other cache/privacy directives, ETags, bodyless 304s and image behavior. Visits and shell navigation SHALL be measured without analytics cookies or an application-inserted beacon.
 
 #### Scenario: Cookie-free collection is assessed
 
@@ -29,14 +29,14 @@ The public Pages gateway SHALL append `no-transform` to HTML and conditional res
 #### Scenario: Visitor browses the production site
 
 - **WHEN** a visitor receives HTML through the public gateway
-- **THEN** its response includes `Cache-Control: no-transform` alongside the existing cache directives
-- **AND** the application adds no optional beacon script, including on checkout, email-preferences and HTML 404 replies.
+- **THEN** the gateway preserves the existing cache directives without adding `no-transform`
+- **AND** production acceptance verifies the automatic Cloudflare beacon and a page-view request after Home-to-Store shell navigation, without analytics cookies.
 
 #### Scenario: Conditional or private HTML is returned
 
 - **WHEN** a document response is a conditional 304 or carries private/no-store restrictions
-- **THEN** the gateway preserves its status, ETag and privacy directives while retaining `no-transform`
-- **AND** deployment acceptance separately verifies that the actual edge response does not inject a beacon.
+- **THEN** the gateway preserves its status, ETag and privacy directives without adding `no-transform`
+- **AND** HTML 404 responses retain `no-store` and image/binary responses keep their existing cache behavior.
 
 ### Requirement: Staff can read site analytics without a Cloudflare login
 
