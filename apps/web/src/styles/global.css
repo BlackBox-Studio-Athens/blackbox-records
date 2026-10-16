@@ -3056,8 +3056,8 @@ body {
     }
   }
 
-  /* Sideways phones: the default padding made the hero taller than the screen; the 52px CTA keeps its size and the
-     space above and below it tightens instead. */
+  /* Sideways phones: the default padding made the hero taller than the screen, so the space around the 48px CTA
+     tightens; its gap above takes the 4px the smaller CTA freed (16 October 2026). */
   @media (orientation: landscape) and (max-height: 480px) {
     .homepage-hero-section .homepage-hero-section__content-block {
       padding-top: calc(var(--header-height) + 1.5rem);
@@ -3065,7 +3065,7 @@ body {
     }
 
     .homepage-hero-section .homepage-hero-section__actions {
-      margin-top: 1rem;
+      margin-top: 1.25rem;
     }
   }
 
@@ -3153,11 +3153,18 @@ body {
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
   }
 
+  /* The CTA sits well below the tagline (16 October 2026); sideways phones keep their tighter rule above. */
   .homepage-hero-section__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin-top: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  @media (min-width: 48rem) {
+    .homepage-hero-section__actions {
+      margin-top: 3rem;
+    }
   }
 
   motto-word-cycle {
@@ -3563,7 +3570,7 @@ body {
   }
 }
 
-/* Home hero CTA, the family's one 52px control: ink face and dark label at rest. On hover and keyboard focus a Flint
+/* Home hero CTA, the family's one 48px control: ink face and dark label at rest. On hover and keyboard focus a Flint
    fill rises from the base edge in 240ms, the label turns white (4.8:1) and the arrow slides 6px inside the box.
    Unlayered so it wins over the default variant's utilities; reduced motion switches instantly. */
 .home-hero-cta {

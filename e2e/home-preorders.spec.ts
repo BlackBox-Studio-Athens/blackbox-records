@@ -225,7 +225,7 @@ test('Home hero links only to the Store, fits phone widths and has no Scroll lab
     expect(layout.mottoLeft, `${width}px motto`).toBeCloseTo(layout.logoLeft, 0);
     expect(layout.links).toHaveLength(1);
     for (const link of layout.links) {
-      expect(link.height, `${width}px drawn link`).toBe(52);
+      expect(link.height, `${width}px drawn link`).toBe(48);
       expect(link.left, `${width}px link`).toBeGreaterThanOrEqual(layout.logoLeft - 0.5);
       expect(link.right, `${width}px link`).toBeLessThanOrEqual(width - layout.logoLeft + 0.5);
     }

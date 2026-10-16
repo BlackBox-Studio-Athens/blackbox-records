@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/components/ui/utils';
 
 // The public button family: square, flat, Bebas Neue caps, white labels except on the ink face. One drawn size, 44px;
-// the Home hero CTA is the single 52px exception (openspec/changes/accent-and-button-system). Tailwind's hover variant is
+// the Home hero CTA is the single 48px exception (openspec/changes/accent-and-button-system). Tailwind's hover variant is
 // already gated by (hover: hover). On coarse pointers an invisible ::before halo adds room around the drawn box.
 // Buy and Pre-order colours live on global.css .purchase-action and .preorder-action, which the listing code toggles.
 // The shared box, type, focus, disabled, touch-halo and icon rules live once in global.css `.site-button` (components
@@ -28,7 +28,7 @@ const buttonVariantClasses = cva('site-button', {
     },
     size: {
       default: 'min-h-11 px-4 text-base',
-      hero: 'site-button--hero min-h-13 gap-3 pr-5 pl-6 text-xl',
+      hero: 'site-button--hero min-h-12 gap-2.75 pr-4.5 pl-5.5 text-lg',
       icon: 'site-button--icon size-11 p-0',
     },
   },

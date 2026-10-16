@@ -37,10 +37,10 @@ describe('Button', () => {
     }
   });
 
-  it('has one 44px size plus the 52px hero exception', () => {
+  it('has one 44px size plus the 48px hero exception', () => {
     const hero = buttonVariants({ size: 'hero' }).split(' ');
 
-    expect(hero).toEqual(expect.arrayContaining(['site-button--hero', 'min-h-13', 'text-xl']));
+    expect(hero).toEqual(expect.arrayContaining(['site-button--hero', 'min-h-12', 'text-lg']));
     expect(hero).not.toContain('min-h-11');
     expect(buttonVariants({ variant: 'outline' }).split(' ')).toContain('min-h-11');
   });

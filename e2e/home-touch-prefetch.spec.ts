@@ -1,6 +1,6 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-test('@phone Home Browse is the 52px ink hero CTA within the gutter', async ({ page }) => {
+test('@phone Home Browse is the 48px ink hero CTA within the gutter', async ({ page }) => {
   await page.goto('./');
   await waitForShell(page);
   const browse = page.locator('#homepage-hero-section').getByRole('link', { name: 'Browse the Store' });
@@ -27,9 +27,9 @@ test('@phone Home Browse is the 52px ink hero CTA within the gutter', async ({ p
       };
     });
     // DOMRect rounds translated edges independently; the CSS height must remain exact.
-    expect(layout.cssHeight, `${width}px CSS height`).toBe('52px');
-    expect(layout.height, `${width}px drawn height`).toBeCloseTo(52, 4);
-    expect(layout.fontSize).toBe('20px');
+    expect(layout.cssHeight, `${width}px CSS height`).toBe('48px');
+    expect(layout.height, `${width}px drawn height`).toBeCloseTo(48, 4);
+    expect(layout.fontSize).toBe('18px');
     // Ink face with a dark label at rest; touch never shows the hover sweep.
     expect(layout.face).toBe('rgb(232, 232, 232)');
     expect(layout.label).toBe('rgb(9, 9, 9)');
