@@ -23,7 +23,7 @@ Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1
 
 No production domain, projection, schema or module-boundary change is required. Task 2.2 adds sample presentation data only in the opt-in UAT view. The owner explicitly assigned this playback work and its UI tests to Codex; other UI ownership stays with Claude.
 
-- [ ] 2.2 Owner's 17 October AFK request: provide a UAT-only video-test link that mirrors PRD's two film chapters with existing prepared test footage, without CMS access or catalog/stock changes. Require the UAT build marker plus explicit query opt-in, keep sample purchases inside the UAT Store, verify real SSR/hydrated playback and refresh in Firefox/Chromium, and push/verify UAT for owner testing. PRD and normal UAT content remain unchanged.
+- [x] 2.2 Owner's 17 October AFK request: provide a UAT-only video-test link that mirrors PRD's two film chapters with existing prepared test footage, without CMS access or catalog/stock changes. Require the UAT build marker plus explicit query opt-in, keep sample purchases inside the UAT Store, verify real SSR/hydrated playback and refresh in Firefox/Chromium, and push/verify UAT for owner testing. PRD and normal UAT content remain unchanged. Release 609 and hosted evidence are recorded in validation.md; physical Firefox Android remains the owner's acceptance check.
 
 ## 3. Shared verification and UAT release
 
