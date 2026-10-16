@@ -54,6 +54,12 @@ This section supersedes earlier composition notes where they conflict. Measureme
 
 The isolated unknown-offer presentation test uses an October 2099 release fixture because its selector accepts no injected clock; its stock/pre-order/buying assertions retain their intent. The focused test command passed. Guard passed before edits; strict change validation, changed-file formatting and the single final pnpm validate run are recorded in this pass's completion evidence under .codex-artifacts/round2-non-ui-20261016/.
 
+## Hero CTA release evidence (16 October 2026)
+
+- Button commit 3e8ee282 (`feat(web): a smaller, lower Browse the Store hero button`) passed Release BlackBox run 38883399182 with all jobs green, including deploy-uat. "Promote UAT to PRD" run 38884188819 succeeded from 09:59 to 10:01 UTC on 16 October 2026; PRD release.json names 3e8ee282 with run 38883399182.
+- The orchestrator verified in a PRD browser that the hero button renders 48px tall with an 18px label and a 40px gap below the tagline at phone widths, and that the film plays with the still hidden. This records the orchestrator's check, not the owner's visual review.
+- Local evidence before the push: `pnpm validate` PASSED; the button unit test passed; home-hero-film e2e passed 7/7 and home-preorders passed 16/16. Home-touch-prefetch was 3/4: the failing chromium-mobile news-overlay tap fails identically on the committed code and is a pre-existing preview-only failure; this suite is not recorded as passing. Task 1.5 is checked against this supplied evidence.
+
 ## Round-2 release evidence (16 October 2026)
 
 - Commits pushed to `main` on 16 October 2026: fcec1139 (`feat(web): round 2 of the redesign with amber for Listen and small marks`), 9f7cf59d (`test(web): pin the unknown-read fixture to a future release date`) and 8d8070f8 (`docs(openspec): mirror the round-2 revision and the amber decision`).
