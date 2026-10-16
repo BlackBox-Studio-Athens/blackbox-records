@@ -2,6 +2,8 @@
 
 ## Live cutover and post-launch preparation — 2026-10-16
 
+Final response-policy follow-up: `c9befe4153dc51ab632ba8cd6834a4474fe8a053` preserves the existing `no-store` default for HTML/304 replies whose renderer Cache-Control is absent or blank; removing only `no-transform` must not discard that default. Missing/blank-header regressions, focused gateway tests (eight selected Nx tasks), Prettier and ESLint passed. This is another isolated analytics correction and is not authorized for promotion under the original exact-candidate ancestry rule. Its final CI result is recorded in the ignored completion receipt below.
+
 [Cutover run 38888410766](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38888410766) switched the apex to PRD release 595, SHA `3e8ee282270c30ee61376de7a443f9bb3fa7f278`. Its snapshot records `cutoverAt: 2026-10-16T10:38:08.022Z`; the rollback window therefore ends at 2026-10-17T10:38:08.022Z. Preserve the run's `launch-state` artifact. A copy was read beneath `.codex-artifacts/post-launch/cutover-38888410766/`; the original local recovery snapshot was not replaced.
 
 The run concluded **failure**, with only `Browser image fallback` failing: it waited for a loaded `homepage-hero-section__media-image` to become visible while the film intentionally hides it. TLS/Home succeeded, so the apex remained live. This is a stale acceptance target, not evidence of a failed image decode or an automatic rollback.
