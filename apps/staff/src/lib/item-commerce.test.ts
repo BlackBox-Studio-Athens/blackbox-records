@@ -1,14 +1,17 @@
 import { afterEach, expect, test, vi } from 'vitest';
+import type { PublicationReview } from '@blackbox/content-model';
 import {
   applyPriceDraft,
   euroMinor,
   isEuroDraft,
+  itemPublicationCommerce,
   planItemPublication,
   PriceConflictError,
   shopIntent,
   samePrice,
   type PriceDraft,
   type PriceDraftInput,
+  type ItemCommerceState,
 } from './item-commerce';
 import { InternalStockApiError } from './backend/internal-stock-api';
 
@@ -45,6 +48,58 @@ test('only a withheld item with a price can start selling, and only when ticked'
   expect(shopIntent('ready_to_sell', false)).toBe('none');
   expect(shopIntent('ready_to_sell', true)).toBe('activate');
   expect(shopIntent('not_ready', true)).toBe('none');
+});
+
+test('publishes only a saved catalog-number edit through the website without touching an existing shop operation', () => {
+  const commerce: ItemCommerceState = {
+    variantId: 'variant_release',
+    shop: 'on_sale',
+    requiresLiveConfirmation: true,
+    livePrice: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2400 },
+    priceDraft: null,
+  };
+  const entry = {
+    collection: 'releases',
+    recordId: 'release',
+    expectedRevision: 'saved-version',
+    title: 'Release',
+    slug: 'release',
+    before: { title: 'Release' },
+    after: { title: 'Release', catalog_number: 'BBR#003' },
+    issues: [],
+  };
+  const review: PublicationReview = {
+    baseline: 'a'.repeat(64),
+    environment: 'prd',
+    publicUrl: 'https://blackbox-records-web.pages.dev/',
+    entries: [entry],
+    destinations: [],
+    dependencies: [],
+    media: {},
+    referenceTitles: {},
+    baselineReferenceTitles: {},
+  };
+  expect(itemPublicationCommerce(review, commerce)).toBeUndefined();
+  expect(itemPublicationCommerce(null, commerce)).toBe(commerce);
+  expect(itemPublicationCommerce(review)).toBeUndefined();
+  for (const shop of ['not_ready', 'ready_to_sell'] as const) {
+    const withheld = { ...commerce, shop };
+    expect(itemPublicationCommerce(review, withheld)).toBe(withheld);
+  }
+  const priced = { ...commerce, priceDraft: draft };
+  expect(itemPublicationCommerce(review, priced)).toBe(priced);
+  for (const changed of [
+    { ...entry, before: null },
+    { ...entry, collection: 'distro' },
+    { ...entry, before: entry.after },
+    { ...entry, after: { ...entry.after, title: 'New title' } },
+    { ...entry, after: { ...entry.after, image: 'new-cover' } },
+    { ...entry, after: { ...entry.after, summary: 'New summary' } },
+  ])
+    expect(itemPublicationCommerce({ ...review, entries: [changed] }, commerce)).toBe(commerce);
+  expect(itemPublicationCommerce({ ...review, entries: [entry, { ...entry, recordId: 'other' }] }, commerce)).toBe(
+    commerce,
+  );
 });
 
 test('compares fixed and pay-what-you-want prices by every amount', () => {

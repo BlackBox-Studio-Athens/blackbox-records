@@ -21,6 +21,7 @@ import { createInternalStockApi } from '../../lib/backend/internal-stock-api';
 import {
   applyPriceDraft,
   describePrice,
+  itemPublicationCommerce,
   planItemPublication,
   shopIntent,
   readItemPublication,
@@ -79,7 +80,7 @@ export default function PublicationReviewFlow({
   records: initialRecords,
   intent = 'review',
   individual = false,
-  commerce,
+  commerce: itemCommerce,
   onBack,
   onPublished,
   onReviewed,
@@ -96,6 +97,7 @@ export default function PublicationReviewFlow({
 }) {
   const [records, setRecords] = useState(initialRecords);
   const [review, setReview] = useState<PublicationReview | null>(null);
+  const commerce = itemPublicationCommerce(review, itemCommerce);
   const [pending, setPending] = useState<ReturnType<typeof restorePublication>>(null);
   const [operation, setOperation] = useState<ContentPublication | null>(null);
   const [busy, setBusy] = useState(false);

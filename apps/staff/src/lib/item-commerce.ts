@@ -1,3 +1,4 @@
+import { changedPublicationFields, type PublicationReview } from '@blackbox/content-model';
 import {
   editorialRequest,
   type DraftPrice,
@@ -27,6 +28,20 @@ export type ItemCommerceState = {
   livePrice: DraftPrice | null;
   priceDraft: PriceDraft | null;
 };
+
+export function itemPublicationCommerce(review: PublicationReview | null, commerce?: ItemCommerceState) {
+  const entry = review?.entries.length === 1 ? review.entries[0] : undefined;
+  const fields = entry ? changedPublicationFields(entry) : [];
+  // Catalog numbers do not change checkout presentation or resolve retained shop operations.
+  return commerce?.shop === 'on_sale' &&
+    !commerce.priceDraft &&
+    entry?.collection === 'releases' &&
+    entry.before &&
+    fields.length === 1 &&
+    fields[0] === 'catalog_number'
+    ? undefined
+    : commerce;
+}
 
 /** Selling state of the open item as the editor knows it. */
 export type ItemCommerce =

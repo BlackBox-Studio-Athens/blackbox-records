@@ -1736,6 +1736,56 @@ else if (process.argv.includes('--editor-recovery')) {
     try {
       await page.goto(`${origin}/content/?collection=releases&id=${original.id}`);
       await page.getByLabel('Release title', { exact: true }).waitFor();
+      const publicationRoute = '**/api/internal/variants/*/publication';
+      const reviewRoute = '**/_emdash/api/blackbox/publication-review';
+      let shopWrites = 0;
+      await page.route(publicationRoute, async (route) => {
+        if (route.request().method() === 'POST') shopWrites++;
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          json: { ...(await response.json()), requiresLiveConfirmation: true, operationStatus: 'needs_review' },
+        });
+      });
+      await page.route(reviewRoute, async (route) => {
+        const response = await route.fetch();
+        const review = await response.json();
+        review.entries[0].before = { ...review.entries[0].after };
+        delete review.entries[0].before.catalog_number;
+        await route.fulfill({ response, json: review });
+      });
+      const previousPublications = structuredClone(publications);
+      const previousStatus = state.publication;
+      const previousTitle = state.publicTitle;
+      try {
+        await page.reload();
+        await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+        await page.getByRole('button', { name: 'Update stock now', exact: true }).waitFor();
+        await page.getByRole('tab', { name: 'Details & photos', exact: true }).click();
+        await page.getByRole('button', { name: /^Publish changes/ }).click();
+        await page.getByRole('heading', { name: 'Catalog Number', exact: true }).waitFor();
+        assert.equal(await page.getByText('Shop checkout', { exact: true }).count(), 0);
+        assert.equal(await page.getByRole('checkbox', { name: /live shop/ }).count(), 0);
+        state.publication = 'live';
+        const published = page.waitForRequest(
+          (request) => request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'),
+        );
+        await page.getByRole('button', { name: 'Publish change', exact: true }).click();
+        const input = (await published).postDataJSON();
+        assert.equal(input.baseline, 'a'.repeat(64));
+        assert.deepEqual(input.records, [
+          { collection: 'releases', recordId: original.id, expectedRevision: records.releases[0]._rev },
+        ]);
+        await page.getByRole('heading', { name: 'Your changes are on the website', exact: true }).waitFor();
+        assert.equal(shopWrites, 0, 'A BBR-only update never resends or clears the retained shop operation');
+        await page.getByRole('button', { name: 'Back to editing', exact: true }).click();
+      } finally {
+        await page.unroute(publicationRoute);
+        await page.unroute(reviewRoute);
+        publications.splice(0, publications.length, ...previousPublications);
+        state.publication = previousStatus;
+        state.publicTitle = previousTitle;
+      }
       await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
       await page.getByRole('button', { name: 'Update stock now', exact: true }).waitFor();
       assert.equal(await page.getByRole('button', { name: 'Selling', exact: true }).count(), 0);

@@ -25,3 +25,9 @@ Readers SHALL deterministically upgrade missing catalog_number only in accepted 
 - **WHEN** a saved Release draft supplies the same catalog_number that rendering supplies for an accepted snapshot lacking the field
 - **THEN** saved-change discovery and publication review compare against the stored accepted fields and retain the catalog-number change for publication
 - **AND** rendering and candidate assembly retain validated compatibility defaults for other accepted legacy Releases.
+
+#### Scenario: Catalog-number-only publication has an unrelated retained shop operation
+
+- **WHEN** an already-on-sale Release has exactly one reviewed change to catalog_number and no price draft
+- **THEN** its individual publish flow uses the normal revision- and baseline-checked website publication path, without a shop synchronization command or live price confirmation
+- **AND** retained shop operations remain unchanged; new items, price drafts and other or mixed field changes retain their existing shop publication path and checks.

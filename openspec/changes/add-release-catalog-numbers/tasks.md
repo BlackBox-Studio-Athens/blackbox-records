@@ -4,6 +4,7 @@
 
 - [x] 6.1 Compare publication review and saved-change discovery with checksum-verified stored fields, while retaining compatibility defaults for rendering and candidate assembly; test legacy backfill visibility, explicit accepted numbers, and strict validation.
 - [x] 6.2 Run focused checks and final validation; record the reproduced PRD failure and source-bound evidence. Hosted release and publication remain separate acceptance.
+- [ ] 6.3 Route an already-on-sale Release's catalog-number-only edit with no price draft through normal reviewed website publication. Keep new items, price drafts and other/mixed changes on the shop path; preserve retained shop operations. Cover the PRD retained-operation case with focused tests and record checks separately from hosted release/publication.
 
 ## 1. Domain and editorial contract
 
