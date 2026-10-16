@@ -11,7 +11,7 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
 import { readOpenPreorders } from '@/lib/open-preorders';
-import { preorderShowcaseItems } from './_preorder-showcase';
+import { preorderDemoClip, preorderShowcaseItems } from './_preorder-showcase';
 import heroFilmLandscapeUrl from './_assets/home-hero/home-hero-intro-landscape.mp4?url';
 import heroFilmPortraitUrl from './_assets/home-hero/home-hero-intro-portrait.mp4?url';
 
@@ -24,6 +24,8 @@ const homeNews = homeContent.news;
 const homeArtists = homeContent.artists;
 // Pre-orders are in this HTML or absent; nothing is inserted after paint.
 const preorderItems = await preorderShowcaseItems(readOpenPreorders());
+// DRAFT: demo film for the phone-layout drafts; delete at finalize.
+const demoClip = preorderItems.length > 0 ? await preorderDemoClip() : undefined;
 ---
 
 <SiteLayout pageTitle="Home" pageDescription="BlackBox Records home." mainClass="!pt-0">
@@ -35,7 +37,12 @@ const preorderItems = await preorderShowcaseItems(readOpenPreorders());
   />
 
   {preorderItems.length > 0 && (
-    <StorePreorderShowcase client:idle items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />
+    <StorePreorderShowcase
+      client:idle
+      items={preorderItems}
+      storeUrl={createProjectRelativeUrl('/store/')}
+      demoClip={demoClip}
+    />
   )}
 
   {homeNews && latestNewsArticles.length > 0 && (

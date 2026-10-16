@@ -3,7 +3,7 @@ import { listArtistProfiles, listReleaseCatalog, listStoreItems } from '@/lib/ca
 import { buildPreorderShowcaseCandidates } from '@/lib/preorder-showcase';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 import type { OpenPreorder } from '@/lib/open-preorders';
-import type { StorePreorderShowcaseItem } from '@/components/store/StorePreorderShowcase';
+import type { StorePreorderDemoClip, StorePreorderShowcaseItem } from '@/components/store/StorePreorderShowcase';
 import sidusVideoPoster from './_assets/video-posters/sidus-embrace-the-void.jpg';
 import sidusBackgroundVideoUrl from './_assets/video-posters/sidus-embrace-the-void-loop.mp4?url';
 import sidusBackgroundVideoDesktopUrl from './_assets/video-posters/sidus-embrace-the-void-loop-desktop.mp4?url';
@@ -101,4 +101,17 @@ export async function preorderShowcaseItems(preorders: readonly OpenPreorder[]):
     const { displayPrice, shipEstimate } = bySlug.get(candidate.slug)!;
     return { ...candidate, displayPrice, shipEstimate };
   });
+}
+
+// DRAFT: review aid for the phone drafts; the island uses it only while ?draft= is set. Delete at finalize. The poster
+// matches the prepared Afterwise clip's transform, so it adds no new image variant.
+export async function preorderDemoClip(): Promise<StorePreorderDemoClip> {
+  const poster = await getImage({ src: afterwiseVideoPoster, width: 1200, format: 'webp' });
+  return {
+    id: 'Cl7rWCTGEqY',
+    title: 'Demo film (draft review)',
+    posterUrl: poster.src,
+    backgroundVideoUrl: afterwiseBackgroundVideoUrl,
+    backgroundVideoDesktopUrl: afterwiseBackgroundVideoDesktopUrl,
+  };
 }

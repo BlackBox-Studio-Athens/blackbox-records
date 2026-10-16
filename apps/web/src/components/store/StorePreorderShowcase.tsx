@@ -42,9 +42,19 @@ export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & {
   shipEstimate: ShipEstimate | null;
 };
 type ShowcaseItem = StorePreorderShowcaseItem;
+// DRAFT: review aid for the phone drafts, so clip-less content shows a film chapter; delete at finalize.
+export type StorePreorderDemoClip = NonNullable<StorePreorderShowcaseCandidate['clips']>[number];
 
 // The section is in the server HTML or absent; hydration adds only media and viewing behavior.
-export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
+export default function StorePreorderShowcase({
+  items,
+  storeUrl,
+  demoClip,
+}: {
+  items: ShowcaseItem[];
+  storeUrl: string;
+  demoClip?: StorePreorderDemoClip | undefined;
+}) {
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [watching, setWatching] = useState<string | null>(null);
   const videoHistory = useRef<ReturnType<typeof connectSurfaceHistory> | null>(null);
@@ -129,7 +139,8 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
     );
     section.current.querySelectorAll('[data-preorder-ambient]').forEach((scene) => observer.observe(scene));
     return () => observer.disconnect();
-  }, [items]);
+    // DRAFT: draft joins the dependencies only because a demo clip adds scenes after hydration.
+  }, [items, draft]);
 
   if (items.length === 0) return null;
   return (
@@ -159,6 +170,7 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
             documentVisible={documentVisible}
             playerSession={playerSession}
             draft={draft}
+            demoClip={draft ? demoClip : undefined}
           />
         ))}
       </div>
@@ -197,6 +209,7 @@ function PreorderChapter({
   documentVisible,
   playerSession,
   draft,
+  demoClip,
 }: {
   item: ShowcaseItem;
   next?: ShowcaseItem | undefined;
@@ -208,6 +221,7 @@ function PreorderChapter({
   documentVisible: boolean;
   playerSession: boolean;
   draft: string | null;
+  demoClip: StorePreorderDemoClip | undefined;
 }) {
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [failedClips, setFailedClips] = useState<string[]>([]);
@@ -229,7 +243,9 @@ function PreorderChapter({
             backgroundVideoDesktopUrl: null,
           },
         ]
-      : [];
+      : demoClip
+        ? [demoClip]
+        : [];
   const clip = clips[0];
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
@@ -271,7 +287,8 @@ function PreorderChapter({
     return () => {
       cancelled = true;
     };
-  }, [item.title]);
+    // DRAFT: clip joins the dependencies only because a demo clip mounts the film title after hydration.
+  }, [item.title, clip?.id]);
 
   useEffect(() => {
     const media = video.current;
