@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 
 export async function verifyImageFallback({ html, origin, countRequest }) {
-  const source = /https:\/\/blackbox-records-web\.pages\.dev\/media\/content\/[a-f0-9]{64}/.exec(html)?.[0];
-  assert.ok(source, 'Home has no published image for the fallback check.');
+  const sources = new Set(html.match(/https:\/\/blackbox-records-web\.pages\.dev\/media\/content\/[a-f0-9]{64}/g));
+  assert.ok(sources.size, 'Home has no published image for the fallback check.');
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: true });
   try {
@@ -13,15 +13,23 @@ export async function verifyImageFallback({ html, origin, countRequest }) {
         // Controlled exhaustion: no new transformations or cache warming during acceptance.
         return route.fulfill({ status: 503, body: 'Image transformation unavailable' });
       }
-      if (![origin, new URL(source).origin].includes(url.origin)) return route.abort();
-      if (url.pathname.startsWith('/media/content/') && url.href !== source) return route.abort();
+      if (![origin, 'https://blackbox-records-web.pages.dev'].includes(url.origin)) return route.abort();
+      if (url.pathname.startsWith('/media/content/') && !sources.has(url.href)) return route.abort();
+      if (route.request().resourceType() === 'media') return route.abort();
       countRequest();
       return route.continue();
     });
     const page = await context.newPage();
     await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded', timeout: 20_000 });
-    const image = page.locator(`img[src="${source}"]`).first();
+    // The film intentionally hides the hero still; verify a rendered published image instead.
+    const image = page.locator('img[src*="https://blackbox-records-web.pages.dev/media/content/"]:visible').first();
     await image.waitFor({ state: 'visible', timeout: 20_000 });
+    await image.scrollIntoViewIfNeeded();
+    await page.waitForFunction(
+      ({ element, sources }) => sources.includes(element.src) && element.complete && element.naturalWidth > 0,
+      { element: await image.elementHandle(), sources: [...sources] },
+      { timeout: 20_000 },
+    );
     await image.evaluate((element) => element.decode());
     const result = await image.evaluate((element) => ({
       loaded: element.complete && element.naturalWidth > 0,
@@ -32,7 +40,7 @@ export async function verifyImageFallback({ html, origin, countRequest }) {
       result.loaded && !result.srcset && !result.sourceCandidates,
       'Published image did not fall back cleanly.',
     );
-    return { source, ...result };
+    return { source: await image.getAttribute('src'), ...result };
   } finally {
     await browser.close();
   }

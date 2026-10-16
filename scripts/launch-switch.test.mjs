@@ -3,7 +3,14 @@ import { test } from 'node:test';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { apex, pages, finalizeReady, loadLaunchEnvironment, runLaunch } from './launch-switch/index.mjs';
+import {
+  apex,
+  pages,
+  finalizeReady,
+  loadLaunchEnvironment,
+  parseLaunchArgs,
+  runLaunch,
+} from './launch-switch/index.mjs';
 
 const now = Date.parse('2026-10-12T12:00:00Z');
 const release = {
@@ -213,11 +220,11 @@ function fixture(t, options = {}) {
     },
     github: (endpoint) =>
       endpoint.endsWith('/jobs?per_page=100')
-        ? { jobs }
+        ? { jobs: options.failedSuites ? jobs.map((job) => ({ ...job, conclusion: 'failure' })) : jobs }
         : {
             head_sha: release.sha,
             status: 'completed',
-            conclusion: 'success',
+            conclusion: options.failedRun ? 'failure' : 'success',
             path: '.github/workflows/pages.yml',
             head_branch: 'main',
             event: 'push',
@@ -324,8 +331,61 @@ test('finalize dry-run rechecks stability but performs no external writes', asyn
   assert.equal(f.state.writes.length, 0);
 });
 
+test('finalize accepts only the explicitly reviewed current release and preserves the rollback snapshot', async (t) => {
+  for (const dryRun of [true, false]) {
+    const f = fixture(t);
+    f.prepareFinalize();
+    const snapshot = f.saved();
+    snapshot.release = { ...release, sha: 'a'.repeat(40) };
+    writeFileSync(path.join(f.directory, 'snapshot.json'), JSON.stringify(snapshot));
+    const refused = await runLaunch('finalize', { ...f.dependencies, dryRun });
+    assert.equal(refused.status, 'failed');
+    assert.match(refused.error, /PRD source changed since cutover/);
+    const mismatch = await runLaunch('finalize', { ...f.dependencies, dryRun, acceptRelease: 'b'.repeat(40) });
+    assert.equal(mismatch.status, 'failed');
+    assert.match(mismatch.error, /Accepted release differs/);
+    assert.equal(f.state.writes.length, 0);
+    const accepted = await runLaunch('finalize', { ...f.dependencies, dryRun, acceptRelease: release.sha });
+    assert.equal(accepted.status, dryRun ? 'planned' : 'passed', accepted.error);
+    assert.equal(accepted.acceptedRelease, release.sha);
+    assert.equal(f.saved().release.sha, snapshot.release.sha);
+  }
+});
+
+test('an accepted SHA cannot bypass run, suite or Home validation', async (t) => {
+  for (const options of [{ failedRun: true }, { failedSuites: true }, { failHome: true }]) {
+    const f = fixture(t, options);
+    f.prepareFinalize();
+    const result = await runLaunch('finalize', { ...f.dependencies, acceptRelease: release.sha });
+    assert.equal(result.status, 'failed');
+    assert.equal(f.state.writes.length, 0);
+  }
+});
+
+test('accepted release arguments are explicit, bounded and finalize-only', async (t) => {
+  assert.deepEqual(parseLaunchArgs(['finalize', '--accept-release', release.sha, '--dry-run']), {
+    stage: 'finalize',
+    acceptRelease: release.sha,
+    dryRun: true,
+    help: undefined,
+  });
+  assert.throws(() => parseLaunchArgs(['finalize', '--accept-release']));
+  assert.throws(() => parseLaunchArgs(['finalize', 'extra']));
+  assert.throws(() => parseLaunchArgs(['finalize', '--unknown']));
+  for (const [stage, acceptRelease] of [
+    ['cutover', release.sha],
+    ['rollback', release.sha],
+    ['finalize', 'bad'],
+  ]) {
+    const f = fixture(t);
+    const result = await runLaunch(stage, { ...f.dependencies, acceptRelease });
+    assert.equal(result.status, 'failed');
+    assert.equal(f.state.calls.length, 0);
+  }
+});
+
 test('finalize fits a full catalog and measured fallback traffic within its request budget', async (t) => {
-  const f = fixture(t, { artworkCount: 100, browserRequests: 43 });
+  const f = fixture(t, { artworkCount: 100, browserRequests: 49 });
   f.prepareFinalize();
   const result = await runLaunch('finalize', f.dependencies);
   assert.equal(result.status, 'passed', result.error);

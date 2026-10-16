@@ -73,7 +73,7 @@ Stripe's saved Checkout policy URLs have no supported read API. The script match
 
 On your phone, open [Launch switch](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/workflows/launch-switch.yml) in a browser, or use **Repository → Actions → Workflows → Launch switch** in the [GitHub app](https://github.blog/changelog/2024-07-30-run-workflows-set-as-workflow_dispatch-manually/). Select **Run workflow**, branch **main**, and stage **cutover**, **rollback** or **finalize**. Leave **dry_run** checked for a rehearsal; uncheck it to apply the selected stage, then tap **Run workflow**. The `prd-launch` environment permits only `main`; it holds the four required launch secrets and the non-secret `STRIPE_DASHBOARD_REVIEW` variable.
 
-The one-off real cutover is scheduled for **2026-10-16 at 13:30 Athens time (10:30 UTC)**. The annual cron is guarded by that exact UTC date and does nothing on other dates. GitHub can [delay or drop scheduled runs under load](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows); 13:30 is the intended start, not a guaranteed completion time. Check the run before dispatching manually, and remove the schedule during launch-switch-day task 2.1.
+Cutover ran on 2026-10-16 in [run 38888410766](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38888410766); its `launch-state` artifact retains the rollback snapshot. The cutover cron is removed. One real **finalize** is scheduled for **2026-10-17 at 13:45 Athens (10:45 UTC)**, guarded by that exact UTC date and the existing 24-hour rollback window. GitHub can [delay or drop scheduled runs under load](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows). Scheduled execution requires a full reviewed SHA in the `prd-launch` variable `LAUNCH_ACCEPT_RELEASE`; missing or malformed values fail before invoking the launch command. Remove this cron after execution or if retirement readiness fails.
 
 Open the run and its **Summary** to read the launch status, step results, errors and manual follow-up links. Under **Artifacts**, tap **launch-state** to download the ZIP (sign in and use the browser if the app does not expose it). It is retained for 90 days, including failed runs. Every stage, including dry-runs, restores the newest live cutover snapshot found to guard against duplicate cutovers; rollback/finalize fail if none exists. For a later **local** rollback or finalize, download that artifact first and place its `snapshot.json` at `.codex-artifacts/launch/snapshot.json`; preserve any existing local recovery evidence before replacing it. A dry-run does not create a rollback snapshot.
 
@@ -89,12 +89,17 @@ pnpm launch:switch -- cutover
 # After at least 24 hours and renewed stability/policy review:
 pnpm launch:switch -- finalize --dry-run
 pnpm launch:switch -- finalize
+# Explicitly accept a reviewed newer release (full current PRD SHA):
+pnpm launch:switch -- finalize --accept-release <sha> --dry-run
+pnpm launch:switch -- finalize --accept-release <sha>
 # To reverse launch-owned DNS/redirect changes:
 pnpm launch:switch -- rollback --dry-run
 pnpm launch:switch -- rollback
 ```
 
-Before a real cutover, `finalize --dry-run` deliberately refuses. Record that refusal during preparation; do not forge a cutover timestamp. Stubbed tests rehearse the later path. A successful dry-run proves reads and planned writes only. Cutover/finalize require the accepted runtime release and its successful main push run with browser suites. A newer PRD SHA after cutover requires an explicit stability review; the script refuses that mismatch.
+Before a real cutover, `finalize --dry-run` deliberately refuses. Record that refusal during preparation; do not forge a cutover timestamp. Stubbed tests rehearse the later path. A successful dry-run proves reads and planned writes only. Cutover/finalize require the accepted runtime release and its successful main push run with browser suites. Without `--accept-release`, finalize still refuses a newer PRD SHA after cutover. After reviewing stability, `finalize --accept-release <sha>` accepts only the current PRD `release.json` SHA, with the same successful main push run, run number, browser suites and readiness Home `X-Release-SHA` checks. Apex Home and API must also match that release. The summary records `acceptedRelease`; the original cutover release and rollback snapshot remain intact. The workflow's optional `accept_release` input falls back to `vars.LAUNCH_ACCEPT_RELEASE` from `prd-launch`, and is passed only for finalize. This is a launch-tooling choice, not code promotion.
+
+Browser image fallback selects a visible published image and scrolls it into view before waiting for its original to decode under controlled Images 503s. The hero still is intentionally hidden behind the film and is excluded. Only originals referenced by Home are allowed; video requests are aborted. No new transformation variant is requested.
 
 Every invocation writes a unique redacted summary beneath `.codex-artifacts/launch/<stage>/<run>/summary.json`. Real cutover first writes an exclusive `snapshot.json`; dry-run never creates a rollback snapshot. Preserve it. A local `launch.lock` prevents overlapping runs. After a crashed process, inspect its summary, snapshot and provider state before manually removing the stale lock. An existing snapshot prevents a second cutover until its recovery is resolved; do not delete evidence to force a retry.
 

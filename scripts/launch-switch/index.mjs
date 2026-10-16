@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { parseEnv } from 'node:util';
+import { parseArgs, parseEnv } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as pause } from 'node:timers/promises';
 import { validateRun, validateSuites } from '../release-candidate.mjs';
@@ -59,6 +59,7 @@ export async function runLaunch(
   stage,
   {
     dryRun = false,
+    acceptRelease,
     root = process.cwd(),
     env = loadLaunchEnvironment(root),
     fetch = globalThis.fetch,
@@ -158,6 +159,7 @@ export async function runLaunch(
   const listsPath = `${cfAccount}/rules/lists`;
   let lock;
   let snapshot;
+  let selectedRelease;
   const saveSnapshot = () => writeJson(snapshotFile, snapshot);
   const dnsBody = ({ name, type, content, ttl, proxied, comment, tags, settings }) => ({
     name,
@@ -181,7 +183,7 @@ export async function runLaunch(
     assert.equal(response.status, 200, 'Home did not return HTTP 200.');
     assert.equal(
       response.headers.get('X-Release-SHA'),
-      snapshot.release.sha,
+      selectedRelease.sha,
       'Home is not the selected full-site release.',
     );
     return response.text();
@@ -298,7 +300,7 @@ export async function runLaunch(
     await check('Apex API', async () => {
       const response = await request(`${apex}/api/store/capabilities`, {}, true);
       assert.equal(response.status, 200, 'Apex API failed.');
-      assert.equal(response.headers.get('X-Release-SHA'), snapshot.release.sha, 'API release differs.');
+      assert.equal(response.headers.get('X-Release-SHA'), selectedRelease.sha, 'API release differs.');
       await response.body?.cancel();
     });
     if (dryRun) plan('run controlled browser image-fallback acceptance after real cutover');
@@ -310,6 +312,10 @@ export async function runLaunch(
   };
   try {
     assert.ok(validStage, 'Select cutover, finalize or rollback.');
+    if (acceptRelease !== undefined) {
+      assert.equal(stage, 'finalize', '--accept-release is only valid for finalize.');
+      assert.match(acceptRelease, /^[a-f0-9]{40}$/, 'Accepted release must be a full lowercase SHA.');
+    }
     mkdirSync(directory, { recursive: true });
     lock = openSync(path.join(directory, 'launch.lock'), 'wx');
     assert.match(account ?? '', /^[a-f0-9]{32}$/, 'Set CLOUDFLARE_ACCOUNT_ID.');
@@ -370,6 +376,7 @@ export async function runLaunch(
         return release;
       });
       summary.release = release;
+      selectedRelease = release;
       if (stage === 'cutover') {
         assert.ok(!snapshot, 'A launch snapshot already exists; inspect or rollback that run before a new cutover.');
         snapshot = await step('Read rollback snapshot', async () => ({
@@ -453,7 +460,11 @@ export async function runLaunch(
         }
         for (const link of manualLinks) print(link);
       } else {
-        assert.equal(release.sha, snapshot.release.sha, 'PRD source changed since cutover; review stability again.');
+        if (acceptRelease !== undefined) {
+          assert.equal(release.sha, acceptRelease, 'Accepted release differs from current PRD release.');
+          summary.acceptedRelease = acceptRelease;
+        } else
+          assert.equal(release.sha, snapshot.release.sha, 'PRD source changed since cutover; review stability again.');
         await step('Stripe artwork retirement readiness', async () => {
           const products = await stripe('/products?active=true&limit=100');
           assert.equal(products.has_more, false, 'Product inventory exceeds the bounded launch read.');
@@ -579,14 +590,31 @@ export async function runLaunch(
   return summary;
 }
 
+export function parseLaunchArgs(args) {
+  const { values, positionals } = parseArgs({
+    args: args.filter((arg) => arg !== '--'),
+    allowPositionals: true,
+    options: { 'dry-run': { type: 'boolean' }, 'accept-release': { type: 'string' }, help: { type: 'boolean' } },
+  });
+  assert.ok(positionals.length === 1 || values.help, 'Select one launch stage.');
+  return {
+    stage: positionals[0],
+    dryRun: Boolean(values['dry-run']),
+    acceptRelease: values['accept-release'],
+    help: values.help,
+  };
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const args = process.argv.slice(2).filter((arg) => arg !== '--');
-  if (args.includes('--help')) console.log('pnpm launch:switch -- <cutover|finalize|rollback> [--dry-run]');
-  else if (args.slice(1).some((arg) => arg !== '--dry-run')) {
-    console.error('Unknown launch option. Use --help.');
+  try {
+    const { stage, help, ...options } = parseLaunchArgs(process.argv.slice(2));
+    if (help) console.log('pnpm launch:switch -- <cutover|finalize|rollback> [--dry-run] [--accept-release <sha>]');
+    else {
+      const result = await runLaunch(stage, options);
+      if (result.status === 'failed') process.exitCode = 1;
+    }
+  } catch (error) {
+    console.error(error.message);
     process.exitCode = 1;
-  } else {
-    const result = await runLaunch(args[0], { dryRun: args.includes('--dry-run') });
-    if (result.status === 'failed') process.exitCode = 1;
   }
 }
