@@ -12,5 +12,5 @@
 
 ## 3. Deliver
 
-- [ ] 3.1 Commit only task files, fetch and verify ancestry before push, follow the push run to green and verify the UAT SHA; record concrete evidence.
-- [ ] 3.2 Evaluate all production conditions and either verify authorized PRD promotion/launch acceptance identity or record the blocking condition with PRD and launch acceptance unchanged.
+- [x] 3.1 Commit only task files, fetch and verify ancestry before push, follow the push run to green and verify the UAT SHA; record concrete evidence.
+- [x] 3.2 Evaluate all production conditions and either verify authorized PRD promotion/launch acceptance identity or record the blocking condition with PRD and launch acceptance unchanged.
