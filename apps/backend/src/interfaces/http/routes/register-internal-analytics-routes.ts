@@ -8,6 +8,7 @@ import {
   problemContent,
 } from '../../../platform/interfaces/http/responses';
 import { requestLogger } from '../../../platform/observability';
+import launchGap from './launch-gap-analytics.json';
 
 const rangeSchema = z.enum(['7d', '30d']);
 const metrics = { visits: z.number().nonnegative(), pageViews: z.number().nonnegative() };
@@ -140,11 +141,11 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
       start.setUTCDate(start.getUTCDate() - days + 1);
       // Isolate environments/sites and UTC windows; cache only data, never identity or request IDs.
       const cacheKey = new Request(
-        `https://staff.blackboxrecordsathens.com/__analytics-cache/v3/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/v4/${context.env.PRODUCT_ENVIRONMENT}/${encodeURIComponent(accountTag)}/${encodeURIComponent(siteTag)}/${now.toISOString().slice(0, 10)}?range=${range}`,
       );
       let cache: Cache | undefined;
       try {
-        cache = await caches.open('site-analytics-v3');
+        cache = await caches.open('site-analytics-v4');
         const cached = await cache.match(cacheKey);
         if (cached) return jsonNoStore(context.json(responseSchema.parse(await cached.json()), 200));
       } catch {
@@ -201,6 +202,15 @@ export function registerInternalAnalyticsRoutes(app: AppOpenApi): void {
           if (!window.success) throw new AnalyticsReadFailure('upstream_invalid_shape');
           return window.data;
         });
+        // Captured edge visits end before the first RUM minute; merge this estimate only once.
+        if (
+          accountTag === launchGap.accountTag &&
+          siteTag === launchGap.siteTag &&
+          start <= new Date(launchGap.startInclusive) &&
+          now >= new Date(launchGap.endExclusive)
+        ) {
+          data.push(windowSchema.parse(launchGap));
+        }
         const dailyRows = data.flatMap((window) => window.daily);
         const daily = Array.from({ length: days }, (_, index) => {
           const date = new Date(start.getTime() + index * 86400000).toISOString().slice(0, 10);

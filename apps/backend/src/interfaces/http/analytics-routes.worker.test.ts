@@ -5,6 +5,7 @@ import { commerceRuntimeConfigFromBindings, type AppBindings } from '../../platf
 import { createHttpApp } from './app';
 import fixture from './routes/fixtures/site-analytics-graphql.json';
 import liveFixture from './routes/fixtures/site-analytics-live-graphql.json';
+import launchGap from './routes/launch-gap-analytics.json';
 
 const secret = 'test-analytics-secret-never-expose';
 let bindings: AppBindings;
@@ -30,7 +31,7 @@ function windowFixture(init: RequestInit, source = fixture) {
 }
 
 beforeEach(async () => {
-  cache = await caches.open('site-analytics-v3');
+  cache = await caches.open('site-analytics-v4');
   vi.spyOn(caches, 'open').mockResolvedValue(cache);
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-12T12:00:00.000Z'));
@@ -52,6 +53,102 @@ afterEach(() => {
 });
 
 describe('protected analytics read', () => {
+  it.each(['7d', '30d'])(
+    'adds the frozen launch estimate once and preserves RUM and the contract for %s',
+    async (range) => {
+      vi.setSystemTime(new Date('2026-10-16T14:00:00.000Z'));
+      bindings.CLOUDFLARE_ACCOUNT_ID = launchGap.accountTag;
+      bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = launchGap.siteTag;
+      const upstream = vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+        const result = windowFixture(init);
+        // The first RUM minute is retained in the normal provider data, not in the estimate.
+        result.data.viewer.accounts[0]!.daily = [{ dimensions: { date: '2026-10-16' }, count: 2, sum: { visits: 1 } }];
+        return Promise.resolve(Response.json(result));
+      });
+      vi.stubGlobal('fetch', upstream);
+      const response = await read(range);
+      const result = await response.json<Record<string, unknown>>();
+      expect(response.status).toBe(200);
+      expect(Object.keys(result)).toEqual([
+        'range',
+        'generatedAt',
+        'status',
+        'daily',
+        'topPaths',
+        'topReferrers',
+        'topCountries',
+        'deviceTypes',
+      ]);
+      expect(result.daily).toContainEqual({ date: '2026-10-16', visits: 51, pageViews: 52 });
+      expect(result.daily).toContainEqual({ date: '2026-10-15', visits: 0, pageViews: 0 });
+      expect(result.topPaths).toContainEqual({ path: '/', visits: 50, pageViews: 54 });
+      expect(result.topCountries).toContainEqual({ country: 'GR', visits: 43, pageViews: 49 });
+      expect(result.deviceTypes).toContainEqual({ deviceType: 'mobile', visits: 47, pageViews: 53 });
+      expect(result.topReferrers).toEqual([
+        { host: '', visits: 7, pageViews: 10 },
+        { host: 'bandcamp.com', visits: 4, pageViews: 7 },
+      ]);
+      expect(await (await read(range, 'second-read')).json()).toEqual(result);
+      expect(upstream).toHaveBeenCalledTimes(1);
+      expect(caches.open).toHaveBeenCalledWith('site-analytics-v4');
+      expect(launchGap.endExclusive).toBe('2026-10-16T12:19:00Z');
+      expect(launchGap.daily).toEqual([{ dimensions: { date: '2026-10-16' }, sum: { visits: 50 }, count: 50 }]);
+      for (const key of ['topPaths', 'topCountries', 'deviceTypes'] as const) {
+        expect(launchGap[key].reduce((sum, row) => sum + row.sum.visits, 0)).toBe(50);
+        expect(launchGap[key].reduce((sum, row) => sum + row.count, 0)).toBe(50);
+      }
+    },
+  );
+
+  it.each([
+    ['2026-10-16T12:18:59.999Z', '7d', false],
+    ['2026-10-16T12:19:00.000Z', '7d', true],
+    ['2026-10-22T23:59:59.999Z', '7d', true],
+    ['2026-10-23T00:00:00.000Z', '7d', false],
+    ['2026-10-23T00:00:00.000Z', '30d', true],
+    ['2026-11-14T23:59:59.999Z', '30d', true],
+    ['2026-11-15T00:00:00.000Z', '30d', false],
+    ['2026-10-15T23:59:59.999Z', '30d', false],
+  ])('limits the estimate to the overlapping range at %s (%s)', async (timestamp, range, included) => {
+    vi.setSystemTime(new Date(timestamp));
+    bindings.CLOUDFLARE_ACCOUNT_ID = launchGap.accountTag;
+    bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = launchGap.siteTag;
+    await cache.delete(
+      new Request(
+        `https://staff.blackboxrecordsathens.com/__analytics-cache/v4/LOCAL/${launchGap.accountTag}/${launchGap.siteTag}/${timestamp.slice(0, 10)}?range=${range}`,
+      ),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init: RequestInit) => {
+        const result = windowFixture(init);
+        for (const key of Object.keys(result.data.viewer.accounts[0]!)) {
+          (result.data.viewer.accounts[0] as Record<string, unknown>)[key] = [];
+        }
+        return Promise.resolve(Response.json(result));
+      }),
+    );
+    const result = await (
+      await read(range)
+    ).json<{ daily: Array<{ visits: number; pageViews: number }>; topPaths: unknown[] }>();
+    expect(result.daily.reduce((sum, row) => sum + row.visits, 0)).toBe(included ? 50 : 0);
+    expect(result.daily.reduce((sum, row) => sum + row.pageViews, 0)).toBe(included ? 50 : 0);
+    expect(result.topPaths).toHaveLength(included ? 8 : 0);
+  });
+
+  it.each(['account', 'site'])('does not add production traffic to another %s', async (different) => {
+    vi.setSystemTime(new Date('2026-10-16T14:00:00.000Z'));
+    bindings.CLOUDFLARE_ACCOUNT_ID = different === 'account' ? crypto.randomUUID() : launchGap.accountTag;
+    bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = different === 'site' ? 'another-site' : launchGap.siteTag;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(fixture)));
+    const result = await (await read()).json<{ daily: Array<{ date: string; visits: number; pageViews: number }> }>();
+    expect(result.daily.find((row) => row.date === '2026-10-16')).toEqual({
+      date: '2026-10-16',
+      visits: 0,
+      pageViews: 0,
+    });
+  });
+
   it.each(['2026-10-13T12:00:00.000Z', '2027-01-01T00:00:00.000Z'])(
     'aligns consecutive windows with the seven-day query at %s',
     async (timestamp) => {
@@ -312,7 +409,7 @@ describe('protected analytics read', () => {
     expect(stored.headers.get('Cache-Control')).toBe('public, max-age=900');
     expect(stored.headers.has('X-Request-Id')).toBe(false);
     expect((key as Request).url).not.toContain(secret);
-    expect(new URL((key as Request).url).pathname).toContain('/__analytics-cache/v3/');
+    expect(new URL((key as Request).url).pathname).toContain('/__analytics-cache/v4/');
     await read('30d');
     expect(upstream).toHaveBeenCalledTimes(2);
     bindings.CLOUDFLARE_WEB_ANALYTICS_SITE_TAG = 'another-site';
@@ -323,7 +420,7 @@ describe('protected analytics read', () => {
     expect(upstream).toHaveBeenCalledTimes(4);
   });
 
-  it.each(['v1', 'v2'])('does not serve a snapshot from the earlier %s cache', async (version) => {
+  it.each(['v1', 'v2', 'v3'])('does not serve a snapshot from the earlier %s cache', async (version) => {
     vi.mocked(caches.open).mockRestore();
     const oldCache = await caches.open(`site-analytics-${version}`);
     await oldCache.put(
@@ -349,7 +446,7 @@ describe('protected analytics read', () => {
     vi.stubGlobal('fetch', upstream);
     expect(await (await read()).json()).toMatchObject({ status: 'ok' });
     expect(upstream).toHaveBeenCalledOnce();
-    expect(open).toHaveBeenCalledExactlyOnceWith('site-analytics-v3');
+    expect(open).toHaveBeenCalledExactlyOnceWith('site-analytics-v4');
   });
 
   it('returns configured empty traffic separately from missing configuration', async () => {

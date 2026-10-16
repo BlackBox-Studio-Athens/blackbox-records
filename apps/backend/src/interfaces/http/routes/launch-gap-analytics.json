@@ -1,0 +1,169 @@
+{
+  "accountTag": "2004bfa6f5ad8b48008f1243b195ab61",
+  "siteTag": "a1737ae1db5e45b1b57d1c86c9fe52e8",
+  "startInclusive": "2026-10-16T10:38:02.269Z",
+  "endExclusive": "2026-10-16T12:19:00Z",
+  "sourceSha256": "6f1a6d377e2995837a293d9bb95a15520420cf5a81d5fa6000a203b921d6cbdd",
+  "daily": [
+    {
+      "dimensions": {
+        "date": "2026-10-16"
+      },
+      "sum": {
+        "visits": 50
+      },
+      "count": 50
+    }
+  ],
+  "topPaths": [
+    {
+      "dimensions": {
+        "value": "/"
+      },
+      "sum": {
+        "visits": 42
+      },
+      "count": 42
+    },
+    {
+      "dimensions": {
+        "value": "/releases/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "/artists/sidus/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "/terms/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "/store/"
+      },
+      "sum": {
+        "visits": 2
+      },
+      "count": 2
+    },
+    {
+      "dimensions": {
+        "value": "/news/disintegration/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "/services/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "/artists/"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    }
+  ],
+  "topReferrers": [],
+  "topCountries": [
+    {
+      "dimensions": {
+        "value": "GB"
+      },
+      "sum": {
+        "visits": 6
+      },
+      "count": 6
+    },
+    {
+      "dimensions": {
+        "value": "GR"
+      },
+      "sum": {
+        "visits": 32
+      },
+      "count": 32
+    },
+    {
+      "dimensions": {
+        "value": "US"
+      },
+      "sum": {
+        "visits": 8
+      },
+      "count": 8
+    },
+    {
+      "dimensions": {
+        "value": "DE"
+      },
+      "sum": {
+        "visits": 2
+      },
+      "count": 2
+    },
+    {
+      "dimensions": {
+        "value": "IE"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    },
+    {
+      "dimensions": {
+        "value": "KR"
+      },
+      "sum": {
+        "visits": 1
+      },
+      "count": 1
+    }
+  ],
+  "deviceTypes": [
+    {
+      "dimensions": {
+        "value": "mobile"
+      },
+      "sum": {
+        "visits": 36
+      },
+      "count": 36
+    },
+    {
+      "dimensions": {
+        "value": "desktop"
+      },
+      "sum": {
+        "visits": 14
+      },
+      "count": 14
+    }
+  ]
+}
