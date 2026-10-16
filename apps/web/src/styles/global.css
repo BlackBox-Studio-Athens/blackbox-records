@@ -6900,19 +6900,21 @@ body.is-app-shell-overlay-open {
   }
 }
 
-/* DRAFT phone layouts for the owner's choice (16 October 2026). Inert without the island's data-draft (?draft=a|b|c);
-   finalize the chosen one and delete the others. Each flattens a chapter into one grid with display: contents, so the
-   film and photo chapters share it; facts and the summary stay on the Store Item page. */
-.home-preorders__row {
-  display: contents;
-}
-
-.home-preorders__terms--once {
-  display: none;
+/* Phones below 48rem: the film strip (owner's choice, 16 October 2026). A clean 16:9 band (the film, else its poster or
+   the artist photograph) carries only the Watch full video icon in its lower right corner. Under it a 96px sleeve sits
+   beside the artist, title and the format and price row, then the status line, the Pre-order + Listen pair, the
+   shipping and international lines and the terms link. A release with neither video nor photograph leads with a 160px
+   sleeve. Each chapter is one grid: its wrappers use display: contents, so film and photo chapters share it. The facts
+   and summary stay on the Store Item page. */
+@media (width >= 48rem) {
+  .home-preorders__watch-icon,
+  .home-preorders__buy .home-preorders__shipping {
+    display: none;
+  }
 }
 
 @media (width < 48rem) {
-  .home-preorders[data-draft]
+  .home-preorders
     :is(
       .home-preorders__still-scene,
       .home-preorders__still-grid,
@@ -6925,11 +6927,12 @@ body.is-app-shell-overlay-open {
     display: contents;
   }
 
-  .home-preorders[data-draft] .home-preorders__chapter {
+  .home-preorders .home-preorders__chapter {
     display: grid;
-    grid-template-rows: auto auto auto 1fr;
-    grid-template-columns: 10rem minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-columns: 6rem minmax(0, 1fr);
     grid-template-areas:
+      'media media'
       'art artist'
       'art title'
       'art price'
@@ -6948,167 +6951,26 @@ body.is-app-shell-overlay-open {
     text-align: left;
   }
 
-  .home-preorders[data-draft] .home-preorders__film-copy {
+  .home-preorders .home-preorders__chapter--sleeve {
+    grid-template-columns: 10rem minmax(0, 1fr);
+  }
+
+  .home-preorders .home-preorders__film-copy {
     text-align: left;
   }
 
-  .home-preorders[data-draft]
+  .home-preorders
     :is(
       .home-preorders__facts,
       .home-preorders__summary,
       .home-preorders__clips,
       .home-preorders__still-shade,
-      .home-preorders__film-shade,
-      .home-preorders__band-photo,
-      .home-preorders__media
+      .home-preorders__film-shade
     ) {
     display: none;
   }
 
-  .home-preorders[data-draft] :is(.home-preorders__still-art, .home-preorders__hero-sleeve) {
-    grid-area: art;
-    width: 100%;
-    margin: 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__artist {
-    --home-preorders-artist-spacing: 0.24em;
-    grid-area: artist;
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .home-preorders[data-draft] :is(.home-preorders__identity h3, .home-preorders__film-title) {
-    grid-area: title;
-    margin: 0.25rem 0 0;
-    font: 400 1.875rem/1 var(--font-display-brand);
-    letter-spacing: 0.02em;
-    text-align: left;
-  }
-
-  .home-preorders[data-draft] .home-preorders__price-block {
-    grid-area: price;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 0;
-    margin: 0.75rem 0 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__option {
-    color: var(--muted-foreground);
-    font-size: 0.8125rem;
-    font-weight: 400;
-  }
-
-  .home-preorders[data-draft] .home-preorders__price {
-    font-size: 1.875rem;
-    line-height: 1.1;
-  }
-
-  .home-preorders[data-draft] .home-preorders__badges {
-    grid-area: badges;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 0 0.75rem;
-    margin: 1rem 0 0;
-    text-align: left;
-  }
-
-  .home-preorders[data-draft] .home-preorders__actions {
-    grid-area: actions;
-    width: auto;
-    margin: 0.75rem 0 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__shipping {
-    grid-area: ship;
-    margin: 0.5rem 0 0;
-  }
-
-  .home-preorders[data-draft]
-    .home-preorders__purchase
-    > :is(.international-order-notice, .international-order-delivery) {
-    grid-area: notice;
-    margin: 0.5rem 0 0;
-  }
-
-  /* Watch full video and the terms share one 44px text row. */
-  .home-preorders[data-draft] .home-preorders__film-tools .site-button {
-    grid-area: links;
-    justify-self: start;
-    flex: none;
-    min-width: 0;
-    min-height: 2.75rem;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    color: var(--foreground);
-    font: 400 0.8125rem/1.5 var(--font-sans);
-    letter-spacing: 0;
-    text-transform: none;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
-
-  .home-preorders[data-draft] .home-preorders__terms {
-    grid-area: links;
-    justify-self: start;
-    margin: 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__chapter--video .home-preorders__terms {
-    justify-self: end;
-  }
-
-  .home-preorders[data-draft] .home-preorders__media-note {
-    grid-area: note;
-    padding-inline: 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__watch-area {
-    grid-area: watch;
-    width: 100%;
-    padding-bottom: 0.5rem;
-  }
-
-  .home-preorders[data-draft] .home-preorders__next {
-    grid-area: next;
-    justify-self: end;
-    margin: 0.25rem 0 0;
-  }
-
-  .home-preorders[data-draft] .home-preorders__all {
-    margin-block: 0.5rem;
-  }
-
-  /* B: a 16:9 film or photo band with the artist top left and the title bottom left, then a 96px sleeve beside the
-     price and status. */
-  .home-preorders[data-draft='b'] .home-preorders__chapter {
-    grid-template-columns: 6rem minmax(0, 1fr);
-    grid-template-areas:
-      'media media'
-      'art price'
-      'art badges'
-      'art .'
-      'actions actions'
-      'ship ship'
-      'notice notice'
-      'links links'
-      'note note'
-      'watch watch'
-      'next next';
-  }
-
-  .home-preorders[data-draft='b']
-    :is(
-      .home-preorders__band-photo,
-      .home-preorders__media,
-      .home-preorders__still-shade,
-      .home-preorders__film-shade
-    ) {
+  .home-preorders :is(.home-preorders__band-photo, .home-preorders__media) {
     display: block;
     grid-area: media;
     position: relative;
@@ -7118,108 +6980,127 @@ body.is-app-shell-overlay-open {
     aspect-ratio: 16 / 9;
   }
 
-  .home-preorders[data-draft='b'] :is(.home-preorders__still-shade, .home-preorders__film-shade) {
+  .home-preorders :is(.home-preorders__still-art, .home-preorders__hero-sleeve) {
+    grid-area: art;
+    width: 100%;
+    margin: 1rem 0 0;
+  }
+
+  .home-preorders .home-preorders__artist {
+    --home-preorders-artist-spacing: 0.24em;
+    grid-area: artist;
+    margin: 1rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .home-preorders .home-preorders__chapter--sleeve :is(.home-preorders__still-art, .home-preorders__artist) {
+    margin-top: 0;
+  }
+
+  .home-preorders :is(.home-preorders__identity h3, .home-preorders__film-title) {
+    grid-area: title;
+    margin: 0;
+    font: 400 2rem/1 var(--font-display-brand);
+    letter-spacing: 0.02em;
+    text-align: left;
+  }
+
+  .home-preorders .home-preorders__price-block {
+    grid-area: price;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 0.75rem;
+    margin: 0.5rem 0 0;
+  }
+
+  .home-preorders .home-preorders__option {
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    font-weight: 400;
+  }
+
+  .home-preorders .home-preorders__price {
+    font-size: 1.875rem;
+    line-height: 1.1;
+  }
+
+  .home-preorders .home-preorders__badges {
+    grid-area: badges;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0 0.75rem;
+    margin: 1rem 0 0;
+    text-align: left;
+  }
+
+  .home-preorders .home-preorders__actions {
+    grid-area: actions;
+    width: auto;
+    margin: 0.75rem 0 0;
+  }
+
+  .home-preorders .home-preorders__shipping {
+    grid-area: ship;
+    margin: 0.5rem 0 0;
+  }
+
+  .home-preorders .home-preorders__purchase > :is(.international-order-notice, .international-order-delivery) {
+    grid-area: notice;
+    margin: 0.5rem 0 0;
+  }
+
+  .home-preorders .home-preorders__terms {
+    grid-area: links;
+    justify-self: start;
+    margin: 0.25rem 0 0;
+  }
+
+  /* The only thing over the film: a 44px icon in the band's lower right corner, named Watch full video. */
+  .home-preorders .home-preorders__film-tools .site-button {
     z-index: 1;
-    background: linear-gradient(0deg, rgb(13 13 13 / 88%), transparent 55%, transparent 70%, rgb(13 13 13 / 62%));
-  }
-
-  .home-preorders[data-draft='b']
-    :is(.home-preorders__artist, .home-preorders__identity h3, .home-preorders__film-title) {
-    z-index: 2;
     grid-area: media;
-    padding-inline: 0.75rem;
-  }
-
-  .home-preorders[data-draft='b'] .home-preorders__artist {
-    align-self: start;
-    padding-top: 0.25rem;
-  }
-
-  .home-preorders[data-draft='b'] :is(.home-preorders__identity h3, .home-preorders__film-title) {
     align-self: end;
-    margin: 0;
-    padding-bottom: 0.75rem;
-    font-size: 2.25rem;
+    justify-self: end;
+    flex: none;
+    width: 2.75rem;
+    min-width: 0;
+    height: 2.75rem;
+    min-height: 2.75rem;
+    margin: 0 0.5rem 0.5rem 0;
+    padding: 0;
   }
 
-  .home-preorders[data-draft='b'] :is(.home-preorders__still-art, .home-preorders__hero-sleeve) {
-    margin-top: 1rem;
+  .home-preorders .home-preorders__watch-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  .home-preorders[data-draft='b'] .home-preorders__price-block {
-    margin-top: 1rem;
+  .home-preorders .home-preorders__media-note {
+    grid-area: note;
+    padding-inline: 0;
   }
 
-  .home-preorders[data-draft='b'] .home-preorders__badges {
-    flex-direction: column;
-    margin-top: 0.25rem;
+  .home-preorders .home-preorders__watch-area {
+    grid-area: watch;
+    width: 100%;
+    padding-bottom: 0.5rem;
   }
 
-  .home-preorders[data-draft='b'] .home-preorders__badges > * {
-    align-self: flex-start;
+  .home-preorders .home-preorders__next {
+    grid-area: next;
+    justify-self: end;
+    margin: 0.25rem 0 0;
   }
 
-  /* C: every pre-order is a card in one native scroll-snap row, clipped at the gutters like Home News; the terms link
-     follows the row once, beside All pre-orders. */
-  .home-preorders[data-draft='c'] {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    padding-top: 2rem;
-  }
-
-  .home-preorders[data-draft='c'] :is(.home-preorders__row, .home-preorders__dots) {
-    grid-column: 1 / -1;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__row {
-    display: grid;
-    grid-auto-columns: calc(100% - 3.5rem);
-    grid-auto-flow: column;
-    gap: 0.875rem;
-    align-items: start;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__row::-webkit-scrollbar {
-    display: none;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__chapter {
-    grid-template-columns: 7rem minmax(0, 1fr);
-    padding-top: 0;
-    scroll-snap-align: start;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__chapter :is(.home-preorders__terms, .home-preorders__next) {
-    display: none;
-  }
-
-  .home-preorders[data-draft='c']
-    :is(.home-preorders__identity h3, .home-preorders__film-title, .home-preorders__price) {
-    font-size: 1.625rem;
-  }
-
-  /* The truck icon stays beside the first words in the narrower card. */
-  .home-preorders[data-draft='c'] .international-order-notice--line > span {
-    flex: 1 1 12rem;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__dots {
-    margin-top: 0.5rem;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__terms--once {
-    display: flex;
-    grid-area: auto;
-    margin: 0;
-  }
-
-  .home-preorders[data-draft='c'] .home-preorders__all {
-    margin: 0 0 0 auto;
+  .home-preorders .home-preorders__all {
+    margin-block: 0.5rem;
   }
 }
 

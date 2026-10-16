@@ -275,3 +275,38 @@ test('Home photo chapter preserves artwork and links to the Store filter', async
   await expect(page).toHaveURL(/\/store\/#preorders$/);
   await expect(page.getByRole('button', { name: 'Pre-orders 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
+
+// Local content has no clip: the film band and the sleeve row are covered by the component tests.
+test('Home photo chapter on a phone is a clean photo band with the identity and purchase under it @phone', async ({
+  page,
+}) => {
+  await page.goto('./');
+  await waitForShell(page);
+  const release = chapter(page);
+  const title = release.getByRole('heading', { name: 'Disintegration', exact: true });
+  const photo = release.getByRole('img', { name: 'Afterwise', exact: true });
+  await photo.scrollIntoViewIfNeeded();
+  await expect(title).toBeVisible();
+  const width = page.viewportSize()!.width;
+  const band = (await photo.boundingBox())!;
+  const heading = (await title.boundingBox())!;
+  const sleeve = (await release.getByRole('img', { name: 'Disintegration cover', exact: true }).boundingBox())!;
+  expect(band.x).toBeCloseTo(16, 0);
+  expect(band.x + band.width).toBeCloseTo(width - 16, 0);
+  expect(band.height).toBeCloseTo((band.width * 9) / 16, 0);
+  expect(heading.y).toBeGreaterThanOrEqual(band.y + band.height);
+  expect(sleeve.y).toBeGreaterThanOrEqual(band.y + band.height);
+  expect(sleeve.width).toBeCloseTo(96, 0);
+  await expect(release.getByRole('button', { name: 'Watch full video' })).toHaveCount(0);
+  await expect(release.locator('dl')).toBeHidden();
+  const pair = await Promise.all(
+    [
+      release.getByRole('link', { name: 'Pre-order', exact: true }),
+      release.getByRole('button', { name: 'Listen' }),
+    ].map(async (control) => (await control.boundingBox())!),
+  );
+  for (const control of pair) expect(control.height).toBeCloseTo(44, 0);
+  expect(pair[0]!.width).toBeCloseTo(pair[1]!.width, 0);
+  await expect(release.getByRole('link', { name: 'Pre-order & delivery information' })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});

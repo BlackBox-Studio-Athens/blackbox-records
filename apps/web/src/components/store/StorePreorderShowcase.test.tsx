@@ -259,3 +259,60 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('Digital out now');
   });
 });
+
+// Phones (global.css, below 48rem) lay each chapter out as a film strip from this markup: the band first, the one
+// Watch control in it, then the identity and purchase; a release with neither video nor photograph leads with its sleeve.
+describe('StorePreorderShowcase phone film strip', () => {
+  const native = {
+    ...clip,
+    firstClipId: 'MOA5YZDOR6A',
+    clips: [
+      {
+        id: 'MOA5YZDOR6A',
+        title: 'Official video',
+        posterUrl: '/video-poster.webp',
+        backgroundVideoUrl: '/silent-loop.mp4',
+      },
+    ],
+  };
+
+  it('puts the film band before the title and its only control, an icon named Watch full video, in the band tools', () => {
+    const html = renderToStaticMarkup(render([item(native)]));
+    expect(html).toContain('home-preorders__chapter home-preorders__chapter--video');
+    expect(html.indexOf('data-preorder-ambient=')).toBeLessThan(html.indexOf('<h3'));
+    expect(html).toMatch(/<video[^>]*class="home-preorders__film"/);
+    const tools = html.slice(html.indexOf('home-preorders__film-tools'), html.indexOf('home-preorders__clips'));
+    expect(tools.match(/<button/g)).toHaveLength(1);
+    expect(tools).toMatch(/aria-controls="preorder-clip-vinyl-video" aria-expanded="false"/);
+    expect(tools).toMatch(/<svg class="home-preorders__watch-icon"[^>]*aria-hidden="true"/);
+    expect(tools).toContain('<span class="home-preorders__watch-label">Watch full video</span>');
+  });
+
+  it('shows a clip without a film as its poster, else the artist photograph, with Watch', () => {
+    const withoutFilm = {
+      ...clip,
+      clips: [{ id: 'dQw4w9WgXcQ', title: 'Official video', posterUrl: null }],
+    };
+    const html = renderToStaticMarkup(render([item(withoutFilm)]));
+    expect(html).not.toContain('<video');
+    expect(html).toContain('<img src="/clip-band.webp" alt="" class="home-preorders__video-poster"');
+    expect(html).toContain('Watch full video');
+  });
+
+  it('falls back to the artist photograph band without Watch, then to the sleeve row', () => {
+    const photoHtml = renderToStaticMarkup(render([item(photo)]));
+    expect(photoHtml).toContain('class="home-preorders__chapter"');
+    expect(photoHtml.indexOf('home-preorders__band-photo')).toBeLessThan(photoHtml.indexOf('<h3'));
+    expect(photoHtml).not.toContain('Watch full video');
+
+    const sleeveHtml = renderToStaticMarkup(render([item(cover)]));
+    expect(sleeveHtml).toContain('home-preorders__chapter home-preorders__chapter--sleeve');
+    expect(sleeveHtml).not.toContain('home-preorders__band-photo');
+    expect(sleeveHtml).not.toContain('Watch full video');
+  });
+
+  it('gives a photo chapter its ship estimate beside the purchase for phones, as the facts do on wider screens', () => {
+    const html = renderToStaticMarkup(render([item({ ...photo, releaseDate: '2026-10-16' })]));
+    expect(html).toContain('<p class="home-preorders__shipping">Vinyl ships around October 2026</p>');
+  });
+});

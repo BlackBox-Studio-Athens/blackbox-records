@@ -3,7 +3,6 @@ import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
-import { SwipeRowDots } from '@/components/ui/swipe-row-dots';
 import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
@@ -42,19 +41,9 @@ export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & {
   shipEstimate: ShipEstimate | null;
 };
 type ShowcaseItem = StorePreorderShowcaseItem;
-// DRAFT: review aid for the phone drafts, so clip-less content shows a film chapter; delete at finalize.
-export type StorePreorderDemoClip = NonNullable<StorePreorderShowcaseCandidate['clips']>[number];
 
 // The section is in the server HTML or absent; hydration adds only media and viewing behavior.
-export default function StorePreorderShowcase({
-  items,
-  storeUrl,
-  demoClip,
-}: {
-  items: ShowcaseItem[];
-  storeUrl: string;
-  demoClip?: StorePreorderDemoClip | undefined;
-}) {
+export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [watching, setWatching] = useState<string | null>(null);
   const videoHistory = useRef<ReturnType<typeof connectSurfaceHistory> | null>(null);
@@ -82,12 +71,6 @@ export default function StorePreorderShowcase({
   const [desktopVideo, setDesktopVideo] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(true);
   const section = useRef<HTMLElement>(null);
-  // DRAFT: phone layout drafts for the owner's choice; ?draft=a|b|c only. Delete the unchosen ones and this switch.
-  const [draft, setDraft] = useState<string | null>(null);
-  useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get('draft');
-    if (value === 'a' || value === 'b' || value === 'c') setDraft(value);
-  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -139,58 +122,29 @@ export default function StorePreorderShowcase({
     );
     section.current.querySelectorAll('[data-preorder-ambient]').forEach((scene) => observer.observe(scene));
     return () => observer.disconnect();
-    // DRAFT: draft joins the dependencies only because a demo clip adds scenes after hydration.
-  }, [items, draft]);
+  }, [items]);
 
   if (items.length === 0) return null;
   return (
-    <section
-      ref={section}
-      id="preorders"
-      className="home-preorders"
-      aria-labelledby="home-preorders-title"
-      data-draft={draft ?? undefined}
-    >
+    <section ref={section} id="preorders" className="home-preorders" aria-labelledby="home-preorders-title">
       {/* Each chapter's Pre-order action says what these are; the title stays for assistive technology. */}
       <h2 id="home-preorders-title" className="sr-only">
         Pre-orders
       </h2>
-      {/* DRAFT c: the swipe row; display: contents without a draft. */}
-      <div id="home-preorders-row" className="home-preorders__row">
-        {items.map((item, index) => (
-          <PreorderChapter
-            key={item.slug}
-            item={item}
-            next={items[index + 1]}
-            active={watching === null && activeScene === item.slug}
-            playing={watching === item.slug}
-            onWatch={onWatch}
-            automaticMotion={automaticMotion}
-            desktopVideo={desktopVideo}
-            documentVisible={documentVisible}
-            playerSession={playerSession}
-            draft={draft}
-            demoClip={draft ? demoClip : undefined}
-          />
-        ))}
-      </div>
-      {draft === 'c' && (
-        <>
-          <SwipeRowDots
-            rowId="home-preorders-row"
-            count={items.length}
-            label="Pre-orders position"
-            className="home-preorders__dots md:hidden"
-          />
-          <a
-            href={createProjectRelativeUrl('/terms/')}
-            data-astro-prefetch
-            className="home-preorders__terms home-preorders__terms--once"
-          >
-            Pre-order &amp; delivery information
-          </a>
-        </>
-      )}
+      {items.map((item, index) => (
+        <PreorderChapter
+          key={item.slug}
+          item={item}
+          next={items[index + 1]}
+          active={watching === null && activeScene === item.slug}
+          playing={watching === item.slug}
+          onWatch={onWatch}
+          automaticMotion={automaticMotion}
+          desktopVideo={desktopVideo}
+          documentVisible={documentVisible}
+          playerSession={playerSession}
+        />
+      ))}
       <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
         All pre-orders
       </a>
@@ -208,8 +162,6 @@ function PreorderChapter({
   desktopVideo,
   documentVisible,
   playerSession,
-  draft,
-  demoClip,
 }: {
   item: ShowcaseItem;
   next?: ShowcaseItem | undefined;
@@ -220,8 +172,6 @@ function PreorderChapter({
   desktopVideo: boolean;
   documentVisible: boolean;
   playerSession: boolean;
-  draft: string | null;
-  demoClip: StorePreorderDemoClip | undefined;
 }) {
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [failedClips, setFailedClips] = useState<string[]>([]);
@@ -243,9 +193,7 @@ function PreorderChapter({
             backgroundVideoDesktopUrl: null,
           },
         ]
-      : demoClip
-        ? [demoClip]
-        : [];
+      : [];
   const clip = clips[0];
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
@@ -287,8 +235,7 @@ function PreorderChapter({
     return () => {
       cancelled = true;
     };
-    // DRAFT: clip joins the dependencies only because a demo clip mounts the film title after hydration.
-  }, [item.title, clip?.id]);
+  }, [item.title]);
 
   useEffect(() => {
     const media = video.current;
@@ -395,7 +342,7 @@ function PreorderChapter({
         </a>
         {listen}
       </div>
-      {(clip || draft) && !badges.some((badge) => estimate && badge.includes(estimate)) && (
+      {!badges.some((badge) => estimate && badge.includes(estimate)) && (
         <p className="home-preorders__shipping">
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
@@ -412,7 +359,10 @@ function PreorderChapter({
   return (
     <article
       id={chapterId}
-      className={'home-preorders__chapter' + (clip ? ' home-preorders__chapter--video' : '')}
+      className={
+        'home-preorders__chapter' +
+        (clip ? ' home-preorders__chapter--video' : item.artistPhotoUrl ? '' : ' home-preorders__chapter--sleeve')
+      }
       aria-labelledby={chapterId + '-title'}
     >
       {clip ? (
@@ -472,7 +422,18 @@ function PreorderChapter({
                   if (!document.documentElement.hasAttribute('data-music-player-session')) onWatch(item.slug);
                 }}
               >
-                Watch full video
+                {/* Phones show only this icon in the film band's corner; wider screens show only the label. */}
+                <svg
+                  className="home-preorders__watch-icon"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="m8 5 11 7-11 7Z" />
+                </svg>
+                <span className="home-preorders__watch-label">Watch full video</span>
               </button>
             </div>
             <div className="home-preorders__clips" role="group" aria-label="Official video">
