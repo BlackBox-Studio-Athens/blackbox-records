@@ -126,7 +126,7 @@ describe('Launch workflow recovery and authorization', () => {
   });
 
   it('keeps safe defaults, serial execution, failure propagation and recovery artifacts', () => {
-    expect(workflow.on.schedule).toEqual([{ cron: '0 7 16 10 *' }]);
+    expect(workflow.on.schedule).toEqual([{ cron: '30 10 16 10 *' }]);
     expect(workflow.on.workflow_dispatch.inputs.dry_run.default).toBe(true);
     expect(workflow.permissions).toEqual({ contents: 'read', actions: 'read' });
     expect(workflow.concurrency).toEqual({ group: 'launch-switch', 'cancel-in-progress': false });
