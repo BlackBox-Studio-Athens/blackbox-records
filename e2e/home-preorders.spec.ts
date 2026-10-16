@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Page } from 'playwright/test';
@@ -155,24 +154,30 @@ test('preorder film starts and resumes without reloading its source @phone', asy
 });
 
 test('preorder film preserves pause rules while a cold source is delayed @phone', async ({ page }) => {
-  const bytes = readFileSync('apps/web/src/pages/_assets/home-hero/home-hero-intro-portrait.mp4');
+  await page.goto('./');
+  const asset = await page.locator('video[data-home-hero-film]').getAttribute('data-portrait-src');
+  expect(asset).toBeTruthy();
+  const upstreamUrl = new URL(asset!, page.url()).href;
   let release = () => {};
   const ready = new Promise<void>((resolve) => {
     release = resolve;
   });
   let requested = false;
   // WebKit media requests bypass page.route; delay a real Local response in every engine.
-  const server = createServer(async (_request, response) => {
+  const server = createServer(async (request, response) => {
     requested = true;
     await ready;
+    if (response.destroyed) return;
+    // Keep the normal asset server's byte-range protocol for native media loaders.
+    const upstream = await fetch(upstreamUrl, {
+      headers: request.headers.range ? { Range: request.headers.range } : {},
+    });
+    const bytes = Buffer.from(await upstream.arrayBuffer());
     if (!response.destroyed)
-      response
-        .writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': bytes.length, Connection: 'close' })
-        .end(bytes);
+      response.writeHead(upstream.status, { ...Object.fromEntries(upstream.headers), Connection: 'close' }).end(bytes);
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
-    await page.goto('./');
     const video = await mountFilmChapter(page, `http://127.0.0.1:${(server.address() as AddressInfo).port}/film.mp4`);
     await expect.poll(() => requested).toBe(true);
     await expect(video).not.toHaveAttribute('data-playing', 'true');
