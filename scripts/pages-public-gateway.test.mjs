@@ -183,6 +183,8 @@ test('HTML and conditional replies preserve cache and privacy headers for automa
     ['/', 'GET', 304, 'public, max-age=0'],
     ['/email-preferences/', 'GET', 200, 'private, no-store'],
     ['/', 'GET', 503, 'no-store'],
+    ['/', 'GET', 200, null],
+    ['/', 'GET', 304, ''],
     ['/', 'GET', 200, 'no-store, no-transform'],
   ]) {
     const { env } = captureEnv();
@@ -191,7 +193,7 @@ test('HTML and conditional replies preserve cache and privacy headers for automa
         status,
         headers: {
           ...(status === 304 ? {} : { 'Content-Type': 'text/html; charset=utf-8' }),
-          'Cache-Control': cache,
+          ...(cache === null ? {} : { 'Cache-Control': cache }),
           'Referrer-Policy': 'no-referrer',
           'X-Robots-Tag': 'noindex',
           ETag: 'W/"same-content"',
@@ -199,7 +201,7 @@ test('HTML and conditional replies preserve cache and privacy headers for automa
       });
     const response = await gateway.fetch(new Request(`https://site.invalid${path}`, { method }), env);
     assert.equal(response.status, status);
-    assert.equal(response.headers.get('Cache-Control'), cache);
+    assert.equal(response.headers.get('Cache-Control'), cache || 'no-store');
     assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');
     assert.equal(response.headers.get('X-Robots-Tag'), 'noindex');
     assert.equal(response.headers.get('ETag'), 'W/"same-content"');

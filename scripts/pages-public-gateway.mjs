@@ -46,10 +46,12 @@ export function createPublicGateway(patterns) {
       const response = await env.PUBLIC_SITE.fetch(new Request(request.url, { method: request.method, headers }));
       if (!response.headers.get('Content-Type')?.toLowerCase().startsWith('text/html') && response.status !== 304)
         return response;
+      const responseHeaders = new Headers(response.headers);
+      if (!responseHeaders.get('Cache-Control')) responseHeaders.set('Cache-Control', 'no-store');
       return new Response(request.method === 'HEAD' ? null : response.body, {
         status: response.status,
         statusText: response.statusText,
-        headers: response.headers,
+        headers: responseHeaders,
       });
     },
   };
