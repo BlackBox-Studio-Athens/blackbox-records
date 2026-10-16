@@ -17,7 +17,13 @@ import { readPublication } from './publication-journal';
 import { readPublicationHistory } from './publication-journal';
 import { readPublicationDetails } from './publication-history';
 import { reviewPublication } from './publication-review';
-import { publishedCollection, parseContentSnapshot, publicationReviewSchema } from '@blackbox/content-model';
+import {
+  publishedCollection,
+  parseContentSnapshot,
+  publicationReviewSchema,
+  changedPublicationFields,
+} from '@blackbox/content-model';
+import { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
 import { selectPreviewContent, previewDestination } from './preview-selection';
 import { projectArtistReference, readRevisionContent } from './publication-projection';
 
@@ -444,6 +450,88 @@ async function setup() {
   };
   return { deps, runtime, renderer, input, pointer, selection, cache };
 }
+
+test.each([false, true])(
+  'catalog backfill compares stored fields, not rendering defaults (explicit=%s)',
+  async (explicit) => {
+    const { deps, pointer } = await setup();
+    const snapshot = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+    const data = {
+      title: 'Caregivers',
+      artist: 'artist',
+      release_stage: 'upcoming',
+      cover_image: { id: 'image' },
+      cover_image_alt: 'Cover',
+    };
+    const record = {
+      collection: 'releases',
+      id: 'release',
+      slug: 'caregivers',
+      revisionId: 'old',
+      data: { ...data, ...(explicit ? { catalog_number: 'BBR#001' } : {}) },
+    };
+    const json = JSON.stringify({
+      ...snapshot,
+      records: [
+        {
+          collection: 'artists',
+          id: 'artist',
+          slug: 'artist',
+          revisionId: 'artist-live',
+          data: { title: 'Artist', genre: 'Rock', bio: 'Bio', image: { id: 'image' }, image_alt: 'Portrait' },
+        },
+        record,
+        {
+          ...record,
+          id: 'other',
+          slug: 'lotus',
+          data: { ...data, ...(explicit ? { catalog_number: 'BBR#004' } : {}) },
+        },
+      ],
+    });
+    const sha = Array.from(
+      new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(json))),
+      (byte) => byte.toString(16).padStart(2, '0'),
+    ).join('');
+    const path = `snapshots/local/manifest/${sha}`;
+    await deps.bucket.put(path, json, { sha256: sha });
+    await deps.bucket.delete(currentPublicationKey('local'));
+    await activatePublication(deps.bucket, 'local', { ...pointer, snapshotSha256: sha });
+    const item = { id: 'release', slug: 'caregivers', liveRevisionId: 'old', draftRevisionId: 'draft', data };
+    deps.runtime = {
+      handleContentGet: vi.fn(async () => ({ success: true, data: { _rev: 'v1', item } })),
+      handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
+      handleRevisionGet: vi.fn(async () => ({
+        success: true,
+        data: {
+          item: {
+            collection: 'releases',
+            entryId: 'release',
+            data: { ...data, catalog_number: 'BBR#001' },
+          },
+        },
+      })),
+    } as unknown as EmDashRuntime;
+    const { review, candidate } = await reviewPublication(
+      { records: [{ collection: 'releases', recordId: 'release' }] },
+      deps,
+    );
+    expect(changedPublicationFields(review.entries[0]!)).toEqual(explicit ? [] : ['catalog_number']);
+    expect(review.entries[0]!.issues).toEqual([]);
+    expect(() => parseContentSnapshot(JSON.stringify(candidate), 'local')).not.toThrow();
+    expect(candidate.records.find((entry) => entry.id === 'other')!.data.catalog_number).toBe('BBR#004');
+    const snapshotCache: StaffSnapshotCache = {};
+    for (let read = 0; read < 2; read++) {
+      const response = await readStaffWorkspace(
+        new Request('https://staff.invalid/?view=changes&collection=releases'),
+        { ...deps, snapshotCache },
+      );
+      const result = (await response.json()) as { data: { items: { id: string }[] } };
+      expect(result.data.items.map((entry) => entry.id)).toEqual(explicit ? [] : ['release']);
+    }
+    expect(await (await deps.bucket.get(path))!.text()).toBe(json);
+  },
+);
 
 test('publication review reports catalog clashes across the combined selection before acceptance', async () => {
   const { deps } = await setup();

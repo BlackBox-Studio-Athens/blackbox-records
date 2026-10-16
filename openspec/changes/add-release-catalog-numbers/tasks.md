@@ -1,5 +1,10 @@
 # Tasks
 
+## 6. Legacy catalog-number publication comparison (16 October 2026)
+
+- [x] 6.1 Compare publication review and saved-change discovery with checksum-verified stored fields, while retaining compatibility defaults for rendering and candidate assembly; test legacy backfill visibility, explicit accepted numbers, and strict validation.
+- [x] 6.2 Run focused checks and final validation; record the reproduced PRD failure and source-bound evidence. Hosted release and publication remain separate acceptance.
+
 ## 1. Domain and editorial contract
 
 - [x] 1.1 Add canonical catalog number parser, formatting/comparison and unit tests; verify storefront-catalog tests.

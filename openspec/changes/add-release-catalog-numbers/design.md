@@ -51,6 +51,8 @@ The Staff client's `EditorialApiError.message` uses the plain `detail`, and `fie
 
 ## Migration Plan
 
+PRD diagnosis on 16 October 2026 reproduced Anarchotribal's saved BBR#003 draft as pending in the editor but zero fields changed in review, disabling publication. The accepted reader supplies the same number to legacy content, concealing its absence in the stored baseline. Publication review and saved-change discovery must use checksum-verified stored fields for comparison; public rendering and candidate assembly continue using validated upgraded content. One R2 manifest read supplies both representations, without changing accepted bytes or identity.
+
 1. The 2026-10-15 PRD public inventory check and owner-confirmed four-Release UAT inventory resolve the known LOTUS blocker. This release targets UAT only. Before rollout, check the target CMS inventory through the reviewed backfill plan; any additional missing identity still requires an explicit owner assignment. Do not infer private CMS inventory from the public listing or fixtures. PRD promotion requires separate authorization.
 2. Back up CMS data/media and follow normal Free-tier and environment mutation procedures. Prepare catalog schema with `pnpm --filter @blackbox/backend cms:catalog-schema --env uat` (PRD separately with its one-run confirmation). Existing release workflows include schema prep; the field is native optional for incomplete drafts, required at publication.
 3. Run the supplied explicit catalog-number backfill in check mode, review its plan, then apply through the documented operation. Preserve pending draft changes, revisions, accepted snapshot bytes and pointer. Unknown or conflicting assignments stop the operation. This task does not execute it.

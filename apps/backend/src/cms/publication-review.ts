@@ -11,7 +11,7 @@ import {
   type PublicationReviewInput,
   type ContentSnapshot,
 } from '@blackbox/content-model';
-import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
+import { readPublicationPointer, readPublicationBaseline, type PublicationEnvironment } from './published-storage';
 import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
 import { readPublicationCatalog } from './item-publication-recovery';
 
@@ -37,7 +37,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
   const baseline = current.pointer.snapshotSha256;
   if (selected.baseline && selected.baseline !== baseline)
     throw new PublicationReviewConflict('The website changed. Review the latest comparison before publishing.');
-  const snapshot = await readPublishedSnapshot(deps.bucket, deps.environment, baseline);
+  const { snapshot, storedSnapshot } = await readPublicationBaseline(deps.bucket, deps.environment, baseline);
   const review: PublicationReview = {
     baseline,
     environment: deps.environment,
@@ -79,7 +79,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       for (const key of ['show_in_header', 'show_in_footer'])
         if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
     const slug = String(_slug ?? item.slug);
-    const before = snapshot.records.find((r) => r.collection === record.collection && r.id === record.recordId);
+    const before = storedSnapshot.records.find((r) => r.collection === record.collection && r.id === record.recordId);
     if (selected.action === 'withdraw') {
       if (!before) throw new PublicationReviewConflict('The selected entry is not on the website.');
       review.entries.push({

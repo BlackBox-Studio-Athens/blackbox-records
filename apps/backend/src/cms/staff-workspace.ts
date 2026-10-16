@@ -7,7 +7,7 @@ import {
   sourceCollectionNames,
 } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
-import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
+import { readPublicationPointer, readPublicationBaseline, type PublicationEnvironment } from './published-storage';
 import { createCmsNestedProblemBody, problemResponse } from '../platform/interfaces/http/responses';
 import { readRevisionContent } from './publication-projection';
 import type { PriceDraftRecord } from './price-drafts';
@@ -45,7 +45,7 @@ export type StaffSnapshotCache = {
     bucket: R2Bucket;
     environment: PublicationEnvironment;
     sha256: string;
-    snapshot: Awaited<ReturnType<typeof readPublishedSnapshot>>;
+    snapshot: Awaited<ReturnType<typeof readPublicationBaseline>>['storedSnapshot'];
   };
 };
 
@@ -102,7 +102,7 @@ export async function readStaffWorkspace(
         cached.environment === deps.environment &&
         cached.sha256 === pointer.pointer.snapshotSha256
         ? cached.snapshot
-        : await readPublishedSnapshot(deps.bucket, deps.environment, pointer.pointer.snapshotSha256)
+        : (await readPublicationBaseline(deps.bucket, deps.environment, pointer.pointer.snapshotSha256)).storedSnapshot
       : null;
     if (deps.snapshotCache) {
       // One verified manifest (at most 4 MiB input); no request promises or mutable staff data.

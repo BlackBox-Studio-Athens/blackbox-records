@@ -19,3 +19,9 @@ Readers SHALL deterministically upgrade missing catalog_number only in accepted 
 
 - **WHEN** a new snapshot or publication candidate is validated
 - **THEN** missing catalog_number fails even for a known legacy slug.
+
+#### Scenario: Staff publishes an explicit number matching a legacy display default
+
+- **WHEN** a saved Release draft supplies the same catalog_number that rendering supplies for an accepted snapshot lacking the field
+- **THEN** saved-change discovery and publication review compare against the stored accepted fields and retain the catalog-number change for publication
+- **AND** rendering and candidate assembly retain validated compatibility defaults for other accepted legacy Releases.

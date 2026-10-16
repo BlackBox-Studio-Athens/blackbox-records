@@ -17,13 +17,25 @@ export type PublicationEnvironment = 'local' | 'uat' | 'prd';
 export const currentPublicationKey = (environment: PublicationEnvironment) => `snapshots/${environment}/current.json`;
 
 export async function readPublishedSnapshot(bucket: R2Bucket, environment: PublicationEnvironment, sha256: string) {
+  return parseAcceptedContentSnapshot(await readPublishedSnapshotJson(bucket, environment, sha256), environment);
+}
+
+/** Compare stored editorial fields; rendering defaults do not establish publication. */
+export async function readPublicationBaseline(bucket: R2Bucket, environment: PublicationEnvironment, sha256: string) {
+  const json = await readPublishedSnapshotJson(bucket, environment, sha256);
+  const snapshot = parseAcceptedContentSnapshot(json, environment);
+  const storedSnapshot: typeof snapshot = JSON.parse(json);
+  return { snapshot, storedSnapshot };
+}
+
+async function readPublishedSnapshotJson(bucket: R2Bucket, environment: PublicationEnvironment, sha256: string) {
   if (!/^[a-f0-9]{64}$/.test(sha256)) throw new Error('Invalid publication checksum.');
   const object = await bucket.get(`snapshots/${environment}/manifest/${sha256}`);
   if (!object || object.size > 4 * 1024 * 1024 || object.checksums.toJSON().sha256 !== sha256) {
     await object?.body.cancel();
     throw new Error('Published snapshot is unavailable.');
   }
-  return parseAcceptedContentSnapshot(await object.text(), environment);
+  return object.text();
 }
 
 const publishedMediaSchema = z.object({
