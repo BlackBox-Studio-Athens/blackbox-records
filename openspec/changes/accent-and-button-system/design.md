@@ -54,7 +54,7 @@ Error red at OKLCH hue 25 remains alongside the Sea, Flint and amber families, r
 - Listen uses #141414 face with --listen-edge and --listen-bars both var(--amber-500) (#e3b56c), at rest and on hover. Hover/session and focus-ring surfaces use --amber-surface rgba(227, 181, 108, 0.16). In player is full-opacity disabled session information with a white action label and --listen-text var(--amber-300) (#f0d7b0) status label; generic disabled controls use 45% opacity. Existing session state does not prove provider playback.
 - Inverse actions use #141414 face/#626e72 edge; hover #202223/#889396. Neutral controls are Browse the Store, Pay, Subscribe, Show N items and Send inquiry.
 - Every focus-visible ring is 2px #f5f5f5 at 2px offset. Inputs additionally use the amber #e3b56c focus edge; it never substitutes for the ring. Hover only on hover-capable pointers; transitions at most 250ms, no control movement, no retained touch-hover.
-- Hero Browse the Store is the only 52px control: Bebas 20px, 0.06em, padding 24px start/20px end, 12px icon gap, trailing arrow. Flint rises from the base in 240ms using cubic-bezier(0.22,1,0.36,1); the arrow travels 6px inside the fixed box. Keyboard focus shows the same state; reduced motion changes instantly.
+- Hero Browse the Store is the only 48px control: Bebas 18px, 0.06em, padding 22px start/18px end, 11px icon gap, trailing arrow. Flint rises from the base in 240ms using cubic-bezier(0.22,1,0.36,1); the arrow travels 6px inside the fixed box. Keyboard focus shows the same state; reduced motion changes instantly. Owner-approved 16 October 2026: tagline-to-button gap increases by 16px on phones and 24px from 48rem; sideways-phone hero height is unchanged. The CTA change is recorded in commit 3e8ee282 (`feat(web): a smaller, lower Browse the Store hero button`); verification evidence has not been supplied.
 - Interactive text rows and swipe-dot buttons retain 44px targets. Static tags use Inter 12px/18px, 0.12em, 4px 8px padding with Flint edge/text. Kickers use Inter 12px/18px, 0.22em. Date/catalog metadata uses Inter 12px/18px, 0.18em and amber.
 - Form error text is Flint 300 #c1cbce, begins with visible Error, and retains invalid state and error/control association. Do not recolour transactional truth or change validation.
 
@@ -64,7 +64,7 @@ Error red at OKLCH hue 25 remains alongside the Sea, Flint and amber families, r
 2. Sharpen Sea Green Marks The Wait: resting Sea purchase fills allowed only for pre-orders.
 3. Add Flint Means Buy And Labels and Amber Means Listen And Small Marks with the role map above; reserve the separate error red family for international restriction notices only.
 4. Tighten Monochrome Owns The Page: public titles remain ink Veneer.
-5. Replace three button sizes/coarse-pointer halos with 44px plus the one 52px hero exception; document width exceptions, white labels and the pair rule.
+5. Replace three button sizes/coarse-pointer halos with 44px plus the one 48px hero exception; document width exceptions, white labels and the pair rule.
 6. Retire Music Trigger Glow; use --listen-bars and --listen-edge as var(--amber-500), --listen-text as var(--amber-300), and --amber-surface for focus rings, Listen hover and In player surfaces; retain finite equalizer/session semantics.
 7. Replace the Store Buy Listen-chrome refinement with Flint fills and existing per-format marks.
 8. Replace framed pre-order/digital browse badges with plain status lines; remove the 3px Sea action baseline and move the sweep to the Flint hero.
@@ -93,10 +93,10 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F6   | Flint news tags and Read News inverse edge                                           | C1                               |
 | F7   | Remove desktop Store side pane                                                       | C2                               |
 | F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
-| F9   | 44px controls, only hero CTA 52px                                                    | C1                               |
+| F9   | 44px controls, only hero CTA 48px                                                    | C1                               |
 | F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
 | F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 52px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
+| F12  | Ink-faced 48px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
 | F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
 | F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
 | F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
@@ -110,7 +110,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 
 ## Resolved open items and integration
 
-The owner settled the 52px hero, white labels, neutral submission controls, Flint 300 form-error text with international restriction notices alone in error red, 16px phone gutter, Sea-only pre-orders, amber, Store header removal everywhere and corner Listen. The orchestrator retained today's catalogue order and Distro format links/counts, placed the purchase note and international strip below the grid on every category, retained phone chapter pause/resume for accessibility, removed the Store format-line mark and set the footer target to about 200px. Preserve source copy, including the current “1 Releases” wording, unless separately edited. Preview estimation and the older “nothing was rendered” note are not implementation acceptance.
+The owner settled the 48px hero on 16 October 2026 (CTA commit 3e8ee282), white labels, neutral submission controls, Flint 300 form-error text with international restriction notices alone in error red, 16px phone gutter, Sea-only pre-orders, amber, Store header removal everywhere and corner Listen. The orchestrator retained today's catalogue order and Distro format links/counts, placed the purchase note and international strip below the grid on every category, retained phone chapter pause/resume for accessibility, removed the Store format-line mark and set the footer target to about 200px. Preserve source copy, including the current “1 Releases” wording, unless separately edited. Preview estimation and the older “nothing was rendered” note are not implementation acceptance.
 
 C1 modifies the complete listening-session requirement for colour; C2 subsequently replaces its Store placement scenario while retaining C1's colours and all player scenarios. C3 changes separate release/Home requirements. Reconcile catalog-number date-line wording from the still-open add-release-catalog-numbers change to amber on integration; retain the number, semantics and wrapping. Sequence shared global.css, DESIGN.md and primitive edits with one writer. Claude owns the presentation work; no dedicated Codex data, tooling or boundary implementation is required.
 

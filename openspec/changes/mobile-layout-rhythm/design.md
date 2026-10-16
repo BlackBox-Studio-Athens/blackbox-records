@@ -75,10 +75,10 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F6   | Flint news tags and Read News inverse edge                                           | C1                               |
 | F7   | Remove desktop Store side pane                                                       | C2                               |
 | F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
-| F9   | 44px controls, only hero CTA 52px                                                    | C1                               |
+| F9   | 44px controls, only hero CTA 48px                                                    | C1                               |
 | F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
 | F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 52px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
+| F12  | Ink-faced 48px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
 | F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
 | F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
 | F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
@@ -92,7 +92,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 
 ## Resolved open items and remaining evidence
 
-The owner settled hero-film bleed, 16px gutters, approximately 200px footer with 44px tap rows, inline count, retained 44px phone film pause/resume, adjacent pairs, ink Veneer titles, amber marks and Flint 300 form-error text beside Error; error red is reserved for international restriction notices. C1 owns the hero CTA's 52px exception and global error/colour rules. Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
+The owner settled hero-film bleed, 16px gutters, approximately 200px footer with 44px tap rows, inline count, retained 44px phone film pause/resume, adjacent pairs, ink Veneer titles, amber marks and Flint 300 form-error text beside Error; error red is reserved for international restriction notices. C1 owns the hero CTA's 48px exception and global error/colour rules; the owner-approved 16 October 2026 CTA metrics are Bebas 18px, padding 22px start/18px end, an 11px icon gap and tagline-to-button spacing increased by 16px on phones and 24px from 48rem, with sideways-phone hero height unchanged (commit 3e8ee282). Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
 
 The approved photo/poster crop is the default. Exact wrapping, long-content height, final image crop and typography need rendered implementation verification, not another palette decision. Catalog desktop was not drawn in the supplied Store/Releases board set; preserve the existing 32.8px catalog title and grid as recorded in those notes.
 

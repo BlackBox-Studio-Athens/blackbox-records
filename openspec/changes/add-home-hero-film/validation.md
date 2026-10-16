@@ -2,6 +2,10 @@
 
 Base commit `54132b781722ec9077bcc29b0401b7997376e423` on `main`, uncommitted. Product Environment: Local only. Rows: Shell/player/routing (hero, shell navigation, music-session pause) and Boundaries/tooling (OpenSpec). CMS, commerce and release rows do not apply: no content schema, checkout or hosted change.
 
+## Film-first revision (16 October 2026)
+
+The owner-approved film-first revision shipped as 4df2404f (`fix(web): render the Home hero film first, without a flash of the still`). `pnpm validate` PASSED: `.codex-artifacts/validation/2026-10-16T09-39-37-653Z-45408-3c6aec/summary.json`. Home-hero-film e2e passed 7/7 on both dev and built preview, performance-acceptance passed 33/33 on preview, and home-preorders passed 16/16. The built-preview frame recorder showed the still in 0 of 193 frames at 1440×900 and 0 of 196 frames at 390×844; reduced motion showed the still from the first frame with no film request, and a stalled film showed the still at 2.7 seconds. Release BlackBox run 38882160224 was green, including deploy-uat; "Promote UAT to PRD" run 38882965107 succeeded, and PRD release.json names 4df2404f. This supplied evidence supersedes the earlier Local-only and unverified-delivery notes for this revision.
+
 ## Media
 
 - Source `D:/Pictures/blackbox/blackbox_website_intro_v5_sharp_HQ.mp4` (1920 × 1080, 30fps container with mixed 24p/25p cadence, 29.5 s) stays outside Git.

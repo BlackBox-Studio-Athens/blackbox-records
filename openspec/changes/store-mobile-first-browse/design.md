@@ -85,10 +85,10 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F6   | Flint news tags and Read News inverse edge                                           | C1                               |
 | F7   | Remove desktop Store side pane                                                       | C2                               |
 | F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
-| F9   | 44px controls, only hero CTA 52px                                                    | C1                               |
+| F9   | 44px controls, only hero CTA 48px                                                    | C1                               |
 | F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
 | F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 52px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
+| F12  | Ink-faced 48px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
 | F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
 | F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
 | F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |

@@ -8,7 +8,7 @@ The approved 15 October 2026 redesign gives public controls consistent size and 
 
 - Replace Store Blood, Services Rose and the superseded purchase accent with fixed Sea Green, Flint and amber roles; extend Flint to muted information and neutral edges, retain ink Veneer titles, use --listen-bars/--listen-edge: var(--amber-500) (#e3b56c), --listen-text: var(--amber-300) (#f0d7b0 In player label), and --amber-surface rgba(227, 181, 108, 0.16) for focus rings, Listen hover and In player surfaces.
 - Reserve error red for the non-Greek buyer's item page notice, Store strip, cart drawer and checkout card; keep form-error text Flint 300 and never use red as a control face.
-- Establish one 44px control family, with the 52px Browse the Store hero action as its only height exception, white labels except on neutral ink faces, and one visible focus treatment.
+- Establish one 44px control family, with the 48px Browse the Store hero action as its only height exception (owner-approved 16 October 2026; commit 3e8ee282), white labels except on neutral ink faces, and one visible focus treatment.
 - Define filled purchase actions, outlined secondary actions, adjacent action pairs, existing Buy format icons, tags, kickers, navigation markers, date/catalog lines and labelled form errors.
 - Update the conflicting public-control, listening, purchase-status and pre-order contracts and assign the corresponding DESIGN.md rewrite to Claude.
 

@@ -2,7 +2,7 @@
 
 ### Requirement: Public controls share one compact family
 
-Public buttons, chips, icon controls, navigation targets and text-action rows SHALL use one square, flat family with a visible 44px control height. Browse the Store in the Home hero SHALL be the sole 52px height exception. Action labels SHALL be white except for dark labels on neutral ink faces. Labels SHALL keep their type size on touch devices; invisible halos SHALL NOT substitute for the visible target.
+Public buttons, chips, icon controls, navigation targets and text-action rows SHALL use one square, flat family with a visible 44px control height. Browse the Store in the Home hero SHALL be the sole 48px height exception. Action labels SHALL be white except for dark labels on neutral ink faces. Labels SHALL keep their type size on touch devices; invisible halos SHALL NOT substitute for the visible target.
 
 #### Scenario: Controls align in a row
 
@@ -43,7 +43,7 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 #### Scenario: Hero animates inside a stationary control
 
 - **WHEN** Browse the Store receives pointer hover or keyboard focus
-- **THEN** the 52px control stays fixed while its Flint fill rises and its arrow moves 6px inside the box over 240ms
+- **THEN** the 48px control stays fixed while its Flint fill rises and its arrow moves 6px inside the box over 240ms
 - **AND** reduced motion shows the final state immediately.
 
 ## REMOVED Requirements

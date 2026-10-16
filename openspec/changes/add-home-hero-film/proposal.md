@@ -10,7 +10,7 @@ The owner prepared a 29.5-second montage of BlackBox sessions (`blackbox_website
 - Two prepared files: a 9:16 centre crop for portrait screens, where a full-viewport cover crop shows only the middle quarter of a 16:9 frame, and a landscape crop for wider screens. Both exclude the studio logo with a margin, proven against its measured bounding box.
 - Brightened grayscale is baked into the files, keeping the Monochrome Owns The Page rule without a runtime filter.
 - The film follows the approved Home motion rules: muted and inline, playing only while at least half the hero is in view and the tab is visible, and paused during a shell music session. The owner removed the visible pause/resume control after UAT review. Reduced motion, data saving, a failed source and refused autoplay keep the still.
-- The still remains the hero's eager, high-priority image and the film waits for it to load.
+- The owner-approved 16 October 2026 revision renders the film first on eligible visits: source selection occurs while the page parses without waiting for the eager still, which remains the immediate no-motion/failure fallback and is revealed by a 2.5-second safety net if playback stalls.
 
 ## Capabilities
 

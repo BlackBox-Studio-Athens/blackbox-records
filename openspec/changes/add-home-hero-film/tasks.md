@@ -11,9 +11,9 @@ Tags: `[Claude]` contains UI work; `[Codex]` is media preparation without UI.
 ## 2. Hero
 
 - [x] 2.1 [Claude] Add `<home-hero-film>` with a unit-tested play decision; register it from the renamed Home loader island.
-- [x] 2.2 [Claude] Render the film and pause control in `HomeHero.astro`; style the fade-in and control placement.
+- [x] 2.2 [Claude] Render the hero film first (owner-approved 16 October 2026 revision): mark film capability before first paint, select the orientation source while parsing with autoplay/preload="auto", hide the still until playback or the 2.5-second safety net, retain immediate no-JavaScript/no-motion/failure fallback and the current frame during orientation swaps, and preserve automatic pause rules. The hero has no manual pause control.
 - [x] 2.3 [Claude] Pass the prepared files from `index.astro`.
-- [x] 2.4 [Claude] Add an e2e spec: muted playback, pause/resume, reduced motion keeps the still, portrait selection, music-session pause and shell navigation continuity (the logo exclusion is proven in 1.1).
+- [x] 2.4 [Claude] Cover hero film playback and automatic pause rules, reduced-motion still fallback, orientation selection and shell continuity; record the 16 October 2026 film-first checks (home-hero-film 7/7 on dev and built preview, frame recording, no reduced-motion film request and stalled-film fallback) in validation.md. The logo exclusion is proven in 1.1.
 
 ## 3. Acceptance
 

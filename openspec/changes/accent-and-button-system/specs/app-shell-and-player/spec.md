@@ -117,6 +117,7 @@ The homepage hero SHALL show, under the motto, a Browse the Store link to `/stor
 #### Scenario: Hero action uses the approved exception
 
 - **WHEN** Browse the Store renders
-- **THEN** it is the sole 52px control, with a #e8e8e8 face, #090909 label, Bebas Neue 20px capitals and trailing arrow
+- **THEN** it is the sole 48px control, with a #e8e8e8 face, #090909 label, Bebas Neue 18px capitals and trailing arrow
+- **AND** padding is 22px start/18px end with an 11px icon gap; tagline-to-button spacing increases by 16px on phones and 24px from 48rem, with sideways-phone hero height unchanged (owner-approved 16 October 2026, commit 3e8ee282)
 - **AND** hover or keyboard focus raises a #626e72 fill from the base in 240ms, makes the label white and moves the arrow 6px inside the fixed box
 - **AND** reduced motion uses the same final state instantly and native Store navigation remains unchanged.
