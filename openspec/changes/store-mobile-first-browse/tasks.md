@@ -2,6 +2,8 @@
 
 All boxes track future implementation. Apply C1 first. Use existing catalogue order, Distro links/counts and filter data; no Codex data prerequisite remains. Keep one writer per shared file. No staging, commit or push is performed by this planning pass.
 
+Round-2 release evidence is recorded in validation.md (16 October 2026). Task 1.7 remains open because the supplied evidence does not directly verify below-grid/empty-state notice placement on every category, unchanged copy/links or narrow/enlarged-text wrapping. Task 1.8 remains open because DESIGN.md reconciliation and retained catalogue ordering are not directly established by the supplied evidence. Task 3.3 remains open because the first-card coordinates and complete grid, long-content, 320px, enlarged-text, reduced-motion and no-JavaScript checks are not established by the amber renders. Task 3.5 remains open because the supplied evidence does not establish the combined C1/C3/catalogue review, Graphify refresh or complete acceptance/source record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
+
 ## 1. Claude (UI)
 
 - [x] 1.1 Remove the visible Store/category introduction and desktop pane, retaining one hidden H1 and metadata on every category; update identity/UI contracts and verify direct and shell entry.

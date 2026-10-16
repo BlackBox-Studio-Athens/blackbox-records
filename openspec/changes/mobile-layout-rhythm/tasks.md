@@ -2,6 +2,8 @@
 
 All boxes track future implementation. Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests; no dedicated Codex implementation is needed. This planning pass does not stage, commit or push.
 
+Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1.4, 1.6 and 1.8 remain open: the supplied renders establish amber presentation, but do not directly verify the specified Releases height/gaps, Artists height/columns/reflow or footer height/layout/wrapping/player-clearance checks. Task 3.4 remains open because the supplied evidence does not establish the combined F1–F22 review, Graphify refresh or complete source/screenshots/acceptance-row record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
+
 ## 1. Claude (UI)
 
 - [x] 1.1 Apply the 16/24/32px page frame, safe-area handling and header/hero-media bleed exceptions; remove chapter/section/footer/rule bleed and duplicate insets, with UI checks at 320/390/1440px.
