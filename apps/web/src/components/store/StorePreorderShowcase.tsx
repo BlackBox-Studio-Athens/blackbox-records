@@ -3,6 +3,7 @@ import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
+import { SwipeRowDots } from '@/components/ui/swipe-row-dots';
 import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
@@ -71,6 +72,12 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
   const [desktopVideo, setDesktopVideo] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(true);
   const section = useRef<HTMLElement>(null);
+  // DRAFT: phone layout drafts for the owner's choice; ?draft=a|b|c only. Delete the unchosen ones and this switch.
+  const [draft, setDraft] = useState<string | null>(null);
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get('draft');
+    if (value === 'a' || value === 'b' || value === 'c') setDraft(value);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -126,25 +133,52 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
 
   if (items.length === 0) return null;
   return (
-    <section ref={section} id="preorders" className="home-preorders" aria-labelledby="home-preorders-title">
+    <section
+      ref={section}
+      id="preorders"
+      className="home-preorders"
+      aria-labelledby="home-preorders-title"
+      data-draft={draft ?? undefined}
+    >
       {/* Each chapter's Pre-order action says what these are; the title stays for assistive technology. */}
       <h2 id="home-preorders-title" className="sr-only">
         Pre-orders
       </h2>
-      {items.map((item, index) => (
-        <PreorderChapter
-          key={item.slug}
-          item={item}
-          next={items[index + 1]}
-          active={watching === null && activeScene === item.slug}
-          playing={watching === item.slug}
-          onWatch={onWatch}
-          automaticMotion={automaticMotion}
-          desktopVideo={desktopVideo}
-          documentVisible={documentVisible}
-          playerSession={playerSession}
-        />
-      ))}
+      {/* DRAFT c: the swipe row; display: contents without a draft. */}
+      <div id="home-preorders-row" className="home-preorders__row">
+        {items.map((item, index) => (
+          <PreorderChapter
+            key={item.slug}
+            item={item}
+            next={items[index + 1]}
+            active={watching === null && activeScene === item.slug}
+            playing={watching === item.slug}
+            onWatch={onWatch}
+            automaticMotion={automaticMotion}
+            desktopVideo={desktopVideo}
+            documentVisible={documentVisible}
+            playerSession={playerSession}
+            draft={draft}
+          />
+        ))}
+      </div>
+      {draft === 'c' && (
+        <>
+          <SwipeRowDots
+            rowId="home-preorders-row"
+            count={items.length}
+            label="Pre-orders position"
+            className="home-preorders__dots md:hidden"
+          />
+          <a
+            href={createProjectRelativeUrl('/terms/')}
+            data-astro-prefetch
+            className="home-preorders__terms home-preorders__terms--once"
+          >
+            Pre-order &amp; delivery information
+          </a>
+        </>
+      )}
       <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
         All pre-orders
       </a>
@@ -162,6 +196,7 @@ function PreorderChapter({
   desktopVideo,
   documentVisible,
   playerSession,
+  draft,
 }: {
   item: ShowcaseItem;
   next?: ShowcaseItem | undefined;
@@ -172,8 +207,8 @@ function PreorderChapter({
   desktopVideo: boolean;
   documentVisible: boolean;
   playerSession: boolean;
+  draft: string | null;
 }) {
-  const [manualPause, setManualPause] = useState(false);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [failedClips, setFailedClips] = useState<string[]>([]);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -205,7 +240,6 @@ function PreorderChapter({
     documentVisible &&
     !playerSession &&
     !playing &&
-    !manualPause &&
     !failed &&
     !autoplayBlocked &&
     automaticMotion,
@@ -344,7 +378,7 @@ function PreorderChapter({
         </a>
         {listen}
       </div>
-      {clip && !badges.some((badge) => estimate && badge.includes(estimate)) && (
+      {(clip || draft) && !badges.some((badge) => estimate && badge.includes(estimate)) && (
         <p className="home-preorders__shipping">
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
@@ -409,19 +443,6 @@ function PreorderChapter({
               <div className="home-preorders__hero-sleeve">{cover}</div>
             </div>
             <div className="home-preorders__film-tools">
-              {background && automaticMotion && !failed && !autoplayBlocked && (
-                <button
-                  type="button"
-                  className={buttonVariants({ variant: 'outline', size: 'icon' })}
-                  disabled={!active || !documentVisible || playerSession || playing}
-                  aria-label={manualPause ? 'Resume background motion' : 'Pause background motion'}
-                  onClick={() => setManualPause((paused) => !paused)}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d={manualPause ? 'm8 5 11 7-11 7Z' : 'M6 5h4v14H6zM14 5h4v14h-4z'} />
-                  </svg>
-                </button>
-              )}
               <button
                 ref={watchButton}
                 type="button"

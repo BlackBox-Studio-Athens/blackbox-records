@@ -198,6 +198,13 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('<iframe');
   });
 
+  it('offers no manual motion control; automatic rules and reduced motion decide playback', () => {
+    // Hydration alone decides eligibility, so the server markup cannot show the removed control; the source can.
+    const source = readFileSync(new URL('./StorePreorderShowcase.tsx', import.meta.url), 'utf8');
+    expect(source).not.toMatch(/background motion|manualPause|size: 'icon'/);
+    expect(renderToStaticMarkup(render([item(clip)]))).toContain('Watch full video');
+  });
+
   it('shows withheld terms and an Digital out now badge with a past release', () => {
     const html = renderToStaticMarkup(render([item({ ...cover, releaseDate: '2026-06-09' }, { shipEstimate: null })]));
     expect(html).toContain('Digital out now');

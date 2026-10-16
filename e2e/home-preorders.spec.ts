@@ -269,7 +269,7 @@ test('Home photo chapter preserves artwork and links to the Store filter', async
   await expect(release.getByRole('link', { name: /artwork/i })).toHaveCount(0);
   await expect(release.getByRole('img', { name: 'Afterwise', exact: true })).toHaveCount(1);
   await expect(release.locator('video, iframe')).toHaveCount(0);
-  await expect(release.getByRole('button', { name: /Watch|background/ })).toHaveCount(0);
+  await expect(release.getByRole('button', { name: /Watch/ })).toHaveCount(0);
   expect(fixture.providerRequests).toEqual([]);
   await page.getByRole('link', { name: 'All pre-orders', exact: true }).click();
   await expect(page).toHaveURL(/\/store\/#preorders$/);
