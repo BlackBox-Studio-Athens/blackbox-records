@@ -70,7 +70,7 @@ Error red at OKLCH hue 25 remains alongside the Sea, Flint and amber families, r
 8. Replace framed pre-order/digital browse badges with plain status lines; remove the 3px Sea action baseline and move the sweep to the Flint hero.
 9. Give Sold Out and Only N left the Flint #626e72 edge and rgba(98,110,114,.16) surface; keep Coming Soon/Repressing as dashed neutral boxes. Update Notify me errors and form focus without changing state eligibility.
 10. Remove inherited data-tone accents; document Flint current underline, amber hover underline and selected chip meanings.
-11. Record the page-frame rule, with detailed layout owned by C3; record the retained 44px Home chapter pause/resume icon on phones in C3.
+11. Record the page-frame rule, with detailed layout owned by C3; record the owner's removal of manual Home chapter motion controls on every viewport, reduced motion as the opt-out and the phone film strip in C3.
 12. Preserve Staff's separate design system and content-owned footer wording.
 
 ### Research backing and alternatives
@@ -83,34 +83,34 @@ Retired alternatives are monochrome-only grey, Rust/Steel, Lichen/Sand, Services
 
 C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layout-rhythm.
 
-| Item | Approved answer                                                                      | Owning change                    |
-| ---- | ------------------------------------------------------------------------------------ | -------------------------------- |
-| F1   | Remove Store Blood and Services Rose                                                 | C1                               |
-| F2   | Use chosen amber for Listen edge, bars, session state and small marks                | C1                               |
-| F3   | Keep Sea exclusively for pre-orders; add Flint and amber                             | C1                               |
-| F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                     | C1                               |
-| F5   | Use named accents at rest within monochrome grounds                                  | C1                               |
-| F6   | Flint news tags and Read News inverse edge                                           | C1                               |
-| F7   | Remove desktop Store side pane                                                       | C2                               |
-| F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
-| F9   | 44px controls, only hero CTA 48px                                                    | C1                               |
-| F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
-| F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 48px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
-| F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
-| F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
-| F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
-| F16  | Keep approved 16px phone gutter; remove double insets                                | C3                               |
-| F17  | Contain rules/media; header and hero film are the only bleed exceptions              | C3                               |
-| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows               | C3                               |
-| F19  | Inline artist release counter                                                        | C3                               |
-| F20  | Release actions beside one another near cover; compact hierarchy                     | C1 pair contract; C3 composition |
-| F21  | Flint Buy keeps the format mark; context-specific label                              | C1; C2 Store placement           |
-| F22  | Hidden Store H1; one sheet relocates existing Distro format links and filters        | C2                               |
+| Item | Approved answer                                                                                     | Owning change                    |
+| ---- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| F1   | Remove Store Blood and Services Rose                                                                | C1                               |
+| F2   | Use chosen amber for Listen edge, bars, session state and small marks                               | C1                               |
+| F3   | Keep Sea exclusively for pre-orders; add Flint and amber                                            | C1                               |
+| F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                                    | C1                               |
+| F5   | Use named accents at rest within monochrome grounds                                                 | C1                               |
+| F6   | Flint news tags and Read News inverse edge                                                          | C1                               |
+| F7   | Remove desktop Store side pane                                                                      | C2                               |
+| F8   | One toolbar row; one phone Filter sheet                                                             | C2                               |
+| F9   | 44px controls, only hero CTA 48px                                                                   | C1                               |
+| F10  | Sea Pre-order and Flint Buy filled at rest                                                          | C1                               |
+| F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines                | C2                               |
+| F12  | Ink-faced 48px Browse the Store with Flint sweep                                                    | C1; C3 preserves hero frame      |
+| F13  | Home Listen uses the shared 44px family                                                             | C1; C3 places the pair           |
+| F14  | Shared pair and compact chapter; phone film strip; no manual motion control; reduced-motion opt-out | C1 and C3                        |
+| F15  | Retain dated research, evidence limits and measured browser acceptance                              | C1, C2 and C3                    |
+| F16  | Keep approved 16px phone gutter; remove double insets                                               | C3                               |
+| F17  | Contain rules/media; header and hero film are the only bleed exceptions                             | C3                               |
+| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows                              | C3                               |
+| F19  | Inline artist release counter                                                                       | C3                               |
+| F20  | Release actions beside one another near cover; compact hierarchy                                    | C1 pair contract; C3 composition |
+| F21  | Flint Buy keeps the format mark; context-specific label                                             | C1; C2 Store placement           |
+| F22  | Hidden Store H1; one sheet relocates existing Distro format links and filters                       | C2                               |
 
 ## Resolved open items and integration
 
-The owner settled the 48px hero on 16 October 2026 (CTA commit 3e8ee282), white labels, neutral submission controls, Flint 300 form-error text with international restriction notices alone in error red, 16px phone gutter, Sea-only pre-orders, amber, Store header removal everywhere and corner Listen. The orchestrator retained today's catalogue order and Distro format links/counts, placed the purchase note and international strip below the grid on every category, retained phone chapter pause/resume for accessibility, removed the Store format-line mark and set the footer target to about 200px. Preserve source copy, including the current “1 Releases” wording, unless separately edited. Preview estimation and the older “nothing was rendered” note are not implementation acceptance.
+The owner settled the 48px hero on 16 October 2026 (CTA commit 3e8ee282), white labels, neutral submission controls, Flint 300 form-error text with international restriction notices alone in error red, 16px phone gutter, Sea-only pre-orders, amber, Store header removal everywhere and corner Listen. The orchestrator retained today's catalogue order and Distro format links/counts, placed the purchase note and international strip below the grid on every category, removed manual chapter motion controls on every viewport by the owner's knowing 16 October decision, removed the Store format-line mark and set the footer target to about 200px. Preserve source copy, including the current “1 Releases” wording, unless separately edited. Preview estimation and the older “nothing was rendered” note are not implementation acceptance.
 
 C1 modifies the complete listening-session requirement for colour; C2 subsequently replaces its Store placement scenario while retaining C1's colours and all player scenarios. C3 changes separate release/Home requirements. Reconcile catalog-number date-line wording from the still-open add-release-catalog-numbers change to amber on integration; retain the number, semantics and wrapping. Sequence shared global.css, DESIGN.md and primitive edits with one writer. Claude owns the presentation work; no dedicated Codex data, tooling or boundary implementation is required.
 

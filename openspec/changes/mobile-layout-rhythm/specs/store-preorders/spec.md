@@ -7,7 +7,7 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 #### Scenario: Pre-orders exist
 
 - **WHEN** the projection lists at least one release-sourced Store Item
-- **THEN** the Home HTML contains the section, presenting current releases as successive chapters with plain truthful lifecycle lines and price, links to each Store Item page and to the Store with the Pre-orders filter on
+- **THEN** the Home HTML contains the section, presenting current releases as successive chapters with badges and price, links to each Store Item page and to the Store with the Pre-orders filter on
 - **AND** the existing Home introduction remains unchanged, the feature precedes News, and a single release has no dead next-release link.
 
 #### Scenario: Home is painted
@@ -29,15 +29,15 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 
 #### Scenario: A release has prepared original-file footage
 
-- **WHEN** an accepted official clip has an available small native backdrop and its scene becomes meaningfully visible
-- **THEN** eligible silent inline footage retains the desktop chapter composition; phones contain its wide frame above readable copy, complete square sleeve and compact purchase facts
+- **WHEN** an accepted official clip has an available small native backdrop and at least 15% of its chapter is in view in a visible tab without a shell music session or full video playing
+- **THEN** silent inline footage retains the desktop composition behind the centered artist, large album identity, ordering facts, pre-order link and complete square sleeve; below 48rem it plays in the opening 16:9 film strip with only a corner 44px icon-only Watch full video control over it
 - **AND** further ordinary scrolling reveals the next pre-order without intercepted scrolling or video-time scrubbing
-- **AND** only one ambient scene plays at a time, offscreen/hidden-document playback pauses, and manual pause remains effective when returning on every viewport, including phones with the retained 44×44 pause/resume icon.
+- **AND** only one ambient scene plays at a time, playback pauses automatically below 15% chapter visibility, in a hidden tab, during a shell music session or while the full video plays, and no manual motion control is rendered on any viewport.
 
 #### Scenario: The selected release has a clip
 
 - **WHEN** its accepted clip has no original-file backdrop
-- **THEN** a complete still experience offers explicit full-video viewing without pretending a still image is playing video
+- **THEN** a complete still experience offers explicit full-video viewing without pretending a still image is playing video; below 48rem the opening 16:9 band shows the clip poster or, if absent, the band photo, with only the corner 44px icon-only Watch full video control over it
 - **AND** no YouTube request occurs before that viewing intent.
 
 #### Scenario: Shopper plays the selected official video
@@ -49,8 +49,8 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 #### Scenario: The video chapter is viewed before full-video intent
 
 - **WHEN** a shopper views a video chapter on mobile or desktop
-- **THEN** exactly one complete noninteractive sleeve appears in the chapter, the truthful physical shipping estimate is near the purchase action, and shell Listen remains available
-- **AND** a video still or artist photograph supplies the backdrop rather than a repeated album cover; the lower player panel is absent.
+- **THEN** on desktop exactly one noninteractive sleeve appears in the hero; below 48rem the film-strip composition applies and a 160px sleeve beside artist, title and price replaces the band only when neither a clip nor band photo exists; the truthful physical shipping estimate is near the purchase action, and shell Listen remains available
+- **AND** on desktop a video still or artist photograph supplies the backdrop rather than a repeated album cover; below 48rem the prepared film, or its poster/band-photo fallback, occupies the band with exactly one corner 44px icon-only Watch full video control and no other overlay; the lower player panel is absent.
 
 #### Scenario: The current official-video title is shown
 
@@ -61,26 +61,26 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 #### Scenario: The selected release has no clip
 
 - **WHEN** its release has no official clip
-- **THEN** its own contained 16:9 artist photograph, complete sharp square sleeve, artist/title, compact metadata and shared Pre-order/Listen pair form the approved no-video composition
-- **AND** faces remain recognizable, text remains readable and a missing photograph gives a purposeful cover-only layout without borrowing another release's film.
+- **THEN** on desktop its own artist photograph, complete sharp square sleeve, artist/title, available shell Listen, metadata and separate price/purchase band form the approved no-video composition; below 48rem its band photo forms the opening 16:9 band without a Watch control
+- **AND** faces remain recognizable, text remains readable and a missing photograph gives a purposeful cover-only layout without borrowing another release's film; below 48rem a release with neither clip nor band photo shows a 160px sleeve beside artist, title and price instead of a band.
 
 #### Scenario: Mobile, reduced motion or data saving
 
 - **WHEN** the viewport is narrow, motion is reduced, or the browser requests data saving
 - **THEN** identity and purchase information remain readable with reachable 44px controls and no horizontal overflow
-- **AND** phones contain the film/photo/poster at 16:9 inside 16px gutters at 390px, place copy in ordinary opaque flow and keep the accessible 44×44 pause/resume icon when the chapter offers ambient film playback; reduced motion/data saving keep a poster until explicit intent and disable sticky choreography.
+- **AND** below 48rem chapters use the 16:9 film-strip composition with copy beneath rather than over the media; reduced motion/data saving keep a poster until explicit intent and disable sticky choreography.
 
 #### Scenario: Ambient playback cannot start
 
 - **WHEN** playback is rejected or a media source fails
 - **THEN** a complete poster, artwork, truthful ordering information and real Store link remain usable
-- **AND** a failure does not cause a retry loop or a permanently misleading Pause label.
+- **AND** a failure does not cause a retry loop or a misleading motion control.
 
 #### Scenario: A persistent music-player session exists
 
 - **WHEN** the shell owns a listening session, including a minimized one
 - **THEN** the showcase preserves that session, pauses ambient media and prevents competing in-place full-video audio
-- **AND** clear shopper guidance and the existing shell controls allow a deliberate subsequent video choice; stopping the session restores eligible ambient behavior without overriding retained manual pause on any viewport.
+- **AND** clear shopper guidance and the existing shell controls allow a deliberate subsequent video choice; stopping the session restores eligible ambient behavior under the automatic playback rules.
 
 #### Scenario: No pre-orders or a failed read
 
@@ -88,36 +88,25 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 - **THEN** the Home HTML has no section and News follows the hero as today
 - **AND** cached artwork never establishes price, stock or buying eligibility; pressing a pre-order link still reaches the Store Item page and its authoritative offer read.
 
-#### Scenario: Phone purchase facts form a compact chapter
+#### Scenario: Phone film-strip chapter composition
 
-- **WHEN** a Home chapter renders below 40rem
-- **THEN** it shows contained media, complete sleeve, artist, ink Veneer title, plain lifecycle lines and format/price with truthful shipping once
-- **AND** Sea-filled Pre-order and amber-outlined Listen share an equal-width 44px row with a 16px gap, omitting Listen when no source exists
-- **AND** facts, summary and existing delivery/All pre-orders links follow without duplicate purchase bands, full-bleed rules or a fixed height that clips content.
+- **WHEN** a Home pre-order chapter renders below 48rem
+- **THEN** the chapter opens with a 16:9 band using the prepared film whenever the release has a video and prepared film is available; a clip without prepared film uses its poster, else the band photo, with exactly one corner 44px icon-only Watch full video control and no other overlay
+- **AND** a release without a clip shows the band photo without a control; when neither clip nor band photo exists, a 160px sleeve beside artist, title and price replaces the band
+- **AND** artist, title, format and price row, status line, the Sea Pre-order and amber Listen pair (44px high, equal halves), international notice line and terms link follow beneath the band
+- **AND** desktop composition is unchanged; final measured heights remain unverified.
 
 ### Requirement: Home background playback has no text play control
 
-The Home pre-order film SHALL omit Play background text controls and retain a 44×44 pause/resume icon on phones and desktop when eligible ambient film playback is available. It SHALL preserve manual pause, poster fallback, automatic visibility/tab/player pausing, reduced-motion/data-saving handling and explicit full-video intent. The icon SHALL have visible focus and an accessible name reflecting its state.
+The Home pre-order film SHALL omit all manual background motion controls on every viewport, preserve poster fallback and preference-aware muted playback, and retain automatic playback rules and explicit full-video playback. The owner knowingly chose removal on 16 October 2026 after the earlier accessibility retention decision, with reduced motion as the opt-out.
 
 #### Scenario: Shopper views a film chapter
 
 - **WHEN** a Home video pre-order chapter renders
-- **THEN** no Play background text button is shown, and eligible film chapters retain the 44×44 pause/resume icon on phones and desktop
+- **THEN** no Play background text button is shown
 - **AND** Watch full video and Listen retain their existing behavior
 
 #### Scenario: Motion is restricted
 
 - **WHEN** reduced motion or data saving applies, or ambient playback fails
 - **THEN** the complete poster remains available without a text background-play control
-
-#### Scenario: Phone has an active shell music session
-
-- **WHEN** the shell owns a session or the chapter is hidden or offscreen
-- **THEN** ambient playback pauses automatically alongside the retained manual pause behavior
-- **AND** failed/refused autoplay keeps complete poster content and does not mount a video provider.
-
-#### Scenario: Phone visitor pauses the chapter film
-
-- **WHEN** a phone visitor activates the 44×44 pause/resume icon by touch or keyboard
-- **THEN** the film pauses and the accessible name changes to describe resuming
-- **AND** moving focus away or revisiting the chapter does not undo manual pause; explicit resume remains available when motion is eligible.

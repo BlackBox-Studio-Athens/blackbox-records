@@ -75,30 +75,30 @@ These are supplied October 2026 observations from 393×659 headless Chromium, no
 
 C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layout-rhythm.
 
-| Item | Approved answer                                                                      | Owning change                    |
-| ---- | ------------------------------------------------------------------------------------ | -------------------------------- |
-| F1   | Remove Store Blood and Services Rose                                                 | C1                               |
-| F2   | Use chosen amber for Listen edge, bars, session state and small marks                | C1                               |
-| F3   | Keep Sea exclusively for pre-orders; add Flint and amber                             | C1                               |
-| F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                     | C1                               |
-| F5   | Use named accents at rest within monochrome grounds                                  | C1                               |
-| F6   | Flint news tags and Read News inverse edge                                           | C1                               |
-| F7   | Remove desktop Store side pane                                                       | C2                               |
-| F8   | One toolbar row; one phone Filter sheet                                              | C2                               |
-| F9   | 44px controls, only hero CTA 48px                                                    | C1                               |
-| F10  | Sea Pre-order and Flint Buy filled at rest                                           | C1                               |
-| F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines | C2                               |
-| F12  | Ink-faced 48px Browse the Store with Flint sweep                                     | C1; C3 preserves hero frame      |
-| F13  | Home Listen uses the shared 44px family                                              | C1; C3 places the pair           |
-| F14  | Shared pair and compact chapter; keep 44px phone pause/resume for film accessibility | C1 and C3                        |
-| F15  | Retain dated research, evidence limits and measured browser acceptance               | C1, C2 and C3                    |
-| F16  | Keep approved 16px phone gutter; remove double insets                                | C3                               |
-| F17  | Contain rules/media; header and hero film are the only bleed exceptions              | C3                               |
-| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows               | C3                               |
-| F19  | Inline artist release counter                                                        | C3                               |
-| F20  | Release actions beside one another near cover; compact hierarchy                     | C1 pair contract; C3 composition |
-| F21  | Flint Buy keeps the format mark; context-specific label                              | C1; C2 Store placement           |
-| F22  | Hidden Store H1; one sheet relocates existing Distro format links and filters        | C2                               |
+| Item | Approved answer                                                                                     | Owning change                    |
+| ---- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| F1   | Remove Store Blood and Services Rose                                                                | C1                               |
+| F2   | Use chosen amber for Listen edge, bars, session state and small marks                               | C1                               |
+| F3   | Keep Sea exclusively for pre-orders; add Flint and amber                                            | C1                               |
+| F4   | Colour tags, kickers and small marks; keep all Veneer titles ink                                    | C1                               |
+| F5   | Use named accents at rest within monochrome grounds                                                 | C1                               |
+| F6   | Flint news tags and Read News inverse edge                                                          | C1                               |
+| F7   | Remove desktop Store side pane                                                                      | C2                               |
+| F8   | One toolbar row; one phone Filter sheet                                                             | C2                               |
+| F9   | 44px controls, only hero CTA 48px                                                                   | C1                               |
+| F10  | Sea Pre-order and Flint Buy filled at rest                                                          | C1                               |
+| F11  | Plain ink format before title, stronger artist credit, plain digital/pre-order lines                | C2                               |
+| F12  | Ink-faced 48px Browse the Store with Flint sweep                                                    | C1; C3 preserves hero frame      |
+| F13  | Home Listen uses the shared 44px family                                                             | C1; C3 places the pair           |
+| F14  | Shared pair and compact chapter; phone film strip; no manual motion control; reduced-motion opt-out | C1 and C3                        |
+| F15  | Retain dated research, evidence limits and measured browser acceptance                              | C1, C2 and C3                    |
+| F16  | Keep approved 16px phone gutter; remove double insets                                               | C3                               |
+| F17  | Contain rules/media; header and hero film are the only bleed exceptions                             | C3                               |
+| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows                              | C3                               |
+| F19  | Inline artist release counter                                                                       | C3                               |
+| F20  | Release actions beside one another near cover; compact hierarchy                                    | C1 pair contract; C3 composition |
+| F21  | Flint Buy keeps the format mark; context-specific label                                             | C1; C2 Store placement           |
+| F22  | Hidden Store H1; one sheet relocates existing Distro format links and filters                       | C2                               |
 
 ## Resolved decisions and follow-ups
 

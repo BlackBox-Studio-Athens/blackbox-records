@@ -17,13 +17,13 @@ Revision: 15 October 2026, after the orchestrator's eight decisions. This record
 
 Catalogue order stays as implemented: All places BlackBox releases first by catalog number, then Distro by artist. Existing Distro format links and their Distro counts only move; the no-JavaScript fallback remains reachable. The purchase note stays above the grid. No new order control, facets, counts or data/projection work remains.
 
-Home film chapters retain a 44px phone pause/resume icon; the removal request is recorded as a declined accessibility deviation. The footer target is about 290px at 390px with 44px tap rows, icons beside the logo, inline wrapping links and two-line meta beside Est. 2026. Store format lines are plain ink Inter, Buy keeps its icon, and Only N left shares the Flint edge/surface while Coming Soon/Repressing retain dashed neutral boxes.
+The round-1 manual-control retention decision is superseded by the owner's knowing removal on every viewport on 16 October 2026, with reduced motion as the opt-out. The footer target is about 290px at 390px with 44px tap rows, icons beside the logo, inline wrapping links and two-line meta beside Est. 2026. Store format lines are plain ink Inter, Buy keeps its icon, and Only N left shares the Flint edge/surface while Coming Soon/Repressing retain dashed neutral boxes.
 
 No dedicated Codex implementation is identified. Claude owns UI, UI tests and DESIGN.md updates; verification, final pnpm validate and the coordinated UAT push remain shared tasks.
 
 ## Acceptance not claimed
 
-This is planning validation, not implementation or browser acceptance. The supplied audit measured Local fixtures; revised geometry, native-link fallback, pause interaction and footer wrapping still require implementation verification. Full `pnpm validate` is deferred to integration because its local formatter can modify unrelated dirty files in the shared checkout. No PRD promotion or Content Publication is implied.
+This is planning validation, not implementation or browser acceptance. The supplied audit measured Local fixtures; revised geometry, native-link fallback, automatic motion eligibility and footer wrapping still require implementation verification. Full `pnpm validate` is deferred to integration because its local formatter can modify unrelated dirty files in the shared checkout. No PRD promotion or Content Publication is implied.
 
 # Implementation validation (Claude, UI)
 
@@ -45,7 +45,7 @@ Recorded 15 October 2026 on `main` at `42f4c2e7` plus the uncommitted C3 tree. F
 
 ## Not established
 
-- Film chapter on phones: Local content has no pre-order film, so the retained 44×44 pause/resume icon, Watch and film-tools layout were not rendered; the code path is unchanged and its unit/e2e cases pass.
+- Film chapter on phones: the earlier Local fixture had no pre-order film, so Watch and film-tools layout were not rendered; that evidence does not verify the new phone film-strip composition.
 - 3.3 stress (long content, data saving, refused media) and a visual comparison beyond the 390/1440 screenshots; the eager JavaScript budget (`pnpm performance:bundles`) needs the production build CI runs. The Home showcase gained one wrapper element.
 - 3.4 Graphify refresh and the combined F1–F22 review; 3.6 UAT release belongs to the coordinator.
 
@@ -54,7 +54,7 @@ Recorded 15 October 2026 on `main` at `42f4c2e7` plus the uncommitted C3 tree. F
 - Commits on `main`: 406bb6e7 (changes), 5b94b7a4 (C1 control family and accent roles), b464302c (C2 store browse plus a 1.3 KiB Store item bundle trim), 72caf965 (C3 phone rhythm plus three CI fixes), 7a8595a5, 45fbe628, 171db02d and c26c1c97 (footer row layout: cascade-independent, column-major with three fixed rows, labels may break at 200% text), 50ab409d and b94498e1/6bddcc08 (UAT smoke: Distro expectation and transient fetch retry), 42f4c2e7 (formatting).
 - Release BlackBox run 38795987848 for c26c1c97: check-candidate tests, lint and typecheck, build-uat, all four e2e shards, e2e-webkit and both staff previews green; deploy-uat green on a rerun after the Store Durable Object identity lagged one deploy behind (propagation after back-to-back deploys, not a code change). UAT serves c26c1c97 at https://blackbox-records-web-uat.pages.dev/ behind Cloudflare Access.
 - Earlier runs for 5b94b7a4 (Store item eager graph 37 bytes over its 104 KiB budget), b464302c (footer rows, Distro smoke expectation), 72caf965, 50ab409d, 6bddcc08 and 171db02d (footer rows on the seven-link fixture, then horizontal overflow from an unbreakable label) were red for the reasons fixed by the commits above.
-- Local evidence: each implementation session ended with a passing `pnpm validate`; the named e2e specs ran one by one against the Local site. Not established here: visual acceptance on UAT by the owner and designer, the film-chapter pause control on phones (no film chapter in Local content), and PRD promotion (out of scope).
+- Local evidence: each implementation session ended with a passing `pnpm validate`; the named e2e specs ran one by one against the Local site. Not established here: visual acceptance on UAT by the owner and designer, the film-chapter automatic playback rules on phones (no film chapter in Local content), and PRD promotion (out of scope).
 
 ## Palette revision (16 October 2026)
 
@@ -71,6 +71,8 @@ This is documentation-only synchronization. Earlier implementation and release e
 - Scope: only those 18 OpenSpec files were edited; no direct Git commands, source changes, implementation tests, publication or deployment were performed. Excluded files, archive and product copy were left untouched.
 
 ## 16 October 2026 — round-2 owner decisions
+
+The owner knowingly removed the Home pre-order chapter's manual motion control on every viewport after the round-1 accessibility retention decision, with reduced motion as the opt-out. Commit ee0c6239 is on main and already on PRD releases 601/602. Playback pauses automatically unless at least 15% of the chapter is in view, the tab is visible, no shell music session exists and the full video is not playing; reduced motion and data saving keep the poster. For phones below 48rem the owner chose the film strip from three UAT drafts (sleeve-led card, film strip, swipe row): an opening 16:9 prepared-film band for video releases, with exactly one corner 44px icon-only Watch full video control and no other overlay. Artist, title, format and price row, status line, equal-half 44px Sea Pre-order and amber Listen pair, international notice line and terms link follow beneath. A clip without prepared film uses its poster, else the band photo, with Watch; no clip uses the band photo without Watch; neither clip nor band photo uses a 160px sleeve beside artist, title and price instead of a band. Desktop composition is unchanged. The supplied two-chapter before heights are 2033px (photo) / 2083px (film), and the draft measured 1158px; final measured heights and new-layout verification have not been supplied. Tasks 1.2 and 1.3 are reopened for that evidence; no new task is ticked.
 
 The footer target is approximately 200px at 390px (supplied measurement 198px): logo/socials on one 44px row, tagline in two 12px lines, eight links in four columns of two 44px rows filled column-first, and one 12px sentence-case meta line including Est. 2026. Artists uses two columns from 360px with tighter padding and retained 3:4 photos (390px page height 3065→1583px); the existing artist-roster-presentation delta now includes that contract. Releases gaps/padding tighten (2748→2556px). These comparisons are intrinsic-layout observations, not fixed heights.
 
