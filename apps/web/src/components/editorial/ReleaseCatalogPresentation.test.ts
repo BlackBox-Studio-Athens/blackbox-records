@@ -107,13 +107,16 @@ describe('Releases physical merchandising', () => {
     expect(selectReleaseMerchandisingEntries(entries, records).principal[0]?.id).toBe('lotus');
   });
   it('unknown reads never assert stock, preorder or positive buying', () => {
-    const result = selectReleaseMerchandisingEntries(entries, []);
+    const futureEntries = entries.map((entry) =>
+      entry.id === 'lotus' ? { ...entry, releaseDate: '2099-10-16' } : entry,
+    );
+    const result = selectReleaseMerchandisingEntries(futureEntries, []);
     expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
     expect(result.remainder).toHaveLength(2);
     expect(result.states.get('lotus')).toMatchObject({ state: 'unknown', action: 'Vinyl edition', shipping: '' });
     expect(result.states.get('anarchotribal')?.badges).toEqual(['Digital out now', 'Vinyl Coming Soon']);
     // A native edition has no physical badge until its offer is read.
-    expect(result.states.get('lotus')?.badges).toEqual(['Out 16 October 2026']);
+    expect(result.states.get('lotus')?.badges).toEqual(['Out 16 October 2099']);
   });
   it.each(['2026-06-06', '2026-11-14', undefined])(
     'derives the physical badge from the offer state alone with digital date %s',
