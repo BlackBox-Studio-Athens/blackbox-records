@@ -61,4 +61,4 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 
 - [x] 8.1 Make the confirmed behavior the default for hoverless coarse-pointer input, update the affected contracts and verify the regression fails before the CSS repair.
 - [x] 8.2 Verify portrait/landscape touch, fine-pointer effects, films, swipe rows and player continuity; pass builds, strict OpenSpec, Graphify and final validation.
-- [ ] 8.3 Commit and deliver the scoped repair to UAT, verify the release and hand off normal Home without the diagnostic query. Task 5.4 retains final physical acceptance.
+- [x] 8.3 Commit and deliver the scoped repair to UAT, verify the release and hand off normal Home without the diagnostic query. Task 5.4 retains final physical acceptance.
