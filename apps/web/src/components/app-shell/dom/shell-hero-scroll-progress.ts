@@ -109,19 +109,22 @@ export function connectHomepageHeroScrollProgress({
   };
 
   const queueHeroScrollSync = () => {
-    measureHero = true;
     if (animationFrameId !== null) return;
 
     animationFrameId = scheduler.requestAnimationFrame(applyHeroScrollProgress);
   };
+  const resizeHero = () => {
+    measureHero = true;
+    queueHeroScrollSync();
+  };
 
   queueHeroScrollSync();
-  scheduler.addEventListener('scroll', applyHeroScrollProgress, { passive: true });
-  scheduler.addEventListener('resize', queueHeroScrollSync);
+  scheduler.addEventListener('scroll', queueHeroScrollSync, { passive: true });
+  scheduler.addEventListener('resize', resizeHero);
 
   return () => {
-    scheduler.removeEventListener('scroll', applyHeroScrollProgress);
-    scheduler.removeEventListener('resize', queueHeroScrollSync);
+    scheduler.removeEventListener('scroll', queueHeroScrollSync);
+    scheduler.removeEventListener('resize', resizeHero);
 
     if (animationFrameId !== null) {
       scheduler.cancelAnimationFrame(animationFrameId);

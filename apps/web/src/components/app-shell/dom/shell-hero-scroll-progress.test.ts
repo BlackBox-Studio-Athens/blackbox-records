@@ -60,7 +60,9 @@ function createScheduler({ innerHeight = 1000 } = {}) {
       animationFrameCallbacks.delete(id);
     }),
     flushAnimationFrame: (id = nextAnimationFrameId - 1) => {
-      animationFrameCallbacks.get(id)?.(performance.now());
+      const callback = animationFrameCallbacks.get(id);
+      animationFrameCallbacks.delete(id);
+      callback?.(performance.now());
     },
     innerHeight,
     scrollY: 0,
@@ -156,7 +158,7 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     expect(heroElement.classList.toggle).toHaveBeenCalledTimes(1);
     expect(heroElement.getBoundingClientRect).toHaveBeenCalledTimes(1);
-    expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(2);
   });
 
   it('toggles the hero when the threshold state changes', () => {
@@ -212,11 +214,73 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
   });
+
+  it('cancels scroll work queued after the initial frame when disconnected', () => {
+    const heroElement = createHeroElement();
+    const scheduler = createScheduler();
+    const cleanup = connectHomepageHeroScrollProgress({
+      activePathname: '/',
+      queryHeroElement: () => heroElement,
+      scheduler,
+    });
+    scheduler.flushAnimationFrame();
+    scheduler.scrollY = 210;
+    findScrollListener(scheduler)();
+    cleanup();
+    scheduler.flushAnimationFrame();
+
+    expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(2);
+    expect(heroElement.classList.toggle).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('homepage hero fade without scroll timelines', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('coalesces a scroll burst into one seek at the latest position without remeasuring', () => {
+    vi.stubGlobal('CSS', { supports: () => false });
+    const { ghost, veil } = createFadeAnimations();
+    const heroElement = createHeroElement({ animations: [ghost, veil] });
+    const scheduler = createScheduler();
+    connectHomepageHeroScrollProgress({ activePathname: '/', queryHeroElement: () => heroElement, scheduler });
+    scheduler.flushAnimationFrame();
+
+    for (const scrollY of [30, 90, 210]) {
+      scheduler.scrollY = scrollY;
+      findScrollListener(scheduler)();
+    }
+    expect([ghost.currentTime, veil.currentTime]).toEqual([0, 0]);
+    expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(2);
+    scheduler.flushAnimationFrame();
+
+    expect([ghost.currentTime, veil.currentTime]).toEqual([500, 500]);
+    expect(heroElement.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expect(heroElement.getAnimations).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['scroll-first', 'resize-first'])('retains resize invalidation in one %s frame', (order) => {
+    vi.stubGlobal('CSS', { supports: () => false });
+    const { ghost } = createFadeAnimations();
+    const heroElement = createHeroElement({ animations: [ghost] });
+    const scheduler = createScheduler();
+    connectHomepageHeroScrollProgress({ activePathname: '/', queryHeroElement: () => heroElement, scheduler });
+    scheduler.flushAnimationFrame();
+
+    scheduler.scrollY = 210;
+    vi.mocked(heroElement.getBoundingClientRect).mockReturnValue({ top: -210, height: 2200 } as DOMRect);
+    const resize = scheduler.addEventListener.mock.calls.find(([type]) => type === 'resize')![1];
+    const scroll = findScrollListener(scheduler);
+    for (const listener of order === 'scroll-first' ? [scroll, resize] : [resize, scroll]) listener();
+    expect(ghost.currentTime).toBe(0);
+    expect(heroElement.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    scheduler.flushAnimationFrame();
+
+    expect(ghost.currentTime).toBeCloseTo((210 / (2200 * 0.32)) * 1000);
+    expect(heroElement.getBoundingClientRect).toHaveBeenCalledTimes(2);
+    expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(2);
+    expect(heroElement.classList.toggle).toHaveBeenCalledTimes(1);
   });
 
   it('seeks only the paused hero fade to the scroll progress, once per change', () => {

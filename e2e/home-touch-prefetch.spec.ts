@@ -70,7 +70,7 @@ test('@phone a cancelled swipe on a Home news card does not fetch its overlay, b
     const y = box!.y + box!.height / 2;
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 110, y }] });
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
   } else {
     // WebKit's Playwright surface exposes tap but not touch drag; exercise the same pointer/focus cancellation path.
     await link.dispatchEvent('pointerover', { pointerType: 'touch' });
