@@ -28,4 +28,6 @@ The owner reports release 614 still freezes repeatedly throughout Home on a Pixe
 - [x] 4.1 Establish the Android embedded-browser test target and record actual full-page gesture/trace evidence, emulator controls and limits.
 - [x] 4.2 Isolate and implement the smallest rendering repair, retaining first/repeat comparisons and the approved ghost, film and navigation behavior.
 - [x] 4.3 Add focused scrolling regression coverage and pass affected browser checks, web build, strict OpenSpec, Graphify refresh and final source-bound validation.
-- [ ] 4.4 Commit and push the scoped candidate to UAT, verify CI/smoke and hosted identity, and hand off the exact release for physical Messenger verification without promoting PRD.
+- [x] 4.4 Commit and push the scoped candidate to UAT, verify CI/smoke and hosted identity, and hand off the exact release for physical Messenger verification without promoting PRD.
+
+Physical acceptance remains with the owner: open UAT release 615 in Messenger on the Pixel 6a / Android 17, wait 15 seconds, then scroll the whole Home down and back repeatedly. The Local Android control does not establish resolution on that phone.
