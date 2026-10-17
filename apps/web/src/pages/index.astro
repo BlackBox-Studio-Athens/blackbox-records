@@ -37,6 +37,7 @@ const preorderItems = videoTest
         normal: 'Normal rendering',
         'no-video': 'Videos disabled',
         'no-ghost': 'Fixed background disabled',
+        'no-timelines': 'Scroll animations disabled',
         report: 'Record normal scrolling',
       };
       if (!Object.hasOwn(labels, mode)) return;
@@ -51,6 +52,16 @@ const preorderItems = videoTest
       if (mode === 'no-ghost') {
         const style = document.createElement('style');
         style.textContent = '.homepage-hero-section__media-layer { position: absolute !important; }';
+        document.head.append(style);
+      }
+      if (mode === 'no-timelines') {
+        const style = document.createElement('style');
+        // Keep the existing coarse hero fade; isolate both native scroll timelines from normal rendering.
+        style.textContent = `
+          .homepage-hero-section__media-layer,
+          .homepage-hero-section__media-layer::after,
+          .home-swipe-row > * { animation: none !important; }
+        `;
         document.head.append(style);
       }
       document.addEventListener(
