@@ -37,6 +37,7 @@ const preorderItems = videoTest
         normal: 'Normal rendering',
         'no-video': 'Videos disabled',
         'no-ghost': 'Fixed background disabled',
+        report: 'Record normal scrolling',
       };
       if (!Object.hasOwn(labels, mode)) return;
       document.documentElement.dataset.homeScrollCheck = mode;
@@ -60,6 +61,196 @@ const preorderItems = videoTest
             note.hidden = false;
             note.textContent = `Scroll check: ${labels[mode]}.`;
           }
+          if (mode !== 'report') return;
+          const panel = document.querySelector('[data-home-scroll-report]');
+          const button = panel.querySelector('button');
+          const output = panel.querySelector('textarea');
+          const status = panel.querySelector('[role="status"]');
+          panel.hidden = false;
+          let started = 0,
+            visibleSince = 0,
+            previous = 0,
+            frame = 0,
+            observer;
+          let gesture, timer;
+          const events = new AbortController();
+          const timingType = ['long-animation-frame', 'longtask'].find((type) =>
+            window.PerformanceObserver?.supportedEntryTypes?.includes(type),
+          );
+          const report = {
+            version: 1,
+            userAgent: navigator.userAgent,
+            timingType: timingType ?? null,
+            frameSamples: 0,
+            maxFrameGapMs: 0,
+            stallsOver250Ms: 0,
+            scrollEvents: 0,
+            minScrollY: scrollY,
+            maxScrollY: scrollY,
+            hiddenCount: 0,
+            frameStalls: [],
+            longFrames: [],
+            gestures: [],
+            resizes: [],
+          };
+          const boundedPush = (list, item) => {
+            list.push(item);
+            if (list.length > 24) list.shift();
+          };
+          const position = () => ({ y: Math.round(scrollY), height: innerHeight, width: innerWidth });
+          const collectTimings = (entries) => {
+            if (document.hidden) return;
+            for (const entry of entries) {
+              if (entry.startTime < visibleSince) continue;
+              report.longFrames.push({
+                atMs: Math.round(entry.startTime - started),
+                durationMs: Math.round(entry.duration),
+                blockingMs: entry.blockingDuration === undefined ? null : Math.round(entry.blockingDuration),
+                styleLayoutMs: entry.styleAndLayoutStart
+                  ? Math.round(entry.startTime + entry.duration - entry.styleAndLayoutStart)
+                  : null,
+                scripts: [...(entry.scripts ?? [])]
+                  .sort((a, b) => b.duration - a.duration)
+                  .slice(0, 3)
+                  .map((script) => ({
+                    file: (script.sourceURL?.split(/[?#]/)[0].split('/').pop() || '(inline)').slice(0, 160),
+                    function: script.sourceFunctionName?.slice(0, 80),
+                    position: script.sourceCharPosition,
+                    durationMs: Math.round(script.duration),
+                    forcedLayoutMs: Math.round(script.forcedStyleAndLayoutDuration),
+                  })),
+              });
+            }
+            report.longFrames.sort((a, b) => b.durationMs - a.durationMs);
+            report.longFrames.length = Math.min(report.longFrames.length, 5);
+          };
+          const stop = () => {
+            clearTimeout(timer);
+            cancelAnimationFrame(frame);
+            observer?.disconnect();
+            events.abort();
+          };
+          const finish = () => {
+            if (observer) collectTimings(observer.takeRecords());
+            stop();
+            report.durationMs = Math.round(performance.now() - started);
+            report.end = position();
+            report.videos = [...document.querySelectorAll('video')].map((video) => ({
+              loaded: Boolean(video.getAttribute('src')),
+              paused: video.paused,
+              ready: video.readyState,
+            }));
+            output.value = JSON.stringify(report);
+            output.hidden = false;
+            button.disabled = true;
+            status.textContent = 'Report ready. Select and copy the text below, then paste it into our chat.';
+          };
+          // shortcut: frame callbacks cannot prove compositor presentation; touch and scroll samples narrow that gap.
+          const sample = (time) => {
+            if (!panel.isConnected) return stop();
+            if (!document.hidden) {
+              if (previous) {
+                const gap = Math.round(time - previous);
+                report.frameSamples++;
+                report.maxFrameGapMs = Math.max(report.maxFrameGapMs, gap);
+                if (gap >= 250) {
+                  report.stallsOver250Ms++;
+                  boundedPush(report.frameStalls, {
+                    atMs: Math.round(time - started),
+                    gapMs: gap,
+                    y: Math.round(scrollY),
+                  });
+                }
+              }
+              previous = time;
+            }
+            frame = requestAnimationFrame(sample);
+          };
+          const touch = (event) => {
+            const point = event.touches[0] ?? event.changedTouches[0];
+            if (!point || document.hidden) return;
+            if (event.type === 'touchstart') {
+              gesture = {
+                atMs: Math.round(performance.now() - started),
+                startY: Math.round(scrollY),
+                target: event.target.tagName,
+                moves: 0,
+                dx: 0,
+                dy: 0,
+                maxEventDelayMs: 0,
+                lastX: point.clientX,
+                lastY: point.clientY,
+              };
+            } else if (gesture) {
+              gesture.dx += Math.abs(point.clientX - gesture.lastX);
+              gesture.dy += Math.abs(point.clientY - gesture.lastY);
+              gesture.lastX = point.clientX;
+              gesture.lastY = point.clientY;
+              const delay = performance.now() - event.timeStamp;
+              if (delay >= 0 && delay < 60000)
+                gesture.maxEventDelayMs = Math.max(gesture.maxEventDelayMs, Math.round(delay));
+              if (event.type === 'touchmove') gesture.moves++;
+              else {
+                const { lastX: _lastX, lastY: _lastY, ...finished } = gesture;
+                boundedPush(report.gestures, {
+                  ...finished,
+                  end: event.type,
+                  endY: Math.round(scrollY),
+                  dx: Math.round(gesture.dx),
+                  dy: Math.round(gesture.dy),
+                });
+                gesture = null;
+              }
+            }
+          };
+          window.addEventListener('pagehide', stop, { signal: events.signal });
+          timer = setTimeout(() => {
+            if (!panel.isConnected) return stop();
+            started = visibleSince = performance.now();
+            report.start = position();
+            report.minScrollY = report.maxScrollY = Math.round(scrollY);
+            button.disabled = false;
+            status.textContent =
+              'Recording. Scroll down and back until it freezes, then return here and finish. Stops after two minutes.';
+            button.addEventListener('click', finish, { once: true, signal: events.signal });
+            document.addEventListener(
+              'visibilitychange',
+              () => {
+                if (document.hidden) report.hiddenCount++;
+                previous = 0;
+                gesture = null;
+                visibleSince = performance.now();
+              },
+              { signal: events.signal },
+            );
+            for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
+              document.addEventListener(type, touch, { passive: true, signal: events.signal });
+            }
+            window.addEventListener(
+              'scroll',
+              () => {
+                report.scrollEvents++;
+                report.minScrollY = Math.min(report.minScrollY, Math.round(scrollY));
+                report.maxScrollY = Math.max(report.maxScrollY, Math.round(scrollY));
+              },
+              { passive: true, signal: events.signal },
+            );
+            const resize = (event) =>
+              boundedPush(report.resizes, {
+                atMs: Math.round(performance.now() - started),
+                source: event.currentTarget === window ? 'window' : 'visualViewport',
+                ...position(),
+                visualHeight: Math.round(window.visualViewport?.height ?? innerHeight),
+              });
+            window.addEventListener('resize', resize, { signal: events.signal });
+            window.visualViewport?.addEventListener('resize', resize, { signal: events.signal });
+            if (timingType) {
+              observer = new PerformanceObserver((list) => collectTimings(list.getEntries()));
+              observer.observe({ type: timingType });
+            }
+            frame = requestAnimationFrame(sample);
+            timer = setTimeout(finish, 120000);
+          }, 15000);
         },
         { once: true },
       );
@@ -77,6 +268,30 @@ const preorderItems = videoTest
       Video playback test. Sample pre-order details; purchase links open the UAT Store.
       <strong class="block" data-home-scroll-check-note hidden></strong>
     </p>
+  )}
+  {videoTest && (
+    <section
+      class="layout-container mt-4 mb-6 space-y-3 text-sm"
+      data-home-scroll-report
+      hidden
+      aria-label="Scrolling report"
+    >
+      <p role="status">
+        Wait 15 seconds. Then scroll down and back until the freeze happens. This report stays on this page until you
+        copy it.
+      </p>
+      <button type="button" class={buttonVariants({ variant: 'inverse' })} disabled>
+        Finish and show report
+      </button>
+      <textarea
+        hidden
+        readonly
+        rows="8"
+        spellcheck="false"
+        aria-label="Scrolling report text"
+        class="w-full border p-3 font-mono text-xs"
+      />
+    </section>
   )}
   {preorderItems.length > 0 && (
     <StorePreorderShowcase client:idle items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />

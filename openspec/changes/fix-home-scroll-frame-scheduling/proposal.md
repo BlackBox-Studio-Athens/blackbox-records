@@ -35,3 +35,5 @@ Identify the embedded browser technology from primary sources, reproduce repeate
 ## Release 615 follow-up
 
 The owner reports the crop repair also fails physical acceptance. Their browser reports `Chrome/155.0.0.0` and `[FB_IAB/FB4A;FBAV/583.0.0.29.95;]`. Treat the field problem as unresolved. Repeat diagnosis with UAT's two film chapters, add prolonged-stall detection to the Local test, and use opt-in UAT comparisons to isolate automatic video and the fixed hero background in the affected browser. The normal rendering contract remains the repair target; these comparisons are temporary diagnostic controls.
+
+All three release 616 comparisons retain the same reported freeze. Add one opt-in on-device report that separates stalled animation callbacks and slow main-thread frames from touch/scroll movement and viewport resizing. Collect actual affected-client evidence before choosing another repair. Keep the report temporary, UAT-only, bounded and manually shared; exclude the unrelated unpublished shipping-email work from delivery.

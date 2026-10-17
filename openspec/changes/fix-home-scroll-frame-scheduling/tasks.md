@@ -42,3 +42,11 @@ The owner reports that Messenger on the same phone still freezes on UAT. Reopen 
 - [ ] 5.4 Use the affected phone's comparison to identify and implement the repair, verify it locally and on UAT, and obtain physical Messenger acceptance.
 
 The owner authorized publishing the diagnostics on 2026-10-17 in response to the isolated-worktree request. Prepare the seven-file candidate from `origin/main` at `d7c56bb5`, excluding the unpublished shipping-email commit `ed215ad4` and unrelated harness edits in the primary checkout. Deliver to UAT only; the physical freeze remains unresolved.
+
+## 6. All release 616 comparisons still freeze
+
+The owner reports the same problem in normal, video-off and fixed-background-off modes. Neither change alone is sufficient. Confirmation that the phone applied the labels/video control and a direct Chrome comparison remain requested; do not treat emulator timing as the field cause.
+
+- [x] 6.1 Add a UAT-only report of frame stalls, slow-frame script attribution, touch/scroll movement and viewport resizes, with bounded buffers, hidden-time exclusion and no automatic upload or persistence.
+- [x] 6.2 Verify a deliberate stall is detected, background time is excluded, normal and PRD behavior is unchanged, and the extra test remains Local only.
+- [x] 6.3 Deliver the scoped report to UAT, verify the release and ask for the affected-phone report before selecting a repair.
