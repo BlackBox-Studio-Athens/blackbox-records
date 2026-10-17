@@ -49,4 +49,4 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 
 - [x] 6.1 Add a UAT-only report of frame stalls, slow-frame script attribution, touch/scroll movement and viewport resizes, with bounded buffers, hidden-time exclusion and no automatic upload or persistence.
 - [x] 6.2 Verify a deliberate stall is detected, background time is excluded, normal and PRD behavior is unchanged, and the extra test remains Local only.
-- [ ] 6.3 Deliver the scoped report to UAT, verify the release and ask for the affected-phone report before selecting a repair.
+- [x] 6.3 Deliver the scoped report to UAT, verify the release and ask for the affected-phone report before selecting a repair.
