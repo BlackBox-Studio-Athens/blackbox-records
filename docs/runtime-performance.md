@@ -77,4 +77,12 @@ For a same-session native A/B, repeat the same profile/build/routes with `--scro
 
 The round-three implementation selects native public scrolling on every pointer from the recorded CPU comparison. On that build, `enabled` already uses native input and has no Lenis chunk to abort; only an earlier on-demand build provides a Lenis/native A/B. Report the build hash with each decision. Public legacy scroll function names remain stable for callers.
 
+## Local Home scrolling check
+
+`pnpm test:e2e e2e/home-scroll.spec.ts --project=chromium-mobile --workers=1` checks that the decorative hero crops cannot become nested scroll containers, then waits for fonts and 15 seconds before native touch drags traverse Home to its bottom and back. The complete traversal is skipped in CI. Only the fast crop regression runs there (590 ms in the recorded production-preview check).
+
+Without extra configuration this uses Chromium mobile emulation. To exercise an actual Android WebView, run a debuggable WebView on a device or hardware-backed AVD, reverse this checkout's Local port with ADB, and forward the WebView's observed DevTools socket to a free host port. Set `BLACKBOX_ANDROID_WEBVIEW_CDP` to that local HTTP CDP endpoint before running the same command. The test attaches to the existing page and records its actual user agent, viewport/DPR and scroll-timeline support as `scroll-browser`; it does not launch or authenticate Messenger. Clear the variable after use. This option is Local only and introduces no Android installation or emulator job in CI.
+
+For a reported Android in-app freeze, retain first and repeat native ADB input traces separately from the automated functional check. Use hardware graphics, keep the same build, viewport and input cadence, and wait for fonts and at least 15 seconds. A Messenger user-agent string in desktop Chromium does not reproduce Android embedding. Record the actual Android/WebView version and graphics backend, and retain the affected phone's manual acceptance separately. The `fix-home-scroll-frame-scheduling` change records the Pixel 6a / Android 17 follow-up and its Android 16 / WebView 151 control.
+
 The Holding artifact checker expects apex-relative assets. When validating an isolated apex production build, `pnpm --filter web prd:holding:prepare --dist=<build-root>` accepts its explicit output directory; omitting the argument retains the normal `apps/web/dist` input. Run the existing Holding artifact check afterward.

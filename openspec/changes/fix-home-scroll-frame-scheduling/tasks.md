@@ -20,3 +20,12 @@ The owner explicitly assigns this repair and its UI tests to Codex, with local m
 ## Workflow follow-up
 
 - Check the same phone in Messenger and its normal browser against this UAT release when available. Emulation does not establish resolution of the reported device-specific lag.
+
+## 4. Persistent Android Messenger freezes
+
+The owner reports release 614 still freezes repeatedly throughout Home on a Pixel 6a / Android 17 after 15 seconds. This follow-up is authorized for Codex implementation and UAT delivery only.
+
+- [x] 4.1 Establish the Android embedded-browser test target and record actual full-page gesture/trace evidence, emulator controls and limits.
+- [x] 4.2 Isolate and implement the smallest rendering repair, retaining first/repeat comparisons and the approved ghost, film and navigation behavior.
+- [x] 4.3 Add focused scrolling regression coverage and pass affected browser checks, web build, strict OpenSpec, Graphify refresh and final source-bound validation.
+- [ ] 4.4 Commit and push the scoped candidate to UAT, verify CI/smoke and hosted identity, and hand off the exact release for physical Messenger verification without promoting PRD.

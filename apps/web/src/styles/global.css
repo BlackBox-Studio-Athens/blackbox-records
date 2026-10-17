@@ -2977,6 +2977,7 @@ body {
     );
   }
 
+  /* Keep these decorative crops out of Android WebView's scroll tree. */
   .homepage-hero-section {
     position: relative;
     background-color: #050505;
@@ -2985,14 +2986,14 @@ body {
     align-items: stretch;
     justify-content: flex-end;
     padding: 0;
-    overflow: hidden;
+    overflow: clip;
   }
 
   .homepage-hero-section__media-layer {
     position: fixed;
     inset: 0;
     z-index: 0;
-    overflow: hidden;
+    overflow: clip;
     opacity: 1;
     pointer-events: none;
     animation-name: homepage-hero-ghost;
