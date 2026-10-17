@@ -31,3 +31,14 @@ The owner reports release 614 still freezes repeatedly throughout Home on a Pixe
 - [x] 4.4 Commit and push the scoped candidate to UAT, verify CI/smoke and hosted identity, and hand off the exact release for physical Messenger verification without promoting PRD.
 
 Physical acceptance remains with the owner: open UAT release 615 in Messenger on the Pixel 6a / Android 17, wait 15 seconds, then scroll the whole Home down and back repeatedly. The Local Android control does not establish resolution on that phone.
+
+## 5. Release 615 fails physical acceptance
+
+The owner reports that Messenger on the same phone still freezes on UAT. Reopen diagnosis: the preceding native profiling page lacked UAT's two film chapters, and the functional traversal test does not detect frame stalls.
+
+- [x] 5.1 Record sustained native scrolling with the same two-film Home workload, the owner's actual user agent, and the remaining engine/media limitations.
+- [x] 5.2 Make the Local regression detect prolonged renderer stalls and prepare opt-in UAT comparisons for video playback and the fixed background.
+- [x] 5.3 Finish repository and production-exclusion checks, then deliver only the scrolling diagnostic to UAT under the authorized repository scope.
+- [ ] 5.4 Use the affected phone's comparison to identify and implement the repair, verify it locally and on UAT, and obtain physical Messenger acceptance.
+
+The owner authorized publishing the diagnostics on 2026-10-17 in response to the isolated-worktree request. Prepare the seven-file candidate from `origin/main` at `d7c56bb5`, excluding the unpublished shipping-email commit `ed215ad4` and unrelated harness edits in the primary checkout. Deliver to UAT only; the physical freeze remains unresolved.
