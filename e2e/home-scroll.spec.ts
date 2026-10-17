@@ -2,45 +2,21 @@ import { chromium } from 'playwright';
 
 import { expect, expectNoHorizontalOverflow, test, waitForShell } from './fixtures';
 
-test('@phone the scroll-animation comparison preserves media and resets on a fresh normal visit', async ({
-  page,
-  browserName,
-}) => {
-  test.skip(
-    Boolean(process.env.CI) || process.env.SHOW_REVIEW_SITE_MARKER !== 'true',
-    'Local review-build diagnostic only.',
-  );
-  test.skip(browserName !== 'chromium', 'This comparison targets Chromium scroll timelines.');
-  await page.goto('./?scroll-check=no-timelines');
-  await waitForShell(page);
-  await expect(page.locator('[data-home-scroll-check-note]')).toHaveText('Scroll check: Scroll animations disabled.');
-  await expect(page.locator('[data-home-scroll-report]')).toBeHidden();
-  const media = page.locator('.homepage-hero-section__media-layer');
-  await expect(media).toHaveCSS('position', 'fixed');
-  await expect(media).toHaveCSS('animation-name', 'none');
-  expect(await media.evaluate((element) => getComputedStyle(element, '::after').animationName)).toBe('none');
-  const cards = page.locator('.home-swipe-row > *');
-  expect(await cards.count()).toBeGreaterThan(0);
-  expect(
-    await cards.evaluateAll((elements) =>
-      elements.every((element) => getComputedStyle(element).animationName === 'none'),
-    ),
-  ).toBe(true);
-  await expect(page.locator('.home-preorders__film')).toHaveCount(2);
-  await expect(page.locator('video[data-home-hero-film]')).toHaveJSProperty('paused', false);
-  await page.locator('body').press('End');
-  await expect(media).toHaveCSS('opacity', '0.12');
-  await expectNoHorizontalOverflow(page);
-
+test('fine-pointer Home retains its scroll animations at a narrow viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await waitForShell(page);
-  await expect(page.locator('[data-home-scroll-check-note]')).toBeHidden();
+  expect(await page.evaluate(() => matchMedia('(pointer: fine)').matches)).toBe(true);
+  const media = page.locator('.homepage-hero-section__media-layer');
   await expect(media).toHaveCSS('animation-name', 'homepage-hero-ghost');
   expect(await media.evaluate((element) => getComputedStyle(element, '::after').animationName)).toBe(
     'homepage-hero-ghost-veil',
   );
-  await expect(cards.first()).toHaveCSS('animation-name', 'home-swipe-row-fade');
+  await expect(page.locator('.home-swipe-row > *').first()).toHaveCSS('animation-name', 'home-swipe-row-fade');
   await expect(media).toHaveCSS('opacity', '1');
+  await page.evaluate(() => scrollTo(0, innerHeight * 0.1));
+  await expect.poll(() => media.evaluate((element) => Number(getComputedStyle(element).opacity))).toBeLessThan(1);
+  expect(await media.evaluate((element) => Number(getComputedStyle(element).opacity))).toBeGreaterThan(0.12);
 });
 
 test('@phone the scrolling report catches a stall and excludes time spent hidden', async ({
@@ -110,9 +86,34 @@ test('@phone the scrolling report catches a stall and excludes time spent hidden
   await expect(page.locator('[data-home-scroll-report]')).toBeHidden();
 });
 
-test('@phone Home media cropping does not create nested vertical scroll containers', async ({ page }) => {
+test('@phone Home media cropping and touch scrolling avoid nested scrollers and scroll animations', async ({
+  page,
+}) => {
   await page.goto('./');
   await waitForShell(page);
+  expect(await page.evaluate(() => matchMedia('(hover: none) and (pointer: coarse)').matches)).toBe(true);
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const media = page.locator('.homepage-hero-section__media-layer');
+    expect(await media.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
+    expect(await media.evaluate((element) => getComputedStyle(element, '::after').animationName)).toBe('none');
+    await expect(media).toHaveCSS('position', 'fixed');
+    const cards = page.locator('.home-swipe-row > *');
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(
+      await cards.evaluateAll((elements) =>
+        elements.every((element) => {
+          const style = getComputedStyle(element);
+          return style.animationName === 'none' && style.opacity === '1';
+        }),
+      ),
+    ).toBe(true);
+    await expectNoHorizontalOverflow(page);
+  }
 
   const offsets = await page
     .locator('#homepage-hero-section, .homepage-hero-section__media-layer')
@@ -140,7 +141,7 @@ test('@phone native touch swipes traverse Home twice with bounded frame-callback
 }, testInfo) => {
   test.skip(
     Boolean(process.env.CI),
-    'Full-page scrolling is a Local diagnostic; CI runs only the fast crop regression.',
+    'Full-page scrolling is a Local diagnostic; CI runs the fast style and crop regressions.',
   );
   test.skip(
     browserName !== 'chromium',
