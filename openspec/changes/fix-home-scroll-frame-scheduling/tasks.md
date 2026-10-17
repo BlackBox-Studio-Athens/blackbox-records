@@ -54,5 +54,5 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 ## 7. Release 617 phone report has healthy callbacks
 
 - [x] 7.1 Retain and interpret the owner's report separately from the desktop trace; record what it rules against and what it cannot measure.
-- [ ] 7.2 Verify and deliver an opt-in UAT comparison disabling both Home scroll-driven animation paths, with a Local-only restoration check and normal production exclusion.
+- [x] 7.2 Verify and deliver an opt-in UAT comparison disabling both Home scroll-driven animation paths, with a Local-only restoration check and normal production exclusion.
 - [ ] 7.3 Compare that mode on the affected phone and use the result to select a repair; retain task 5.4 until physical acceptance.
