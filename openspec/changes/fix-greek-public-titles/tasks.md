@@ -12,6 +12,6 @@
 
 ## 3. Authorized release
 
-- [ ] 3.1 Commit/push only the font candidate, excluding shipping-email behavior and unrelated dirty work; record source and scope proof.
-- [ ] 3.2 Wait for all pages.yml jobs and verify UAT fonts and release identity; record acceptance.
-- [ ] 3.3 Promote the exact candidate, verify PRD apex identity/fonts and preserved content/checkout state, and return delegated-result.json with limits.
+- [x] 3.1 Commit/push only the font candidate, excluding shipping-email behavior and unrelated dirty work; record source and scope proof.
+- [x] 3.2 Wait for all pages.yml jobs and verify UAT fonts and release identity; record acceptance.
+- [x] 3.3 Promote the exact candidate, verify PRD apex identity/fonts and preserved content/checkout state, and return delegated-result.json with limits.
