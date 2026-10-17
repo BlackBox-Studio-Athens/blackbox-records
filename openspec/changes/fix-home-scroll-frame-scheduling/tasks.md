@@ -14,8 +14,8 @@ The owner explicitly assigns this repair and its UI tests to Codex, with local m
 
 ## 3. UAT delivery
 
-- [ ] 3.1 Create a scoped local Conventional Commit, push main and verify the exact candidate's full CI/smoke result, hosted UAT identity and Home behavior; record release evidence.
-- [ ] 3.2 Promote only that fully verified UAT candidate to PRD, verify hosted release identity and Home behavior, and record that content and launch settings were preserved.
+- [x] 3.1 Create a scoped local Conventional Commit, push main and verify the exact candidate's full CI/smoke result, hosted UAT identity and Home behavior; record release evidence.
+- [x] 3.2 Promote only that fully verified UAT candidate to PRD, verify hosted release identity and Home behavior, and record that content and launch settings were preserved.
 
 ## Workflow follow-up
 

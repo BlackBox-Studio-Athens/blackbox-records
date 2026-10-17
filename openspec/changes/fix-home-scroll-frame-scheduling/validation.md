@@ -46,3 +46,19 @@ After correcting the browser fixture, `pnpm validate` passed all 35 selected tas
 ## Hosted baseline
 
 Before delivery, both environments serve release 613, candidate `c25b8692dbef6f13e594b5b0ceac1476257576af`, run `38982182645`. UAT's accepted publication is `555fb5b5-930a-47f7-99ad-2ad9ae2b3eb6`, snapshot `d85a501260604993dd6d147abbf0068b1cb8fbe667c5023fe1b778ceda910cd8`. PRD's accepted publication is `c9a9a757-d395-44ec-8bb0-d03f44d14d9a`, snapshot `49aeac2d9fbbe22a523db6f74d84f67cd5b3260b88b0d88d27e67073699e877d`. These were read from each actual hostname's release.json in the signed-in BlackBox Chrome profile. Delivery must retain the environment-owned content identities.
+
+## UAT release 614
+
+Scoped implementation commit `34061a1adab0b0eca2242e85cb7dd943aece3f41` was committed locally and pushed to main. [Release run 38987917333](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38987917333) succeeded: build, lint/type/tests, all four full-suite shards, WebKit phone, both Staff preview suites and deployment/static smoke all passed. UAT release.json confirms that exact SHA, run and release 614, with the baseline publication and snapshot unchanged.
+
+The signed-in Chrome check at actual 391×844 with a coarse pointer showed the portrait hero playing, keyboard scroll to 844 px switching the ghost to opacity 0.12 and pausing the hero, LOTUS playing, then the next-chapter link reaching Disintegration at scrollY 1396.67 with its film advancing at 6.93 s while LOTUS remained paused with its source retained. No horizontal overflow or error-level console messages were observed. This is hosted Chrome behavior at phone width, not physical Messenger acceptance.
+
+The higher-level browser viewport control did not change this tab, so the tab-scoped CDP metrics override was used. A raw synthetic-touch command timed out and supplied no accepted gesture result; the observed hosted scrolling used keyboard and the chapter anchor. Temporary overrides are cleared during cleanup. PRD promotion run `38988517500` was dispatched only after all UAT gates succeeded; its final outcome is recorded below after completion.
+
+## PRD release 614
+
+[Promotion run 38988517500](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38988517500) succeeded. The public apex release.json confirms candidate `34061a1adab0b0eca2242e85cb7dd943aece3f41`, originating UAT run `38987917333` and release 614. The PRD publication and snapshot match the hosted baseline exactly. The task used normal Software Release without content publication, catalog/provider actions or launch-setting changes.
+
+On `https://blackboxrecordsathens.com/` at actual 391×844 with a coarse pointer, the portrait hero played at 4.70 s. PageDown reached scrollY 660.83, paused the hero, set ghost opacity to 0.12 and let LOTUS advance to 2.78 s. The next-chapter link reached the real Disintegration chapter at scrollY 1358.33, where its film advanced to 9.66 s while LOTUS stayed paused with its source retained. The production page retained real artist/Store links and showed no UAT marker or sample notice, horizontal overflow or error-level console messages. This remains hosted desktop Chrome emulation; physical Messenger resolution is unverified.
+
+Temporary UAT and PRD metrics/touch overrides and the browser viewport override were cleared. No Local runtime or measurement browser remains. Release evidence is committed separately from the implementation, and the final source-bound validation pointer is in `.codex-artifacts/messenger-home-scroll/completion.json`.
