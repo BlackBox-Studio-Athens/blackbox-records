@@ -31,3 +31,7 @@ The initial release changed the app-shell hero scroll connector, its focused tes
 Release 614 repaired event scheduling but did not resolve the reported Messenger experience. The owner identifies a Pixel 6a on Android 17: after at least 15 seconds of settling, scrolling repeatedly freezes after some distance throughout Home. Treat the original scheduling work as delivered and this device acceptance as failed.
 
 Identify the embedded browser technology from primary sources, reproduce repeated full-page scrolling in an actual Android WebView, isolate rendering work from emulator overhead, and apply the smallest demonstrated repair. Add a focused scrolling regression using the existing suite. Preserve the fixed ghost, fade, films, native scrolling and shell continuity; no content or commerce changes. CSS may change where the evidence identifies a rendering defect. Deliver this follow-up to UAT only for the owner's Messenger verification. The earlier production promotion authorization does not apply to this new candidate.
+
+## Release 615 follow-up
+
+The owner reports the crop repair also fails physical acceptance. Their browser reports `Chrome/155.0.0.0` and `[FB_IAB/FB4A;FBAV/583.0.0.29.95;]`. Treat the field problem as unresolved. Repeat diagnosis with UAT's two film chapters, add prolonged-stall detection to the Local test, and use opt-in UAT comparisons to isolate automatic video and the fixed hero background in the affected browser. The normal rendering contract remains the repair target; these comparisons are temporary diagnostic controls.

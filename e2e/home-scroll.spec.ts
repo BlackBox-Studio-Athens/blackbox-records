@@ -25,7 +25,7 @@ test('@phone Home media cropping does not create nested vertical scroll containe
   expect(offsets).toEqual([0, 0]);
 });
 
-test('@phone native touch swipes traverse Home and return with its ghost intact', async ({
+test('@phone native touch swipes traverse Home twice without long freezes', async ({
   page: localPage,
   browserName,
   baseURL,
@@ -44,6 +44,12 @@ test('@phone native touch swipes traverse Home and return with its ghost intact'
     const page = attached ? attached.contexts()[0]!.pages()[0]! : localPage;
     await page.goto(new URL('./', baseURL!).href);
     await waitForShell(page);
+    expect(
+      await page
+        .locator('video[data-home-hero-film]')
+        .evaluate((video: HTMLVideoElement) => video.canPlayType('video/mp4; codecs="avc1.42E01E"')),
+      'This diagnostic needs H.264 playback to exercise the Home video workload.',
+    ).not.toBe('');
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(15_000);
     await testInfo.attach('scroll-browser', {
@@ -52,6 +58,7 @@ test('@phone native touch swipes traverse Home and return with its ghost intact'
           userAgent: navigator.userAgent,
           viewport: [innerWidth, innerHeight, devicePixelRatio],
           scrollTimeline: CSS.supports('animation-timeline: scroll()'),
+          preorderFilms: document.querySelectorAll('.home-preorders__film').length,
         })),
       ),
       contentType: 'application/json',
@@ -59,8 +66,33 @@ test('@phone native touch swipes traverse Home and return with its ghost intact'
     const cdp = await page.context().newCDPSession(page);
     const { width, height } = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
     const media = page.locator('.homepage-hero-section__media-layer');
+    // shortcut: rAF cannot detect compositor-only freezes; use a native graphics trace for those.
+    const frameProbe = await page.evaluateHandle(() => {
+      const gaps: number[] = [];
+      let previous = 0;
+      let frame = 0;
+      const sample = (time: number) => {
+        if (previous) gaps.push(time - previous);
+        previous = time;
+        frame = requestAnimationFrame(sample);
+      };
+      frame = requestAnimationFrame(sample);
+      return {
+        stop() {
+          cancelAnimationFrame(frame);
+          const sorted = [...gaps].sort((a, b) => a - b);
+          return {
+            samples: sorted.length,
+            p95Ms: sorted[Math.floor(sorted.length * 0.95)] ?? 0,
+            maximumMs: sorted.at(-1) ?? 0,
+            gapsOver100Ms: gaps.filter((gap) => gap > 100),
+            visibility: document.visibilityState,
+          };
+        },
+      };
+    });
     try {
-      for (const direction of [1, -1]) {
+      for (const direction of [1, -1, 1, -1]) {
         const target =
           direction > 0 ? await page.evaluate(() => document.documentElement.scrollHeight - innerHeight) : 0;
         for (let swipe = 0; swipe < 12; swipe++) {
@@ -84,8 +116,20 @@ test('@phone native touch swipes traverse Home and return with its ghost intact'
       }
       await expectNoHorizontalOverflow(page);
     } finally {
+      const pacing = await frameProbe.evaluate((probe) => probe.stop());
+      await testInfo.attach('scroll-frame-pacing', {
+        body: JSON.stringify(pacing),
+        contentType: 'application/json',
+      });
+      await frameProbe.dispose();
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] }).catch(() => {});
       await cdp.detach();
+      expect.soft(pacing.visibility, 'Keep the test page visible while measuring scrolling.').toBe('visible');
+      expect.soft(pacing.samples).toBeGreaterThan(60);
+      // Detect prolonged stalls locally; ordinary frame-rate variance is not a CI performance budget.
+      expect
+        .soft(pacing.maximumMs, 'Home stopped producing animation frames for at least half a second.')
+        .toBeLessThan(500);
     }
   } finally {
     await attached?.close();

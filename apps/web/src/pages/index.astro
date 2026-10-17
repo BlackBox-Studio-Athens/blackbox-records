@@ -30,6 +30,41 @@ const preorderItems = videoTest
 ---
 
 <SiteLayout mainClass="!pt-0">
+  {videoTest && <script is:inline>
+    (() => {
+      const mode = new URLSearchParams(location.search).get('scroll-check');
+      const labels = {
+        normal: 'Normal rendering',
+        'no-video': 'Videos disabled',
+        'no-ghost': 'Fixed background disabled',
+      };
+      if (!Object.hasOwn(labels, mode)) return;
+      document.documentElement.dataset.homeScrollCheck = mode;
+      if (mode === 'no-video') {
+        if (navigator.connection) {
+          // Exercise Home's existing data-saving media rules before its players start.
+          Object.defineProperty(navigator.connection, 'saveData', { value: true, configurable: true });
+          document.documentElement.removeAttribute('data-hero-film');
+        } else labels[mode] = 'Video comparison unavailable in this browser';
+      }
+      if (mode === 'no-ghost') {
+        const style = document.createElement('style');
+        style.textContent = '.homepage-hero-section__media-layer { position: absolute !important; }';
+        document.head.append(style);
+      }
+      document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+          const note = document.querySelector('[data-home-scroll-check-note]');
+          if (note) {
+            note.hidden = false;
+            note.textContent = `Scroll check: ${labels[mode]}.`;
+          }
+        },
+        { once: true },
+      );
+    })();
+  </script>}
   <HomeHero
     tagline={homeContent.hero.tagline}
     image={homeContent.hero.image}
@@ -40,6 +75,7 @@ const preorderItems = videoTest
   {videoTest && (
     <p class="layout-container mt-6 text-sm" role="status">
       Video playback test. Sample pre-order details; purchase links open the UAT Store.
+      <strong class="block" data-home-scroll-check-note hidden></strong>
     </p>
   )}
   {preorderItems.length > 0 && (
