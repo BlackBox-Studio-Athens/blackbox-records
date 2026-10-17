@@ -52,6 +52,7 @@ export type {
   ShippingLockerSnapshot,
 } from './order-state-repository';
 export { EMPTY_PAID_CHECKOUT_ORDER_FIELDS, readPaidCheckoutFulfillment } from './order-state-repository';
+export { createPaidOrderDeliveryId } from './paid-order-delivery-repository';
 export type {
   ClaimedPaidOrderDelivery,
   ClaimDuePaidOrderDeliveryResult,

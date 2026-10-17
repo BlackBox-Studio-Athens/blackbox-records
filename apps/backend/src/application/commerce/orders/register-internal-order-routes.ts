@@ -44,7 +44,7 @@ const paidOrderDeliverySchema = z.object({
   attemptCount: z.number().int().min(0).max(5),
   createdAt: z.string().datetime(),
   deliveredAt: z.string().datetime().nullable(),
-  kind: z.enum(['shopper_confirmation', 'ops_fulfillment', 'newsletter_registration']),
+  kind: z.enum(['shopper_confirmation', 'ops_fulfillment', 'newsletter_registration', 'shopper_shipping']),
   needsReviewAt: z.string().datetime().nullable(),
   nextAttemptAt: z.string().datetime().nullable(),
   safeReason: z.string().nullable(),

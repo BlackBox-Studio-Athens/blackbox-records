@@ -1,6 +1,7 @@
 import {
   buildPaidOrderOpsEmail,
   buildPaidOrderShopperEmail,
+  buildPaidOrderShippingEmail,
   type ShopperNotificationStatus,
 } from './paid-order-templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
@@ -11,6 +12,7 @@ import { buildEmailConsentEmail } from './consent-capabilities';
 export type PaidOrderEmailPreviewName =
   | 'ops-ready'
   | 'shopper-long-content'
+  | 'shopper-shipped'
   | 'shopper-preorder'
   | 'ops-preorder'
   | 'preorder-estimate-changed'
@@ -90,6 +92,15 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
         replyToEmail: 'support@blackboxrecordsathens.com',
       }),
       name: 'shopper-long-content',
+      order: longContentOrder,
+    },
+    {
+      message: buildPaidOrderShippingEmail({
+        brand: previewBrand,
+        order: longContentOrder,
+        replyToEmail: 'support@blackboxrecordsathens.com',
+      }),
+      name: 'shopper-shipped',
       order: longContentOrder,
     },
     {

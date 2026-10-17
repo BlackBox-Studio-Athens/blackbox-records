@@ -24,6 +24,22 @@ const config = readEmailRuntimeConfig({
 const attemptedAt = new Date('2026-09-01T10:30:00.000Z');
 
 describe('paid order delivery processing', () => {
+  it('requires a dispatch reader before attempting a shipping email', async () => {
+    const repository = new InMemoryPaidOrderDeliveryRepository([claimedDelivery({ kind: 'shopper_shipping' })]);
+    const provider = emailProvider({ ok: true });
+    const result = await processPaidOrderDelivery({
+      attemptedAt,
+      config,
+      deliveryId: 'delivery_1',
+      logger: silentLogger(),
+      order: currentPaidCheckoutOrder(false),
+      provider,
+      repository,
+    });
+    expect(result).toEqual({ kind: 'needs_review', deliveryId: 'delivery_1', safeReason: 'configuration' });
+    expect(provider.sendEmail).not.toHaveBeenCalled();
+  });
+
   it('reschedules a safe transient failure fifteen minutes later', async () => {
     const repository = new InMemoryPaidOrderDeliveryRepository([claimedDelivery()]);
     const provider = emailProvider({ ok: false, reason: 'rate_limited', retryable: true });

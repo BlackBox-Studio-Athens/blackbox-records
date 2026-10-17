@@ -1,6 +1,7 @@
 import { readCheckoutOrder, isAwaitingStock } from './read-checkout-order';
 import { readRecentCheckoutOrders, type ReadRecentCheckoutOrdersQuery } from './read-recent-checkout-orders';
-import type { PaidOrderDeliverySummary } from './paid-order-delivery';
+import { createPaidOrderDeliveryId, type PaidOrderDeliverySummary } from './paid-order-delivery';
+import { processPaidOrderDelivery } from './paid-order-delivery-processing';
 import {
   readPaidCheckoutFulfillment,
   type CheckoutOrderRecord,
@@ -9,6 +10,8 @@ import {
 import type { AppBindings } from '../../../platform/env';
 import { D1OrderDispatchRepository } from '../../../infrastructure/persistence/d1-order-dispatch-repository';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
+import { createEmailRuntimeServices } from '../../../infrastructure/resend';
+import { createBindingLogger, normalizeUnknownError } from '../../../platform/observability';
 import {
   createPrismaClient,
   PrismaOrderStateRepository,
@@ -57,6 +60,24 @@ export function createInternalOrderServices(bindings: AppBindings) {
       // Only complete paid orders can be dispatched; undo stays available for the same orders.
       if (readPaidCheckoutFulfillment(current.order).kind !== 'current') return { kind: 'not_ready' };
       if ((await dispatches.set({ ...input, orderId: current.order.id })) === 'conflict') return { kind: 'conflict' };
+      if (input.shipped) {
+        const logger = createBindingLogger(bindings);
+        try {
+          const emailRuntime = createEmailRuntimeServices(bindings);
+          await processPaidOrderDelivery({
+            ...emailRuntime,
+            attemptedAt: input.at,
+            deliveryId: createPaidOrderDeliveryId(current.order.id, 'shopper_shipping'),
+            dispatches,
+            logger,
+            orders,
+            repository: deliveries,
+          });
+        } catch (error) {
+          // The committed shipment stays successful; its durable email is recoverable by the schedule.
+          logger.error({ ...normalizeUnknownError(error), event: 'order_shipping_email_delivery', status: 'failed' });
+        }
+      }
       const read = await readCheckoutOrderWithFacts(checkoutSessionId);
       return read ? { kind: 'updated', read } : { kind: 'not_found' };
     },

@@ -3,6 +3,7 @@ import {
   registerNewsletterContact,
   sendPaidOrderOpsEmail,
   sendPaidOrderShopperEmail,
+  sendPaidOrderShippingEmail,
   type EmailOperationResult,
   type EmailProviderGateway,
   type EmailRuntimeConfig,
@@ -12,7 +13,6 @@ import {
 import type {
   ClaimedPaidOrderDelivery,
   CurrentPaidCheckoutOrder,
-  PaidOrderDeliveryKind,
   PaidOrderDeliverySafeReason,
 } from '../../../domain/commerce/repositories/spi';
 import { createCheckoutOrderReferenceToken, resolveTaxCollectionMode } from '../../../domain/commerce';
@@ -29,9 +29,7 @@ export type PaidOrderDeliveryAttemptResult =
   | { kind: 'delivered'; providerMessageId: string | null }
   | { kind: 'not_delivered'; retryable: boolean; safeReason: PaidOrderDeliverySafeReason };
 
-export function createPaidOrderDeliveryId(orderId: string, kind: PaidOrderDeliveryKind): string {
-  return `paid_delivery:${orderId}:${kind}`;
-}
+export { createPaidOrderDeliveryId } from '../../../domain/commerce/repositories/spi';
 
 export async function attemptPaidOrderDelivery(input: {
   config: EmailRuntimeConfig;
@@ -43,6 +41,15 @@ export async function attemptPaidOrderDelivery(input: {
   const order = toPaidOrderEmailInput(input.order);
 
   switch (input.delivery.kind) {
+    case 'shopper_shipping':
+      return deliveryAttemptResult(
+        await sendPaidOrderShippingEmail({
+          config: input.config,
+          logger: input.logger,
+          order,
+          provider: input.provider,
+        }),
+      );
     case 'shopper_confirmation':
       return deliveryAttemptResult(
         await sendPaidOrderShopperEmail({

@@ -3,6 +3,7 @@ import {
   readPaidCheckoutFulfillment,
   type CheckoutOrderRecord,
   type CurrentPaidCheckoutOrder,
+  type OrderDispatchRepository,
 } from '../../../domain/commerce/repositories/spi';
 import {
   attemptPaidOrderDelivery,
@@ -26,6 +27,7 @@ type PaidOrderDeliveryProcessingInput = PaidOrderSource & {
   attemptedAt?: Date;
   config: EmailRuntimeConfig;
   deliveryId: string | null;
+  dispatches?: Pick<OrderDispatchRepository, 'listByOrderIds'>;
   logger?: Pick<Console, 'info' | 'warn'>;
   provider: EmailProviderGateway;
   repository: PaidOrderDeliveryRepository;
@@ -56,6 +58,12 @@ export async function processPaidOrderDelivery(
 
   if (!order) {
     return markNeedsReview(input.repository, delivery, attemptedAt, 'incomplete_paid_fulfillment');
+  }
+
+  if (delivery.kind === 'shopper_shipping') {
+    if (!input.dispatches) return markNeedsReview(input.repository, delivery, attemptedAt, 'configuration');
+    const [dispatch] = await input.dispatches.listByOrderIds([delivery.orderId]);
+    if (!dispatch?.shippedAt) return markNeedsReview(input.repository, delivery, attemptedAt, 'dispatch_undone');
   }
 
   try {

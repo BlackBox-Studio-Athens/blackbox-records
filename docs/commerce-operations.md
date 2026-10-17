@@ -99,6 +99,8 @@ For incomplete or suspect historical shipping, record whether customer contact/m
 3. Before dispatch, open the order in Orders and check that it shows Not shipped. After the shipment handoff, choose Mark shipped; Orders records the operator and time and refuses a second mark, so another operator cannot ship twice. Use Mark not shipped only to correct a mistake. Keep any verified destination correction in the private exception record. A rehearsal is not evidence of a physical shipment.
 4. For returns, verify actual receipt before recording a stock delta or recount. Use current revision/state and reassess any stale-count conflict.
 
+Mark shipped also queues one customer shipping email for that order. Check Shipping email in Notifications for its separate pending, delivered or needs-review state; an email failure does not undo a physical shipment. Transient failures use the existing scheduled recovery and retry bounds. Repeated requests and undo/re-mark never create another shipping email. Mark not shipped cannot recall an email already accepted or in flight; if a later pending attempt finds the order unshipped, it stops in needs review. Investigate that state before any manual customer contact. Existing shipped orders receive no retrospective email when this feature is deployed or their details are opened.
+
 ## Rehearsal evidence
 
 ### Superseded multiple-parcel research

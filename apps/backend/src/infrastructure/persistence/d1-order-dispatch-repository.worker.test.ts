@@ -24,6 +24,10 @@ describe('D1 order dispatch persistence', () => {
     const orderId = await order();
     const mark = { orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at };
     expect(await repo.set(mark)).toBe('updated');
+    const queued = await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all();
+    expect(queued.results).toEqual([
+      expect.objectContaining({ kind: 'shopper_shipping', status: 'pending', attemptCount: 0 }),
+    ]);
     expect(await repo.set({ ...mark, operatorEmail: 'b@example.com' })).toBe('conflict');
     expect(await repo.listByOrderIds([orderId])).toEqual([
       { orderId, shippedAt: at.toISOString(), updatedAt: at.toISOString(), updatedBy: 'a@example.com' },
@@ -37,6 +41,54 @@ describe('D1 order dispatch persistence', () => {
       { orderId, shippedAt: null, updatedAt: undoAt.toISOString(), updatedBy: 'b@example.com' },
     ]);
     expect(await repo.set(mark)).toBe('updated');
+    expect(
+      (await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+    ).toEqual(queued.results);
+  });
+
+  it('queues only one email when two operators mark concurrently', async () => {
+    const orderId = await order();
+    const mark = { orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at };
+    const results = await Promise.all([repo.set(mark), repo.set({ ...mark, operatorEmail: 'b@example.com' })]);
+    expect(results.sort()).toEqual(['conflict', 'updated']);
+    expect(
+      (await db.prepare('SELECT "kind" FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+    ).toEqual([{ kind: 'shopper_shipping' }]);
+  });
+
+  it('does not queue from a stale request against a historical shipped mark', async () => {
+    const orderId = await order();
+    await db
+      .prepare('INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy") VALUES (?, ?, ?, ?)')
+      .bind(orderId, at.toISOString(), at.toISOString(), 'legacy@example.com')
+      .run();
+    expect(await repo.set({ orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at })).toBe(
+      'conflict',
+    );
+    expect(
+      (await db.prepare('SELECT "id" FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+    ).toEqual([]);
+  });
+
+  it('rolls back the shipped mark when its email intent cannot be saved', async () => {
+    const orderId = await order();
+    await db
+      .prepare(
+        `CREATE TRIGGER fail_shipping_queue BEFORE INSERT ON "PaidOrderDelivery"
+      WHEN NEW."orderId" = '${orderId}' BEGIN SELECT RAISE(ABORT, 'forced shipping failure'); END`,
+      )
+      .run();
+    try {
+      await expect(
+        repo.set({ orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at }),
+      ).rejects.toThrow('forced shipping failure');
+      expect(await repo.listByOrderIds([orderId])).toEqual([]);
+      expect(
+        (await db.prepare('SELECT "id" FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+      ).toEqual([]);
+    } finally {
+      await db.prepare('DROP TRIGGER fail_shipping_queue').run();
+    }
   });
 
   it('refuses an undo when nothing was marked', async () => {

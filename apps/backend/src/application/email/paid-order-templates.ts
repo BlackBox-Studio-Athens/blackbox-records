@@ -100,6 +100,41 @@ export function buildPaidOrderShopperEmail(input: {
   });
 }
 
+export function buildPaidOrderShippingEmail(input: {
+  brand: PaidOrderEmailBrand;
+  order: Pick<PaidOrderEmailInput, 'orderReference'>;
+  replyToEmail: string;
+}): EmailMessageContent {
+  const title = 'Your order has been shipped';
+  const preheader = 'Your order is on its way with BOX NOW.';
+  const replyCopy = 'Thank you for supporting BlackBox Records. If you need anything, just reply to this email.';
+
+  return createBlackBoxEmailTemplate({
+    brandFontStylesheetUrl: shopperBrandFontStylesheetUrl(input.brand),
+    bodyHtml: renderShopperEmailFrame({
+      brand: input.brand,
+      contentHtml: [
+        renderShopperFacts([['Order reference', input.order.orderReference]]),
+        renderShopperParagraph(preheader),
+        renderShopperParagraph(replyCopy),
+        renderShopperReply(input.replyToEmail),
+      ].join(''),
+      sectionLabel: 'Shipping update',
+      title,
+    }),
+    bodyText: [
+      'BlackBox Records',
+      title,
+      `Order reference: ${input.order.orderReference}`,
+      preheader,
+      replyCopy,
+      `Support: ${input.replyToEmail}`,
+    ].join('\n\n'),
+    preheader,
+    subject: `${title} · ${input.order.orderReference}`,
+  });
+}
+
 export function buildPaidOrderOpsEmail(input: {
   brand: PaidOrderEmailBrand;
   order: PaidOrderEmailInput;

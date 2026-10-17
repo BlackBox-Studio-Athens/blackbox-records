@@ -153,7 +153,8 @@
                   "enum": [
                     "shopper_confirmation",
                     "ops_fulfillment",
-                    "newsletter_registration"
+                    "newsletter_registration",
+                    "shopper_shipping"
                   ]
                 },
                 "needsReviewAt": {

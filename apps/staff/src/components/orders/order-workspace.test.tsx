@@ -396,6 +396,8 @@ describe('Order dispatch', () => {
     const open = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
     expect(open).toContain('Not shipped');
     expect(open).toContain('Mark shipped');
+    expect(open).toContain('Marks this order shipped and emails the customer.');
+    expect(open).toContain('aria-describedby="dispatch-email-help"');
     expect(open).not.toContain('private dispatch record');
     const shipped = renderToStaticMarkup(
       <OrderDetail
@@ -413,6 +415,7 @@ describe('Order dispatch', () => {
     expect(shipped).toContain('by ops@example.com');
     expect(shipped).toContain('Mark not shipped');
     expect(shipped).not.toContain('Mark shipped<');
+    expect(shipped).not.toContain('id="dispatch-email-help"');
     for (const order of [
       { ...exampleOrder, status: 'needs_review' as const },
       { ...exampleOrder, fulfillment: { kind: 'unavailable' as const } },
@@ -420,6 +423,25 @@ describe('Order dispatch', () => {
       expect(renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />)).not.toContain('Mark shipped');
     expect(renderToStaticMarkup(<OrderDetail order={exampleOrder} />)).not.toContain('Mark shipped');
   });
+
+  it.each(['pending', 'delivered', 'needs_review'] as const)(
+    'shows the shipping email %s separately from dispatch',
+    (status) => {
+      const order: InternalOrder = {
+        ...exampleOrder,
+        dispatch: {
+          shippedAt: '2026-10-17T10:00:00.000Z',
+          updatedAt: '2026-10-17T10:00:00.000Z',
+          updatedBy: 'ops@example.com',
+        },
+        deliveries: [{ ...exampleOrder.deliveries[0]!, kind: 'shopper_shipping', status }],
+      };
+      const html = renderToStaticMarkup(<OrderDetail order={order} />);
+      expect(html).toContain('Shipping email');
+      expect(html).toContain('>Shipped</span>');
+      expect(notificationStatus(order)).toBe(status);
+    },
+  );
 
   it('sends the not-shipped filter and keeps it while paging', async () => {
     const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: null }));

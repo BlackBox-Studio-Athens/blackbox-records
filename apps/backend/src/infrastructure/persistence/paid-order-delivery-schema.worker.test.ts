@@ -1,7 +1,70 @@
 import { env } from 'cloudflare:workers';
+import { applyD1Migrations } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
 describe('paid order delivery schema', () => {
+  it('preserves existing delivery history and dispatch marks without backfilling shipping email', async () => {
+    const db = env.TEST_MIGRATION_DB;
+    const { results: tables } = await db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'`,
+      )
+      .all<{ name: string }>();
+    for (const { name } of tables) await db.prepare(`DROP TABLE "${name}"`).run();
+    const migrationIndex = env.TEST_MIGRATIONS.findIndex(({ name }) => name.startsWith('0037_'));
+    expect(migrationIndex).toBeGreaterThan(0);
+    await applyD1Migrations(db, env.TEST_MIGRATIONS.slice(0, migrationIndex));
+    const at = '2026-10-17T09:00:00.000Z';
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO "CheckoutOrder" ("id", "storeItemSlug", "variantId", "checkoutExpiresAt", "status", "statusUpdatedAt", "createdAt", "updatedAt")
+        VALUES ('migration_shipping_order', 'item', 'variant', ?, 'paid', ?, ?, ?)`,
+        )
+        .bind(at, at, at, at),
+      db
+        .prepare(
+          `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy")
+        VALUES ('migration_shipping_order', ?, ?, 'legacy@example.com')`,
+        )
+        .bind(at, at),
+      db
+        .prepare(
+          `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "attemptCount", "nextAttemptAt", "leaseUntil", "safeReason", "createdAt", "updatedAt")
+        VALUES ('migration_pending', 'migration_shipping_order', 'shopper_confirmation', 'pending', 2, ?, ?, 'rate_limited', ?, ?)`,
+        )
+        .bind(at, at, at, at),
+      db
+        .prepare(
+          `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "attemptCount", "deliveredAt", "providerMessageId", "createdAt", "updatedAt")
+        VALUES ('migration_delivered', 'migration_shipping_order', 'ops_fulfillment', 'delivered', 1, ?, 'provider_saved', ?, ?)`,
+        )
+        .bind(at, at, at),
+      db
+        .prepare(
+          `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "attemptCount", "needsReviewAt", "safeReason", "createdAt", "updatedAt")
+        VALUES ('migration_review', 'migration_shipping_order', 'newsletter_registration', 'needs_review', 5, ?, 'validation', ?, ?)`,
+        )
+        .bind(at, at, at),
+    ]);
+    const before = (await db.prepare('SELECT * FROM "PaidOrderDelivery" ORDER BY "id"').all()).results;
+    const dispatch = await db.prepare('SELECT * FROM "OrderDispatch"').first();
+
+    await applyD1Migrations(db, env.TEST_MIGRATIONS);
+
+    expect((await db.prepare('SELECT * FROM "PaidOrderDelivery" ORDER BY "id"').all()).results).toEqual(before);
+    expect(await db.prepare('SELECT * FROM "OrderDispatch"').first()).toEqual(dispatch);
+    await expect(
+      db
+        .prepare(
+          `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "nextAttemptAt", "createdAt", "updatedAt")
+      VALUES ('migration_shipping', 'migration_shipping_order', 'shopper_shipping', 'pending', ?, ?, ?)`,
+        )
+        .bind(at, at, at)
+        .run(),
+    ).resolves.toBeDefined();
+  });
+
   it('accepts the fixed pending shape and rejects invalid money, scope, kind, status, attempts, and terminal timestamps', async () => {
     const orderId = crypto.randomUUID();
     const now = new Date('2026-09-01T08:00:00.000Z').toISOString();

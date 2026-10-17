@@ -1,9 +1,15 @@
-export type PaidOrderDeliveryKind = 'newsletter_registration' | 'ops_fulfillment' | 'shopper_confirmation';
+export type PaidOrderDeliveryKind =
+  'newsletter_registration' | 'ops_fulfillment' | 'shopper_confirmation' | 'shopper_shipping';
 export type PaidOrderDeliveryStatus = 'delivered' | 'needs_review' | 'pending';
+
+export function createPaidOrderDeliveryId(orderId: string, kind: PaidOrderDeliveryKind): string {
+  return `paid_delivery:${orderId}:${kind}`;
+}
 
 export type PaidOrderDeliverySafeReason =
   | 'configuration'
   | 'delivery_window_expired'
+  | 'dispatch_undone'
   | 'idempotency_conflict_invalid'
   | 'idempotency_conflict_retryable'
   | 'incomplete_paid_fulfillment'

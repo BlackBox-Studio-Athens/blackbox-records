@@ -12,6 +12,7 @@ import { createBindingLogger, normalizeUnknownError } from '../../../platform/ob
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1EmailConsentRepository } from '../../../infrastructure/persistence/d1-email-consent-repository';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
+import { D1OrderDispatchRepository } from '../../../infrastructure/persistence/d1-order-dispatch-repository';
 import { D1OrderWithdrawalRepository } from '../../../infrastructure/persistence/d1-order-withdrawal-repository';
 import { drainWithdrawalDeliveries } from './order-withdrawal';
 import { D1PreorderEstimateDeliveryRepository } from '../../../infrastructure/persistence/d1-preorder-estimate-delivery-repository';
@@ -35,6 +36,7 @@ export async function runPaidOrderDeliverySchedule(
     const results = await drainDuePaidOrderDeliveries({
       attemptedAt: scheduledAt,
       config: emailRuntime.config,
+      dispatches: new D1OrderDispatchRepository(bindings.COMMERCE_DB),
       logger,
       orders,
       provider: emailRuntime.provider,

@@ -390,13 +390,33 @@ describe('internal order routes', () => {
       };
       mockSetDispatch.mockResolvedValueOnce({
         kind: 'updated',
-        read: { order: currentPaidCheckoutOrder(), deliveries: [], awaitingStock: false, dispatch },
+        read: {
+          order: currentPaidCheckoutOrder(),
+          deliveries: [
+            {
+              id: 'shipping_delivery',
+              orderId: 'order',
+              kind: 'shopper_shipping',
+              status: 'pending',
+              attemptCount: 0,
+              createdAt: new Date(dispatch.shippedAt),
+              updatedAt: new Date(dispatch.shippedAt),
+              nextAttemptAt: new Date(dispatch.shippedAt),
+              deliveredAt: null,
+              needsReviewAt: null,
+              safeReason: null,
+            },
+          ],
+          awaitingStock: false,
+          dispatch,
+        },
       });
       const response = await request();
       expect(response.status).toBe(200);
       expectNoStoreCacheControl(response);
       expect(await response.json()).toMatchObject({
         dispatch: { shippedAt: dispatch.shippedAt, updatedAt: dispatch.updatedAt, updatedBy: dispatch.updatedBy },
+        deliveries: [{ kind: 'shopper_shipping', status: 'pending' }],
       });
       expect(mockSetDispatch).toHaveBeenCalledWith('cs_test_paid', {
         shipped: true,

@@ -1,9 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildPaidOrderEmailPreviews, readEmailRuntimeConfig, sendPaidOrderEmailNotifications } from './';
+import {
+  buildPaidOrderEmailPreviews,
+  readEmailRuntimeConfig,
+  sendPaidOrderEmailNotifications,
+  sendPaidOrderShippingEmail,
+} from './';
 import type { EmailProviderGateway, ProviderEmailMessage } from './spi';
 import type { PaidOrderEmailInput } from './';
-import { buildPaidOrderOpsEmail, buildPaidOrderShopperEmail } from './paid-order-templates';
+import {
+  buildPaidOrderOpsEmail,
+  buildPaidOrderShopperEmail,
+  buildPaidOrderShippingEmail,
+} from './paid-order-templates';
 import { buildPreorderEstimateEmail } from './preorder-estimate-email';
 
 const sandboxConfig = readEmailRuntimeConfig({
@@ -31,6 +40,53 @@ const productionConfig = readEmailRuntimeConfig({
 });
 
 describe('paid-order email notifications', () => {
+  it.each([
+    [sandboxConfig, 'uat-sink@ambkime.resend.app', 'uat'],
+    [productionConfig, 'buyer@example.com', 'prd'],
+  ] as const)(
+    'routes the approved shipping email with its own stable identity',
+    async (config, recipient, environment) => {
+      const { provider, sendEmail } = createProvider();
+      const order = paidOrder();
+      order.lineItems[0]!.preorder = { shipEstimate: { kind: 'month', month: '2026-09', part: null } };
+
+      const result = await sendPaidOrderShippingEmail({ config, order, provider, logger: createLogger() });
+
+      expect(result.status).toBe('sent');
+      expect(sendEmail).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          to: recipient,
+          replyTo: 'support@blackboxrecordsathens.com',
+          idempotencyKey: `blackbox:${environment}:paid-order-shipping:cs_test_123`,
+          subject: 'Your order has been shipped · BBR-ORDER1',
+        }),
+      );
+      const message = sentMessage(sendEmail, 0);
+      for (const body of [message.html, message.text]) {
+        expect(body).toContain('Your order is on its way with BOX NOW.');
+        expect(body).toContain(
+          'Thank you for supporting BlackBox Records. If you need anything, just reply to this email.',
+        );
+        expect(body).toContain('BBR-ORDER1');
+        expect(body).not.toMatch(/Total paid|€|expected|tracking|ready to collect/i);
+      }
+      expect(message.html).toContain('Shipping update');
+      expect(message.html).toContain('Reply to BlackBox Records');
+    },
+  );
+
+  it('escapes the shipping reference and keeps the subject outside the email body', () => {
+    const message = buildPaidOrderShippingEmail({
+      brand: { homeUrl: sandboxConfig.emailBrandHomeUrl, logoUrl: sandboxConfig.emailBrandLogoUrl },
+      order: { orderReference: 'BBR-<script>&' },
+      replyToEmail: sandboxConfig.replyToEmail,
+    });
+    expect(message.html).toContain('BBR-&lt;script&gt;&amp;');
+    expect(message.html).not.toContain('<script>');
+    expect(message.text).toContain('BBR-<script>&');
+    expect(message.html).not.toContain(message.subject);
+  });
+
   it('shows the accepted manual shipping charge without assigning a physical parcel size', async () => {
     const { provider, sendEmail } = createProvider();
     await sendPaidOrderEmailNotifications({
@@ -229,6 +285,7 @@ describe('paid-order email notifications', () => {
 
     expect(previews.map((preview) => preview.name)).toEqual([
       'shopper-long-content',
+      'shopper-shipped',
       'ops-ready',
       'shopper-preorder',
       'ops-preorder',

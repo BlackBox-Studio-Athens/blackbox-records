@@ -411,7 +411,9 @@ export const ModelName = {
   PaidOrderDelivery: 'PaidOrderDelivery',
   PreorderEstimateDelivery: 'PreorderEstimateDelivery',
   AvailabilityAlert: 'AvailabilityAlert',
-  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay'
+  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay',
+  EmailConsent: 'EmailConsent',
+  EmailConsentSendDay: 'EmailConsentSendDay'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -427,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "storeItemOption" | "catalogOperation" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery" | "preorderEstimateDelivery" | "availabilityAlert" | "availabilityAlertSendDay"
+    modelProps: "storeItemOption" | "catalogOperation" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery" | "preorderEstimateDelivery" | "availabilityAlert" | "availabilityAlertSendDay" | "emailConsent" | "emailConsentSendDay"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1541,6 +1543,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    EmailConsent: {
+      payload: Prisma.$EmailConsentPayload<ExtArgs>
+      fields: Prisma.EmailConsentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailConsentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailConsentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailConsentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailConsentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        findMany: {
+          args: Prisma.EmailConsentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>[]
+        }
+        create: {
+          args: Prisma.EmailConsentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        createMany: {
+          args: Prisma.EmailConsentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailConsentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailConsentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        update: {
+          args: Prisma.EmailConsentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailConsentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailConsentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailConsentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailConsentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailConsentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailConsent>
+        }
+        groupBy: {
+          args: Prisma.EmailConsentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailConsentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailConsentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailConsentCountAggregateOutputType> | number
+        }
+      }
+    }
+    EmailConsentSendDay: {
+      payload: Prisma.$EmailConsentSendDayPayload<ExtArgs>
+      fields: Prisma.EmailConsentSendDayFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.EmailConsentSendDayFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.EmailConsentSendDayFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        findFirst: {
+          args: Prisma.EmailConsentSendDayFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.EmailConsentSendDayFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        findMany: {
+          args: Prisma.EmailConsentSendDayFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>[]
+        }
+        create: {
+          args: Prisma.EmailConsentSendDayCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        createMany: {
+          args: Prisma.EmailConsentSendDayCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.EmailConsentSendDayCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>[]
+        }
+        delete: {
+          args: Prisma.EmailConsentSendDayDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        update: {
+          args: Prisma.EmailConsentSendDayUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        deleteMany: {
+          args: Prisma.EmailConsentSendDayDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.EmailConsentSendDayUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.EmailConsentSendDayUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>[]
+        }
+        upsert: {
+          args: Prisma.EmailConsentSendDayUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$EmailConsentSendDayPayload>
+        }
+        aggregate: {
+          args: Prisma.EmailConsentSendDayAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmailConsentSendDay>
+        }
+        groupBy: {
+          args: Prisma.EmailConsentSendDayGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailConsentSendDayGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.EmailConsentSendDayCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.EmailConsentSendDayCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1868,6 +2018,29 @@ export const AvailabilityAlertSendDayScalarFieldEnum = {
 export type AvailabilityAlertSendDayScalarFieldEnum = (typeof AvailabilityAlertSendDayScalarFieldEnum)[keyof typeof AvailabilityAlertSendDayScalarFieldEnum]
 
 
+export const EmailConsentScalarFieldEnum = {
+  id: 'id',
+  tokenHash: 'tokenHash',
+  purpose: 'purpose',
+  email: 'email',
+  payload: 'payload',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  sentAt: 'sentAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type EmailConsentScalarFieldEnum = (typeof EmailConsentScalarFieldEnum)[keyof typeof EmailConsentScalarFieldEnum]
+
+
+export const EmailConsentSendDayScalarFieldEnum = {
+  day: 'day',
+  reservedCount: 'reservedCount'
+} as const
+
+export type EmailConsentSendDayScalarFieldEnum = (typeof EmailConsentSendDayScalarFieldEnum)[keyof typeof EmailConsentSendDayScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2171,6 +2344,8 @@ export type GlobalOmitConfig = {
   preorderEstimateDelivery?: Prisma.PreorderEstimateDeliveryOmit
   availabilityAlert?: Prisma.AvailabilityAlertOmit
   availabilityAlertSendDay?: Prisma.AvailabilityAlertSendDayOmit
+  emailConsent?: Prisma.EmailConsentOmit
+  emailConsentSendDay?: Prisma.EmailConsentSendDayOmit
 }
 
 /* Types for Logging */

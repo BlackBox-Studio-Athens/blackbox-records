@@ -2,6 +2,7 @@ import { createProviderSafeTag } from './idempotency';
 import {
   buildPaidOrderOpsEmail,
   buildPaidOrderShopperEmail,
+  buildPaidOrderShippingEmail,
   type ShopperNotificationStatus,
 } from './paid-order-templates';
 import { routeTransactionalEmailRecipient } from './routing';
@@ -25,6 +26,7 @@ type PaidOrderEmailSendInput = {
 
 const PAID_ORDER_SHOPPER_PURPOSE = 'paid-order-shopper';
 const PAID_ORDER_OPS_PURPOSE = 'paid-order-ops';
+const PAID_ORDER_SHIPPING_PURPOSE = 'paid-order-shipping';
 
 export async function sendPaidOrderEmailNotifications(
   input: PaidOrderEmailSendInput,
@@ -81,6 +83,26 @@ export async function sendPaidOrderShopperEmail(input: PaidOrderEmailSendInput):
     to: input.order.shopperContact.email,
   });
   logPaidOrderEmailOutcome(input.logger ?? console, input.order, PAID_ORDER_SHOPPER_PURPOSE, result);
+
+  return result;
+}
+
+export async function sendPaidOrderShippingEmail(input: PaidOrderEmailSendInput): Promise<EmailOperationResult> {
+  const result = await sendTransactionalEmail(input.provider, input.config, {
+    content: buildPaidOrderShippingEmail({
+      brand: {
+        homeUrl: input.config.emailBrandHomeUrl,
+        logoUrl: input.config.emailBrandLogoUrl,
+      },
+      order: input.order,
+      replyToEmail: input.config.replyToEmail,
+    }),
+    idempotencyEntityId: input.order.checkoutSessionId,
+    purpose: PAID_ORDER_SHIPPING_PURPOSE,
+    tags: createPaidOrderTags(input.order, 'shopper'),
+    to: input.order.shopperContact.email,
+  });
+  logPaidOrderEmailOutcome(input.logger ?? console, input.order, PAID_ORDER_SHIPPING_PURPOSE, result);
 
   return result;
 }

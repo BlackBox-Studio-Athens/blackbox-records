@@ -30,6 +30,7 @@ enum PaidOrderDeliveryKind {
   shopper_confirmation
   ops_fulfillment
   newsletter_registration
+  shopper_shipping
 }
 
 enum PaidOrderDeliveryStatus {

@@ -113,3 +113,13 @@ export type AvailabilityAlert = Prisma.AvailabilityAlertModel
  *
  */
 export type AvailabilityAlertSendDay = Prisma.AvailabilityAlertSendDayModel
+/**
+ * Model EmailConsent
+ *
+ */
+export type EmailConsent = Prisma.EmailConsentModel
+/**
+ * Model EmailConsentSendDay
+ *
+ */
+export type EmailConsentSendDay = Prisma.EmailConsentSendDayModel

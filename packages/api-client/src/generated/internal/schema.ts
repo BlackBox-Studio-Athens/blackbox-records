@@ -584,7 +584,7 @@ export type components = {
                 /** Format: date-time */
                 deliveredAt: string | null;
                 /** @enum {string} */
-                kind: "shopper_confirmation" | "ops_fulfillment" | "newsletter_registration";
+                kind: "shopper_confirmation" | "ops_fulfillment" | "newsletter_registration" | "shopper_shipping";
                 /** Format: date-time */
                 needsReviewAt: string | null;
                 /** Format: date-time */

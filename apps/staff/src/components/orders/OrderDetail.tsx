@@ -35,6 +35,7 @@ const deliveryLabels = {
   shopper_confirmation: 'Confirmation email',
   ops_fulfillment: 'Fulfillment email',
   newsletter_registration: 'Newsletter registration',
+  shopper_shipping: 'Shipping email',
 };
 const reviewGuidance: Record<string, string> = {
   stock_unavailable:
@@ -161,10 +162,15 @@ function DispatchControl({
           Mark not shipped
         </Button>
       ) : (
-        <Button disabled={busy} onClick={() => void change(true)}>
+        <Button disabled={busy} aria-describedby="dispatch-email-help" onClick={() => void change(true)}>
           <Truck aria-hidden="true" />
           {busy ? 'Saving…' : 'Mark shipped'}
         </Button>
+      )}
+      {!shipped && (
+        <small id="dispatch-email-help" className="order-muted">
+          Marks this order shipped and emails the customer.
+        </small>
       )}
       <span role="status">{message}</span>
       <AlertDialog
@@ -178,7 +184,7 @@ function DispatchControl({
             <AlertDialogTitle>Mark this order as not shipped?</AlertDialogTitle>
             <AlertDialogDescription>
               Use this only to correct a mistake. The order returns to the Not shipped list and another operator may
-              ship it.
+              ship it. A shipping email already sent cannot be recalled.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

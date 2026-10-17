@@ -65,7 +65,9 @@ export const ModelName = {
   PaidOrderDelivery: 'PaidOrderDelivery',
   PreorderEstimateDelivery: 'PreorderEstimateDelivery',
   AvailabilityAlert: 'AvailabilityAlert',
-  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay'
+  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay',
+  EmailConsent: 'EmailConsent',
+  EmailConsentSendDay: 'EmailConsentSendDay'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -370,6 +372,29 @@ export const AvailabilityAlertSendDayScalarFieldEnum = {
 } as const
 
 export type AvailabilityAlertSendDayScalarFieldEnum = (typeof AvailabilityAlertSendDayScalarFieldEnum)[keyof typeof AvailabilityAlertSendDayScalarFieldEnum]
+
+
+export const EmailConsentScalarFieldEnum = {
+  id: 'id',
+  tokenHash: 'tokenHash',
+  purpose: 'purpose',
+  email: 'email',
+  payload: 'payload',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  sentAt: 'sentAt',
+  consumedAt: 'consumedAt'
+} as const
+
+export type EmailConsentScalarFieldEnum = (typeof EmailConsentScalarFieldEnum)[keyof typeof EmailConsentScalarFieldEnum]
+
+
+export const EmailConsentSendDayScalarFieldEnum = {
+  day: 'day',
+  reservedCount: 'reservedCount'
+} as const
+
+export type EmailConsentSendDayScalarFieldEnum = (typeof EmailConsentSendDayScalarFieldEnum)[keyof typeof EmailConsentSendDayScalarFieldEnum]
 
 
 export const SortOrder = {

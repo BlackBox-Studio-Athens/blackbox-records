@@ -1,4 +1,8 @@
-import type { OrderDispatch, OrderDispatchRepository } from '../../domain/commerce/repositories/spi';
+import {
+  createPaidOrderDeliveryId,
+  type OrderDispatch,
+  type OrderDispatchRepository,
+} from '../../domain/commerce/repositories/spi';
 
 export class D1OrderDispatchRepository implements OrderDispatchRepository {
   public constructor(private readonly db: D1Database) {}
@@ -17,8 +21,8 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
 
   public async set(input: Parameters<OrderDispatchRepository['set']>[0]): Promise<'updated' | 'conflict'> {
     const at = input.at.toISOString();
-    // One conditional statement: a missing row counts as not shipped, so two operators cannot both mark it.
-    const result = await this.db
+    // A missing row counts as not shipped; the same transaction queues only a successful first mark.
+    const mark = this.db
       .prepare(
         `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy")
       SELECT ?, ?, ?, ? WHERE ? = 0 OR EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ?)
@@ -34,8 +38,20 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
         input.expectedShipped ? 1 : 0,
         input.orderId,
         input.expectedShipped ? 1 : 0,
-      )
-      .run();
-    return result.meta.changes === 1 ? 'updated' : 'conflict';
+      );
+    const statements = [mark];
+    if (input.shipped && !input.expectedShipped) {
+      statements.push(
+        this.db
+          .prepare(
+            `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "nextAttemptAt", "createdAt", "updatedAt")
+           SELECT ?, ?, 'shopper_shipping', 'pending', ?, ?, ? WHERE changes() = 1
+           ON CONFLICT ("orderId", "kind") DO NOTHING`,
+          )
+          .bind(createPaidOrderDeliveryId(input.orderId, 'shopper_shipping'), input.orderId, at, at, at),
+      );
+    }
+    const [result] = await this.db.batch(statements);
+    return result!.meta.changes === 1 ? 'updated' : 'conflict';
   }
 }
