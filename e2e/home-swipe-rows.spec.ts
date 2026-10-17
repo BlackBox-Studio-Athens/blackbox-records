@@ -69,7 +69,7 @@ test('phone rows swipe card by card, and their dots follow after shell navigatio
   expect(await sentinelIntact(page)).toBe(true);
 });
 
-test('neighbouring cards fade on phones unless the visitor asks for reduced motion @phone', async ({ page }) => {
+test('card fades respect the pointer capability and reduced motion @phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('./');
   await waitForShell(page);
@@ -77,10 +77,14 @@ test('neighbouring cards fade on phones unless the visitor asks for reduced moti
   const opacity = (index: number) =>
     artistsRow(page).evaluate((row, cardIndex) => Number(getComputedStyle(row.children[cardIndex]).opacity), index);
   expect(await opacity(0)).toBe(1);
-  if (await page.evaluate(() => CSS.supports('animation-timeline: view()'))) {
+  if (
+    await page.evaluate(
+      () => !matchMedia('(hover: none) and (pointer: coarse)').matches && CSS.supports('animation-timeline: view()'),
+    )
+  ) {
     expect(await opacity(1)).toBeLessThan(0.7);
   } else {
-    // Without scroll timelines (Firefox) the guarded fade never applies, so no card stays dimmed.
+    // Touch input and browsers without scroll timelines keep every card fully visible.
     expect(await opacity(1)).toBe(1);
   }
 

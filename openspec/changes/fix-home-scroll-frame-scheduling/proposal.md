@@ -20,7 +20,8 @@ None.
 
 ### Modified Capabilities
 
-None. This repair restores the existing `app-shell-and-player` frame-batching and cached-geometry contract without changing its requirements. Specs are explicitly skipped.
+- `app-shell-and-player`: Use the existing coarse hero opacity states for hoverless coarse-pointer input while retaining the linear desktop fade.
+- `home-section-rows`: Keep touch swipe cards fully opaque without scroll-driven animations.
 
 ## Impact
 
@@ -39,3 +40,7 @@ The owner reports the crop repair also fails physical acceptance. Their browser 
 All three release 616 comparisons retain the same reported freeze. Add one opt-in on-device report that separates stalled animation callbacks and slow main-thread frames from touch/scroll movement and viewport resizing. Collect actual affected-client evidence before choosing another repair. Keep the report temporary, UAT-only, bounded and manually shared; exclude the unrelated unpublished shipping-email work from delivery.
 
 The owner's release 617 phone report contains no prolonged callback or main-thread stalls. Investigate native scrolling presentation separately; the trace does not prove displayed frames. Add one opt-in comparison disabling both Home scroll-driven animation paths, which the earlier controls all retained. Preserve normal rendering and treat a successful Local check only as proof that this comparison works. Physical Messenger reproduction and repair acceptance remain open.
+
+## Confirmed touch rendering repair
+
+The owner confirms that release 618 with `scroll-check=no-timelines` is smooth on the affected Pixel 6a / Android 17 Messenger browser. Make that rendering behavior the default when the primary pointer is coarse and cannot hover. One CSS rule disables the two hero scroll animations and swipe-card view animations; the existing coarse hero class, videos, fixed ghost, snapping and navigation remain. Fine-pointer effects remain unchanged. Update the behavior contracts and fast browser regression for portrait, landscape and fine-pointer input. Deliver the scoped fix to UAT only and verify normal Home without a diagnostic query. The control establishes a working mitigation; it does not distinguish the hero timeline from the card timelines as the individual engine trigger.

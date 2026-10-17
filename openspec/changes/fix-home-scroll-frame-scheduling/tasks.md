@@ -55,4 +55,10 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 
 - [x] 7.1 Retain and interpret the owner's report separately from the desktop trace; record what it rules against and what it cannot measure.
 - [x] 7.2 Verify and deliver an opt-in UAT comparison disabling both Home scroll-driven animation paths, with a Local-only restoration check and normal production exclusion.
-- [ ] 7.3 Compare that mode on the affected phone and use the result to select a repair; retain task 5.4 until physical acceptance.
+- [x] 7.3 Compare that mode on the affected phone and use the result to select a repair; retain task 5.4 until physical acceptance.
+
+## 8. Owner confirms no-timelines is smooth
+
+- [x] 8.1 Make the confirmed behavior the default for hoverless coarse-pointer input, update the affected contracts and verify the regression fails before the CSS repair.
+- [x] 8.2 Verify portrait/landscape touch, fine-pointer effects, films, swipe rows and player continuity; pass builds, strict OpenSpec, Graphify and final validation.
+- [ ] 8.3 Commit and deliver the scoped repair to UAT, verify the release and hand off normal Home without the diagnostic query. Task 5.4 retains final physical acceptance.

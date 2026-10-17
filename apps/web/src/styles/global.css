@@ -3255,7 +3255,7 @@ body {
     animation: none;
   }
 
-  /* The ghost fades with the (Lenis-smoothed) root scroll position: on the compositor along a root scroll timeline
+  /* The ghost fades with the native root scroll position: on the compositor along a root scroll timeline
      where supported, otherwise paused and seeked by shell-hero-scroll-progress.ts (1s = full progress). No transition:
      it would outrank the animation whenever the coarse class flips. Longhands only: the minifier rewrites an
      `animation` shorthand next to `animation-timeline` into `animation: none`. */
@@ -3844,6 +3844,15 @@ body.is-app-shell-overlay-open {
       animation-fill-mode: both;
       animation-timeline: view(inline);
     }
+  }
+}
+
+/* Keep touch Home on the coarse states verified smooth in Messenger. */
+@media (hover: none) and (pointer: coarse) {
+  .homepage-hero-section__media-layer,
+  .homepage-hero-section__media-layer::after,
+  .home-swipe-row > * {
+    animation: none;
   }
 }
 
