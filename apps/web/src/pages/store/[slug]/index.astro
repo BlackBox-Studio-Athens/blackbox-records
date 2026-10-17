@@ -6,6 +6,7 @@ import Prose from '@/components/Prose.astro';
 import { getImage, Image } from 'astro:assets';
 import { StoreImageGalleryPlaceholder } from '@/components/store/StoreImageGallery';
 import { buttonVariants } from '@/components/ui/button';
+import { publicTitleClass } from '@/components/ui/utils';
 import { getEntry } from '@/lib/content-reader';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -122,7 +123,9 @@ const product = {
     <div class="store-item-composition">
       <div class="store-item-purchase" data-store-purchase-group>
         <div class="store-item-identity">
-          <h1 class="brand-display-title break-words text-foreground">{storeItem.title}</h1>
+          <h1 class:list={['brand-display-title break-words text-foreground', publicTitleClass(storeItem.title)]}>
+            {storeItem.title}
+          </h1>
           <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">
             {sourceReleaseArtistUrl ? (
               <a

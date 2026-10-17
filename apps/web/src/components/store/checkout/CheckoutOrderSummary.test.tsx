@@ -85,6 +85,17 @@ describe('CheckoutOrderSummary', () => {
     expect(markup).toContain('€28.00');
   });
 
+  it('uses the Greek exception on the complete mixed title in a single-item or cart summary', () => {
+    const title = 'Blues & Ντέρτια';
+    for (const withCart of [false, true]) {
+      cartState.lines = withCart ? [{ ...ordinaryLine, title }] : [];
+      const markup = renderToStaticMarkup(<CheckoutOrderSummary {...summaryInput} title={title} />);
+      expect(markup).toContain('brand-cart-line-title text-foreground public-title--greek');
+      expect(markup).toContain('Blues &amp; Ντέρτια</h3>');
+      expect(markup.match(/public-title--greek/g)).toHaveLength(1);
+    }
+  });
+
   it('does not require forbidden checkout, Stripe, D1, stock, order, or actor fields', () => {
     const serializedView = renderToStaticMarkup(<CheckoutOrderSummary {...summaryInput} />);
 

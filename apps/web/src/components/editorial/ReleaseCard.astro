@@ -6,6 +6,7 @@ import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamin
 import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
+import { publicTitleClass } from '@/components/ui/utils';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
 import {
   physicalBadgeState,
@@ -265,7 +266,11 @@ const dataAttributes = embeddedPlayerData
         </span>
       </p>
       <HeadingTag
-        class={`brand-card-title text-foreground${isPrincipal ? ' releases-feature__title' : ''}`}
+        class:list={[
+          'brand-card-title text-foreground',
+          isPrincipal && 'releases-feature__title',
+          publicTitleClass(release.data.title),
+        ]}
         data-release-title={isReleaseShowcase ? true : undefined}
       >
         {isReleaseShowcase ? (

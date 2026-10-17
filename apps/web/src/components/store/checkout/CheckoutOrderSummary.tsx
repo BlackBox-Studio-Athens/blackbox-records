@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn, publicTitleClass } from '@/components/ui/utils';
 import {
   decrementCartLineQuantityByVariant,
   createCartQuantity,
@@ -155,7 +156,9 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
               </div>
 
               <div className="checkout-summary__identity">
-                <h3 className="brand-cart-line-title text-foreground">{line.title}</h3>
+                <h3 className={cn('brand-cart-line-title text-foreground', publicTitleClass(line.title))}>
+                  {line.title}
+                </h3>
                 <p className="checkout-summary__metadata">
                   {line.subtitle}
                   {line.optionLabel && ` · ${line.optionLabel}`}

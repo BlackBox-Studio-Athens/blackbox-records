@@ -231,10 +231,10 @@ describe('StoreCartDrawer', () => {
     expect(STORE_CART_DRAWER_COPY.remove).toBe('Remove');
   });
 
-  it('uses Veneer only for cart line item names', () => {
+  it.each(['Disintegration', 'Blues & Ντέρτια'])('selects the whole-title font for cart item %s', (title) => {
     const markup = renderToStaticMarkup(
       <StoreCartDrawerPanel
-        cartState={addStoreCartItem(cartItem)}
+        cartState={addStoreCartItem({ ...cartItem, title })}
         onContinueShopping={() => undefined}
         onDecrementItem={() => undefined}
         onIncrementItem={() => undefined}
@@ -246,6 +246,7 @@ describe('StoreCartDrawer', () => {
 
     expect(markup).toContain('brand-cart-line-title text-foreground');
     expect(markup.match(/brand-cart-line-title/g)).toHaveLength(1);
+    expect(markup.includes('public-title--greek')).toBe(title.includes('Ντέρτια'));
     expect(markup).toContain('€20.00');
     expect(markup).toContain(STORE_CART_DRAWER_COPY.checkout);
   });

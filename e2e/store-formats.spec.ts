@@ -282,8 +282,9 @@ test('Store listing cards lead with format, a Veneer title and a promoted artist
       const credit = card.locator('.store-item-card__artist');
       const name = card.locator('.store-item-card__artist-name');
       const artist = (await name.textContent())!.trim();
-      await expect(title).toHaveCSS('font-family', /Veneer/);
-      await expect(title).toHaveCSS('font-weight', '900');
+      const greek = /\p{Script=Greek}/u.test((await title.textContent())!);
+      await expect(title).toHaveCSS('font-family', greek ? /Inter/ : /Veneer/);
+      await expect(title).toHaveCSS('font-weight', greek ? '600' : '900');
       await expect(title).toHaveCSS('text-transform', 'none');
       await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
       await expect(credit).toHaveText(`by ${artist}`);
@@ -362,6 +363,95 @@ test('Store listing cards lead with format, a Veneer title and a promoted artist
   await linked.locator('.prose-card-link').click();
   await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
   await expect(page.locator('h1.brand-display-title')).toHaveCSS('font-family', /Veneer/);
+});
+
+test('Greek public titles use whole-title Inter, wrap and survive shell navigation @phone', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  await page.goto('store/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  const samples = ['Ατελές το ον', 'Ατοπια', 'Blues & Ντέρτια'];
+  const renderedFonts: unknown[] = [];
+  const cdp = browserName === 'chromium' ? await page.context().newCDPSession(page) : undefined;
+  if (cdp) await cdp.send('DOM.enable');
+  if (cdp) await cdp.send('CSS.enable');
+  for (const width of [320, 390, 430, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const sample of samples) {
+      const title = page.getByRole('heading', { name: sample, exact: true }).first();
+      await title.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      await expect(title).toHaveText(sample);
+      await expect(title).toHaveCSS('font-family', /Inter/);
+      await expect(title).toHaveCSS('font-weight', '600');
+      await expect(title).toHaveCSS('text-transform', 'none');
+      await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
+      expect(await title.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+      if (cdp) {
+        const slug = await title.evaluate((el) =>
+          el.closest('[data-store-crate-slug]')!.getAttribute('data-store-crate-slug'),
+        );
+        const { root } = await cdp.send('DOM.getDocument');
+        const { nodeId } = await cdp.send('DOM.querySelector', {
+          nodeId: root.nodeId,
+          selector: `[data-store-crate-slug="${slug}"] h2`,
+        });
+        const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+        renderedFonts.push({ width, sample, fonts });
+        expect(fonts.some((font) => font.glyphCount > 0)).toBe(true);
+        expect(
+          fonts
+            .filter((font) => font.glyphCount > 0)
+            .every((font) => font.isCustomFont && /Inter/.test(font.familyName)),
+        ).toBe(true);
+      }
+    }
+    const latin = page.getByRole('heading', { name: 'Disintegration', exact: true }).first();
+    await expect(latin).toHaveCSS('font-family', /Veneer/);
+    await expect(latin).toHaveCSS('font-weight', '900');
+    // Stress the real marked title's layout; predicate coverage for these scripts lives in the unit test.
+    const mixed = page.getByRole('heading', { name: 'Blues & Ντέρτια', exact: true }).first();
+    await mixed.evaluate((el) => {
+      el.textContent = 'Ἄτοπος Ντέρτια Blues & '.repeat(8);
+    });
+    await expectNoHorizontalOverflow(page);
+    const stress = page.locator('[data-store-crate-slug="mpugio-dirty-johnny-blues-ntertia-cd"] h2');
+    expect(await stress.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.evaluate(() => document.fonts.ready);
+    if (cdp) {
+      const { root } = await cdp.send('DOM.getDocument');
+      const { nodeId } = await cdp.send('DOM.querySelector', {
+        nodeId: root.nodeId,
+        selector: '[data-store-crate-slug="mpugio-dirty-johnny-blues-ntertia-cd"] h2',
+      });
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+      renderedFonts.push({ width, sample: 'Greek Extended and decomposed long-title probe', fonts });
+      expect(
+        fonts.filter((font) => font.glyphCount > 0).every((font) => font.isCustomFont && /Inter/.test(font.familyName)),
+      ).toBe(true);
+    }
+    await stress.evaluate((el) => {
+      el.textContent = 'Blues & Ντέρτια';
+    });
+    await stress.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `.codex-artifacts/e2e/store-typography/greek-${width}.png` });
+  }
+  if (cdp) await cdp.detach();
+  await testInfo.attach('rendered-fonts', { body: JSON.stringify(renderedFonts), contentType: 'application/json' });
+  await page.locator('[data-store-crate-slug="mpugio-dirty-johnny-blues-ntertia-cd"] .prose-card-link').click();
+  await expect(page.locator('h1')).toHaveText('Blues & Ντέρτια');
+  await expect(page.locator('h1')).toHaveCSS('font-family', /Inter/);
+  await expect(page.locator('h1')).toHaveCSS('font-weight', '600');
+  expect(await sentinelIntact(page)).toBe(true);
+  await page.goBack();
+  await waitForShell(page);
+  await expect(page.getByRole('heading', { name: 'Blues & Ντέρτια', exact: true }).first()).toHaveCSS(
+    'font-weight',
+    '600',
+  );
+  expect(await sentinelIntact(page)).toBe(true);
 });
 
 test('phone Store keeps Distro formats in the one Filter sheet and selects one @phone', async ({ page }) => {

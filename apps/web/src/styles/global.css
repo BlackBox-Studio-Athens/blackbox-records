@@ -6,6 +6,12 @@
 
 @source '..';
 
+/* The approved Greek exception must survive each surface's display shorthand and listing weight. */
+.public-title--greek {
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+}
+
 @font-face {
   font-family: 'Veneer';
   src: url('../assets/fonts/brand/veneer_regular.woff2') format('woff2');
