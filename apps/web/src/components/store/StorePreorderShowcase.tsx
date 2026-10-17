@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
+import { cn, publicTitleClass } from '@/components/ui/utils';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
 import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { createProjectRelativeUrl } from '@/platform/config/site';
@@ -389,7 +390,11 @@ function PreorderChapter({
             <div className="home-preorders__film-shade" aria-hidden="true" />
             <div className="home-preorders__film-copy">
               {artist}
-              <h3 ref={filmTitle} id={chapterId + '-title'} className="home-preorders__film-title">
+              <h3
+                ref={filmTitle}
+                id={chapterId + '-title'}
+                className={cn('home-preorders__film-title', publicTitleClass(item.title))}
+              >
                 {item.title.split(/\s+/).map((word, index) => (
                   <span key={index}>
                     {index > 0 ? ' ' : ''}
@@ -478,7 +483,9 @@ function PreorderChapter({
               <figure className="home-preorders__still-art">{cover}</figure>
               <div className="home-preorders__identity">
                 {artist}
-                <h3 id={chapterId + '-title'}>{item.title}</h3>
+                <h3 id={chapterId + '-title'} className={publicTitleClass(item.title)}>
+                  {item.title}
+                </h3>
                 {badgeList}
               </div>
             </div>

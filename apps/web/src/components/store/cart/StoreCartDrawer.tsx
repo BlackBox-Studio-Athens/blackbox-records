@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { cn, publicTitleClass } from '@/components/ui/utils';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { acquireLenisModalLock } from '@/platform/lib/lenis-scroll';
 import { preorderChipText } from '@/platform/lib/preorder-estimate';
@@ -255,7 +256,9 @@ export function StoreCartDrawerPanel({
                         )}
                       </div>
                       <div className="store-cart-drawer__identity">
-                        <p className="brand-cart-line-title text-foreground">{line.title}</p>
+                        <p className={cn('brand-cart-line-title text-foreground', publicTitleClass(line.title))}>
+                          {line.title}
+                        </p>
                         <p className="store-cart-drawer__metadata">{line.subtitle}</p>
                         {line.optionLabel && <p className="store-cart-drawer__metadata">{line.optionLabel}</p>}
                         <div className="store-cart-drawer__price-row">

@@ -12,6 +12,61 @@ import {
 import type { CDPSession, Locator } from 'playwright/test';
 import type { PublicApiComponents } from '../packages/api-client/src/public-client';
 
+test('Greek mixed title keeps its complete Inter treatment in cart and checkout @phone', async ({ page }) => {
+  const title = 'Blues & Ντέρτια';
+  await page.route('**/api/store/capabilities', (route) =>
+    route.fulfill({
+      json: {
+        pricing: {
+          vatDisclosure: 'VAT included',
+          deliveryQuantityBands: [{ maxUnits: null, amountMinor: 300 }],
+          currencyCode: 'EUR',
+        },
+        nativeCheckout: { enabled: true, unavailableReason: null },
+      },
+    }),
+  );
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'blackbox.storeCart.v2',
+      JSON.stringify({
+        lines: [
+          {
+            title: 'Blues & Ντέρτια',
+            subtitle: 'Mpugio & Dirty Johnny',
+            storeItemSlug: 'mpugio-dirty-johnny-blues-ntertia-cd',
+            variantId: 'mpugio-dirty-johnny-blues-ntertia-cd_standard',
+            quantity: 1,
+            image: null,
+            imageAlt: null,
+            optionLabel: 'CD',
+            availabilityLabel: 'Available',
+            priceAmountMinor: 1000,
+            priceCurrencyCode: 'EUR',
+            priceDisplay: '€10.00',
+            priceKind: 'fixed',
+          },
+        ],
+      }),
+    ),
+  );
+  await page.goto('store/');
+  await waitForShell(page);
+  await page.locator('[data-store-cart-trigger]').first().click();
+  const drawer = page.getByRole('dialog', { name: 'Cart', exact: true });
+  const cartTitle = drawer.locator('.brand-cart-line-title');
+  await expect(cartTitle).toHaveText(title);
+  await expect(cartTitle).toHaveCSS('font-family', /Inter/);
+  await expect(cartTitle).toHaveCSS('font-weight', '600');
+  await expectNoHorizontalOverflow(page);
+  await page.goto('store/checkout/');
+  const summaryTitle = page.locator('.checkout-summary__identity .brand-cart-line-title');
+  await expect(summaryTitle).toHaveText(title);
+  await expect(summaryTitle).toHaveCSS('font-family', /Inter/);
+  await expect(summaryTitle).toHaveCSS('font-weight', '600');
+  await expectNoHorizontalOverflow(page);
+});
+
 async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
   for (let step = 1; step <= 8; step++) {

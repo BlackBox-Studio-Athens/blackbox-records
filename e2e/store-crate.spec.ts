@@ -44,6 +44,35 @@ async function openCrate(page: Page, press: (locator: Locator) => Promise<void> 
 
 const slotOf = async (counter: Locator) => Number((await counter.innerText()).trim().split(/\s*\/\s*/)[0]);
 
+test('Greek title keeps Inter in the CD bin and its Grid round trip @phone', async ({ page }) => {
+  await page.goto('store/');
+  await waitForShell(page);
+  const slugs = await page
+    .locator('[data-store-crate-slug][data-store-crate-bin="cd"]')
+    .evaluateAll((cards) => cards.map((el) => el.getAttribute('data-store-crate-slug')));
+  const target = slugs.indexOf('mpugio-dirty-johnny-blues-ntertia-cd');
+  expect(target).toBeGreaterThanOrEqual(0);
+  const crate = await openCrate(page);
+  await page.getByRole('group', { name: 'Bins', exact: true }).getByRole('button', { name: /CDs/ }).click();
+  await crate.stage.focus();
+  await page.keyboard.press('Home');
+  for (let index = 0; index < target; index++) {
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => slotOf(crate.counter)).toBe(index + 2);
+  }
+  const title = crate.hand.locator('h2');
+  await expect(title).toHaveText('Blues & Ντέρτια');
+  await expect(title).toHaveCSS('font-family', /Inter/);
+  await expect(title).toHaveCSS('font-weight', '600');
+  await expectNoHorizontalOverflow(page);
+  if ((page.viewportSize()?.width ?? 1440) < 1024) await page.locator('[data-store-filter-trigger]').click();
+  await crate.grid.click();
+  await expect(page.locator('[data-store-crate-slug="mpugio-dirty-johnny-blues-ntertia-cd"] h2')).toHaveCSS(
+    'font-weight',
+    '600',
+  );
+});
+
 async function wheelWithoutPageScroll(page: Page, deltaX: number, deltaY: number) {
   const before = await page.evaluate(() => window.scrollY);
   await page.mouse.wheel(deltaX, deltaY);

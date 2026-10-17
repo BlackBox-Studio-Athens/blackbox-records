@@ -38,7 +38,7 @@ describe('section page identity', () => {
 
   it('keeps Services on the shared title class', () => {
     expect(servicesPage).toMatch(
-      /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1 class="services-page-intro__title internal-page-hero__title">\s*\{servicesContent\.hero\.title\}\s*<\/h1>/,
+      /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1\s+class:list=\{\[\s*'services-page-intro__title internal-page-hero__title',\s*publicTitleClass\(servicesContent\.hero\.title\),?\s*\]\}\s*>\s*\{servicesContent\.hero\.title\}\s*<\/h1>/,
     );
   });
 

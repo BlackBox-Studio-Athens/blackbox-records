@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { Badge } from '@/components/ui/badge';
+import { publicTitleClass } from '@/components/ui/utils';
 import { resolveSupportingLabel } from '@/lib/page-identity';
 
 interface Props {
@@ -31,7 +32,9 @@ const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover 
         {resolvedSectionLabel}
       </Badge>
     )}
-    <h1 class="internal-page-hero__title mt-4 uppercase text-foreground">{title.toUpperCase()}</h1>
+    <h1 class:list={['internal-page-hero__title mt-4 uppercase text-foreground', publicTitleClass(title)]}>
+      {title.toUpperCase()}
+    </h1>
   </div>
 </section>
 {image && (

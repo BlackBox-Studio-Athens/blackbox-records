@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { publicTitleClass } from '@/components/ui/utils';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
@@ -93,7 +94,7 @@ const widths = [360, 720];
     )}
     <CardContent className="store-item-card__content">
       {option && <p class="store-item-card__option">{option}</p>}
-      <h2 class="brand-card-title">{storeItem.title}</h2>
+      <h2 class:list={['brand-card-title', publicTitleClass(storeItem.title)]}>{storeItem.title}</h2>
       <p class="store-item-card__artist">
         by{' '}
         <span class="store-item-card__artist-name">

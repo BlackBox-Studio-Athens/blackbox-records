@@ -4,7 +4,7 @@ import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createArtistDetailPath, type ArtistRosterReleaseContext } from '@/lib/catalog-data';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/components/ui/utils';
+import { cn, publicTitleClass } from '@/components/ui/utils';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
@@ -71,7 +71,9 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
     >
       <div class="space-y-3">
         {artist.data.genre && <p class="text-xs tracking-[0.18em] uppercase text-[#d0d0d0]">{artist.data.genre}</p>}
-        <h3 class="brand-card-title text-foreground">{artistName.toUpperCase()}</h3>
+        <h3 class:list={['brand-card-title text-foreground', publicTitleClass(artistName)]}>
+          {artistName.toUpperCase()}
+        </h3>
       </div>
       {isRosterDetailedVariant && (
         <>
@@ -92,7 +94,9 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
               <p class="artist-latest-teaser__label">Latest</p>
               {hasLatestRelease ? (
                 <>
-                  <p class="artist-latest-teaser__title">{latestReleaseTitle}</p>
+                  <p class:list={['artist-latest-teaser__title', publicTitleClass(latestReleaseTitle)]}>
+                    {latestReleaseTitle}
+                  </p>
                   {latestReleaseDate && <p class="artist-latest-teaser__meta">{latestReleaseDate}</p>}
                 </>
               ) : (

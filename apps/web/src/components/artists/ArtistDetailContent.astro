@@ -9,7 +9,7 @@ import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamin
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/platform/config/site';
 import { createReleaseDetailPath, listReleaseCatalogByArtistId } from '@/lib/catalog-data';
-import { cn } from '@/components/ui/utils';
+import { cn, publicTitleClass } from '@/components/ui/utils';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
@@ -108,7 +108,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           )}
         </div>
       )}
-      <h1 class="artist-detail-title">{artistName}</h1>
+      <h1 class:list={['artist-detail-title', publicTitleClass(artistName)]}>{artistName}</h1>
 
       {hasArtistBody ? (
         <div class="artist-detail-prose artist-detail-prose--story editorial-prose">
@@ -171,7 +171,11 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
         />
       </a>
       <div class="artist-latest-release-panel__copy">
-        <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__title">
+        <a
+          href={latestReleaseHref}
+          data-astro-prefetch
+          class:list={['artist-latest-release-panel__title', publicTitleClass(latestRelease.data.title)]}
+        >
           {latestRelease.data.title}
         </a>
         <p class="artist-latest-release-panel__meta">
@@ -304,7 +308,9 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
               quality={editorialImageQuality}
             />
             <span class="artist-previous-release__copy">
-              <span class="artist-previous-release__title">{release.data.title}</span>
+              <span class:list={['artist-previous-release__title', publicTitleClass(release.data.title)]}>
+                {release.data.title}
+              </span>
               <span class="artist-previous-release__meta">
                 {release.data.formats?.join(' / ') || 'Release'}
                 {releaseDate && (

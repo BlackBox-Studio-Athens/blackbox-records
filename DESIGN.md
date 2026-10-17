@@ -161,6 +161,8 @@ The palette is near-black and off-white with three fixed accent roles (accent-an
 
 **Character:** Brand display type is physical, letterpress, loud, and poster-like. UI display type stays compressed and clean for dense cards and controls. Body type is quiet, practical, and readable, with labels pushed into uppercase tracking for editorial metadata.
 
+**Greek public-title exception (approved 18 October 2026).** A public content title containing Greek uses the existing self-hosted Inter at weight 600 for its entire text, including Latin words in mixed titles. Latin-only titles retain Veneer. Preserve each surface's casing, size, wrapping, links and layout. This applies to the Public Title Rule and Store Listing Scale below; credits, prices, controls and Staff keep their existing treatment.
+
 ### Hierarchy
 
 - **Display** (900, `clamp(2.35rem, 8.5vw, 4.15rem)`, 0.98 line-height): Veneer for homepage hero, public route heroes, artist detail H1s, and major release/artist feature titles.

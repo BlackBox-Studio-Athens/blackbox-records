@@ -2,6 +2,7 @@
 import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import { buttonVariants } from '@/components/ui/button';
+import { publicTitleClass } from '@/components/ui/utils';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { resolveLinkAttributes } from '@/platform/config/site';
 import { getServicesContent } from '@/lib/site-data';
@@ -23,7 +24,14 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
   <div>
     <section class="layout-container services-page-intro">
       <p class="services-page-intro__eyebrow">What We Do</p>
-      <h1 class="services-page-intro__title internal-page-hero__title">{servicesContent.hero.title}</h1>
+      <h1
+        class:list={[
+          'services-page-intro__title internal-page-hero__title',
+          publicTitleClass(servicesContent.hero.title),
+        ]}
+      >
+        {servicesContent.hero.title}
+      </h1>
       <Prose class="services-page-intro__copy" value={servicesContent.hero.intro} data-content-path="hero.intro" />
       <a
         href="#services-inquiry"
@@ -56,7 +64,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
                 <p class="services-tile__index" aria-hidden="true">
                   {stepIndex(index)}
                 </p>
-                <h2 class="brand-card-title">{service.title}</h2>
+                <h2 class:list={['brand-card-title', publicTitleClass(service.title)]}>{service.title}</h2>
                 <div class="services-tile__summary">
                   <Prose value={service.summary} />
                   {service.partner_name && partnerLinkAttributes && (
@@ -122,7 +130,10 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
     {processSection && (
       <section class="layout-container services-process" aria-labelledby="services-process-title">
         <div class="services-process__header">
-          <h2 class="services-section-title" id="services-process-title">
+          <h2
+            class:list={['services-section-title', publicTitleClass(processSection.title)]}
+            id="services-process-title"
+          >
             {processSection.title}
           </h2>
           <Prose class="services-copy" value={processSection.intro} data-content-path="process.intro" />
@@ -144,7 +155,10 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
     {inquirySection && (
       <section class="layout-container services-inquiry" id="services-inquiry" aria-labelledby="services-inquiry-title">
         <div class="services-inquiry__header">
-          <h2 class="services-section-title" id="services-inquiry-title">
+          <h2
+            class:list={['services-section-title', publicTitleClass(inquirySection.title)]}
+            id="services-inquiry-title"
+          >
             {inquirySection.title}
           </h2>
           <Prose class="services-copy" value={inquirySection.intro} data-content-path="inquiry.intro" />
