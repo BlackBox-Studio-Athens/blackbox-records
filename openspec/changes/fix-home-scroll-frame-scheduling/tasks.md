@@ -38,7 +38,7 @@ The owner reports that Messenger on the same phone still freezes on UAT. Reopen 
 
 - [x] 5.1 Record sustained native scrolling with the same two-film Home workload, the owner's actual user agent, and the remaining engine/media limitations.
 - [x] 5.2 Make the Local regression detect prolonged renderer stalls and prepare opt-in UAT comparisons for video playback and the fixed background.
-- [ ] 5.3 Finish repository and production-exclusion checks, then deliver only the scrolling diagnostic to UAT under the authorized repository scope.
+- [x] 5.3 Finish repository and production-exclusion checks, then deliver only the scrolling diagnostic to UAT under the authorized repository scope.
 - [ ] 5.4 Use the affected phone's comparison to identify and implement the repair, verify it locally and on UAT, and obtain physical Messenger acceptance.
 
 The owner authorized publishing the diagnostics on 2026-10-17 in response to the isolated-worktree request. Prepare the seven-file candidate from `origin/main` at `d7c56bb5`, excluding the unpublished shipping-email commit `ed215ad4` and unrelated harness edits in the primary checkout. Deliver to UAT only; the physical freeze remains unresolved.
