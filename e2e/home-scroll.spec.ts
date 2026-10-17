@@ -2,6 +2,47 @@ import { chromium } from 'playwright';
 
 import { expect, expectNoHorizontalOverflow, test, waitForShell } from './fixtures';
 
+test('@phone the scroll-animation comparison preserves media and resets on a fresh normal visit', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    Boolean(process.env.CI) || process.env.SHOW_REVIEW_SITE_MARKER !== 'true',
+    'Local review-build diagnostic only.',
+  );
+  test.skip(browserName !== 'chromium', 'This comparison targets Chromium scroll timelines.');
+  await page.goto('./?scroll-check=no-timelines');
+  await waitForShell(page);
+  await expect(page.locator('[data-home-scroll-check-note]')).toHaveText('Scroll check: Scroll animations disabled.');
+  await expect(page.locator('[data-home-scroll-report]')).toBeHidden();
+  const media = page.locator('.homepage-hero-section__media-layer');
+  await expect(media).toHaveCSS('position', 'fixed');
+  await expect(media).toHaveCSS('animation-name', 'none');
+  expect(await media.evaluate((element) => getComputedStyle(element, '::after').animationName)).toBe('none');
+  const cards = page.locator('.home-swipe-row > *');
+  expect(await cards.count()).toBeGreaterThan(0);
+  expect(
+    await cards.evaluateAll((elements) =>
+      elements.every((element) => getComputedStyle(element).animationName === 'none'),
+    ),
+  ).toBe(true);
+  await expect(page.locator('.home-preorders__film')).toHaveCount(2);
+  await expect(page.locator('video[data-home-hero-film]')).toHaveJSProperty('paused', false);
+  await page.locator('body').press('End');
+  await expect(media).toHaveCSS('opacity', '0.12');
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto('./');
+  await waitForShell(page);
+  await expect(page.locator('[data-home-scroll-check-note]')).toBeHidden();
+  await expect(media).toHaveCSS('animation-name', 'homepage-hero-ghost');
+  expect(await media.evaluate((element) => getComputedStyle(element, '::after').animationName)).toBe(
+    'homepage-hero-ghost-veil',
+  );
+  await expect(cards.first()).toHaveCSS('animation-name', 'home-swipe-row-fade');
+  await expect(media).toHaveCSS('opacity', '1');
+});
+
 test('@phone the scrolling report catches a stall and excludes time spent hidden', async ({
   page,
   browserName,
@@ -92,7 +133,7 @@ test('@phone Home media cropping does not create nested vertical scroll containe
   expect(offsets).toEqual([0, 0]);
 });
 
-test('@phone native touch swipes traverse Home twice without long freezes', async ({
+test('@phone native touch swipes traverse Home twice with bounded frame-callback gaps', async ({
   page: localPage,
   browserName,
   baseURL,

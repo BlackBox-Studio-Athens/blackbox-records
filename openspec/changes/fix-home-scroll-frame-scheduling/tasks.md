@@ -50,3 +50,9 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 - [x] 6.1 Add a UAT-only report of frame stalls, slow-frame script attribution, touch/scroll movement and viewport resizes, with bounded buffers, hidden-time exclusion and no automatic upload or persistence.
 - [x] 6.2 Verify a deliberate stall is detected, background time is excluded, normal and PRD behavior is unchanged, and the extra test remains Local only.
 - [x] 6.3 Deliver the scoped report to UAT, verify the release and ask for the affected-phone report before selecting a repair.
+
+## 7. Release 617 phone report has healthy callbacks
+
+- [x] 7.1 Retain and interpret the owner's report separately from the desktop trace; record what it rules against and what it cannot measure.
+- [x] 7.2 Verify and deliver an opt-in UAT comparison disabling both Home scroll-driven animation paths, with a Local-only restoration check and normal production exclusion.
+- [ ] 7.3 Compare that mode on the affected phone and use the result to select a repair; retain task 5.4 until physical acceptance.
