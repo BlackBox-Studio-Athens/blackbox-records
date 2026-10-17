@@ -2,6 +2,73 @@ import { chromium } from 'playwright';
 
 import { expect, expectNoHorizontalOverflow, test, waitForShell } from './fixtures';
 
+test('@phone the scrolling report catches a stall and excludes time spent hidden', async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(
+    Boolean(process.env.CI) || process.env.SHOW_REVIEW_SITE_MARKER !== 'true',
+    'Local review-build diagnostic only.',
+  );
+  test.skip(browserName !== 'chromium', 'The affected in-app browser uses Chromium touch input.');
+  await page.goto('./?scroll-check=report');
+  await waitForShell(page);
+  const panel = page.getByRole('region', { name: 'Scrolling report' });
+  const finish = panel.getByRole('button', { name: 'Finish and show report' });
+  await expect(finish).toBeEnabled();
+  const cdp = await page.context().newCDPSession(page);
+  try {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 150, y: 700 }] });
+    for (let step = 1; step <= 8; step++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: 150, y: 700 - step * 50 }],
+      });
+      await page.waitForTimeout(40);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } finally {
+    await cdp.detach();
+  }
+  // Exercise visibility handling deterministically without depending on a headless window manager.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => {
+    Reflect.deleteProperty(document, 'hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await page.evaluate(() => {
+    const until = performance.now() + 750;
+    while (performance.now() < until) {
+      /* Deliberate fault: the report must detect this renderer stall. */
+    }
+  });
+  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await finish.click();
+  const output = panel.getByRole('textbox', { name: 'Scrolling report text' });
+  const report = JSON.parse(await output.inputValue());
+  await testInfo.attach('home-scroll-report', { body: JSON.stringify(report), contentType: 'application/json' });
+  expect(report.hiddenCount).toBe(1);
+  expect(report.maxFrameGapMs).toBeGreaterThanOrEqual(650);
+  expect(report.maxFrameGapMs).toBeLessThan(1500);
+  expect(report.stallsOver250Ms).toBeGreaterThan(0);
+  expect(report.longFrames.some((entry: { durationMs: number }) => entry.durationMs >= 650)).toBe(true);
+  expect(report.gestures.some((gesture: { moves: number; dy: number }) => gesture.moves > 0 && gesture.dy > 200)).toBe(
+    true,
+  );
+  expect(report.maxScrollY).toBeGreaterThan(report.minScrollY);
+  expect(report.frameStalls.length).toBeLessThanOrEqual(24);
+  expect(report.longFrames.length).toBeLessThanOrEqual(5);
+  await expectNoHorizontalOverflow(page);
+  await expect(finish).toBeDisabled();
+  await page.goto('./');
+  await expect(page.locator('[data-home-scroll-report]')).toBeHidden();
+});
+
 test('@phone Home media cropping does not create nested vertical scroll containers', async ({ page }) => {
   await page.goto('./');
   await waitForShell(page);
