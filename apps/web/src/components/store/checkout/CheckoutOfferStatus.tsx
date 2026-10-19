@@ -86,15 +86,23 @@ export default function CheckoutOfferStatus({
   const [checkoutAttemptTerminal, setCheckoutAttemptTerminal] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
-  const [cartLines, setCartLines] = useState<CartLine[]>([]);
+  const [cartLines, setCartLines] = useState<CartLine[]>();
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
-  const reviewLines = cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : [];
-  const hasCheckoutLine = reviewLines.length > 0;
-  const delivery = useDeliveryQuote(
-    cartLines.length
+  const isCartLoading =
+    cartLines === undefined || (!cartLines.length && Boolean(storeItemSlug) && view.tone === 'loading');
+  const reviewLines = isCartLoading
+    ? []
+    : cartLines?.length
       ? cartLines
       : workerFallbackLineItem
+        ? [workerFallbackLineItem]
+        : [];
+  const hasCheckoutLine = reviewLines.length > 0;
+  const delivery = useDeliveryQuote(
+    cartLines?.length
+      ? cartLines
+      : !isCartLoading && workerFallbackLineItem
         ? [
             {
               storeItemSlug: workerFallbackLineItem.storeItemSlug,
@@ -112,17 +120,19 @@ export default function CheckoutOfferStatus({
     quoteTotalDisplay: delivery.totalDisplay,
   });
   const canShowPayment = view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine;
-  const badgeLabel = !hasCheckoutLine
-    ? 'Cart is empty'
-    : view.canStartCheckout && (delivery.loading || !delivery.quote)
-      ? delivery.loading
-        ? 'Checking delivery'
-        : delivery.error === 'temporary'
-          ? 'Delivery check failed'
-          : 'Delivery unavailable'
-      : view.canStartCheckout
-        ? 'Ready'
-        : view.badgeLabel;
+  const badgeLabel = isCartLoading
+    ? 'Loading your cart'
+    : !hasCheckoutLine
+      ? 'Cart is empty'
+      : view.canStartCheckout && (delivery.loading || !delivery.quote)
+        ? delivery.loading
+          ? 'Checking delivery'
+          : delivery.error === 'temporary'
+            ? 'Delivery check failed'
+            : 'Delivery unavailable'
+        : view.canStartCheckout
+          ? 'Ready'
+          : view.badgeLabel;
   const badgeClassName = cn(
     'checkout-review__badge rounded-none',
     view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
@@ -243,7 +253,11 @@ export default function CheckoutOfferStatus({
   }
 
   return (
-    <Card className="checkout-review__panel rounded-none shadow-none" data-checkout-offer-status>
+    <Card
+      className="checkout-review__panel rounded-none shadow-none"
+      data-checkout-offer-status
+      aria-busy={isCartLoading}
+    >
       <CardContent className="checkout-review__panel-content">
         <div className="checkout-review__panel-heading">
           <h2 className="checkout-review__panel-title">Review and Pay</h2>
@@ -253,7 +267,9 @@ export default function CheckoutOfferStatus({
         </div>
 
         <PreorderCartNotice lines={reviewLines} />
-        <DeliverySummary {...delivery} />
+        {(isCartLoading || hasCheckoutLine) && (
+          <DeliverySummary {...delivery} loading={isCartLoading || delivery.loading} />
+        )}
         {hasCheckoutLine && (
           <InternationalOrderNotice
             variant="card"
@@ -325,11 +341,13 @@ export default function CheckoutOfferStatus({
             </>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {!hasCheckoutLine
-                ? 'Add a priced item to the cart before checkout.'
-                : view.canStartCheckout
-                  ? 'Stripe opens after checkout is ready.'
-                  : 'Payment opens after price and availability are confirmed.'}
+              {isCartLoading
+                ? 'Loading your cart…'
+                : !hasCheckoutLine
+                  ? 'Add a priced item to the cart before checkout.'
+                  : view.canStartCheckout
+                    ? 'Stripe opens after checkout is ready.'
+                    : 'Payment opens after price and availability are confirmed.'}
             </p>
           )}
 

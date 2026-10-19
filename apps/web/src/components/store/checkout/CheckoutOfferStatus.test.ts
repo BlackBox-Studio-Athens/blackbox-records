@@ -31,7 +31,7 @@ vi.mock('react', async (importOriginal) => {
   return {
     ...actual,
     useState: (initialValue: unknown) =>
-      actual.useState<unknown>(Array.isArray(initialValue) ? cartState.lines : initialValue),
+      actual.useState<unknown>(initialValue === undefined ? cartState.lines : initialValue),
   };
 });
 vi.mock('@/components/store/cart/InternationalOrderNotice', () => ({
@@ -550,7 +550,20 @@ describe('CheckoutOfferStatus helpers', () => {
     const markup = renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
     expect(markup).not.toContain('preorder-notice');
     expect(markup).toContain('Add a priced item to the cart before checkout.');
-    expect(markup).toContain('data-delivery-summary');
+    expect(markup).not.toContain('data-delivery-summary');
+    expect(markup).toContain('Cart is empty');
+    expect(markup).not.toContain('Delivery is unavailable');
+  });
+
+  it('waits for an item-specific fallback offer after reading an empty saved cart', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(CheckoutOfferStatus, { initialAvailability, storeItemSlug: ordinaryLine.storeItemSlug }),
+    );
+    expect(markup).toContain('Loading your cart');
+    expect(markup).not.toContain('Cart is empty');
+    expect(markup).not.toContain('Add a priced item');
+    expect(markup).not.toContain('Delivery unavailable');
+    expect(markup).not.toContain('data-checkout-pay-state');
   });
 
   it('places the neutral international card after delivery and before payment, using current cart titles', () => {

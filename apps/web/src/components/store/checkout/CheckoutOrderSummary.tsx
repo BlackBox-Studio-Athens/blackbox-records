@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { LoadingInline } from '@/components/ui/loading-feedback';
 import { cn, publicTitleClass } from '@/components/ui/utils';
 import {
   decrementCartLineQuantityByVariant,
@@ -39,7 +40,8 @@ export type CheckoutOrderSummaryInput = {
 export const CHECKOUT_ORDER_SUMMARY_COPY = { title: 'Order Summary', editQuantities: 'Edit quantities' } as const;
 
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
-  const [cartLines, setCartLines] = useState<CartLine[]>([]);
+  const [cartLines, setCartLines] = useState<CartLine[]>();
+  const isCartLoading = cartLines === undefined;
   const fallbackLine: CartLine | null =
     typeof props.priceAmountMinor === 'number' && props.priceCurrencyCode
       ? {
@@ -58,7 +60,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
           variantId: props.variantId || 'checkout-summary-static-line',
         }
       : null;
-  const lines = cartLines.length > 0 ? cartLines : fallbackLine ? [fallbackLine] : [];
+  const lines = isCartLoading ? [] : cartLines.length > 0 ? cartLines : fallbackLine ? [fallbackLine] : [];
   const hasPreorder = lines.some((line) => line.preorder);
 
   useEffect(() => {
@@ -86,55 +88,64 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   }
 
   return (
-    <Card className="checkout-review__panel rounded-none shadow-none" data-checkout-order-summary>
+    <Card
+      className="checkout-review__panel rounded-none shadow-none"
+      data-checkout-order-summary
+      aria-busy={isCartLoading}
+    >
       <CardContent className="checkout-summary__content">
         <div className="checkout-review__panel-heading">
           <h2 className="checkout-summary__heading">{CHECKOUT_ORDER_SUMMARY_COPY.title}</h2>
-          <details className="checkout-summary__editor">
-            <summary>{CHECKOUT_ORDER_SUMMARY_COPY.editQuantities}</summary>
-            <div className="checkout-summary__quantities">
-              {lines.length ? (
-                lines.map((line) => (
-                  <div key={line.variantId}>
-                    <p>{line.title}</p>
-                    <div className="inline-flex h-11 items-stretch border border-border/70">
-                      <button
-                        type="button"
-                        className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                        onClick={() => updateCartLineQuantity(line.variantId, 'decrement')}
-                        aria-label={`Decrease quantity for ${line.title}`}
-                      >
-                        -
-                      </button>
-                      <span className="inline-flex min-w-11 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
-                        {line.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
-                        onClick={() => updateCartLineQuantity(line.variantId, 'increment')}
-                        aria-label={`Increase quantity for ${line.title}`}
-                        disabled={line.priceKind === 'pay_what_you_want'}
-                        aria-describedby={
-                          line.priceKind === 'pay_what_you_want'
-                            ? `checkout-price-guidance-${line.variantId}`
-                            : undefined
-                        }
-                      >
-                        +
-                      </button>
+          {!isCartLoading && (
+            <details className="checkout-summary__editor">
+              <summary>{CHECKOUT_ORDER_SUMMARY_COPY.editQuantities}</summary>
+              <div className="checkout-summary__quantities">
+                {lines.length ? (
+                  lines.map((line) => (
+                    <div key={line.variantId}>
+                      <p>{line.title}</p>
+                      <div className="inline-flex h-11 items-stretch border border-border/70">
+                        <button
+                          type="button"
+                          className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          onClick={() => updateCartLineQuantity(line.variantId, 'decrement')}
+                          aria-label={`Decrease quantity for ${line.title}`}
+                        >
+                          -
+                        </button>
+                        <span className="inline-flex min-w-11 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
+                          {line.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+                          onClick={() => updateCartLineQuantity(line.variantId, 'increment')}
+                          aria-label={`Increase quantity for ${line.title}`}
+                          disabled={line.priceKind === 'pay_what_you_want'}
+                          aria-describedby={
+                            line.priceKind === 'pay_what_you_want'
+                              ? `checkout-price-guidance-${line.variantId}`
+                              : undefined
+                          }
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <p>Your cart is empty. Continue shopping to add a record.</p>
-              )}
-            </div>
-          </details>
+                  ))
+                ) : (
+                  <p>Your cart is empty. Continue shopping to add a record.</p>
+                )}
+              </div>
+            </details>
+          )}
         </div>
 
         <div className="checkout-summary__items">
-          {!lines.length && (
+          {isCartLoading && (
+            <LoadingInline className="checkout-review__note min-h-[4.75rem]" label="Loading your cart" />
+          )}
+          {!isCartLoading && !lines.length && (
             <p className="checkout-review__note">Your cart is empty. Continue shopping to add a record.</p>
           )}
           {lines.map((line) => (

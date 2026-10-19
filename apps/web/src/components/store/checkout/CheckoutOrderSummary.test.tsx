@@ -18,7 +18,7 @@ vi.mock('react', async (importOriginal) => {
   return {
     ...actual,
     useState: (initialValue: unknown) =>
-      actual.useState<unknown>(Array.isArray(initialValue) ? cartState.lines : initialValue),
+      actual.useState<unknown>(initialValue === undefined ? cartState.lines : initialValue),
   };
 });
 
