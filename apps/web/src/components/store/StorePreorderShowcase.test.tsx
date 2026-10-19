@@ -198,16 +198,15 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toMatch(/<video[^>]*muted=""[^>]*playsInline=""[^>]*preload="none"/i);
     expect(html).not.toContain('src="/silent-loop.mp4"');
     expect(html).toContain('src="/video-poster.webp"');
-    expect(html).not.toMatch(/(?:Play|Pause) background|Background unavailable/);
+    expect(html).toContain('aria-label="Pause background video for Clip album by Clip band"');
+    expect(html).toMatch(/<button[^>]*home-preorders__ambient-toggle[^>]*disabled=""[^>]*><\/button>/);
+    expect(html).not.toContain('Background unavailable');
     expect(html).not.toContain('site-button--icon');
     expect(html).not.toContain('<iframe');
   });
 
-  it('offers no manual motion control; automatic rules and reduced motion decide playback', () => {
-    // Hydration alone decides eligibility, so the server markup cannot show the removed control; the source can.
-    const source = readFileSync(new URL('./StorePreorderShowcase.tsx', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/background motion|manualPause|size: 'icon'/);
-    expect(renderToStaticMarkup(render([item(clip)]))).toContain('Watch full video');
+  it.each([clip, photo, cover])('offers no background control without native footage for $slug', (candidate) => {
+    expect(renderToStaticMarkup(render([item(candidate)]))).not.toContain('home-preorders__ambient-toggle');
   });
 
   it('shows withheld terms and an Digital out now badge with a past release', () => {
@@ -309,12 +308,13 @@ describe('StorePreorderShowcase phone film strip', () => {
     ],
   };
 
-  it('puts the film band before the title with no control in it, and Watch full video after the terms link', () => {
+  it('puts an empty native toggle in the film band and keeps Watch full video after the terms link', () => {
     const html = renderToStaticMarkup(render([item(native)]));
     expect(html).toContain('home-preorders__chapter home-preorders__chapter--video');
     const media = html.slice(html.indexOf('data-preorder-ambient='), html.indexOf('home-preorders__film-shade'));
     expect(media).toMatch(/<video[^>]*class="home-preorders__film"/);
-    expect(media).not.toMatch(/<(?:button|a)\b/);
+    expect(media).toMatch(/<button[^>]*home-preorders__ambient-toggle[^>]*><\/button>/);
+    expect(media).not.toMatch(/<a\b/);
     expect(html.indexOf('home-preorders__film-shade')).toBeLessThan(html.indexOf('<h3'));
     const tools = html.slice(html.indexOf('home-preorders__film-tools'), html.indexOf('home-preorders__clips'));
     expect(tools.match(/<button/g)).toHaveLength(1);

@@ -143,6 +143,7 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
           onWatch={onWatch}
           desktopVideo={desktopVideo}
           playerSession={playerSession}
+          automaticMotion={automaticMotion}
         />
       ))}
       <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
@@ -232,6 +233,7 @@ function PreorderChapter({
   onWatch,
   desktopVideo,
   playerSession,
+  automaticMotion,
 }: {
   item: ShowcaseItem;
   next?: ShowcaseItem | undefined;
@@ -240,8 +242,12 @@ function PreorderChapter({
   onWatch: (slug: string | null) => void;
   desktopVideo: boolean;
   playerSession: boolean;
+  automaticMotion: boolean;
 }) {
   const [ambientPlaying, setAmbientPlaying] = useState(false);
+  const [pausedClips, setPausedClips] = useState<string[]>([]);
+  const [frameClip, setFrameClip] = useState<string | null>(null);
+  const ambientPointer = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const [failedClips, setFailedClips] = useState<string[]>([]);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
@@ -266,7 +272,8 @@ function PreorderChapter({
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
   const background = (desktopVideo && clip?.backgroundVideoDesktopUrl) || clip?.backgroundVideoUrl;
-  const shouldPlay = Boolean(background && active && !failed && !autoplayBlocked);
+  const manuallyPaused = Boolean(clip && pausedClips.includes(clip.id));
+  const shouldPlay = Boolean(background && active && !failed && !autoplayBlocked && !manuallyPaused);
   const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
   const shipping = estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed';
   const badges = preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() });
@@ -451,12 +458,54 @@ function PreorderChapter({
                   loop
                   preload="none"
                   aria-hidden="true"
-                  data-playing={ambientPlaying || undefined}
-                  onPlaying={() => setAmbientPlaying(true)}
+                  data-playing={((ambientPlaying || manuallyPaused) && frameClip === clip.id) || undefined}
+                  onPlaying={() => {
+                    setAmbientPlaying(true);
+                    setFrameClip(clip.id);
+                  }}
                   onPause={() => setAmbientPlaying(false)}
+                  onEmptied={() => setFrameClip(null)}
                   onError={() => {
                     setAmbientPlaying(false);
+                    setFrameClip(null);
                     setFailedClips((previous) => (previous.includes(clip.id) ? previous : [...previous, clip.id]));
+                  }}
+                />
+              )}
+              {background && (
+                <button
+                  type="button"
+                  className="home-preorders__ambient-toggle"
+                  aria-label={`${manuallyPaused ? 'Resume' : 'Pause'} background video for ${item.title} by ${item.artist}`}
+                  disabled={!automaticMotion || failed || autoplayBlocked}
+                  onPointerDown={(event) => {
+                    ambientPointer.current =
+                      event.button === 0 && event.isPrimary
+                        ? { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false }
+                        : null;
+                  }}
+                  onPointerMove={(event) => {
+                    const pointer = ambientPointer.current;
+                    if (
+                      pointer?.id === event.pointerId &&
+                      Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) > 8
+                    )
+                      pointer.moved = true;
+                  }}
+                  onPointerCancel={() => {
+                    ambientPointer.current = null;
+                  }}
+                  onPointerLeave={(event) => {
+                    if (event.pointerType === 'mouse') ambientPointer.current = null;
+                  }}
+                  onClick={(event) => {
+                    const pointer = ambientPointer.current;
+                    ambientPointer.current = null;
+                    // Native keyboard activation has no pointer; a drag or cancelled touch is never a toggle.
+                    if (event.detail !== 0 && (!pointer || pointer.moved)) return;
+                    setPausedClips((previous) =>
+                      previous.includes(clip.id) ? previous.filter((id) => id !== clip.id) : [...previous, clip.id],
+                    );
                   }}
                 />
               )}

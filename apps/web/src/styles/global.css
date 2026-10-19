@@ -6228,6 +6228,23 @@ body.is-app-shell-overlay-open {
   visibility: hidden;
 }
 
+.home-preorders__ambient-toggle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.home-preorders__ambient-toggle:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -4px;
+}
+
 .home-preorders__film-shade {
   pointer-events: none;
   background: linear-gradient(
