@@ -594,3 +594,14 @@ The system MUST keep the record Buy mark inside the closed `web-store` module wh
 - **THEN** `apps/web/src/components/store/StoreBuyIcon.tsx` is owned by `web-store` and listed as a provided entrypoint
 - **AND** `web-editorial` imports it through its existing `web-store` dependency without copying the icon layers
 - **AND** boundary validation passes without an ownership exception
+
+### Requirement: Analytics reporting has one closed application owner
+
+The closed analytics application module owns rich protected reporting, provider reads and retained Visits aggregates through its public root. HTTP and scheduled runtime declare this dependency. Orders owns authoritative Store aggregation and its persistence implementation. Staff consumes generated internal API contracts without provider or database dependencies. Existing seven/thirty-day routes retain their compatibility contracts.
+
+#### Scenario: Staff requests a filtered report
+
+- **WHEN** the protected HTTP layer or existing schedule composes analytics
+- **THEN** consumers use the declared analytics root and native Nx dependencies
+- **AND** filtered Store reads pass through the Orders public root
+- **AND** the browser receives aggregate report contracts only

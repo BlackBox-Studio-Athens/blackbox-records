@@ -182,6 +182,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a filtered aggregate Staff report with daily coverage and comparison. */
+        get: operations["readStaffStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/store-stats": {
         parameters: {
             query?: never;
@@ -912,6 +929,67 @@ export type components = {
                 visits: number;
             }[];
         };
+        StaffStatsReport: {
+            breakdowns: {
+                /** @enum {string} */
+                dimension: "page" | "referrer" | "country" | "device" | "item" | "format" | "query";
+                rows: {
+                    label: string;
+                    metrics: {
+                        [key: string]: number | null;
+                    };
+                    value: string;
+                }[];
+            }[];
+            complete: boolean;
+            daily: {
+                available: boolean;
+                /** Format: date */
+                date: string;
+                metrics: {
+                    [key: string]: number | null;
+                };
+            }[];
+            fields: {
+                /** @enum {string} */
+                key: "page" | "referrer" | "country" | "device" | "item" | "format" | "query";
+                label: string;
+                options: {
+                    label: string;
+                    value: string;
+                }[];
+            }[];
+            /** Format: date-time */
+            generatedAt: string | null;
+            /** Format: date */
+            latestDate: string | null;
+            /** @enum {string|null} */
+            moneyBasis: "paid_total" | "merchandise" | null;
+            notes: string[];
+            period: {
+                /** Format: date */
+                end: string;
+                /** Format: date */
+                previousEnd: string;
+                /** Format: date */
+                previousStart: string;
+                /** Format: date */
+                start: string;
+            };
+            previous: {
+                [key: string]: number | null;
+            } | null;
+            /** @enum {string} */
+            range: "today" | "yesterday" | "7d" | "30d" | "90d" | "month" | "12m" | "custom";
+            /** @enum {string} */
+            source: "visits" | "store" | "search";
+            /** @enum {string} */
+            status: "ok" | "not_configured";
+            timezone: string;
+            totals: {
+                [key: string]: number | null;
+            };
+        };
         StoreStats: {
             /** @enum {string} */
             currencyCode: "EUR";
@@ -1545,6 +1623,66 @@ export interface operations {
                 };
             };
             /** @description Search figures or operator authentication are temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readStaffStats: {
+        parameters: {
+            query: {
+                compare?: "true" | "false";
+                country?: string;
+                device?: string;
+                end?: string;
+                format?: string;
+                item?: string;
+                page?: string;
+                query?: string;
+                range: "today" | "yesterday" | "7d" | "30d" | "90d" | "month" | "12m" | "custom";
+                referrer?: string;
+                source: "visits" | "store" | "search";
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregate report or provider setup state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffStatsReport"];
+                };
+            };
+            /** @description Invalid dates or filters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description The report is temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;

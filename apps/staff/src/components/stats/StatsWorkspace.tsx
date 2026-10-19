@@ -1,590 +1,481 @@
-import { lazy, Suspense, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
-import { LockKeyhole, Minus, RefreshCw, Search, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react';
-import {
-  createInternalAnalyticsApi,
-  type SearchStats,
-  type SiteAnalytics,
-  type SiteAnalyticsRange,
-  type StoreStats,
-} from '../../lib/backend/internal-analytics-api';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronDown, LockKeyhole, RefreshCw, TriangleAlert } from 'lucide-react';
+import { createInternalAnalyticsApi, type StaffStatsReport } from '../../lib/backend/internal-analytics-api';
 import { writeStaffLocation } from '../../lib/staff-navigation';
 import { useStaffRead } from '../../lib/staff-query';
 import { Button } from '../ui/button';
-import { cn } from '../ui/utils';
-import { createStatsWorkspace, type StatsRead, type StatsState } from './stats-workspace';
+import { createStatsWorkspace, idleRead, statsQueryKey, type StatsRead } from './stats-workspace';
 import {
-  countryLabel,
-  formatCount,
-  formatDay,
-  formatDayTick,
-  formatEuro,
-  formatPosition,
-  formatReadTime,
-  plural,
-} from './stats-format';
-import { byVisits, deviceNames, mergeDevices, mergeSources, pageLabel } from './stats-labels';
-import { deviceSentence, rangeWords, storeSentence, summarySentence, type SummaryPart } from './stats-summary';
-import { DeviceIcon, PageIcon, SourceIcon } from './StatsIcons';
+  briefLocation,
+  customDateError,
+  groupStatsDays,
+  metricValue,
+  parseBriefLocation,
+  periodDates,
+  periodLabel,
+  presets,
+  reportQuery,
+  sourceNames,
+  sources,
+  type BriefState,
+  type Range,
+  type Source,
+} from './stats-model';
+import { formatReadTime } from './stats-format';
+import { Comparison } from './StatsComparison';
 
-// Recharts loads only when a chart is drawn, after the page and its states are already usable.
-const TrafficChart = lazy(() => import('./StatsCharts').then((module) => ({ default: module.TrafficChart })));
-const DevicesChart = lazy(() => import('./StatsCharts').then((module) => ({ default: module.DevicesChart })));
+const StatsDetail = lazy(() => import('./StatsDetail'));
+export type BriefReads = Record<Source, StatsRead>;
 
-const unavailable = {
-  site: 'Analytics is temporarily unavailable. Try again.',
-  store: 'Store figures are temporarily unavailable. Try again.',
-  search: 'Search figures are temporarily unavailable. Try again.',
-};
-type Source = keyof typeof unavailable;
-
-const rangeFromUrl = (): SiteAnalyticsRange =>
-  new URLSearchParams(window.location.search).get('range') === '30d' ? '30d' : '7d';
-const sum = (rows: { visits: number; pageViews: number }[], key: 'visits' | 'pageViews') =>
-  rows.reduce((total, row) => total + row[key], 0);
-
-export default function StatsWorkspace({ backendBaseUrl }: { backendBaseUrl: string }) {
-  const sources = useMemo(() => {
+export default function StatsWorkspace({
+  backendBaseUrl,
+  initialSearch = '',
+}: {
+  backendBaseUrl: string;
+  initialSearch?: string;
+}) {
+  const [state, setState] = useState(() => parseBriefLocation(initialSearch));
+  const [ready, setReady] = useState(false);
+  const stores = useMemo(() => {
     const api = createInternalAnalyticsApi({ backendBaseUrl });
     return {
-      site: createStatsWorkspace(api.readAnalytics, unavailable.site),
-      store: createStatsWorkspace(api.readStoreStats, unavailable.store),
-      search: createStatsWorkspace(api.readSearchStats, unavailable.search),
+      visits: createStatsWorkspace(api.readStatsReport),
+      store: createStatsWorkspace(api.readStatsReport),
+      search: createStatsWorkspace(api.readStatsReport),
     };
   }, [backendBaseUrl]);
-  const site = useSyncExternalStore(sources.site.subscribe, sources.site.getSnapshot, sources.site.getSnapshot);
-  const store = useSyncExternalStore(sources.store.subscribe, sources.store.getSnapshot, sources.store.getSnapshot);
-  const search = useSyncExternalStore(sources.search.subscribe, sources.search.getSnapshot, sources.search.getSnapshot);
-  const denied = site.denied || store.denied || search.denied;
-
+  const visits = useSyncExternalStore(stores.visits.subscribe, stores.visits.getSnapshot, stores.visits.getSnapshot);
+  const store = useSyncExternalStore(stores.store.subscribe, stores.store.getSnapshot, stores.store.getSnapshot);
+  const search = useSyncExternalStore(stores.search.subscribe, stores.search.getSnapshot, stores.search.getSnapshot);
+  const denied = visits.denied || store.denied || search.denied;
+  const queries = {
+    visits: reportQuery('visits', state),
+    store: reportQuery('store', state),
+    search: reportQuery('search', state),
+  };
+  const keys = {
+    visits: statsQueryKey(queries.visits),
+    store: statsQueryKey(queries.store),
+    search: statsQueryKey(queries.search),
+  };
   useEffect(() => {
-    const followUrl = () => {
-      const range = rangeFromUrl();
-      void sources.site.load(range);
-      void sources.store.load(range);
-      void sources.search.load(range);
-    };
-    followUrl();
-    window.addEventListener('popstate', followUrl);
-    return () => window.removeEventListener('popstate', followUrl);
-  }, [sources]);
-  useStaffRead(['site-analytics', site.range], () => sources.site.load(site.range), { enabled: !denied });
-  useStaffRead(['store-stats', site.range], () => sources.store.load(site.range), { enabled: !denied });
-  useStaffRead(['search-stats', site.range], () => sources.search.load(site.range), { enabled: !denied });
-
+    const follow = () => setState(parseBriefLocation(window.location.search));
+    follow();
+    setReady(true);
+    window.addEventListener('popstate', follow);
+    return () => window.removeEventListener('popstate', follow);
+  }, []);
+  useEffect(() => {
+    if (!ready) return;
+    if (denied) {
+      for (const source of sources) if (!stores[source].getSnapshot().denied) stores[source].deny();
+      return;
+    }
+    for (const source of sources) void stores[source].load(queries[source]);
+  }, [keys.visits, keys.store, keys.search, ready, denied, stores]);
+  useStaffRead(['staff-stats', keys.visits], () => stores.visits.load(queries.visits, true), {
+    enabled: ready && !denied,
+  });
+  useStaffRead(['staff-stats', keys.store], () => stores.store.load(queries.store, true), {
+    enabled: ready && !denied,
+  });
+  useStaffRead(['staff-stats', keys.search], () => stores.search.load(queries.search, true), {
+    enabled: ready && !denied,
+  });
+  const reads = {
+    visits: visits.reads[keys.visits] ?? idleRead,
+    store: store.reads[keys.store] ?? idleRead,
+    search: search.reads[keys.search] ?? idleRead,
+  };
   return (
     <StatsView
-      site={site}
-      store={store}
-      search={search}
-      onRange={(range) => {
-        writeStaffLocation(range === '30d' ? '/stats/?range=30d' : '/stats/');
-        void sources.site.load(range);
-        void sources.store.load(range);
-        void sources.search.load(range);
+      state={state}
+      reads={reads}
+      denied={denied}
+      onChange={(next) => {
+        setState(next);
+        writeStaffLocation(briefLocation(next), { push: true });
       }}
-      onRetry={(source) => void sources[source].load(site.range)}
+      onRetry={(source) => void stores[source].load(queries[source], true)}
     />
   );
 }
 
 export function StatsView({
-  site,
-  store,
-  search,
-  onRange,
+  state,
+  reads,
+  denied = false,
+  onChange,
   onRetry,
 }: {
-  site: StatsState<SiteAnalytics>;
-  store: StatsState<StoreStats>;
-  search: StatsState<SearchStats>;
-  onRange: (range: SiteAnalyticsRange) => void;
+  state: BriefState;
+  reads: BriefReads;
+  denied?: boolean;
+  onChange: (state: BriefState) => void;
   onRetry: (source: Source) => void;
 }) {
-  if (site.denied || store.denied || search.denied)
+  const [dates, setDates] = useState(false);
+  const [draft, setDraft] = useState({ range: state.range, start: state.start, end: state.end });
+  const [issue, setIssue] = useState<string | null>(null);
+  const dateButton = useRef<HTMLButtonElement>(null),
+    workspace = useRef<HTMLDivElement>(null);
+  const previousReport = useRef(state.report);
+  useEffect(() => {
+    setDates(false);
+    setIssue(null);
+    if (previousReport.current !== state.report) {
+      const selector =
+        state.report === 'overview' ? `[data-stats-open="${previousReport.current}"]` : '#stats-report-title';
+      workspace.current?.querySelector<HTMLElement>(selector)?.focus({ preventScroll: true });
+      previousReport.current = state.report;
+    }
+  }, [state.report, state.range, state.start, state.end]);
+  if (denied)
     return (
       <div className="staff-workspace stats-workspace stats-message">
-        <LockKeyhole size={36} aria-hidden="true" />
+        <LockKeyhole aria-hidden="true" size={36} />
         <h1>Access required</h1>
         <p>Your staff session may have expired, or this account does not have access.</p>
         <p>Sign in with an allowed staff account and reload to continue.</p>
       </div>
     );
-
-  const range = site.range;
-  const read = site.reads[range];
-  const data = read.data;
-  const report = data?.status === 'ok' ? data : null;
-  const stale = !!read.error && !!report;
-  const waiting = read.loading && !data;
+  const applyDates = () => {
+    const problem = draft.range === 'custom' ? customDateError(draft.start, draft.end) : null;
+    if (problem) {
+      setIssue(problem);
+      return;
+    }
+    const length = (Date.parse(draft.end) - Date.parse(draft.start)) / 86400000 + 1;
+    onChange({ ...state, ...draft, grain: length > 120 ? 'Months' : length > 31 ? 'Weeks' : 'Days' });
+    setDates(false);
+    dateButton.current?.focus();
+  };
+  const start = state.range === 'custom' ? state.start : periodDates(state.range).start;
+  const end = state.range === 'custom' ? state.end : periodDates(state.range).end;
+  const visits = reads.visits.data,
+    store = reads.store.data;
   return (
-    <div className="staff-workspace stats-workspace">
+    <div ref={workspace} className="staff-workspace stats-workspace stats-daily-brief">
       <header className="stats-heading">
-        <h1>Stats</h1>
-        <div className="stats-heading-side">
-          <div className="stats-range" role="group" aria-label="Range">
-            {(['7d', '30d'] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={range === option}
-                onClick={() => range !== option && onRange(option)}
-              >
-                {option === '7d' ? '7 days' : '30 days'}
-              </button>
+        <h1>{state.report === 'overview' ? 'Your stats' : 'Stats'}</h1>
+      </header>
+      <div className="stats-period-toolbar">
+        <button
+          ref={dateButton}
+          type="button"
+          className="stats-date-button"
+          aria-expanded={dates}
+          aria-controls="stats-period-panel"
+          onClick={() => {
+            setDraft({ range: state.range, start, end });
+            setIssue(null);
+            setDates(!dates);
+          }}
+        >
+          <CalendarDays aria-hidden="true" size={18} />
+          <span>
+            <strong>{periodLabel(start, end)}</strong>
+            <small>{presets.find(([key]) => key === state.range)?.[1]}</small>
+          </span>
+          <ChevronDown aria-hidden="true" size={18} />
+        </button>
+        {dates && (
+          <DatePanel
+            draft={draft}
+            issue={issue}
+            onDraft={(next) => {
+              setDraft(next);
+              setIssue(null);
+            }}
+            onApply={applyDates}
+            onCancel={() => {
+              setDates(false);
+              dateButton.current?.focus();
+            }}
+          />
+        )}
+      </div>
+      <label className="stats-compare-toggle">
+        <input
+          type="checkbox"
+          checked={state.compare}
+          onChange={(event) => onChange({ ...state, compare: event.target.checked })}
+        />
+        Compare with previous period
+      </label>
+      {state.report === 'overview' ? (
+        <>
+          <p className="stats-brief-sentence">
+            {visits?.status === 'ok' && visits.daily.some((day) => day.available) && (
+              <>
+                <strong>{metricValue('visits', visits.totals.visits)} visits.</strong>{' '}
+              </>
+            )}
+            {store?.status === 'ok' && (
+              <>
+                <strong>{metricValue('paidOrders', store.totals.paidOrders)} paid orders.</strong>{' '}
+              </>
+            )}
+            Here's the period at a glance.
+          </p>
+          <div className="stats-brief-reports">
+            {sources.map((source) => (
+              <BriefReport
+                key={source}
+                source={source}
+                read={reads[source]}
+                state={state}
+                onOpen={() => onChange({ ...state, report: source })}
+                onRetry={() => onRetry(source)}
+              />
             ))}
           </div>
-          {data?.generatedAt && !read.error && (
-            <span className="stats-muted">Read at {formatReadTime(data.generatedAt)}</span>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="stats-text-action stats-back-brief"
+            onClick={() => onChange({ ...state, report: 'overview' })}
+          >
+            <ArrowLeft aria-hidden="true" size={17} />
+            Back to brief
+          </button>
+          <h2 id="stats-report-title" tabIndex={-1}>
+            {sourceNames[state.report]}
+          </h2>
+          <SourceStatus
+            source={state.report}
+            read={reads[state.report]}
+            onRetry={() => onRetry(state.report as Source)}
+          />
+          {reads[state.report].data?.status === 'ok' && (
+            <Suspense fallback={<p role="status">Loading report controls…</p>}>
+              <StatsDetail key={state.report} report={reads[state.report].data!} state={state} onChange={onChange} />
+            </Suspense>
           )}
+        </>
+      )}
+    </div>
+  );
+}
+
+type Draft = { range: Range; start: string; end: string };
+export function DatePanel({
+  draft,
+  issue,
+  onDraft,
+  onApply,
+  onCancel,
+}: {
+  draft: Draft;
+  issue: string | null;
+  onDraft: (draft: Draft) => void;
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const today = new Date().toISOString().slice(0, 10),
+    minimum = new Date(Date.now() - 365 * 86400000).toISOString().slice(0, 10);
+  return (
+    <section
+      id="stats-period-panel"
+      className="stats-edit-panel"
+      aria-label="Choose date range"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.stopPropagation();
+          onCancel();
+        }
+      }}
+    >
+      <h2>Date range</h2>
+      <div className="stats-date-presets">
+        {presets.map(([key, label]) => (
+          <button
+            type="button"
+            key={key}
+            aria-pressed={draft.range === key}
+            onClick={() => onDraft(key === 'custom' ? { ...draft, range: key } : { range: key, ...periodDates(key) })}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {draft.range === 'custom' && (
+        <div className="stats-edit-fields">
+          <label>
+            Start date
+            <input
+              type="date"
+              min={minimum}
+              max={today}
+              value={draft.start}
+              aria-invalid={!!issue}
+              onChange={(event) => onDraft({ ...draft, start: event.target.value })}
+            />
+          </label>
+          <label>
+            End date
+            <input
+              type="date"
+              min={minimum}
+              max={today}
+              value={draft.end}
+              aria-invalid={!!issue}
+              onChange={(event) => onDraft({ ...draft, end: event.target.value })}
+            />
+          </label>
         </div>
-      </header>
+      )}
+      <p className="stats-muted">Up to 12 months. Each report shows its available history.</p>
+      {issue && (
+        <p role="alert" className="stats-date-error">
+          {issue}
+        </p>
+      )}
+      <div className="stats-edit-actions">
+        <Button onClick={onApply}>Apply dates</Button>
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function BriefReport({
+  source,
+  read,
+  state,
+  onOpen,
+  onRetry,
+}: {
+  source: Source;
+  read: StatsRead;
+  state: BriefState;
+  onOpen: () => void;
+  onRetry: () => void;
+}) {
+  const report = read.data?.status === 'ok' ? read.data : null;
+  const key = source === 'visits' ? 'visits' : source === 'store' ? 'paidTotalMinor' : 'clicks';
+  const known = report?.daily.some((day) => day.available);
+  const active = Object.keys(state.filters[source]).length;
+  return (
+    <section className={`stats-brief-report stats-source-${source}`} aria-labelledby={`stats-brief-${source}`}>
+      <div className="stats-brief-report-heading">
+        <h2 id={`stats-brief-${source}`}>{sourceNames[source]}</h2>
+        {report && known && (
+          <strong>
+            {metricValue(key, report.totals[key])}
+            {source === 'search' ? ' clicks' : ''}
+          </strong>
+        )}
+      </div>
+      <SourceStatus source={source} read={read} onRetry={onRetry} />
+      {report && (
+        <>
+          {!report.complete && (
+            <p className="stats-coverage">
+              {known ? 'Partial figures for this selection.' : 'Figures for these dates are not available yet.'}
+            </p>
+          )}
+          {known && (
+            <>
+              <BriefSpark report={report} metric={key} grain={state.grain} />
+              <Comparison report={report} metric={key} enabled={state.compare} />
+              <p className="stats-muted">
+                {source === 'visits'
+                  ? `${metricValue('pageViews', report.totals.pageViews)} page views`
+                  : source === 'store'
+                    ? `${metricValue('itemsSold', report.totals.itemsSold)} items sold${report.moneyBasis === 'merchandise' ? ' · merchandise only' : ''}`
+                    : `${metricValue('impressions', report.totals.impressions)} impressions`}
+                {active ? ` · ${active} active ${active === 1 ? 'filter' : 'filters'}` : ''}
+              </p>
+            </>
+          )}
+        </>
+      )}
+      <button type="button" className="stats-open-report" data-stats-open={source} onClick={onOpen}>
+        Explore {source === 'search' ? 'Search' : sourceNames[source]}
+        <ArrowRight size={17} aria-hidden="true" />
+      </button>
+      {report?.generatedAt && (
+        <p className="stats-muted">
+          Read at {formatReadTime(report.generatedAt)}.
+          {source === 'search'
+            ? ` Data through ${report.latestDate ?? 'an unavailable day'} · Pacific Time.`
+            : ' Days follow UTC.'}
+        </p>
+      )}
+    </section>
+  );
+}
+
+export function SourceStatus({ source, read, onRetry }: { source: Source; read: StatsRead; onRetry: () => void }) {
+  return (
+    <>
+      {read.loading && !read.data && (
+        <div className="stats-report-loading" role="status" aria-label={`Loading ${sourceNames[source]}`}>
+          <span>Loading {sourceNames[source].toLowerCase()}…</span>
+          <div className="stats-brief-skeleton" />
+        </div>
+      )}
+      {read.loading && read.data && (
+        <p role="status" className="stats-muted">
+          Refreshing figures…
+        </p>
+      )}
       {read.error && (
         <div className="stats-error" role="alert">
-          <TriangleAlert size={21} aria-hidden="true" />
+          <TriangleAlert size={18} aria-hidden="true" />
           <div>
-            <strong>{data ? "Couldn't refresh. Showing the last saved figures." : 'Unable to load stats.'}</strong>
+            <strong>
+              {read.data ? "Couldn't refresh. Showing the last successful figures." : 'Unable to load these figures.'}
+            </strong>
             <p>{read.error.message}</p>
-            {data?.generatedAt && <p>Last successful read: {formatReadTime(data.generatedAt)}.</p>}
+            {read.data?.generatedAt && (
+              <p className="stats-muted">Last successful read: {formatReadTime(read.data.generatedAt)}.</p>
+            )}
             {read.error.requestId && <p className="stats-muted">Reference: {read.error.requestId}</p>}
-            <Button variant="outline" onClick={() => onRetry('site')} disabled={read.loading}>
+            <Button variant="outline" disabled={read.loading} onClick={onRetry}>
               <RefreshCw aria-hidden="true" />
               Retry
             </Button>
           </div>
         </div>
       )}
-      <div role="status" aria-live="polite" className="stats-load-status">
-        {read.loading ? (data ? 'Refreshing stats…' : 'Loading stats…') : ''}
-      </div>
-      {data?.status === 'not_configured' && (
-        <section className="stats-message" aria-labelledby="stats-setup">
-          <h2 id="stats-setup">Stats aren't available here yet</h2>
-          <p>Visit figures will appear here once they are connected.</p>
-        </section>
+      {read.data?.status === 'not_configured' && (
+        <p className="stats-setup-message">
+          {sourceNames[source]} figures aren't available here yet. They'll appear once connected.
+        </p>
       )}
-      <Summary report={report} store={store.reads[range].data} stale={stale} />
-      <div className="stats-columns">
-        <div>
-          {waiting && <Skeleton tall />}
-          {report && <TrafficSection report={report} stale={stale} />}
-          <SearchSection read={search.reads[range]} onRetry={() => onRetry('search')} />
-          {report && (
-            <RankSection
-              id="stats-pages"
-              title="Top pages"
-              label="Page"
-              stale={stale}
-              total={sum(report.daily, 'visits')}
-              rows={byVisits(report.topPaths).map((row) => {
-                const page = pageLabel(row.path);
-                return {
-                  ...row,
-                  key: row.path,
-                  name: page.name,
-                  detail: row.path,
-                  icon: <PageIcon kind={page.kind} />,
-                };
-              })}
-            />
-          )}
-        </div>
-        <div className="stats-rail">
-          <StoreSection read={store.reads[range]} range={range} onRetry={() => onRetry('store')} />
-          {waiting && <Skeleton />}
-          {report && <SiteRail report={report} stale={stale} />}
-        </div>
-      </div>
-      {report && (
-        <footer className="stats-notes">
-          <p>Figures are estimates from Cloudflare; a visit is not a unique person.</p>
-          <p>Days run midnight to midnight UTC and include today so far.</p>
-        </footer>
-      )}
-    </div>
-  );
-}
-
-function Skeleton({ tall = false }: { tall?: boolean }) {
-  return (
-    <div className="stats-skeleton" aria-hidden="true">
-      <span className={tall ? 'tall' : undefined} />
-      <span />
-    </div>
-  );
-}
-
-function Summary({ report, store, stale }: { report: SiteAnalytics | null; store: StoreStats | null; stale: boolean }) {
-  const visits = report ? sum(report.daily, 'visits') : null;
-  const siteParts: SummaryPart[] = !report
-    ? []
-    : visits
-      ? summarySentence(report)
-      : [`No visits recorded in ${rangeWords(report.range)}. Counting starts when the live site is open to visitors.`];
-  const storeParts = store ? storeSentence(store.current, visits) : [];
-  if (!siteParts.length && !storeParts.length) return null;
-  const parts =
-    siteParts.length && storeParts.length ? [...siteParts, ' ', ...storeParts] : [...siteParts, ...storeParts];
-  return (
-    <p className={cn('stats-summary', stale && 'stats-stale')}>
-      {parts.map((part, index) => (typeof part === 'string' ? part : <strong key={index}>{part.strong}</strong>))}
-    </p>
-  );
-}
-
-function TrafficSection({ report, stale }: { report: SiteAnalytics; stale: boolean }) {
-  if (!sum(report.daily, 'visits')) return null;
-  const lastDay = report.daily.at(-1)?.date;
-  return (
-    <section className={cn('stats-section', stale && 'stats-stale')} aria-labelledby="stats-traffic">
-      <h2 id="stats-traffic">Visits per day</h2>
-      <Suspense fallback={<div className="stats-chart-placeholder" />}>
-        <TrafficChart daily={report.daily} />
-      </Suspense>
-      <details className="stats-table-view">
-        <summary>Show daily figures as a table</summary>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Day (UTC)</th>
-              <th scope="col">Visits</th>
-              <th scope="col">Page views</th>
-            </tr>
-          </thead>
-          <tbody>
-            {report.daily.map((day) => (
-              <tr key={day.date}>
-                <td>
-                  {formatDay(day.date)}
-                  {day.date === lastDay ? ' (so far)' : ''}
-                </td>
-                <td>{formatCount(day.visits)}</td>
-                <td>{formatCount(day.pageViews)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
-    </section>
-  );
-}
-
-function SiteRail({ report, stale }: { report: SiteAnalytics; stale: boolean }) {
-  const visits = sum(report.daily, 'visits');
-  const devices = mergeDevices(report.deviceTypes);
-  const devicesTotal = sum(devices, 'visits');
-  const devicesLine = deviceSentence(report.deviceTypes);
-  return (
-    <>
-      <section className={cn('stats-section', stale && 'stats-stale')} aria-labelledby="stats-devices">
-        <h2 id="stats-devices">Devices</h2>
-        {devicesTotal && devicesLine ? (
-          <>
-            <p className="stats-lead">{devicesLine}</p>
-            <div className="stats-devices">
-              <Suspense fallback={<div className="stats-donut-placeholder" />}>
-                <DevicesChart devices={devices} />
-              </Suspense>
-              <ul className="stats-device-list" aria-label="Visits by device">
-                {devices.map((row) => (
-                  <li key={row.kind} data-kind={row.kind}>
-                    <i className="stats-key-box" aria-hidden="true" />
-                    <DeviceIcon kind={row.kind} />
-                    <span>{deviceNames[row.kind].label}</span>
-                    <span className="stats-figure">
-                      {formatCount(row.visits)} · {share(row.visits, devicesTotal)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        ) : (
-          <p className="stats-empty">No devices yet.</p>
-        )}
-      </section>
-      <RankSection
-        id="stats-referrers"
-        title="Where visits came from"
-        label="Source"
-        stale={stale}
-        total={visits}
-        rows={mergeSources(report.topReferrers).map((row) => ({
-          ...row,
-          detail: row.hosts.join(', '),
-          icon: <SourceIcon kind={row.kind} />,
-        }))}
-      />
-      <RankSection
-        id="stats-countries"
-        title="Countries"
-        label="Country"
-        stale={stale}
-        total={visits}
-        rows={byVisits(report.topCountries).map((row) => ({
-          ...row,
-          key: row.country || 'unknown',
-          name: countryLabel(row.country),
-          detail: row.country || 'Unknown',
-        }))}
-      />
     </>
   );
 }
 
-/** Loading, failure and stale notice for one source; the section keeps its last figures below it. */
-function SourceStatus<T>({ read, onRetry }: { read: StatsRead<T>; onRetry: () => void }) {
-  if (read.loading && !read.data) return <Skeleton />;
-  if (!read.error) return null;
+function BriefSpark({
+  report,
+  metric,
+  grain,
+}: {
+  report: StaffStatsReport;
+  metric: string;
+  grain: BriefState['grain'];
+}) {
+  const points = groupStatsDays(report.daily, grain),
+    maximum = Math.max(1, ...points.map((point) => point.metrics[metric] ?? 0));
   return (
-    <div className="stats-error stats-section-error" role="alert">
-      <TriangleAlert size={18} aria-hidden="true" />
-      <div>
-        <strong>{read.data ? "Couldn't refresh. Showing the last saved figures." : read.error.message}</strong>
-        {read.data && <p>{read.error.message}</p>}
-        {read.error.requestId && <p className="stats-muted">Reference: {read.error.requestId}</p>}
-        <Button variant="outline" size="sm" onClick={onRetry} disabled={read.loading}>
-          <RefreshCw aria-hidden="true" />
-          Retry
-        </Button>
-      </div>
+    <div
+      className="stats-brief-spark"
+      role="img"
+      aria-label={`${sourceNames[report.source]} trend over ${periodLabel(report.period.start, report.period.end)}. Missing dates are gaps.`}
+    >
+      {points.map((point) => (
+        <span
+          key={point.date}
+          style={{ height: point.available ? `${Math.max(2, (100 * (point.metrics[metric] ?? 0)) / maximum)}%` : '0%' }}
+        />
+      ))}
     </div>
-  );
-}
-
-const periodWords = (range: SiteAnalyticsRange) =>
-  range === '7d'
-    ? { now: 'Last 7 days', before: '7 days before', inRange: 'in the last 7 days', theBefore: 'the 7 days before' }
-    : {
-        now: 'Last 30 days',
-        before: '30 days before',
-        inRange: 'in the last 30 days',
-        theBefore: 'the 30 days before',
-      };
-
-function storeLead(now: number, before: number, range: SiteAnalyticsRange) {
-  const words = periodWords(range);
-  if (!now && !before) return `No orders paid ${words.inRange}.`;
-  if (!now) return `Nothing paid ${words.inRange}, down from ${formatEuro(before)} ${words.theBefore}.`;
-  if (!before) return `${formatEuro(now)} paid ${words.inRange}; nothing ${words.theBefore}.`;
-  if (now === before) return `${formatEuro(now)} paid ${words.inRange}, the same as ${words.theBefore}.`;
-  return `${formatEuro(now)} paid ${words.inRange}, ${now > before ? 'up' : 'down'} from ${formatEuro(before)} ${words.theBefore}.`;
-}
-
-function StoreSection({
-  read,
-  range,
-  onRetry,
-}: {
-  read: StatsRead<StoreStats>;
-  range: SiteAnalyticsRange;
-  onRetry: () => void;
-}) {
-  const data = read.data;
-  const words = periodWords(range);
-  const now = data?.current;
-  const before = data?.previous;
-  const widest = Math.max(now?.paidTotalMinor ?? 0, before?.paidTotalMinor ?? 0);
-  return (
-    <section className="stats-section" aria-labelledby="stats-store">
-      <h2 id="stats-store">
-        <span className="stats-h-icon">
-          <PageIcon kind="store" />
-        </span>
-        Store
-      </h2>
-      <SourceStatus read={read} onRetry={onRetry} />
-      {now && before && (
-        <div className={read.error ? 'stats-stale' : undefined}>
-          <p className="stats-lead">{storeLead(now.paidTotalMinor, before.paidTotalMinor, range)}</p>
-          {widest > 0 && (
-            <div
-              className="stats-compare"
-              role="img"
-              aria-label={`Paid total: ${formatEuro(before.paidTotalMinor)} ${words.theBefore}, ${formatEuro(now.paidTotalMinor)} ${words.inRange}`}
-            >
-              {[
-                { label: words.before, value: before.paidTotalMinor, current: false },
-                { label: words.now, value: now.paidTotalMinor, current: true },
-              ].map((row) => (
-                <div key={row.label} className={cn('stats-compare-row', row.current && 'now')}>
-                  <span>{row.label}</span>
-                  <span className="stats-compare-track">
-                    <span className="stats-compare-bar" style={{ width: `${(row.value / widest) * 100}%` }} />
-                  </span>
-                  <b>{formatEuro(row.value)}</b>
-                </div>
-              ))}
-            </div>
-          )}
-          <ul className="stats-figures" aria-label={`Store figures compared with ${words.theBefore}`}>
-            <Figure label="Orders paid" now={now.paidOrders} before={before.paidOrders} words={words} />
-            <Figure label="Items sold" now={now.itemsSold} before={before.itemsSold} words={words} />
-            <Figure
-              label="Checkouts started"
-              now={now.checkoutsStarted}
-              before={before.checkoutsStarted}
-              words={words}
-            />
-          </ul>
-          <p className="stats-section-note">
-            {now.deliveryMinor ? `Paid totals include ${formatEuro(now.deliveryMinor)} delivery. ` : ''}
-            Refunds made in Stripe aren't subtracted.
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Figure({
-  label,
-  now,
-  before,
-  words,
-}: {
-  label: string;
-  now: number;
-  before: number;
-  words: ReturnType<typeof periodWords>;
-}) {
-  const diff = now - before;
-  const [Icon, text, spoken] = !diff
-    ? [Minus, 'same', `the same as ${words.theBefore}`]
-    : !before
-      ? [TrendingUp, 'new', `none ${words.theBefore}`]
-      : [
-          diff > 0 ? TrendingUp : TrendingDown,
-          `${diff > 0 ? '+' : '−'}${formatCount(Math.abs(diff))}`,
-          `${diff > 0 ? 'up' : 'down'} ${formatCount(Math.abs(diff))} from ${formatCount(before)}`,
-        ];
-  return (
-    <li title={`${words.before}: ${formatCount(before)}`}>
-      <span>{label}</span>
-      <b>{formatCount(now)}</b>
-      <span className="stats-change">
-        <Icon aria-hidden="true" />
-        <span aria-hidden="true">{text}</span>
-        <span className="sr-only">, {spoken}</span>
-      </span>
-    </li>
-  );
-}
-
-function SearchSection({ read, onRetry }: { read: StatsRead<SearchStats>; onRetry: () => void }) {
-  const data = read.data;
-  const totals = data?.status === 'ok' ? data.totals : null;
-  return (
-    <section className="stats-section" aria-labelledby="stats-search">
-      <h2 id="stats-search">
-        <span className="stats-h-icon">
-          <Search className="stats-row-icon" aria-hidden="true" />
-        </span>
-        Google search
-      </h2>
-      <SourceStatus read={read} onRetry={onRetry} />
-      {data?.status === 'not_configured' && <p className="stats-empty">Search figures aren't available here yet.</p>}
-      {totals && !totals.impressions && <p className="stats-empty">No Google search data for this range yet.</p>}
-      {data && totals && totals.impressions > 0 && (
-        <div className={read.error ? 'stats-stale' : undefined}>
-          <p className="stats-lead">
-            <strong>{plural(totals.clicks, 'click')}</strong> from <strong>{formatCount(totals.impressions)}</strong>{' '}
-            appearances in Google results.
-            {totals.position !== null && (
-              <>
-                {' '}
-                Average position <strong>{formatPosition(totals.position)}</strong>.
-              </>
-            )}
-          </p>
-          {data.topQueries.length > 0 && (
-            <table className="stats-search-table">
-              <thead>
-                <tr>
-                  <th scope="col">Search term</th>
-                  <th scope="col">Clicks</th>
-                  <th scope="col">Shown</th>
-                  <th scope="col">Position</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.topQueries.map((row) => (
-                  <tr key={row.query}>
-                    <td>{row.query}</td>
-                    <td>{formatCount(row.clicks)}</td>
-                    <td>{formatCount(row.impressions)}</td>
-                    <td>{formatPosition(row.position)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          <p className="stats-section-note">
-            Google hides rare searches, so terms don't add up to the totals. Its days follow Pacific time
-            {data.latestDate ? `; the latest day (${formatDayTick(data.latestDate)}) can still change.` : '.'}
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function share(value: number, total: number) {
-  if (!total || !value) return '0%';
-  // Sampled top lists can slightly exceed the daily total; a share never reads above 100%.
-  const percent = Math.min(100, (value / total) * 100);
-  return percent < 1 ? '<1%' : `${Math.round(percent)}%`;
-}
-
-type RankRow = { key: string; name: string; detail: string; visits: number; pageViews: number; icon?: ReactNode };
-
-function RankSection({
-  id,
-  title,
-  label,
-  rows,
-  total,
-  stale,
-}: {
-  id: string;
-  title: string;
-  label: string;
-  rows: RankRow[];
-  total: number;
-  stale: boolean;
-}) {
-  const max = Math.max(1, ...rows.map((row) => row.visits));
-  return (
-    <section className={cn('stats-section', stale && 'stats-stale')} aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
-      {rows.length ? (
-        <table className="stats-rank">
-          <thead>
-            <tr>
-              <th scope="col">{label}</th>
-              <th scope="col">Visits · share</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key} title={`${row.detail} · ${formatCount(row.pageViews)} page views`}>
-                <td>
-                  <span className="stats-rank-name">
-                    {row.icon}
-                    <span>{row.name}</span>
-                  </span>
-                  <span className="stats-rank-bar" style={{ width: `${(row.visits / max) * 100}%` }} />
-                </td>
-                <td>
-                  {formatCount(row.visits)} · {share(row.visits, total)}
-                  <span className="sr-only">, {formatCount(row.pageViews)} page views</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="stats-empty">Nothing recorded yet.</p>
-      )}
-    </section>
   );
 }

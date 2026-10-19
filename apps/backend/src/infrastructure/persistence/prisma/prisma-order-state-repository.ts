@@ -18,6 +18,7 @@ import {
 } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 import { PrismaStockRepository } from './prisma-stock-repository';
+import { readStoreReportData } from './store-report';
 
 type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | 'stock' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
 
@@ -187,6 +188,15 @@ function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecor
 
 export class PrismaOrderStateRepository implements OrderStateRepository {
   public constructor(private readonly prisma: PrismaOrderStateClient) {}
+
+  public readStatsReport(
+    start: Date,
+    end: Date,
+    filters: { item?: string | undefined; format?: string | undefined },
+    details = true,
+  ) {
+    return readStoreReportData(this.prisma, start, end, filters, details);
+  }
 
   public async readStoreFigures(start: Date, end: Date) {
     const [figures] = await this.prisma.$queryRawUnsafe<

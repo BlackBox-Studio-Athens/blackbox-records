@@ -14,6 +14,16 @@ import {
 const origin = 'https://staff.example';
 afterEach(() => vi.unstubAllGlobals());
 
+test('Stats history accepts report dates, independent filters and metric choices', () => {
+  const target =
+    '/stats/?range=custom&start=2026-01-01&end=2026-10-19&report=search&compare=true&grain=Months&visits.page=%2Fstore%2F&search.query=records&search.metric=position&search.group=page';
+  expect(staffTarget(target, origin)).toBe(target);
+  expect(staffTarget('/stats/?range=ytd', origin)).toBeNull();
+  expect(staffTarget('/stats/?report=admin', origin)).toBeNull();
+  expect(staffTarget('/stats/?search.metric=token', origin)).toBeNull();
+  expect(staffTarget(`/stats/?search.query=${'x'.repeat(4097)}`, origin)).toBeNull();
+});
+
 test('return targets accept only bounded same-origin staff navigation', () => {
   for (const target of [
     '//evil.test/',
@@ -206,10 +216,10 @@ test('pending history leaves keep the task URL, cancel coherently, and replay on
   }
 });
 
-test('Stats accepts only its 30-day range parameter', () => {
+test('Stats accepts supported date ranges and rejects unrelated workspace parameters', () => {
   expect(staffTarget('/stats/', origin)).toBe('/stats/');
   expect(staffTarget('/stats/?range=30d', origin)).toBe('/stats/?range=30d');
-  expect(staffTarget('/stats/?range=90d', origin)).toBeNull();
+  expect(staffTarget('/stats/?range=90d', origin)).toBe('/stats/?range=90d');
   expect(staffTarget('/stats/?status=paid', origin)).toBeNull();
   expect(staffLabel('/stats/?range=30d')).toBe('Stats');
 });

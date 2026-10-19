@@ -28,6 +28,7 @@
       "dependsOn": [
         "checkout-core",
         "orders",
+        "analytics",
         "operator-stock",
         "stock",
         "catalog-sync",

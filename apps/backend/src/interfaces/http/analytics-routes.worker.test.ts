@@ -5,7 +5,7 @@ import { commerceRuntimeConfigFromBindings, type AppBindings } from '../../platf
 import { createHttpApp } from './app';
 import fixture from './routes/fixtures/site-analytics-graphql.json';
 import liveFixture from './routes/fixtures/site-analytics-live-graphql.json';
-import launchGap from './routes/launch-gap-analytics.json';
+import { launchGap } from '../../application/analytics';
 
 const secret = 'test-analytics-secret-never-expose';
 let bindings: AppBindings;

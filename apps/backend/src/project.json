@@ -20,7 +20,14 @@
         "commerce-worker": "./index.ts",
         "combined-worker": "./cms-worker.ts"
       },
-      "dependsOn": ["public-commerce-http", "orders", "backend-platform", "cms-runtime", "commerce-persistence"],
+      "dependsOn": [
+        "public-commerce-http",
+        "orders",
+        "analytics",
+        "backend-platform",
+        "cms-runtime",
+        "commerce-persistence"
+      ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]
       }

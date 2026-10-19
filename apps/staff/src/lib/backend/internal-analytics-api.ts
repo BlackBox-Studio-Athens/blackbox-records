@@ -6,6 +6,8 @@ export type SiteAnalytics = InternalApiComponents['schemas']['SiteAnalytics'];
 export type StoreStats = InternalApiComponents['schemas']['StoreStats'];
 export type SearchStats = InternalApiComponents['schemas']['SearchStats'];
 export type SiteAnalyticsRange = InternalApiOperations['readSiteAnalytics']['parameters']['query']['range'];
+export type StaffStatsReport = InternalApiComponents['schemas']['StaffStatsReport'];
+export type StaffStatsQuery = InternalApiOperations['readStaffStats']['parameters']['query'];
 
 const unreachable = 'Stats could not be reached. Check your connection and try again.';
 
@@ -29,16 +31,19 @@ export function createInternalAnalyticsApi({
 }: { backendBaseUrl?: string; fetcher?: typeof fetch } = {}) {
   async function read<T>(
     path: string,
-    range: SiteAnalyticsRange,
+    range: SiteAnalyticsRange | StaffStatsQuery,
     unavailable: string,
     valid: (data: T | null) => boolean,
   ): Promise<T> {
     let response: Response;
     try {
-      response = await fetcher(buildInternalStockApiUrl(backendBaseUrl, path, { range }), {
-        cache: 'no-store',
-        credentials: 'same-origin',
-      });
+      response = await fetcher(
+        buildInternalStockApiUrl(backendBaseUrl, path, typeof range === 'string' ? { range } : range),
+        {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        },
+      );
     } catch {
       throw new InternalAnalyticsApiError(0, unreachable);
     }
@@ -61,6 +66,17 @@ export function createInternalAnalyticsApi({
   }
 
   return {
+    readStatsReport: (query: StaffStatsQuery) =>
+      read<StaffStatsReport>(
+        '/api/internal/stats',
+        query,
+        'These figures are temporarily unavailable. Try again.',
+        (data) =>
+          hasStatus(data) &&
+          Array.isArray(data?.daily) &&
+          typeof data?.period?.start === 'string' &&
+          data.source === query.source,
+      ),
     // `not_configured` is HTTP 200 data, not an error; callers render its own setup state.
     readAnalytics: (range: SiteAnalyticsRange) =>
       read<SiteAnalytics>(

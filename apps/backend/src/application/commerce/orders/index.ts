@@ -7,7 +7,7 @@ export { evaluateOrderTransition } from './order-state';
 export { readCheckoutOrder } from './read-checkout-order';
 export { recordOrderWithdrawal, drainWithdrawalDeliveries } from './order-withdrawal';
 export { readRecentCheckoutOrders } from './read-recent-checkout-orders';
-export { readStoreStats } from './internal-order-services';
+export { readStoreStats, readStoreReportData } from './internal-order-services';
 export { transitionCheckoutOrder } from './transition-checkout-order';
 export type { ApplyNonPaidCheckoutReconciliationResult } from './apply-non-paid-checkout-reconciliation';
 export type { ApplyPaidCheckoutReconciliationResult } from './apply-paid-checkout-reconciliation';

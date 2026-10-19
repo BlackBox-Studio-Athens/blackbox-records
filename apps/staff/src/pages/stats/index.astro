@@ -5,6 +5,6 @@ import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api
 import '../../styles/stats.css';
 ---
 
-<StockOpsLayout pageTitle="Stats" pageDescription="Website visits for BlackBox Records staff.">
-  <StatsWorkspace backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
+<StockOpsLayout pageTitle="Stats" pageDescription="Visits, store and search reports for BlackBox Records staff.">
+  <StatsWorkspace backendBaseUrl={getInternalStockApiBaseUrl()} initialSearch={Astro.url.search} client:load />
 </StockOpsLayout>

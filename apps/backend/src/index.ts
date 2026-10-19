@@ -6,6 +6,7 @@ import { createPrismaClientScope } from './infrastructure/persistence/prisma';
 // A narrow entry: the commerce Worker must not bundle the CMS runtime.
 import { createPublishedStoreItemNameReader } from './cms/published-store-item-names';
 import { productEnvironmentProfileFromBindings } from './platform/env';
+import { archiveVisitStats } from './application/analytics';
 
 const app = createHttpApp();
 const preflightApp = createHttpApp({ preflightOnly: true });
@@ -40,6 +41,7 @@ export class CommerceRuntime extends DurableObject<AppBindings> {
           }
         : {}),
     });
+    await archiveVisitStats(bindings, new Date(scheduledTime));
   }
 }
 

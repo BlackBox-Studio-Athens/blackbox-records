@@ -113,3 +113,18 @@ export async function readStoreStats(bindings: AppBindings, range: '7d' | '30d',
     await services.disconnect();
   }
 }
+
+export async function readStoreReportData(
+  bindings: AppBindings,
+  start: Date,
+  end: Date,
+  filters: { item?: string | undefined; format?: string | undefined },
+  details = true,
+) {
+  const prisma = createPrismaClient(bindings);
+  try {
+    return await new PrismaOrderStateRepository(prisma).readStatsReport(start, end, filters, details);
+  } finally {
+    await prisma.$disconnect();
+  }
+}

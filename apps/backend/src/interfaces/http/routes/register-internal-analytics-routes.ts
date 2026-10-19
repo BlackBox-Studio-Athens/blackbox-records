@@ -8,7 +8,7 @@ import {
   problemContent,
 } from '../../../platform/interfaces/http/responses';
 import { requestLogger } from '../../../platform/observability';
-import launchGap from './launch-gap-analytics.json';
+import { launchGap } from '../../../application/analytics';
 
 const rangeSchema = z.enum(['7d', '30d']);
 const metrics = { visits: z.number().nonnegative(), pageViews: z.number().nonnegative() };

@@ -9,6 +9,7 @@
   },
   "ownershipGranularity": "native-nx-project-roots",
   "contractNotes": {
+    "staff-daily-brief": "analytics owns rich Staff report orchestration, provider reads and aggregate Visits history through its public root. public-commerce-http and backend-runtime depend on analytics; analytics depends on orders and backend-platform. Orders exposes aggregate-only Store reads backed by commerce-persistence. staff-stats consumes generated API contracts through staff-platform. Legacy seven/thirty-day routes retain compatible contracts.",
     "online-withdrawal": "orders owns declaration recording and delivery through its root; commerce-domain owns the repository SPI; commerce-persistence provides d1-order-withdrawal-repository.ts. email-application owns acknowledgement content and delivery. checkout-web provides WithdrawalForm.tsx and its browser-safe public API; protected operator reads expose retained notices without payment or stock authority.",
     "performance-resume": "Native project.json contracts provide lightweight checkout presentation, the lazy newsletter form and bundled public font assets, permit checkout-core to consume @blackbox/api-client/public delivery constants, and permit backend-runtime to create a commerce-persistence binding scope.",
     "international-order-notice": "store-cart provides InternationalOrderNotice.tsx to Store pages, layouts and checkout through its native project.json contract. The browser country gate and email template remain presentation-only; store-cart acquires no checkout-client or payment dependency.",

@@ -1090,6 +1090,278 @@
           "topQueries"
         ]
       },
+      "StaffStatsReport": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "visits",
+              "store",
+              "search"
+            ]
+          },
+          "range": {
+            "type": "string",
+            "enum": [
+              "today",
+              "yesterday",
+              "7d",
+              "30d",
+              "90d",
+              "month",
+              "12m",
+              "custom"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "not_configured"
+            ]
+          },
+          "generatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "period": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              },
+              "previousStart": {
+                "type": "string",
+                "format": "date"
+              },
+              "previousEnd": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "previousStart",
+              "previousEnd"
+            ]
+          },
+          "totals": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "previous": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0
+            }
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "metrics": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "available",
+                "metrics"
+              ]
+            },
+            "maxItems": 366
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "page",
+                    "referrer",
+                    "country",
+                    "device",
+                    "item",
+                    "format",
+                    "query"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "value",
+                      "label"
+                    ]
+                  },
+                  "maxItems": 500
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "options"
+              ]
+            },
+            "maxItems": 4
+          },
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dimension": {
+                  "type": "string",
+                  "enum": [
+                    "page",
+                    "referrer",
+                    "country",
+                    "device",
+                    "item",
+                    "format",
+                    "query"
+                  ]
+                },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "metrics": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": [
+                            "number",
+                            "null"
+                          ],
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "required": [
+                      "value",
+                      "label",
+                      "metrics"
+                    ]
+                  },
+                  "maxItems": 100
+                }
+              },
+              "required": [
+                "dimension",
+                "rows"
+              ]
+            },
+            "maxItems": 4
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10
+          },
+          "latestDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "moneyBasis": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "paid_total",
+              "merchandise",
+              null
+            ]
+          }
+        },
+        "required": [
+          "source",
+          "range",
+          "status",
+          "generatedAt",
+          "timezone",
+          "period",
+          "totals",
+          "previous",
+          "daily",
+          "fields",
+          "breakdowns",
+          "notes",
+          "latestDate",
+          "complete",
+          "moneyBasis"
+        ]
+      },
       "InventoryPage": {
         "type": "object",
         "properties": {
@@ -3214,6 +3486,190 @@
           },
           "503": {
             "description": "Search figures or operator authentication are temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/stats": {
+      "get": {
+        "operationId": "readStaffStats",
+        "tags": [
+          "Internal analytics"
+        ],
+        "summary": "Read a filtered aggregate Staff report with daily coverage and comparison.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "visits",
+                "store",
+                "search"
+              ]
+            },
+            "required": true,
+            "name": "source",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "today",
+                "yesterday",
+                "7d",
+                "30d",
+                "90d",
+                "month",
+                "12m",
+                "custom"
+              ]
+            },
+            "required": true,
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "name": "end",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "compare",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "referrer",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "country",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "device",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "item",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "required": false,
+            "name": "query",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregate report or provider setup state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffStatsReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid dates or filters.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The report is temporarily unavailable.",
             "content": {
               "application/problem+json": {
                 "schema": {

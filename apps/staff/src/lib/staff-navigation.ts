@@ -27,7 +27,30 @@ export function staffTarget(value: string, origin: string): string | null {
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
       '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock'],
       '/review/': ['q', 'scope', 'cursor'],
-      '/stats/': ['range'],
+      '/stats/': [
+        'range',
+        'start',
+        'end',
+        'report',
+        'compare',
+        'grain',
+        'visits.page',
+        'visits.referrer',
+        'visits.country',
+        'visits.device',
+        'store.item',
+        'store.format',
+        'search.query',
+        'search.page',
+        'search.country',
+        'search.device',
+        'visits.metric',
+        'store.metric',
+        'search.metric',
+        'visits.group',
+        'store.group',
+        'search.group',
+      ],
       '/calendar/': ['month', 'collection', 'view'],
     };
     const allowed = keys[url.pathname];
@@ -46,13 +69,27 @@ export function staffTarget(value: string, origin: string): string | null {
       history: ['1'],
       status: ['paid', 'not_paid', 'needs_review', 'pending_payment'],
       notification: ['pending', 'needs_review'],
-      range: ['30d'],
+      range: ['today', 'yesterday', '7d', '30d', '90d', 'month', '12m', 'custom'],
+      report: ['visits', 'store', 'search'],
+      compare: ['true'],
+      grain: ['Days', 'Weeks', 'Months'],
+      'visits.metric': ['visits', 'pageViews'],
+      'store.metric': ['paidOrders', 'paidTotalMinor', 'itemsSold', 'checkoutsStarted'],
+      'search.metric': ['clicks', 'impressions', 'ctr', 'position'],
+      'visits.group': ['page', 'referrer', 'country', 'device'],
+      'store.group': ['item', 'format'],
+      'search.group': ['query', 'page', 'country', 'device'],
     };
     for (const [key, entry] of url.searchParams) {
       if (!allowed.includes(key) || url.searchParams.getAll(key).length !== 1) return null;
       if (key === 'awaitingStock' && entry !== 'true') return null;
       if (key === 'month' && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(entry)) return null;
-      if (entry.length > (key === 'cursor' ? 2048 : key === 'q' ? 200 : 128)) return null;
+      if (['start', 'end'].includes(key) && !/^\d{4}-\d{2}-\d{2}$/.test(entry)) return null;
+      if (
+        entry.length >
+        (url.pathname === '/stats/' && key.includes('.') ? 4096 : key === 'cursor' ? 2048 : key === 'q' ? 200 : 128)
+      )
+        return null;
       if (enums[key] && entry && !enums[key].includes(entry)) return null;
       if (['id', 'variantId', 'checkoutSessionId'].includes(key) && !/^[\w-]{1,128}$/.test(entry)) return null;
     }
