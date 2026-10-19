@@ -21,3 +21,4 @@
 ## Workflow follow-up
 
 - UAT and PRD migration/deployment/promotion require separate authorization and target-specific backup, Free-tier and migration checks.
+- [ ] 4.1 Complete the authorized UAT/PRD rollout: repair the browser runner package mismatch, pass release acceptance, verify backups and hosted source identities.

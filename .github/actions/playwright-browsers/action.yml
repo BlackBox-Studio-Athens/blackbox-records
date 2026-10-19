@@ -23,7 +23,7 @@ runs:
         path: ~/.cache/ms-playwright
         key: ${{ steps.playwright.outputs.cache-key }}
     # No --with-deps or install-deps: apt can wait without bound while the runner's own package manager holds the
-    # lock at boot. This assumes ubuntu-latest, whose image ships Chrome and Firefox and so already has the system
+    # lock at boot. Callers pin ubuntu-24.04, whose image ships Chrome and Firefox and so already has the system
     # libraries Playwright's Chromium and Firefox builds need, except Firefox's H.264 decoder (next step).
     - name: Download Playwright browsers
       if: steps.cache.outputs.cache-hit != 'true'
