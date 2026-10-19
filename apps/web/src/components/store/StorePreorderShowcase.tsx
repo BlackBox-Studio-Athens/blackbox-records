@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -43,7 +43,7 @@ export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & {
 };
 type ShowcaseItem = StorePreorderShowcaseItem;
 
-// The section is in the server HTML or absent; hydration adds only media and viewing behavior.
+// The section is in the server HTML or absent; hydration adds media, viewing and decorative press behavior.
 export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
   const [activeScene, setActiveScene] = useState<string | null>(null);
   const [watching, setWatching] = useState<string | null>(null);
@@ -149,6 +149,78 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
         All pre-orders
       </a>
     </section>
+  );
+}
+
+function HomePreorderAction({ href }: { href: string }) {
+  const [pressed, setPressed] = useState(false);
+  const [pressInput, setPressInput] = useState(false);
+  const pointer = useRef<{ id: number; started: number } | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reset = useCallback(() => {
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = null;
+    pointer.current = null;
+    setPressed(false);
+  }, []);
+
+  useEffect(() => {
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const release = (event: globalThis.PointerEvent) => {
+      if (pointer.current?.id !== event.pointerId) return;
+      const remaining = motion.matches ? 0 : Math.max(0, 220 - (performance.now() - pointer.current.started));
+      pointer.current = null;
+      // Only the decoration waits; the native click and shell navigation proceed immediately.
+      if (remaining > 0) timer.current = setTimeout(reset, remaining);
+      else reset();
+    };
+    const cancel = (event: globalThis.PointerEvent) => {
+      if (pointer.current?.id === event.pointerId) reset();
+    };
+    const preference = () => {
+      if (motion.matches) reset();
+    };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', reset);
+    motion.addEventListener('change', preference);
+    return () => {
+      if (timer.current !== null) clearTimeout(timer.current);
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', reset);
+      motion.removeEventListener('change', preference);
+    };
+  }, [reset]);
+
+  const usesPress = (event: PointerEvent<HTMLAnchorElement>) =>
+    event.pointerType === 'touch' || window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  return (
+    <a
+      href={href}
+      data-astro-prefetch
+      className={buttonVariants({ className: 'preorder-action' })}
+      data-press-input={pressInput ? '' : undefined}
+      data-pressed={pressed ? '' : undefined}
+      onPointerEnter={(event) => {
+        if (!pointer.current) setPressInput(usesPress(event));
+      }}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || !event.isPrimary || pointer.current) return;
+        reset();
+        const press = usesPress(event);
+        setPressInput(press);
+        if (!press) return;
+        pointer.current = { id: event.pointerId, started: performance.now() };
+        setPressed(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') reset();
+      }}
+    >
+      <span className="home-preorders__action-motion" aria-hidden="true" />
+      <span className="home-preorders__action-label">Pre-order</span>
+    </a>
   );
 }
 
@@ -332,9 +404,7 @@ function PreorderChapter({
         <span className="home-preorders__price">{item.displayPrice}</span>
       </div>
       <div className="home-preorders__actions">
-        <a href={item.storePath} data-astro-prefetch className={buttonVariants({ className: 'preorder-action' })}>
-          <span>Pre-order</span>
-        </a>
+        <HomePreorderAction href={item.storePath} />
         {listen}
       </div>
       {!badges.some((badge) => estimate && badge.includes(estimate)) && (

@@ -304,8 +304,9 @@ const preorderItems = videoTest
       />
     </section>
   )}
+  {/* The shell already registers load; a cold shell entry may never have registered idle. */}
   {preorderItems.length > 0 && (
-    <StorePreorderShowcase client:idle items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />
+    <StorePreorderShowcase client:load items={preorderItems} storeUrl={createProjectRelativeUrl('/store/')} />
   )}
 
   {homeNews && latestNewsArticles.length > 0 && (

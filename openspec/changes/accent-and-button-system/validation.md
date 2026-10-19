@@ -2,6 +2,39 @@
 
 Revision: 15 October 2026, after the orchestrator's eight decisions. This record supersedes the initial planning fingerprints and task counts.
 
+## Home Soft edge preparation (19 October 2026)
+
+The user approved the Soft edge implementation plan. Its Home-only scope and exact desktop/touch motion are recorded in proposal.md, design.md, the public-controls and store-preorders deltas, and six unchecked tasks in tasks.md section 4. Historical task counts and acceptance below retain their original source scope. Claude retains ownership of the UI, DESIGN.md and UI tests; implementation has not started in this preparation pass.
+
+- Checkout: `C:/Users/SVall/WebstormProjects/blackbox-records`, `main`, base `90497615bba79a04fdce57b28ebb4f0135fe3e90`.
+- Guard: `pnpm openspec:guard` PASS before edits.
+- Strict validation: `pnpm openspec -- validate accent-and-button-system --type change --strict` PASS.
+- Scoped Prettier check: PASS for the five revised planning artifacts and the Claude handoff; this validation note is checked again after recording results.
+- Preservation: all ten pre-existing modified tracked files and five implementation inputs match their captured SHA-256 values. `git diff --check` PASS.
+- Reference: the approved canvas's Soft edge variant, SHA-256 `d240d0b3476dad5f81aa1b626dd45950fd2f53ea62a229ef59f7bc88ca6a1f73`; its default Slow fill selection is superseded by the user's explicit Soft edge choice.
+- Local handoff and baseline: `.codex-artifacts/home-preorder-soft-edge/claude-handoff.md` and `baseline.json`. Expected implementation return: `claude-return.md` in the same directory. These are ignored local coordination artifacts; the durable behavior and task state remain in this change.
+
+This pass establishes planning validation only. UI/module tests, browser observations/screenshots, player continuity, Graphify refresh after the code batch and final `pnpm validate` remain pending with implementation. The prototype's evidence does not establish production-page acceptance. No commit, push, deployment or publication was performed; physical-phone and Safari acceptance remain unverified.
+
+## Home Soft edge implementation (19 October 2026)
+
+The owner explicitly assigned this slice to Codex after the preparation handoff. Codex implemented the Home-only decorative layer and local press lifecycle, updated DESIGN.md and the focused tests, and retained Store/Releases behavior. The historical Claude handoff is superseded. Work remains local on main; no staging, commit, push, deployment or publication is authorized.
+
+The face/line use the approved 385ms/700ms desktop entry, 455ms exit and 220ms/180ms touch treatment. The label and drawn target stay stationary; the shared touch halo and focus outline remain intact. CSS owns all animation frames. Only a primary touch or non-hover/coarse press release can schedule the component-local hold timer, and reduced motion, cancellation, departure, blur, repeated presses and unmount clear it without intercepting native activation.
+
+Cold shell entry exposed an existing integration gap: pages that never registered Astro's idle directive could leave the showcase inert. Home now uses the existing load directive while retaining its complete server HTML. The shell/player delta and existing projection source guard record that decision. The continuity fixture now waits for the lazy header and its initial focus before interacting with the provider iframe; this avoids racing header autofocus without changing production player behavior.
+
+- Product Environment: Local. Selected acceptance: public presentation/motion and shell/player continuity. Commerce authority, provider integration, content publication and release acceptance are outside this decorative change.
+- Implementation source hashes: `.codex-artifacts/home-preorder-soft-edge/implementation-source.json`. Base SHA remains `90497615bba79a04fdce57b28ebb4f0135fe3e90`; all ten pre-existing tracked modifications are preserved by SHA-256.
+- Module checks passed: `pnpm test web-store`, `pnpm test ui-foundation`, `pnpm test storefront-catalog` and `pnpm test web-pages`. SSR checks verify no timer scheduling or network reads; the source-wide setTimeout ban has been removed.
+- Home browser acceptance: **70/70 passed** across chromium-desktop, chromium-mobile, firefox-desktop, firefox-compact and webkit-mobile. The combined run recorded 81 passes and one WebKit player-fixture navigation failure: a footer-to-Home tap reached another Store Item. The Home cases and their covered source remained unchanged. `.codex-artifacts/home-preorder-soft-edge/home-browser-evidence.json` records their per-case results and matching source hashes; `combined-first-summary.json` and `combined-first-results/` retain the original report and screenshots.
+- Final player-continuity acceptance: **12/12 passed**, no retries/skips, with `pnpm test:e2e e2e/player-continuity.spec.ts --workers=1`, after using the fixed header Home link and explicitly awaiting the Home route in that setup. The original iframe stays connected across Home pre-order activation and Store Item/information navigation. Evidence: `.codex-artifacts/home-preorder-soft-edge/continuity-summary.json`. Interim failed/interrupted runs do not establish acceptance.
+- Rendered checks cover 320, 390, 768 and 1440px at normal text size, with 200% root text at 1440px. Purchase labels remain readable, the normal drawn height is 44px, paired controls keep equal width and there is no page overflow in that matrix. Targets enlarge with desktop text zoom. Exploratory 200% root text at 320px still exposes **79px** of existing hero/chapter layout overflow outside the changed motion; phone text zoom is not fully accepted. Metrics: `.codex-artifacts/home-preorder-soft-edge/visual-metrics.json`. Inspected screenshots: `chapter-320.png`, `chapter-390.png`, `chapter-768.png`, `chapter-1440.png`, `desktop-soft-edge.png`, `chapter-1440-text-200.png` and `chapter-320-text-200-limit.png` in that directory.
+- `graphify update .` PASS after the final implementation batch; `.codex-artifacts/home-preorder-soft-edge/graphify.log` records its local AST refresh. Existing extractor limits remain: SQL parser unavailable, one partially parsed workflow-contract test and unsupported/data-only files; no semantic/paid enrichment was used.
+- Strict OpenSpec validation and `git diff --check` PASS. Initial implementation gate: `pnpm validate` PASS, mode `local`, `.codex-artifacts/validation/2026-10-19T09-01-28-886Z-41088-097c37/summary.json`, matching before/after fingerprint `63633fa4d115b1fe1f60c921f623628d922e19a55f15ec4b455bdcea1f48df13`. Later record-only edits are covered by the final rerun pointer in `.codex-artifacts/home-preorder-soft-edge/final-validation.json`.
+- Stable code/test/design fingerprint: `766e94205db7db945c1d2593e7356974f139dd098e3529f2b43504a0261b278e` across the eight inputs in `.codex-artifacts/home-preorder-soft-edge/evidence.json`, hashing sorted relative-path/file-SHA256 lines joined with LF. That receipt also links all browser, visual and remaining-limit evidence. The final validation pointer records the whole final tree's source identity after this note and task-state update.
+- Physical-phone, actual Safari, real-provider and hosted acceptance remain unverified. WebKit mobile emulation is engine evidence only.
+
 ## Authoring checks
 
 - Task counts: Claude (UI): 11; Codex (non-UI): 0; shared: 6 (17 total). All implementation checkboxes remain unchecked.

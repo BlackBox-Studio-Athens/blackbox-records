@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import type { Page } from 'playwright/test';
+import type { Locator, Page } from 'playwright/test';
 import {
   expect,
   expectNoHorizontalOverflow,
@@ -355,6 +355,318 @@ test('Home has its pre-orders in the HTML response and at first paint, on direct
 function chapter(page: Page, title = 'Disintegration') {
   return page.getByRole('article', { name: title, exact: true });
 }
+
+async function motion(action: Locator) {
+  return action.evaluate((link) => {
+    const layer = link.querySelector('.home-preorders__action-motion')!;
+    const face = getComputedStyle(layer, '::before');
+    const line = getComputedStyle(layer, '::after');
+    return {
+      face: Number(face.opacity),
+      opacity: Number(line.opacity),
+      faceDuration: face.transitionDuration,
+      lineDuration: line.transitionDuration,
+      easing: line.transitionTimingFunction,
+      transform: line.transform,
+      left: line.left,
+      right: line.right,
+      bottom: line.bottom,
+      height: line.height,
+      background: line.backgroundImage,
+      outline: getComputedStyle(link).outlineWidth,
+      halo: getComputedStyle(link, '::before').top,
+      backgroundColor: getComputedStyle(link).backgroundColor,
+      controlDuration: getComputedStyle(link).transitionDuration,
+    };
+  });
+}
+
+async function motionAction(page: Page) {
+  await page.goto('./');
+  await waitForShell(page);
+  await waitForIsland(page, 'StorePreorderShowcase');
+  const action = chapter(page).getByRole('link', { name: 'Pre-order', exact: true });
+  await action.scrollIntoViewIfNeeded();
+  // Complete pending hydration before dispatching test-only pointer events.
+  await page.locator('#home-preorders-title').dispatchEvent('click');
+  return action;
+}
+
+async function freezePressClock(page: Page) {
+  const time = new Date('2026-10-19T12:00:00Z');
+  await page.clock.install({ time });
+  await page.clock.pauseAt(new Date(time.getTime() + 1000));
+}
+
+test('Home Soft edge desktop hover, focus and press preserve geometry', async ({ page }, testInfo) => {
+  const action = await motionAction(page);
+  const label = action.locator('.home-preorders__action-label');
+  const rest = await action.boundingBox();
+  const restLabel = await label.boundingBox();
+  expect((await motion(action)).opacity).toBe(0);
+  await action.evaluate((link) => {
+    link.addEventListener(
+      'pointerover',
+      () => {
+        // Sample the CSS timeline deterministically even when a busy browser misses frames.
+        for (const animation of link
+          .querySelector('.home-preorders__action-motion')!
+          .getAnimations({ subtree: true })) {
+          animation.pause();
+          animation.currentTime = 110;
+        }
+      },
+      { once: true },
+    );
+  });
+  await action.hover();
+  const entering = await motion(action);
+  expect(entering.faceDuration).toBe('0.385s');
+  expect(entering.lineDuration).toBe('0.7s');
+  expect(entering.easing).toContain('cubic-bezier(0.22, 0.61, 0.36, 1)');
+  expect(entering.backgroundColor).toBe('rgb(45, 118, 106)');
+  const intermediate = await motion(action);
+  expect(intermediate.opacity).toBeGreaterThan(0);
+  expect(intermediate.opacity).toBeLessThan(0.72);
+  await action.evaluate((link) => {
+    for (const animation of link.querySelector('.home-preorders__action-motion')!.getAnimations({ subtree: true })) {
+      animation.play();
+    }
+  });
+  await expect.poll(async () => (await motion(action)).opacity).toBeCloseTo(0.72, 2);
+  const final = await motion(action);
+  expect(final).toMatchObject({ left: '6px', right: '6px', bottom: '4px', height: '1px' });
+  expect(final.background).toContain('15%');
+  expect(final.background).toContain('85%');
+  expect(final.transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  expect(await action.boundingBox()).toEqual(rest);
+  expect(await label.boundingBox()).toEqual(restLabel);
+  await action.screenshot({ path: testInfo.outputPath('soft-edge-desktop-hover.png') });
+  await page.mouse.move(0, 0);
+  expect((await motion(action)).lineDuration).toBe('0.455s');
+  await expect.poll(async () => (await motion(action)).opacity).toBe(0);
+  // Keyboard input must recover full focus motion after a touch interaction on a hybrid device.
+  const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
+  await action.dispatchEvent('pointerdown', touch);
+  await action.dispatchEvent('pointercancel', touch);
+  await expect(action).toHaveAttribute('data-press-input', '');
+  await action.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(action).toBeFocused();
+  expect(parseFloat((await motion(action)).outline)).toBeCloseTo(2, 0);
+  expect((await motion(action)).faceDuration).toBe('0.385s');
+  expect((await motion(action)).lineDuration).toBe('0.7s');
+  await action.evaluate((link: HTMLAnchorElement) => link.blur());
+  await action.hover();
+  await page.mouse.down();
+  expect((await motion(action)).faceDuration).toBe('0s');
+  expect((await motion(action)).face).toBe(1);
+  await page.mouse.move(0, 0);
+  await page.mouse.up();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await action.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  expect((await motion(action)).controlDuration).toBe('0s');
+  expect((await motion(action)).faceDuration).toBe('0s');
+  expect((await motion(action)).lineDuration).toBe('0s');
+});
+
+test('Home Soft edge quick mouse tap animates in coarse input without delaying activation @phone', async ({ page }) => {
+  const action = await motionAction(page);
+  test.skip(
+    !(await page.evaluate(() => matchMedia('(hover: none), (pointer: coarse)').matches)),
+    'Fine primary pointer',
+  );
+  await action.evaluate((link) => {
+    window.addEventListener(
+      'click',
+      (event) => {
+        if (!(event.target instanceof Element) || !link.contains(event.target)) return;
+        // Keep this visual test on Home; a separate test exercises real native navigation.
+        event.preventDefault();
+        event.stopPropagation();
+        link.setAttribute('data-test-click-pressed', String(link.hasAttribute('data-pressed')));
+      },
+      { capture: true },
+    );
+  });
+  await freezePressClock(page);
+  const box = (await action.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.clock.runFor(20);
+  await page.mouse.up();
+  await expect(action).toHaveAttribute('data-test-click-pressed', 'true');
+  await expect(action).toHaveAttribute('data-pressed', '');
+  expect((await motion(action)).faceDuration).toBe('0.22s');
+  expect((await motion(action)).lineDuration).toBe('0.22s');
+  expect((await motion(action)).halo).toBe('-5px');
+  await page.clock.runFor(190);
+  await expect(action).toHaveAttribute('data-pressed', '');
+  await page.clock.runFor(20);
+  await expect(action).not.toHaveAttribute('data-pressed');
+  expect((await motion(action)).faceDuration).toBe('0.18s');
+});
+
+test('Home Soft edge touch, repeated and long presses reset on cancellation and blur @phone', async ({ page }) => {
+  const action = await motionAction(page);
+  await freezePressClock(page);
+  const down = { pointerId: 11, pointerType: 'touch', isPrimary: true, button: 0 };
+  await action.dispatchEvent('pointerdown', { ...down, button: 2 });
+  await expect(action).not.toHaveAttribute('data-pressed');
+  await action.dispatchEvent('pointerdown', down);
+  await action.dispatchEvent('pointerdown', { ...down, pointerId: 12, isPrimary: false });
+  await action.dispatchEvent('pointerup', { ...down, pointerId: 12, isPrimary: false });
+  await expect(action).toHaveAttribute('data-pressed', '');
+  await action.dispatchEvent('pointerup', down);
+  await page.clock.runFor(150);
+  await action.dispatchEvent('pointerdown', { ...down, pointerId: 13 });
+  await page.clock.runFor(100);
+  await expect(action).toHaveAttribute('data-pressed', '');
+  await page.clock.runFor(250);
+  await expect(action).toHaveAttribute('data-pressed', '');
+  await action.dispatchEvent('pointerup', { ...down, pointerId: 13 });
+  await expect(action).not.toHaveAttribute('data-pressed');
+  await action.dispatchEvent('pointerdown', down);
+  await action.dispatchEvent('pointercancel', down);
+  await page.clock.runFor(250);
+  await expect(action).not.toHaveAttribute('data-pressed');
+  await action.dispatchEvent('pointerdown', down);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await expect(action).not.toHaveAttribute('data-pressed');
+  await action.dispatchEvent('pointerdown', { ...down, pointerType: 'mouse' });
+  await action.dispatchEvent('pointerout', { ...down, pointerType: 'mouse' });
+  await expect(action).not.toHaveAttribute('data-pressed');
+});
+
+test('Home Soft edge removes transitions and pending holds when reduced motion changes @phone', async ({ page }) => {
+  const action = await motionAction(page);
+  const down = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
+  await action.dispatchEvent('pointerdown', down);
+  await action.dispatchEvent('pointerup', down);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(action).not.toHaveAttribute('data-pressed');
+  expect((await motion(action)).faceDuration).toBe('0s');
+  expect((await motion(action)).lineDuration).toBe('0s');
+  await action.dispatchEvent('pointerdown', down);
+  await expect(action).toHaveAttribute('data-pressed', '');
+  expect((await motion(action)).face).toBe(1);
+  await action.dispatchEvent('pointerup', down);
+  await expect(action).not.toHaveAttribute('data-pressed');
+});
+
+test('Home Soft edge cancels its pending timer when the island unmounts @phone', async ({ page }) => {
+  const action = await motionAction(page);
+  await freezePressClock(page);
+  await page.evaluate(() => {
+    const schedule = window.setTimeout;
+    const cancel = window.clearTimeout;
+    const pending = new Set<number>();
+    Object.assign(window, { softEdgeTimers: pending });
+    window.setTimeout = ((callback: TimerHandler, delay?: number, ...args: unknown[]) => {
+      const id = schedule(callback, delay, ...args);
+      if (delay && delay <= 220) pending.add(id);
+      return id;
+    }) as typeof window.setTimeout;
+    window.clearTimeout = (id) => {
+      pending.delete(id!);
+      cancel(id);
+    };
+  });
+  const down = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
+  await action.dispatchEvent('pointerdown', down);
+  await action.dispatchEvent('pointerup', down);
+  const pending = () => page.evaluate(() => (window as unknown as { softEdgeTimers: Set<number> }).softEdgeTimers.size);
+  expect(await pending()).toBe(1);
+  await action.evaluate((link) => link.closest('astro-island')!.dispatchEvent(new CustomEvent('astro:unmount')));
+  expect(await pending()).toBe(0);
+  await page.clock.runFor(500);
+});
+
+test('Home Soft edge native touch activates immediately and cleans up on shell unmount @phone', async ({ page }) => {
+  const action = await motionAction(page);
+  await action.evaluate((link) => {
+    link.addEventListener('click', () => {
+      sessionStorage.setItem('soft-edge-at-click', String(link.hasAttribute('data-pressed')));
+    });
+  });
+  await plantSentinel(page);
+  await action.tap();
+  await expect(page).toHaveURL(storePath);
+  expect(await page.evaluate(() => sessionStorage.getItem('soft-edge-at-click'))).toBe('true');
+  expect(await sentinelIntact(page)).toBe(true);
+  await page.getByRole('link', { name: 'BlackBox Records', exact: true }).click();
+  await waitForIsland(page, 'StorePreorderShowcase');
+  await expect(chapter(page).locator('[data-pressed]')).toHaveCount(0);
+});
+
+test('Home Soft edge hydrates on cold shell entry and cached return @phone', async ({ page }) => {
+  await page.goto('services/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  for (let entry = 0; entry < 2; entry += 1) {
+    await page.getByRole('link', { name: 'BlackBox Records', exact: true }).click();
+    await waitForIsland(page, 'StorePreorderShowcase');
+    const action = chapter(page).getByRole('link', { name: 'Pre-order', exact: true });
+    await action.scrollIntoViewIfNeeded();
+    await expect(action).not.toHaveAttribute('data-pressed');
+    const down = { pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0 };
+    await action.dispatchEvent('pointerdown', down);
+    await expect(action).toHaveAttribute('data-pressed', '');
+    await action.dispatchEvent('pointercancel', down);
+    await expect(action).not.toHaveAttribute('data-pressed');
+    await page.goBack();
+    await expect(page).toHaveURL(/\/services\/$/);
+  }
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
+test('Home Soft edge keeps native modified clicks and no-JavaScript links', async ({ page, browser }) => {
+  const action = await motionAction(page);
+  const popup = page.context().waitForEvent('page');
+  await action.click({ modifiers: ['ControlOrMeta'] });
+  const opened = await popup;
+  await expect(opened).toHaveURL(storePath);
+  await opened.close();
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const fallback = await context.newPage();
+  await fallback.goto(page.url());
+  const link = fallback.locator('#preorders .preorder-action');
+  await expect(link).toHaveAccessibleName('Pre-order');
+  await link.click();
+  await expect(fallback).toHaveURL(storePath);
+  await context.close();
+});
+
+test('Home Soft edge stays readable at required widths and enlarged text', async ({ page }, testInfo) => {
+  const action = await motionAction(page);
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const textZoom of width === 1440 ? [1, 2] : [1]) {
+      // Enlarge text without scaling the viewport or boxes: stricter than ordinary page zoom for label fitting.
+      await page.addStyleTag({ content: `html { font-size: ${16 * textZoom}px !important; }` });
+      await action.scrollIntoViewIfNeeded();
+      await expectNoHorizontalOverflow(page);
+      const pair = chapter(page).locator('.home-preorders__actions');
+      const controls = await pair.locator(':scope > *').evaluateAll((elements) =>
+        elements.map((element) => {
+          const box = element.getBoundingClientRect();
+          return { height: box.height, width: box.width, fits: element.scrollWidth <= element.clientWidth };
+        }),
+      );
+      expect(controls).toHaveLength(2);
+      expect(controls[0]!.width).toBeCloseTo(controls[1]!.width, 0);
+      for (const control of controls) {
+        expect(control.height).toBeGreaterThanOrEqual(44);
+        expect(control.fits).toBe(true);
+      }
+      await pair.screenshot({ path: testInfo.outputPath(`soft-edge-${width}-text-${textZoom}.png`) });
+    }
+  }
+});
 
 test('Home keeps active preorders abroad and preserves a Greece delivery correction on shell return', async ({
   page,

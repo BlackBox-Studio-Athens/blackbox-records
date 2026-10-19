@@ -84,7 +84,7 @@ The shell SHALL mark shared controls for the active editorial source as full-opa
 
 ### Requirement: Homepage hero offers Store entry points
 
-The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` as its only action. The hero SHALL NOT render a See pre-orders link. The showcase SHALL hydrate at browser idle priority so the main page can load first. Browse the Store SHALL remain available in the initial HTML independently of the showcase. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
+The homepage hero SHALL show, under the motto, a Browse the Store link to `/store/` as its only action. The hero SHALL NOT render a See pre-orders link. The showcase SHALL preserve its server-rendered content and use the shell's existing load hydration directive so its local press feedback works on direct entry, cold shell entry and cached return, including when the starting page has not registered an idle directive. Browse the Store SHALL remain available in the initial HTML independently of the showcase. The hero SHALL show no Scroll label; its animated scroll line keeps its existing states.
 
 #### Scenario: Visitor lands on Home with pre-orders open
 

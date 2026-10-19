@@ -27,7 +27,7 @@ Public buttons, chips, icon controls, navigation targets and text-action rows SH
 
 ### Requirement: Focus and hover are visible and finite
 
-Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset. Hover SHALL apply only on hover-capable devices, change colour or border within 250ms and never move the control. Disabled controls SHALL stop activation and use 45% opacity; In player SHALL remain full-opacity disabled session information. Reduced motion SHALL remove transition timing.
+Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset. Hover SHALL apply only on hover-capable devices, change colour or border within 250ms except the approved Home pre-order Soft edge treatment, and never move the control. Only Home pre-order actions MAY deepen their Sea face in 385ms and reveal a decorative line in 700ms, with a 455ms exit. Disabled controls SHALL stop activation and use 45% opacity; In player SHALL remain full-opacity disabled session information. Reduced motion SHALL remove transition timing and the Home press treatment's minimum visual hold.
 
 #### Scenario: Keyboard user tabs through the header
 
@@ -38,13 +38,33 @@ Every public control SHALL show a 2px #f5f5f5 keyboard focus ring at 2px offset.
 #### Scenario: Touch device after a tap
 
 - **WHEN** a control is tapped on a device without hover
-- **THEN** pressed feedback ends with the press and no hover face remains.
+- **THEN** pressed feedback ends with the press and no hover face remains, except that Home pre-order actions may finish their bounded 220ms visual press followed by a 180ms retreat without delaying activation.
 
 #### Scenario: Hero animates inside a stationary control
 
 - **WHEN** Browse the Store receives pointer hover or keyboard focus
 - **THEN** the 48px control stays fixed while its Flint fill rises and its arrow moves 6px inside the box over 240ms
 - **AND** reduced motion shows the final state immediately.
+
+#### Scenario: Home pre-order uses the approved Soft edge exception
+
+- **WHEN** an enabled Home pre-order action receives fine-pointer hover or keyboard focus
+- **THEN** its Sea face deepens in 385ms and its 1px Sea hairline expands from the centre in 700ms using cubic-bezier(.22,.61,.36,1), with a 455ms exit
+- **AND** the line sits 6px from either side and 4px above the bottom, with softly transparent ends and 72% final opacity
+- **AND** its label, 44px control geometry, touch halo and 2px ink focus ring stay intact, and desktop press shows the darker end state immediately.
+
+#### Scenario: A quick Home pre-order press remains visible without delaying the link
+
+- **WHEN** a primary touch or non-hover/coarse input presses and releases a Home pre-order action, including a mouse click in that input mode
+- **THEN** the face and line animate over 220ms, the visual press lasts until at least 220ms from pointer down, and the release retreats in 180ms
+- **AND** the native link activates immediately, including its existing modified-click behavior, without waiting for decorative motion
+- **AND** secondary buttons and additional pointers do not start another press, cancellation/blur/mouse departure clear it, and repeated presses or unmount cannot leave a timer or stuck state behind.
+
+#### Scenario: Home pre-order is used with reduced motion
+
+- **WHEN** reduced motion applies to a Home pre-order action
+- **THEN** transitions and the minimum visual hold are removed while state feedback, visible focus and native activation remain available
+- **AND** pending press motion is cleared rather than retained after a preference change.
 
 ## REMOVED Requirements
 

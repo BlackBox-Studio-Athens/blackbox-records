@@ -77,7 +77,9 @@ describe('StorePreorderShowcase first paint', () => {
 
   it('puts the chapters, price and estimate in the server markup without a browser read', () => {
     const fetchRequest = vi.fn<typeof fetch>();
+    const schedule = vi.fn<typeof setTimeout>();
     vi.stubGlobal('fetch', fetchRequest);
+    vi.stubGlobal('setTimeout', schedule);
     const html = renderToStaticMarkup(render([item(clip), item(photo, { displayPrice: '€31.50' })]));
     expect(html).toContain('id="preorders"');
     expect(html.match(/<article /g)).toHaveLength(2);
@@ -85,9 +87,10 @@ describe('StorePreorderShowcase first paint', () => {
     expect(html).toContain('€31.50');
     expect(html.toLowerCase()).toContain('around october 2026');
     expect(fetchRequest).not.toHaveBeenCalled();
-    // Hydration adds media behavior only: the island has no listing, candidate or retry read to start.
+    expect(schedule).not.toHaveBeenCalled();
+    // Press timers are interaction-only; the island still has no listing, candidate or retry read to start.
     const source = readFileSync(new URL('./StorePreorderShowcase.tsx', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/fetch\(|listing-prices|preorder-showcase\.json|setTimeout\(/);
+    expect(source).not.toMatch(/fetch\(|listing-prices|preorder-showcase\.json/);
   });
 });
 
@@ -104,6 +107,8 @@ describe('StorePreorderShowcase presentation', () => {
       expect(html).not.toContain('<iframe');
       expect(html).not.toContain('youtube');
       expect(html).toContain(candidate.title);
+      expect(html).toContain('class="home-preorders__action-motion" aria-hidden="true"');
+      expect(html).not.toContain('data-pressed=');
       expect(html).toContain(candidate.artist);
       expect(html).toContain('Pre-order · out 16 Oct 2026');
       expect(html.toLowerCase()).toContain('around october 2026');

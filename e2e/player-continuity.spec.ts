@@ -1,4 +1,4 @@
-import { expect, type Page, plantSentinel, press, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, type Page, plantSentinel, press, sentinelIntact, test, waitForIsland, waitForShell } from './fixtures';
 
 // Provider embeds are replaced by a local fixture, as in apps/backend/scripts/smoke-content-preview.mjs.
 const providerEmbeds = /^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//;
@@ -10,6 +10,20 @@ async function openSection(page: Page, name: string, phone: boolean) {
   if (phone) await press(page.getByRole('banner').getByRole('button', { name: 'Menu', exact: true }), true);
   const navigation = page.getByRole('navigation', { name: phone ? 'Mobile' : 'Primary' });
   await press(navigation.getByRole('link', { name, exact: true }), phone);
+}
+
+async function interactWithPlayerFixture(page: Page, touch: boolean) {
+  const modal = page.getByRole('dialog', { name: 'Music player' });
+  // The lazy header can finish mounting after iframe load and steal its focus.
+  await expect(modal.locator('.music-streaming-service-embedded-player-provider-switcher')).toBeAttached();
+  await expect(modal.getByRole('button', { name: 'Close player', exact: true })).toBeFocused();
+  await press(
+    page
+      .locator('[data-music-streaming-service-embedded-player-iframe]')
+      .contentFrame()
+      .getByRole('button', { name: 'Player fixture' }),
+    touch,
+  );
 }
 
 test('player survives shell navigation, minimize/reopen and history; Stop destroys it', async ({ page, isMobile }) => {
@@ -27,7 +41,7 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   // Real embed interaction is what turns close into minimize.
-  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await interactWithPlayerFixture(page, isMobile);
   await press(page.getByRole('button', { name: 'Minimize player' }), isMobile);
   await expect(modal).toBeHidden();
   const originalIframe = await iframe.elementHandle();
@@ -64,7 +78,10 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   await expect(page.getByRole('button', { name: 'Open player' })).toBeHidden();
 });
 
-test('player survives a Store Item and the purchase information pages', async ({ page, isMobile }) => {
+test('player survives Home pre-order activation, a Store Item and the purchase information pages', async ({
+  page,
+  isMobile,
+}) => {
   test.setTimeout(180_000);
   await page.route(providerEmbeds, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
@@ -76,15 +93,18 @@ test('player survives a Store Item and the purchase information pages', async ({
   await press(page.locator('[data-music-streaming-service-embedded-player-trigger]').first(), isMobile);
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
-  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await interactWithPlayerFixture(page, isMobile);
   await press(page.getByRole('button', { name: 'Minimize player' }), isMobile);
   const originalIframe = await iframe.elementHandle();
   const isOriginalIframeConnected = () => originalIframe.evaluate((element) => element.isConnected);
 
   await openSection(page, 'Store', isMobile);
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible({ timeout: 60_000 });
-  // The card's stretched link sits under its Listen and artist controls, so a tap at its centre can land on them.
-  await page.locator('main a[href$="/store/disintegration-black-vinyl-lp/"]').first().dispatchEvent('click');
+  await press(page.getByRole('link', { name: 'BlackBox Records', exact: true }), isMobile);
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  await page.locator('#preorders .preorder-action').first().scrollIntoViewIfNeeded();
+  await waitForIsland(page, 'StorePreorderShowcase');
+  await press(page.locator('#preorders .preorder-action').first(), isMobile);
   await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   // The item's purchase island hydrates after the swap and reads the stubbed offer.
@@ -123,7 +143,7 @@ test('Back closes the open player without moving the page beneath; its controls 
   await expect(modal).toBeVisible();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
-  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), isMobile);
+  await interactWithPlayerFixture(page, isMobile);
   // The shell has registered the embed interaction once dismissing means minimize.
   await expect(page.getByRole('button', { name: 'Minimize player' })).toBeVisible();
   const scrollY = await page.evaluate(() => window.scrollY);
@@ -162,10 +182,7 @@ test('on phones the floating player leaves the page end and the Menu reachable; 
   await expect(modal).toBeVisible();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
-  // The lazy controls replace the loading header and focus Close when they mount.
-  await expect(modal.getByRole('button', { name: 'Bandcamp', exact: true })).toBeVisible();
-  await expect(modal.getByRole('button', { name: 'Close player', exact: true })).toBeFocused();
-  await press(iframe.contentFrame().getByRole('button', { name: 'Player fixture' }), hasTouch);
+  await interactWithPlayerFixture(page, hasTouch);
   await press(page.getByRole('button', { name: 'Minimize player' }), hasTouch);
   await expect(modal).toBeHidden();
   const miniPlayer = page.locator('.music-streaming-service-embedded-player-mini-player');
