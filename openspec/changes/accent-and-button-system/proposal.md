@@ -27,7 +27,7 @@ The approved 15 October 2026 redesign gives public controls consistent size and 
 - `release-catalog-presentation`: Flint Buy controls with format marks.
 - `store-catalog-categories`: category control size/colour and availability edges.
 - `store-listing-price-presentation`: filled Buy and shared availability tones.
-- `store-preorders`: Sea Green resting purchase fills, plain status lines and approved Home Soft edge interaction.
+- `store-preorders`: Sea Green resting fills, plain status lines with approved Home desktop media-backplate exceptions, and Home Soft edge.
 
 ## Scope and Non-Goals
 
@@ -42,3 +42,7 @@ No redesign prerequisite. Both sibling changes consume this foundation and must 
 ## Impact
 
 Future edits reach shared public styles/primitives, music and shell controls, Store/cart/checkout, editorial and form consumers, DESIGN.md and UI tests. No new dependency, service, API or content migration is planned. The final combined rollout is UAT only; commits and pushes are tasks for the implementation phase, not this authoring pass.
+
+## Approved desktop follow-up, 19 October 2026
+
+The owner accepted Thursday video/photo-backed desktop previews and explicitly assigned implementation and tests to Codex. Above 800px these Home chapters separate Listen from purchase and restore dark media-status backplates while retaining current controls, 168px default desktop Pre-order/Listen widths and unchanged Soft edge. At 800px and below, on cover-only chapters and on other routes, current placement/status rules remain. Local only; no commit, push, deployment or publication.

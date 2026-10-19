@@ -6166,18 +6166,20 @@ body.is-app-shell-overlay-open {
    --home-preorders-gutter is the inset of copy over the media on wider screens. */
 .home-preorders {
   --home-preorders-gutter: clamp(1.5rem, 6vw, 5.5rem);
-  position: relative;
-  z-index: 1;
-  padding-right: max(
+  --home-preorders-frame-right: max(
     var(--page-gutter),
     env(safe-area-inset-right),
     (100% - var(--page-max-width)) / 2 + var(--page-gutter)
   );
-  padding-left: max(
+  --home-preorders-frame-left: max(
     var(--page-gutter),
     env(safe-area-inset-left),
     (100% - var(--page-max-width)) / 2 + var(--page-gutter)
   );
+  position: relative;
+  z-index: 1;
+  padding-right: var(--home-preorders-frame-right);
+  padding-left: var(--home-preorders-frame-left);
   scroll-margin-top: 1.5rem;
   background: var(--background);
 }
@@ -6339,6 +6341,10 @@ body.is-app-shell-overlay-open {
 
 .home-preorders__actions > * {
   min-width: 0;
+}
+
+.home-preorders__desktop-listen {
+  display: none;
 }
 
 /* Home's approved Soft edge exception: the label and shared ::before touch halo stay still. */
@@ -7234,6 +7240,109 @@ body.is-app-shell-overlay-open {
 
   .home-preorders .home-preorders__all {
     margin-block: 0.5rem;
+  }
+}
+
+/* The approved Thursday composition is a desktop-only exception to the shared page frame. */
+@media (width > 800px) {
+  .home-preorders {
+    padding-inline: 0;
+  }
+
+  .home-preorders__chapter--sleeve {
+    margin-left: var(--home-preorders-frame-left);
+    margin-right: var(--home-preorders-frame-right);
+  }
+
+  .home-preorders__all {
+    margin-right: calc(var(--home-preorders-frame-right) + var(--home-preorders-gutter));
+  }
+
+  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
+    :is(.preorder-badge, .store-item-card__release-status) {
+    border: 1px solid var(--sea-500);
+    background: rgb(13 13 13 / 90%);
+    padding: 0.25rem 0.45rem;
+    color: var(--foreground);
+    font: 400 0.75rem/1.45 var(--font-sans);
+    white-space: normal;
+  }
+
+  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
+    .store-item-card__release-status {
+    border-color: var(--flint-400);
+  }
+
+  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
+    .home-preorders__actions {
+    width: 10.5rem;
+    max-width: 100%;
+  }
+
+  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
+    .home-preorders__actions
+    > .home-preorders__listen {
+    display: none;
+  }
+
+  .home-preorders__desktop-listen {
+    display: inline-flex;
+    width: 10.5rem;
+    max-width: 100%;
+  }
+
+  .home-preorders__desktop-listen > .home-preorders__listen {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .home-preorders__film-tools {
+    position: absolute;
+    right: var(--home-preorders-gutter);
+    bottom: 1.75rem;
+    left: auto;
+    max-width: calc(100% - 2 * var(--home-preorders-gutter));
+    padding: 0;
+    background: transparent;
+  }
+
+  .home-preorders__chapter--photo .home-preorders__still-scene::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 32.5rem;
+    background-image: var(--home-preorders-photo);
+    background-position: center;
+    background-size: cover;
+    filter: blur(18px) grayscale(1);
+    clip-path: inset(0);
+    content: '';
+    pointer-events: none;
+  }
+
+  .home-preorders__chapter--photo .home-preorders__band-photo {
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* Media and grid placement share the >800px boundary, including fractional viewport widths. */
+  .home-preorders__chapter--photo .home-preorders__facts--still {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+
+  .home-preorders__chapter--photo .home-preorders__purchase {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .home-preorders__chapter--photo .home-preorders__summary {
+    grid-row: 2 / span 2;
+    grid-column: 1;
+  }
+
+  .home-preorders__chapter--photo .home-preorders__buy > .home-preorders__terms {
+    grid-row: 3;
+    grid-column: 2;
   }
 }
 

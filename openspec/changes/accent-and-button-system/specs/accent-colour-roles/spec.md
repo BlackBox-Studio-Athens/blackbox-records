@@ -54,7 +54,7 @@ Flint SHALL identify ordinary purchase faces, readable editorial labels, current
 - **AND** hover text on Flint information uses #c1cbce while control labels stay white
 - **AND** Sold Out and Only N left use a #626e72 edge and rgba(98,110,114,.16) surface, and Read News, View Full Roster and Continue shopping use #141414 faces with #626e72 inverse edges
 - **AND** static tags and status are not focusable actions and selection remains indicated beyond colour
-- **AND** Coming Soon and Repressing keep their dashed neutral boxes, while digital and pre-order lifecycle lines remain plain.
+- **AND** Coming Soon and Repressing keep their dashed neutral boxes, while digital/pre-order lifecycle lines remain plain outside approved Home media backplates above 800px.
 
 ### Requirement: Error red marks international restriction notices only
 

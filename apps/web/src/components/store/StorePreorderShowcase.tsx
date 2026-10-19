@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -396,7 +396,7 @@ function PreorderChapter({
       </span>
     </button>
   );
-  // Format and price share one row; the Sea Pre-order and the amber Listen share the next, half each.
+  // Preserve the mobile pair; desktop film/photo chapters expose Listen in their media composition.
   const purchase = (
     <div className="home-preorders__purchase">
       <div className="home-preorders__price-block">
@@ -426,7 +426,11 @@ function PreorderChapter({
       id={chapterId}
       className={
         'home-preorders__chapter' +
-        (clip ? ' home-preorders__chapter--video' : item.artistPhotoUrl ? '' : ' home-preorders__chapter--sleeve')
+        (clip
+          ? ' home-preorders__chapter--video'
+          : item.artistPhotoUrl
+            ? ' home-preorders__chapter--photo'
+            : ' home-preorders__chapter--sleeve')
       }
       aria-labelledby={chapterId + '-title'}
     >
@@ -478,6 +482,7 @@ function PreorderChapter({
               <div className="home-preorders__hero-sleeve">{cover}</div>
             </div>
             <div className="home-preorders__film-tools">
+              {listen && <div className="home-preorders__desktop-listen">{listen}</div>}
               <button
                 ref={watchButton}
                 type="button"
@@ -536,6 +541,11 @@ function PreorderChapter({
             className={
               'home-preorders__still-scene' + (!item.artistPhotoUrl ? ' home-preorders__still-scene--cover-only' : '')
             }
+            style={
+              item.artistPhotoUrl
+                ? ({ '--home-preorders-photo': `url(${JSON.stringify(item.artistPhotoUrl)})` } as CSSProperties)
+                : undefined
+            }
           >
             {item.artistPhotoUrl && (
               <img
@@ -557,6 +567,7 @@ function PreorderChapter({
                   {item.title}
                 </h3>
                 {badgeList}
+                {item.artistPhotoUrl && listen && <div className="home-preorders__desktop-listen">{listen}</div>}
               </div>
             </div>
           </div>

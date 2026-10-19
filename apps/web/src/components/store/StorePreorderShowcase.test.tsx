@@ -263,6 +263,33 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toContain('To be confirmed');
     expect(html).not.toContain('Digital out now');
   });
+
+  it.each([clip, photo, cover])(
+    'preserves one shell source across responsive $slug listening placements',
+    (candidate) => {
+      const html = renderToStaticMarkup(
+        render([
+          item({
+            ...candidate,
+            listen: {
+              releaseId: 'same-source',
+              bandcampEmbedUrl: 'https://bandcamp.com/EmbeddedPlayer/album=1/',
+              tidalEmbedUrl: null,
+            },
+          }),
+        ]),
+      );
+      const placements = candidate === cover ? 1 : 2;
+      expect(html.match(/data-music-listen-source-id="same-source"/g)).toHaveLength(placements);
+      expect(
+        html.match(
+          /data-music-streaming-service-embedded-player-bandcamp-embed-url="https:\/\/bandcamp.com\/EmbeddedPlayer\/album=1\/"/g,
+        ),
+      ).toHaveLength(placements);
+      expect(html.match(new RegExp(`href="${candidate.storePath}"`, 'g'))).toHaveLength(1);
+      expect(html).not.toContain('<iframe');
+    },
+  );
 });
 
 // Phones (global.css, below 48rem) lay each chapter out as a film strip from this markup: the band first with nothing
@@ -311,7 +338,7 @@ describe('StorePreorderShowcase phone film strip', () => {
 
   it('falls back to the artist photograph band without Watch, then to the sleeve row', () => {
     const photoHtml = renderToStaticMarkup(render([item(photo)]));
-    expect(photoHtml).toContain('class="home-preorders__chapter"');
+    expect(photoHtml).toContain('class="home-preorders__chapter home-preorders__chapter--photo"');
     expect(photoHtml.indexOf('home-preorders__band-photo')).toBeLessThan(photoHtml.indexOf('<h3'));
     expect(photoHtml).not.toContain('Watch full video');
 

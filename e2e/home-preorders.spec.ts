@@ -49,53 +49,79 @@ test('Home defaults to sample films only with the UAT build marker @phone', asyn
 });
 
 // Exercise the shipped component and real media without changing accepted Local catalog content.
-async function mountFilmChapter(page: Page, source?: string) {
+async function mountChapter(
+  page: Page,
+  source?: string,
+  layout: { variant?: 'video' | 'photo' | 'cover'; listen?: boolean; title?: string; metadata?: boolean } = {},
+) {
   await waitForIsland(page, 'StorePreorderShowcase');
   // A discrete event completes React's pending hydration before the fixture unmounts this root.
   await page.locator('#home-preorders-title').dispatchEvent('click');
-  await page.evaluate(async (backgroundVideoUrl) => {
-    const island = document.querySelector<HTMLElement>('astro-island[component-url*="StorePreorderShowcase"]')!;
-    const { default: Component } = await import(island.getAttribute('component-url')!);
-    const { default: render } = await import(island.getAttribute('renderer-url')!);
-    const film = document.querySelector<HTMLVideoElement>('video[data-home-hero-film]')!;
-    const coverUrl = island.querySelector<HTMLImageElement>('.home-preorders__sleeve')!.src;
-    const posterUrl = island.querySelector<HTMLImageElement>('.home-preorders__band-photo')!.src;
-    const mount = document.createElement('div');
-    mount.setAttribute('ssr', '');
-    island.dispatchEvent(new CustomEvent('astro:unmount'));
-    island.replaceWith(mount);
-    render(mount)(
-      Component,
-      {
-        storeUrl: '/blackbox-records/store/',
-        items: [
-          {
-            slug: 'playback-fixture',
-            title: 'Playback fixture',
-            artist: 'Local band',
-            option: 'Vinyl',
-            coverUrl,
-            storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-            displayPrice: '€28.00',
-            shipEstimate: null,
-            clips: [
-              {
-                id: 'MOA5YZDOR6A',
-                title: 'Local film',
-                posterUrl,
-                backgroundVideoUrl: backgroundVideoUrl ?? film.dataset.portraitSrc + '?preorder-fixture=1',
-              },
-            ],
-          },
-        ],
-      },
-      {},
-      { client: 'only' },
-    );
-  }, source);
+  await page.evaluate(
+    async ({ backgroundVideoUrl, layout }) => {
+      const island = document.querySelector<HTMLElement>('astro-island[component-url*="StorePreorderShowcase"]')!;
+      const { default: Component } = await import(island.getAttribute('component-url')!);
+      const { default: render } = await import(island.getAttribute('renderer-url')!);
+      const film = document.querySelector<HTMLVideoElement>('video[data-home-hero-film]')!;
+      const coverUrl = island.querySelector<HTMLImageElement>('.home-preorders__sleeve')!.src;
+      const posterUrl = island.querySelector<HTMLImageElement>('.home-preorders__band-photo')!.src;
+      const trigger = island.querySelector<HTMLElement>('[data-music-listen-source-id]')!;
+      const listen = layout.listen
+        ? {
+            releaseId: trigger.dataset.musicListenSourceId,
+            bandcampEmbedUrl: trigger.dataset.musicStreamingServiceEmbeddedPlayerBandcampEmbedUrl,
+            tidalEmbedUrl: trigger.dataset.musicStreamingServiceEmbeddedPlayerTidalEmbedUrl,
+          }
+        : undefined;
+      const variant = layout.variant ?? 'video';
+      const mount = document.createElement('div');
+      mount.setAttribute('ssr', '');
+      island.dispatchEvent(new CustomEvent('astro:unmount'));
+      island.replaceWith(mount);
+      render(mount)(
+        Component,
+        {
+          storeUrl: '/blackbox-records/store/',
+          items: [
+            {
+              slug: 'playback-fixture',
+              title: layout.title ?? 'Playback fixture',
+              artist: 'Local band',
+              option: 'Vinyl',
+              coverUrl,
+              storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+              displayPrice: '€28.00',
+              shipEstimate: null,
+              artistPhotoUrl: variant === 'photo' ? posterUrl : null,
+              listen,
+              trackCount: layout.metadata === false ? null : 10,
+              recording: layout.metadata === false ? null : 'Local studio',
+              summary: layout.metadata === false ? undefined : 'The complete release summary.',
+              clips:
+                variant === 'video'
+                  ? [
+                      {
+                        id: 'MOA5YZDOR6A',
+                        title: 'Local film',
+                        posterUrl,
+                        backgroundVideoUrl: backgroundVideoUrl ?? film.dataset.portraitSrc + '?preorder-fixture=1',
+                      },
+                    ]
+                  : [],
+            },
+          ],
+        },
+        {},
+        { client: 'only' },
+      );
+    },
+    { backgroundVideoUrl: source, layout },
+  );
   const video = page.locator('#preorders video');
-  await expect(video).toHaveCount(1);
-  await video.scrollIntoViewIfNeeded();
+  if ((layout.variant ?? 'video') === 'video') {
+    await expect(video).toHaveCount(1);
+    await video.scrollIntoViewIfNeeded();
+  } else await expect(page.locator('#preorder-playback-fixture')).toBeVisible();
   return video;
 }
 
@@ -104,7 +130,7 @@ test('preorder film starts and resumes without reloading its source @phone', asy
     route.fulfill({ contentType: 'text/html', body: '<p>Local full-video fixture</p>' }),
   );
   await page.goto('./');
-  const video = await mountFilmChapter(page);
+  const video = await mountChapter(page);
   const advancing = async () => {
     await expect(video).toHaveAttribute('data-playing', 'true');
     const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
@@ -149,7 +175,7 @@ test('preorder film starts and resumes without reloading its source @phone', asy
   await advancing();
   expect(await page.evaluate(() => (window as unknown as { filmLoads: number }).filmLoads)).toBe(0);
   await page.reload();
-  await mountFilmChapter(page);
+  await mountChapter(page);
   await advancing();
 });
 
@@ -178,7 +204,7 @@ test('preorder film preserves pause rules while a cold source is delayed @phone'
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
-    const video = await mountFilmChapter(page, `http://127.0.0.1:${(server.address() as AddressInfo).port}/film.mp4`);
+    const video = await mountChapter(page, `http://127.0.0.1:${(server.address() as AddressInfo).port}/film.mp4`);
     await expect.poll(() => requested).toBe(true);
     await expect(video).not.toHaveAttribute('data-playing', 'true');
     await page.evaluate(() => document.documentElement.setAttribute('data-music-player-session', ''));
@@ -216,7 +242,7 @@ for (const rejection of ['AbortError', 'NotAllowedError']) {
       };
     }, rejection);
     await page.goto('./');
-    const video = await mountFilmChapter(page);
+    const video = await mountChapter(page);
     await expect(video).toHaveAttribute('data-playing', 'true');
     await expect
       .poll(() => page.evaluate(() => typeof (window as unknown as { rejectFilmStart: unknown }).rejectFilmStart))
@@ -250,7 +276,7 @@ for (const rejection of ['AbortError', 'NotAllowedError']) {
       };
     }, rejection);
     await page.goto('./');
-    const video = await mountFilmChapter(page);
+    const video = await mountChapter(page);
     if (rejection === 'AbortError') {
       await expect(video).toHaveAttribute('data-playing', 'true');
       const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
@@ -282,7 +308,7 @@ for (const preference of ['reduced-motion', 'save-data']) {
         }),
       );
     await page.goto('./');
-    const video = await mountFilmChapter(page);
+    const video = await mountChapter(page);
     await video.dispatchEvent('canplay');
     await page.evaluate(() => {
       document.dispatchEvent(new Event('visibilitychange'));
@@ -354,6 +380,162 @@ test('Home has its pre-orders in the HTML response and at first paint, on direct
 
 function chapter(page: Page, title = 'Disintegration') {
   return page.getByRole('article', { name: title, exact: true });
+}
+
+for (const variant of ['video', 'photo', 'cover'] as const) {
+  test(`Thursday desktop ${variant} composition respects the 800px boundary and text enlargement`, async ({
+    page,
+  }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('./');
+    await mountChapter(page, undefined, { variant, listen: true });
+    const release = chapter(page, 'Playback fixture');
+    const preorder = release.getByRole('link', { name: 'Pre-order', exact: true });
+    const listen = release.getByRole('button', { name: 'Listen', exact: true });
+    for (const width of [800, 801, 1024, 1440, 1920]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.evaluate(() => document.fonts.ready);
+      await expectNoHorizontalOverflow(page);
+      await expect(listen).toHaveCount(1);
+      await expect(listen).toBeVisible();
+      const wide = width > 800 && variant !== 'cover';
+      const box = (await release.boundingBox())!;
+      if (wide) {
+        expect(box.x).toBeCloseTo(0, 0);
+        expect(box.width).toBeCloseTo(width, 0);
+        await expect(release.locator('.home-preorders__actions .home-preorders__listen')).toBeHidden();
+        for (const action of [preorder, listen]) {
+          expect((await action.boundingBox())!.width).toBeCloseTo(168, 0);
+          expect((await action.boundingBox())!.height).toBeCloseTo(44, 0);
+        }
+        const slot = variant === 'video' ? '.home-preorders__film-tools' : '.home-preorders__identity';
+        await expect(release.locator(slot).getByRole('button', { name: 'Listen', exact: true })).toBeVisible();
+        if (variant === 'photo') {
+          const photo = release.locator('.home-preorders__band-photo');
+          expect(await photo.evaluate((image) => getComputedStyle(image).objectFit)).toBe('contain');
+          expect((await photo.boundingBox())!.height).toBeCloseTo(520, 0);
+          const fill = await release
+            .locator('.home-preorders__still-scene')
+            .evaluate((scene) => getComputedStyle(scene, '::before').backgroundImage);
+          expect(fill).toContain(await photo.getAttribute('src'));
+          // Read related positions together so resize scroll anchoring cannot change their coordinate origin.
+          const { facts, summary, purchase } = await release.evaluate((chapter) => {
+            const rect = (selector: string) => {
+              const box = chapter.querySelector(selector)!.getBoundingClientRect();
+              return { x: box.x, y: box.y, height: box.height };
+            };
+            return {
+              facts: rect('dl'),
+              summary: rect('.home-preorders__summary'),
+              purchase: rect('.home-preorders__purchase'),
+            };
+          });
+          expect(summary.y).toBeGreaterThanOrEqual(facts.y + facts.height);
+          expect(purchase.y).toBeGreaterThanOrEqual(facts.y + facts.height);
+          expect(summary.x).toBeLessThan(purchase.x);
+        } else {
+          expect((await release.locator('.home-preorders__film-scene').boundingBox())!.height).toBeGreaterThanOrEqual(
+            920,
+          );
+          const { watch, sound } = await release.locator('.home-preorders__film-tools').evaluate((tools) => {
+            const rect = (selector: string) => {
+              const box = tools.querySelector(selector)!.getBoundingClientRect();
+              return { x: box.x, y: box.y, width: box.width, height: box.height };
+            };
+            return { watch: rect('.site-button'), sound: rect('.home-preorders__listen') };
+          });
+          expect(sound.y + sound.height / 2).toBeCloseTo(watch.y + watch.height / 2, 0);
+          expect(sound.x + sound.width).toBeLessThanOrEqual(watch.x);
+          expect((await release.locator('.home-preorders__hero-sleeve').boundingBox())!.width).toBeCloseTo(220, 0);
+        }
+      } else {
+        expect(box.x).toBeGreaterThan(0);
+        await expect(
+          release.locator('.home-preorders__actions').getByRole('button', { name: 'Listen', exact: true }),
+        ).toBeVisible();
+      }
+      const cover = release.locator('.home-preorders__sleeve');
+      expect(await cover.evaluate((image) => getComputedStyle(image).objectFit)).toBe('contain');
+      if (width === 1440) {
+        await release.screenshot({ path: testInfo.outputPath(`thursday-${variant}-1440.png`) });
+        await listen.focus();
+        await page.keyboard.press('Tab');
+        const next =
+          variant === 'video'
+            ? release.getByRole('button', { name: 'Watch full video' })
+            : variant === 'photo'
+              ? preorder
+              : release.getByRole('link', { name: 'Pre-order & delivery information' });
+        await expect(next).toBeFocused();
+        await page.addStyleTag({ content: 'html { font-size: 32px !important; }' });
+        await expectNoHorizontalOverflow(page);
+        for (const action of [preorder, listen]) {
+          expect(await action.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+          expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        }
+        await page.addStyleTag({ content: 'html { font-size: 16px !important; }' });
+      }
+    }
+  });
+}
+
+test('Thursday chapters retain missing-data fallbacks and long Greek identities', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 801, height: 1000 });
+  const title = 'Σιωπή και Ντέρτια με μεγάλες ιστορίες και ολόκληρη την ταυτότητα του δίσκου';
+  for (const variant of ['video', 'photo', 'cover'] as const) {
+    await page.goto('./');
+    await mountChapter(page, undefined, { variant, title, metadata: false });
+    const release = chapter(page, title);
+    await expect(release.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
+    await expect(release.locator('.home-preorders__desktop-listen')).toHaveCount(0);
+    await expect(release.getByRole('heading', { name: title, exact: true })).toBeVisible();
+    expect(await release.locator('h3').evaluate((node) => getComputedStyle(node).fontFamily)).toContain('Inter');
+    await expect(release.getByRole('link', { name: 'Pre-order', exact: true })).toHaveAttribute('href', storePath);
+    if (variant !== 'video') await expect(release.locator('dl dd').nth(1)).toHaveText('To be confirmed');
+    await expectNoHorizontalOverflow(page);
+  }
+});
+
+for (const variant of ['video', 'photo'] as const) {
+  test(`Thursday ${variant} Listen remains synchronized across desktop and mobile resizing @phone`, async ({
+    page,
+    browserName,
+  }) => {
+    await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<button>Local player fixture</button>' }),
+    );
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('./');
+    await waitForShell(page);
+    await mountChapter(page, undefined, { variant, listen: true });
+    const release = chapter(page, 'Playback fixture');
+    await release.getByRole('button', { name: 'Listen', exact: true }).click();
+    const modal = page.getByRole('dialog', { name: 'Music player' });
+    await expect(modal).toBeVisible();
+    const iframe = modal.locator('iframe');
+    await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+    const original = await iframe.elementHandle();
+    await modal.locator('.music-streaming-service-embedded-player-provider-switcher').waitFor();
+    await expect(modal.getByRole('button', { name: 'Close player', exact: true })).toBeFocused();
+    await iframe.contentFrame().getByRole('button', { name: 'Local player fixture' }).click();
+    // The local iframe fixture uses Firefox's blur signal, as in the existing Home player dismissal coverage.
+    if (browserName === 'firefox') await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await page.getByRole('button', { name: 'Minimize player' }).click();
+    await expect(modal).toBeHidden();
+    for (const width of [800, 801, 390, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const active = release.getByRole('button', { name: 'In player', exact: true });
+      await expect(active).toHaveCount(1);
+      await expect(active).toBeDisabled();
+      expect(await original!.evaluate((node) => node.isConnected)).toBe(true);
+      if (variant === 'video') await expect(release.getByRole('button', { name: 'Watch full video' })).toBeDisabled();
+      await expectNoHorizontalOverflow(page);
+    }
+    await page.getByRole('button', { name: 'Stop player' }).click();
+    await expect(page.locator('[data-music-streaming-service-embedded-player-iframe]')).toHaveCount(0);
+    await expect(release.getByRole('button', { name: 'Listen', exact: true })).toBeEnabled();
+  });
 }
 
 async function motion(action: Locator) {
@@ -651,14 +833,22 @@ test('Home Soft edge stays readable at required widths and enlarged text', async
       await action.scrollIntoViewIfNeeded();
       await expectNoHorizontalOverflow(page);
       const pair = chapter(page).locator('.home-preorders__actions');
-      const controls = await pair.locator(':scope > *').evaluateAll((elements) =>
-        elements.map((element) => {
-          const box = element.getBoundingClientRect();
-          return { height: box.height, width: box.width, fits: element.scrollWidth <= element.clientWidth };
-        }),
-      );
+      const controls = await chapter(page)
+        .locator('.preorder-action:visible, .home-preorders__listen:visible')
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const box = element.getBoundingClientRect();
+            return { height: box.height, width: box.width, fits: element.scrollWidth <= element.clientWidth };
+          }),
+        );
       expect(controls).toHaveLength(2);
-      expect(controls[0]!.width).toBeCloseTo(controls[1]!.width, 0);
+      if (width <= 800) expect(controls[0]!.width).toBeCloseTo(controls[1]!.width, 0);
+      else {
+        await expect(pair.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
+        await expect(
+          chapter(page).locator('.home-preorders__identity').getByRole('button', { name: 'Listen', exact: true }),
+        ).toBeVisible();
+      }
       for (const control of controls) {
         expect(control.height).toBeGreaterThanOrEqual(44);
         expect(control.fits).toBe(true);

@@ -94,7 +94,25 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 - **THEN** the chapter opens with a 16:9 band using the prepared film whenever the release has a video and prepared film is available; a clip without prepared film uses its poster, else the band photo, with exactly one corner 44px icon-only Watch full video control and no other overlay
 - **AND** a release without a clip shows the band photo without a control; when neither clip nor band photo exists, a 160px sleeve beside artist, title and price replaces the band
 - **AND** artist, title, format and price row, status line, the Sea Pre-order and amber Listen pair (44px high, equal halves), international notice line and terms link follow beneath the band
-- **AND** desktop composition is unchanged; final measured heights remain unverified.
+- **AND** the current composition at 800px and below is unchanged; the approved desktop restoration applies only above 800px; final phone measured heights remain unverified.
+
+#### Scenario: Thursday desktop video renders
+
+- **WHEN** a video chapter renders above 800 CSS pixels
+- **THEN** full-width film carries centred artist/title/status backplates, price/purchase/terms and a whole sleeve, with Listen beside Watch at lower-right
+- **AND** current controls, Soft edge, data and playback fixes remain; no manual Pause returns.
+
+#### Scenario: Thursday desktop photo-backed chapter renders
+
+- **WHEN** a no-video chapter with an accepted artist photo renders above 800 CSS pixels
+- **THEN** its whole photo is contained over blurred same-photo fill, with sleeve left, identity/status/Listen right, facts across below, then summary left and purchase/terms right
+- **AND** no photo retains the current cover-only fallback without borrowed media.
+
+#### Scenario: Listening survives responsive placement
+
+- **WHEN** a visitor resizes across 800px during a shell listening session
+- **THEN** one visible/focusable Listen or disabled In player control stays synchronized without replacing its iframe
+- **AND** mobile pairing/geometry remain unchanged, missing Listen adds no placeholder and long/enlarged text grows without clipping.
 
 ### Requirement: Home background playback has no text play control
 

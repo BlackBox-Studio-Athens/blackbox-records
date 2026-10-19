@@ -2,12 +2,12 @@
 
 ### Requirement: Pre-order presentation stays within the visual language
 
-Pre-order actions SHALL use Sea #2d766a resting fills with white labels, #256258 hover/pressed faces and #4ca999 hover edges. Pre-order information SHALL use #4ca999 text and the approved Sea surface only for pre-order meaning. Controls SHALL use the shared 44px family. Home SHALL preserve ink Veneer identity, Bebas prices/actions, Inter information and intact original artwork, and SHALL use the approved Soft edge treatment for its showcase purchase actions only.
+Pre-order actions SHALL use Sea #2d766a resting fills with white labels, #256258 hover/pressed faces and #4ca999 hover edges. Pre-order information SHALL use #4ca999 text and the approved Sea surface only for pre-order meaning; approved Home video/photo media backplates above 800px MAY use ink text with a Sea status edge for legibility. Controls SHALL use the shared 44px family. Home SHALL preserve ink Veneer identity, Bebas prices/actions, Inter information and intact original artwork, and SHALL use the approved Soft edge treatment for its showcase purchase actions only.
 
 #### Scenario: Badge and action render
 
 - **WHEN** a pre-order badge or action is shown on any surface
-- **THEN** browse status is a plain Sea text line at 4.5:1 contrast or better, and the action is Sea-filled at rest without a 3px base line or an extra framed digital-status badge
+- **THEN** browse status is a plain Sea text line at 4.5:1 contrast or better, and the action is Sea-filled at rest without a 3px base line; digital-status backplates are limited to approved Home video/photo chapters above 800px
 - **AND** targets are at least 44px, text does not clip at 200% zoom or 390px width, and reduced-motion preferences are respected.
 
 #### Scenario: Approved Home artwork and layout render
@@ -33,6 +33,6 @@ Pre-order actions SHALL use Sea #2d766a resting fills with white labels, #256258
 #### Scenario: Soft edge covers each Home chapter without changing other surfaces
 
 - **WHEN** Home renders a video, photograph or cover-only pre-order chapter
-- **THEN** every purchase action uses the same Soft edge treatment, preserves its accessible name and destination, and keeps its existing pair with Listen
+- **THEN** every purchase action uses the same Soft edge treatment, preserves its accessible name and destination, and keeps its approved responsive Listen placement
 - **AND** its decorative layer is noninteractive and hidden from assistive technology, and the link remains usable before hydration or without JavaScript
 - **AND** Store and Releases pre-order actions retain their existing treatments, with no shipped preview picker, duration control or preview status message.

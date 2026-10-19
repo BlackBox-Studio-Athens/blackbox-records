@@ -6,8 +6,8 @@ The Local audit measured a 1296px Home pre-order showcase, a 1084px featured Rel
 
 ## What Changes
 
-- Keep the 16px gutter at 390px; contain rules, photos, rows and footer inside the page frame, with only the header and Home hero film allowed to bleed.
-- Rebuild Home pre-order chapters below 48rem as the owner-chosen film strip: a 16:9 film/poster/photo band with only the corner 44px Watch control when a clip exists, facts and the equal-half 44px Sea Pre-order/amber Listen pair beneath, or a 160px sleeve beside identity/price when neither clip nor band photo exists. Desktop composition stays unchanged; the owner removed manual chapter motion controls on every viewport, with reduced motion as the opt-out.
+- Keep the 16px gutter at 390px; contain rules, photos, rows and footer inside the page frame, with header/hero bleed and approved Home video/photo desktop exceptions above 800px.
+- Rebuild Home pre-order chapters below 48rem as the owner-chosen film strip: a 16:9 film/poster/photo band with only the corner 44px Watch control when a clip exists, facts and the equal-half 44px Sea Pre-order/amber Listen pair beneath, or a 160px sleeve beside identity/price when neither clip nor band photo exists. The current composition at 800px and below stays unchanged; above 800px restore the approved Thursday desktop layout; the owner removed manual chapter motion controls on every viewport, with reduced motion as the opt-out.
 - Make artist release counts inline and use two roster columns from 360px with tighter padding and retained 3:4 photos (390px page height 3065px to 1583px); use amber current swipe dots in 44px targets and keep swipe peeks inside the gutter.
 - Reduce Releases card gaps and padding (390px page height 2748px to 2556px) while retaining intrinsic sizing.
 - Footer follow-up: the owner-approved `redesign-footer-flowing-links` supersedes this change's original 200px/four-column prescription. The new change owns footer implementation and acceptance; the original measurements remain historical evidence here.
@@ -17,7 +17,7 @@ The Local audit measured a 1296px Home pre-order showcase, a 1084px featured Rel
 
 ### New Capabilities
 
-- `public-page-frame`: shared gutters and the two allowed bleed exceptions.
+- `public-page-frame`: shared gutters and named responsive bleed exceptions.
 
 ### Modified Capabilities
 
@@ -38,3 +38,7 @@ Depends on `accent-and-button-system`. It can be implemented alongside `store-mo
 ## Impact
 
 Future work reaches editorial, artists, Store Home showcase, shell/Footer, shared styles and existing Home/Releases/route tests. Claude owns the presentation and UI tests; no data, tooling or boundary implementation is planned for Codex. Final validation and the authorized UAT release remain implementation tasks; this pass writes plans and delta specs only.
+
+## Approved desktop restoration, 19 October 2026
+
+The owner accepted both canvas previews and explicitly assigned implementation and UI tests to Codex. Above 800 CSS pixels restore Thursday baseline adc595c83c6d09d3b732fb21f1e2bbe682b701f5: full-width video with centred copy/sleeve and lower-right Listen/Watch, plus photo-backed no-video chapters with complete photographs over blurred same-photo fill. Preserve current buttons/Soft edge, data, playback logic, cover-only fallback and every layout at 800px and below. This follow-up authorizes local implementation and checks only; earlier release permissions do not extend to it.

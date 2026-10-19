@@ -102,7 +102,7 @@ Two adjacent action controls SHALL form one filled primary and one outlined seco
 
 #### Scenario: Home pre-order actions render
 
-- **WHEN** a Home chapter offers Pre-order and Listen
+- **WHEN** a Home chapter offers Pre-order and Listen at 800px and below, or uses the cover-only fallback
 - **THEN** Sea-filled Pre-order and amber-outlined Listen share the paired row.
 
 #### Scenario: Release purchase actions render
@@ -115,3 +115,9 @@ Two adjacent action controls SHALL form one filled primary and one outlined seco
 
 - **WHEN** a Store card shows price and Buy or Pre-order, or the hero shows only Browse the Store
 - **THEN** no second control is invented to satisfy the pair rule.
+
+#### Scenario: Approved desktop Home actions render
+
+- **WHEN** a video/photo-backed Home chapter renders above 800 CSS pixels
+- **THEN** Pre-order keeps its Sea control and Soft edge; current amber Listen sits beside Watch for video or identity for photo-backed chapters
+- **AND** each is 168×44px at default text size, one Listen remains visible/focusable, and enlarged text grows without clipping; other action groups keep their placement.
