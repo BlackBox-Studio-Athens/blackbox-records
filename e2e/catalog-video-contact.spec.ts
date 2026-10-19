@@ -1,4 +1,8 @@
 import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import purchaseInformation from '../apps/web/src/platform/content/purchase-information/site.json';
+
+const hasPurchaseInformation =
+  purchaseInformation.publication === 'approved' || process.env.BLACKBOX_E2E_PREVIEW !== '1';
 
 test('a demo click during the inquiry form commit retains its selection', async ({ page }) => {
   await page.addInitScript(() => {
@@ -93,7 +97,7 @@ for (const width of [320, 360, 390, 430, 459, 460, 640, 719, 720, 768, 1024, 144
       'Who we are',
       'Delivery information',
       'Withdraw from an order',
-      'Privacy information',
+      ...(hasPurchaseInformation ? ['Privacy information'] : []),
     ]);
     const ceiling = new Map([
       [320, 380],
@@ -122,7 +126,7 @@ for (const width of [320, 360, 390, 430, 459, 460, 640, 719, 720, 768, 1024, 144
 
 test('footer keeps keyboard focus and reflows longer content with no socials at 200% text @phone', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto('./privacy/');
+  await page.goto('./terms/');
   await waitForShell(page);
   const footer = page.getByRole('contentinfo');
   const delivery = footer.getByRole('link', { name: 'Delivery information', exact: true });
@@ -168,7 +172,7 @@ test('footer destinations and disclosure are available without JavaScript', asyn
   });
   try {
     const page = await context.newPage();
-    await page.goto('./privacy/');
+    await page.goto('./terms/');
     const footer = page.getByRole('contentinfo');
     await expect(footer.locator('.site-footer-disclosure')).toHaveText(
       'This website was designed and developed with assistance from generative AI tools.',

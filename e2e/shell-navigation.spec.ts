@@ -164,7 +164,7 @@ test('Back closes full video, Forward restores it and Close consumes its entry',
         /<astro-island\b[^>]*component-url="[^"]*StorePreorderShowcase[^>]*>/,
         (island) =>
           '<script>window.Astro ||= {}; window.Astro.only = async (load) => (await load())();</script>' +
-          island.replace('client="idle"', 'client="only"'),
+          island.replace('client="load"', 'client="only"'),
       );
     await route.fulfill({ response, body });
   });
@@ -554,7 +554,7 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
   ] as const) {
     await page.setViewportSize({ width, height: 800 });
     // Use a prose route for the 200% reading-size check so unrelated Home media does not own this footer test.
-    await page.goto(textScale === 2 ? './privacy/' : './');
+    await page.goto(textScale === 2 ? './terms/' : './');
     await page.evaluate((scale) => (document.documentElement.style.fontSize = `${scale * 100}%`), textScale);
     const footer = page.locator('footer.site-footer-shell');
     const sitemap = page.locator('.site-footer-nav-list');

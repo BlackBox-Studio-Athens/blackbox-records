@@ -10,6 +10,8 @@ The operating model is:
 
 ## Publishing
 
+Before the local pre-push build, set `BLACKBOX_PREORDER_PROJECTION` to the absolute path of `e2e/preorder-projection.json`, matching `pages.yml`, then run `pnpm build:web`. This includes populated Home pre-orders in the existing bundle-budget check.
+
 The release smoke's `public_assets` scenario checks representative published original media on the target site. Direct Images markup is resolved to its same-environment `/media/content/<sha>` source, so Free transformation-quota exhaustion does not hide whether the accepted media is available. The explicit `image_transform` scenario remains separate and requires a real small, immutable AVIF or WebP transformation; an original fallback does not pass it. Browser failure recovery is verified locally with controlled Images errors before release.
 
 For routine Local/UAT content changes, save and publish through the workspace; no Git commit or Worker deployment is required. For Software Release: commit code, review UAT, then promote.

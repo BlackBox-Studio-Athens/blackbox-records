@@ -615,12 +615,12 @@ test('Home Soft edge desktop hover, focus and press preserve geometry', async ({
       animation.play();
     }
   });
-  await expect.poll(async () => (await motion(action)).opacity).toBeCloseTo(0.72, 2);
+  await expect.poll(async () => (await motion(action)).transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
   const final = await motion(action);
   expect(final).toMatchObject({ left: '6px', right: '6px', bottom: '4px', height: '1px' });
   expect(final.background).toContain('15%');
   expect(final.background).toContain('85%');
-  expect(final.transform).toBe('matrix(1, 0, 0, 1, 0, 0)');
+  expect(final.opacity).toBeCloseTo(0.72, 2);
   expect(await action.boundingBox()).toEqual(rest);
   expect(await label.boundingBox()).toEqual(restLabel);
   await action.screenshot({ path: testInfo.outputPath('soft-edge-desktop-hover.png') });
@@ -946,6 +946,9 @@ test('Home wheel scrolling resumes after repeated detail and player dismissal wi
   browserName,
 }) => {
   watchShowcase(page);
+  await page.route('https://www.youtube-nocookie.com/embed/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>Local video fixture</p>' }),
+  );
   await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Local player fixture</button>' }),
   );

@@ -245,6 +245,9 @@ function PreorderChapter({
   playerSession: boolean;
   automaticMotion: boolean;
 }) {
+  // Shell-inserted HTML cannot replay server Suspense streams.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [pausedClips, setPausedClips] = useState<string[]>([]);
   const [frameClip, setFrameClip] = useState<string | null>(null);
@@ -420,9 +423,11 @@ function PreorderChapter({
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
       )}
-      <Suspense fallback={null}>
-        <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
-      </Suspense>
+      {hydrated && (
+        <Suspense fallback={null}>
+          <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
+        </Suspense>
+      )}
     </div>
   );
   const terms = (
