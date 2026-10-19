@@ -3,6 +3,30 @@ import { describe, expect, it } from 'vitest';
 import { DeliverySummary } from './DeliverySummary';
 
 describe('delivery summary', () => {
+  it.each(['review', 'drawer'] as const)('offers recovery for a temporary failure in %s', (presentation) => {
+    const html = renderToStaticMarkup(
+      <DeliverySummary loading={false} quote={null} error="temporary" retry={() => {}} presentation={presentation} />,
+    );
+    expect(html).toContain('We couldn&#x27;t calculate delivery.');
+    expect(html).toContain('Try delivery again');
+    expect(html).not.toContain('Delivery is unavailable for this cart');
+    const pending = renderToStaticMarkup(
+      <DeliverySummary loading quote={null} retry={() => {}} retrying presentation={presentation} />,
+    );
+    expect(pending).toContain('Checking delivery…');
+    expect(pending).toContain('disabled=""');
+    expect(pending).toContain('aria-busy="true"');
+  });
+
+  it('asks for cart review instead of retrying an authoritative restriction', () => {
+    const html = renderToStaticMarkup(
+      <DeliverySummary loading={false} quote={null} error="unavailable" retry={() => {}} />,
+    );
+    expect(html).toContain('Delivery is unavailable for this cart. Please review the items.');
+    expect(html).not.toContain('Try delivery again');
+    expect(html).not.toContain('try again later');
+  });
+
   it.each(['review', 'drawer'] as const)(
     'discloses the quoted collection mode in %s without an exemption claim',
     (presentation) => {

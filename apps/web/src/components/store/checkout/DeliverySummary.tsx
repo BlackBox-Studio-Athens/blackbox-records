@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { taxCollectionDisclosure } from '@blackbox/api-client/public';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
+import { Button } from '@/components/ui/button';
 import {
+  PublicCheckoutApiError,
   readDeliveryQuote,
   type DeliveryQuoteResponse,
   type StartCheckoutBody,
@@ -15,20 +17,39 @@ export function useDeliveryQuote(lines: Lines) {
   const key = JSON.stringify(
     lines.map(({ storeItemSlug, variantId, quantity }) => ({ storeItemSlug, variantId, quantity })),
   );
-  const [result, setResult] = React.useState<{ key: string; quote: DeliveryQuoteResponse['quote'] } | null>(null);
+  const [request, setRequest] = React.useState({ key: '', attempt: 0 });
+  const attempt = request.attempt;
+  const requesting = React.useRef(false);
+  const [result, setResult] = React.useState<{
+    key: string;
+    attempt: number;
+    quote: DeliveryQuoteResponse['quote'];
+    error: 'temporary' | 'unavailable' | null;
+  } | null>(null);
   React.useEffect(() => {
     let active = true;
     setResult(null);
     const controller = new AbortController();
     const requestedLines: Lines = JSON.parse(key);
+    requesting.current = requestedLines.length > 0;
     const timer = requestedLines.length
       ? setTimeout(() => {
           void readDeliveryQuote(requestedLines, controller.signal).then(
             ({ quote }) => {
-              if (active) setResult({ key, quote });
+              if (!active) return;
+              requesting.current = false;
+              setResult({ key, attempt, quote, error: quote ? null : 'unavailable' });
             },
-            () => {
-              if (active) setResult({ key, quote: null });
+            (error: unknown) => {
+              if (!active) return;
+              requesting.current = false;
+              const rejectedCart =
+                error instanceof PublicCheckoutApiError &&
+                error.status >= 400 &&
+                error.status < 500 &&
+                error.status !== 408 &&
+                error.status !== 429;
+              setResult({ key, attempt, quote: null, error: rejectedCart ? 'unavailable' : 'temporary' });
             },
           );
         }, 250)
@@ -38,11 +59,20 @@ export function useDeliveryQuote(lines: Lines) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key]);
-  const quote = result?.key === key ? result.quote : null;
+  }, [key, attempt]);
+  const currentResult = result?.key === key && result.attempt === attempt ? result : null;
+  const quote = currentResult?.quote ?? null;
+  const loading = lines.length > 0 && !currentResult;
   const totalAmountMinor = quote?.totalAmountMinor ?? null;
   return {
-    loading: lines.length > 0 && result?.key !== key,
+    loading,
+    error: currentResult?.error ?? null,
+    retry() {
+      if (loading || requesting.current || currentResult?.error !== 'temporary') return;
+      requesting.current = true;
+      setRequest((previous) => ({ key, attempt: previous.attempt + 1 }));
+    },
+    retrying: loading && request.key === key,
     quote,
     totalDisplay: totalAmountMinor === null ? null : money(totalAmountMinor),
   };
@@ -51,8 +81,14 @@ export function useDeliveryQuote(lines: Lines) {
 export function DeliverySummary({
   loading,
   quote,
+  error,
+  retry,
+  retrying = false,
   presentation = 'review',
 }: Pick<ReturnType<typeof useDeliveryQuote>, 'loading' | 'quote'> & {
+  error?: ReturnType<typeof useDeliveryQuote>['error'];
+  retry?: () => void;
+  retrying?: boolean;
   presentation?: 'drawer' | 'review';
 }) {
   const isDrawer = presentation === 'drawer';
@@ -68,7 +104,9 @@ export function DeliverySummary({
         <p className="min-h-[4.75rem]">Calculating delivery and current prices…</p>
       ) : !quote && !waitingReview ? (
         <p className="min-h-[4.75rem]">
-          Delivery is unavailable for this cart. Please review the items or try again later.
+          {error === 'temporary'
+            ? "We couldn't calculate delivery. Please try again. Your cart is unchanged."
+            : 'Delivery is unavailable for this cart. Please review the items.'}
         </p>
       ) : (
         // Review reserves the real rows, including their font metrics, while the Worker quote is pending.
@@ -105,6 +143,11 @@ export function DeliverySummary({
             </div>
           )}
         </dl>
+      )}
+      {retry && (error === 'temporary' || retrying) && (
+        <Button type="button" variant="outline" onClick={retry} disabled={loading} aria-busy={loading}>
+          {loading ? 'Checking delivery…' : 'Try delivery again'}
+        </Button>
       )}
       {(!isDrawer || quote?.taxCollectionMode) && (
         <p data-tax-disclosure>

@@ -117,7 +117,9 @@ export default function CheckoutOfferStatus({
     : view.canStartCheckout && (delivery.loading || !delivery.quote)
       ? delivery.loading
         ? 'Checking delivery'
-        : 'Delivery unavailable'
+        : delivery.error === 'temporary'
+          ? 'Delivery check failed'
+          : 'Delivery unavailable'
       : view.canStartCheckout
         ? 'Ready'
         : view.badgeLabel;
