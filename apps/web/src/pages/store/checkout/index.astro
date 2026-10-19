@@ -39,6 +39,10 @@ const summaryItem = {
     </div>
 
     <div class="checkout-review__columns">
+      <aside class="checkout-review__summary" aria-label="Order summary">
+        <CheckoutOrderSummary client:load {...summaryItem} productSafety={await listStoreProductSafety()} />
+      </aside>
+
       <div class="checkout-review__payment">
         <CheckoutOfferStatus
           client:load
@@ -46,10 +50,6 @@ const summaryItem = {
           showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}
         />
       </div>
-
-      <aside class="checkout-review__summary" aria-label="Order summary">
-        <CheckoutOrderSummary client:load {...summaryItem} productSafety={await listStoreProductSafety()} />
-      </aside>
     </div>
   </section>
 </SiteLayout>

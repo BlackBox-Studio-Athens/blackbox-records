@@ -7788,6 +7788,7 @@ body.is-app-shell-overlay-open {
 .checkout-review__columns {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-areas: 'payment summary';
   align-items: start;
   gap: 16px;
   margin-top: 20px;
@@ -7796,6 +7797,14 @@ body.is-app-shell-overlay-open {
 .checkout-review__payment,
 .checkout-review__summary {
   min-width: 0;
+}
+
+.checkout-review__payment {
+  grid-area: payment;
+}
+
+.checkout-review__summary {
+  grid-area: summary;
 }
 
 .checkout-review__panel {
@@ -8116,6 +8125,7 @@ body.is-app-shell-overlay-open {
 @media (width < 48rem) {
   .checkout-review__columns {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'summary' 'payment';
   }
 
   .checkout-review__pay {
