@@ -1,8 +1,8 @@
-diff --git a/dist/api-DBw_IWoi.mjs b/dist/api-DBw_IWoi.mjs
-index 9ee58c65..58bbbe4b 100644
---- a/dist/api-DBw_IWoi.mjs
-+++ b/dist/api-DBw_IWoi.mjs
-@@ -1429,12 +1429,14 @@ async function handleContentDuplicate(db, collection, id, authorId) {
+diff --git a/dist/api-C_LxFnOm.mjs b/dist/api-C_LxFnOm.mjs
+index 42eb4413..16090651 100644
+--- a/dist/api-C_LxFnOm.mjs
++++ b/dist/api-C_LxFnOm.mjs
+@@ -1478,12 +1478,14 @@ async function handleContentDuplicate(db, collection, id, authorId) {
  /**
  * Delete content item (soft delete - moves to trash)
  */
@@ -19,7 +19,7 @@ index 9ee58c65..58bbbe4b 100644
  			if (deleted) await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			return {
  				id: resolvedId,
-@@ -1444,8 +1446,8 @@ async function handleContentDelete(db, collection, id) {
+@@ -1493,8 +1495,8 @@ async function handleContentDelete(db, collection, id) {
  		if (!result.deleted) return {
  			success: false,
  			error: {
@@ -31,20 +31,20 @@ index 9ee58c65..58bbbe4b 100644
  		};
  		return {
 diff --git a/dist/astro/routes/api/content/_collection_/_id_.mjs b/dist/astro/routes/api/content/_collection_/_id_.mjs
-index e114dc93..e75532c2 100644
+index 3116d551..e0615fa1 100644
 --- a/dist/astro/routes/api/content/_collection_/_id_.mjs
 +++ b/dist/astro/routes/api/content/_collection_/_id_.mjs
-@@ -9,7 +9,7 @@ import { n as mapErrorStatus } from "../../../../../errors-hskQ0C8G.mjs";
- import "../../../../../settings-GaZ5sVgg.mjs";
- import "../../../../../site-settings-CDdT4mVm.mjs";
- import { a as unwrapResult, t as apiError } from "../../../../../error-DxgQdaZ_.mjs";
--import { n as parseBody, t as isParseError } from "../../../../../parse-Cn5aSk1N.mjs";
-+import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-Cn5aSk1N.mjs";
- import "../../../../../redirects-DFT7Wr-e.mjs";
- import { qt as contentUpdateBody } from "../../../../../entry-lock-Cjz0h45X.mjs";
- import "../../../../../media-CRKsKlfK.mjs";
-@@ -88,7 +88,9 @@ const PUT = async ({ params, request, locals, cache }) => {
- 	if (cache?.enabled && result.liveContentChanged !== false) await cache.invalidate({ tags: [collection, resolvedId] });
+@@ -9,7 +9,7 @@ import { n as mapErrorStatus } from "../../../../../errors-BMaCpLeS.mjs";
+ import "../../../../../settings-B3ZmPF_8.mjs";
+ import "../../../../../site-settings-uPkW0e6o.mjs";
+ import { a as unwrapResult, t as apiError } from "../../../../../error-CT2SsX5S.mjs";
+-import { n as parseBody, t as isParseError } from "../../../../../parse-2W-E2f7w.mjs";
++import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-2W-E2f7w.mjs";
+ import "../../../../../redirects-BA_TvtuH.mjs";
+ import { qt as contentUpdateBody } from "../../../../../entry-lock-DDuWaAiP.mjs";
+ import "../../../../../media-qTTHVkls.mjs";
+@@ -95,7 +95,9 @@ const PUT = async ({ params, request, locals, cache }) => {
+ 	if (result.liveContentChanged !== false) await invalidateRouteCache(cache, [collection, resolvedId]);
  	return unwrapResult(result);
  };
 -const DELETE = async ({ params, locals, url, cache }) => {
@@ -54,20 +54,20 @@ index e114dc93..e75532c2 100644
  	const { emdash, user } = locals;
  	const collection = params.collection;
  	const id = params.id;
-@@ -103,7 +105,7 @@ const DELETE = async ({ params, locals, url, cache }) => {
+@@ -110,7 +112,7 @@ const DELETE = async ({ params, locals, url, cache }) => {
  	const resolvedId = typeof deleteItem?.id === "string" ? deleteItem.id : id;
  	const refusal = await claimEntryLockForWrite(emdash.db, collection, resolvedId, user.id, { override: url.searchParams.get("overrideLock") === "true" });
  	if (refusal) return apiError(refusal.code, refusal.message, mapErrorStatus(refusal.code), { ...refusal.details });
 -	const result = await emdash.handleContentDelete(collection, resolvedId);
 +	const result = await emdash.handleContentDelete(collection, resolvedId, body._rev);
  	if (!result.success) return unwrapResult(result);
- 	if (cache?.enabled) await cache.invalidate({ tags: [collection, resolvedId] });
+ 	await invalidateRouteCache(cache, [collection, resolvedId]);
  	return unwrapResult(result);
-diff --git a/dist/config-C4-UxIk7.d.mts b/dist/config-C4-UxIk7.d.mts
-index e1f2e53c..c4e7ad86 100644
---- a/dist/config-C4-UxIk7.d.mts
-+++ b/dist/config-C4-UxIk7.d.mts
-@@ -1017,7 +1017,7 @@ declare function handleContentDuplicate(db: Kysely<Database>, collection: string
+diff --git a/dist/config-9IzA83_U.d.mts b/dist/config-9IzA83_U.d.mts
+index adec5406..8292a737 100644
+--- a/dist/config-9IzA83_U.d.mts
++++ b/dist/config-9IzA83_U.d.mts
+@@ -1026,7 +1026,7 @@ declare function handleContentDuplicate(db: Kysely<Database>, collection: string
  /**
   * Delete content item (soft delete - moves to trash)
   */
@@ -76,7 +76,7 @@ index e1f2e53c..c4e7ad86 100644
    deleted: true;
    id: string;
  }>>;
-@@ -3376,7 +3376,7 @@ declare class EmDashRuntime {
+@@ -3381,7 +3381,7 @@ declare class EmDashRuntime {
      success: true;
      data: ContentResponse;
    }>;
@@ -85,11 +85,11 @@ index e1f2e53c..c4e7ad86 100644
      success: false;
      error: {
        code: string;
-diff --git a/dist/content-CcHrqkgp.mjs b/dist/content-CcHrqkgp.mjs
-index ce03f4d9..00d27c53 100644
---- a/dist/content-CcHrqkgp.mjs
-+++ b/dist/content-CcHrqkgp.mjs
-@@ -1071,14 +1071,15 @@ var ContentRepository = class {
+diff --git a/dist/content-Dt0Os_WQ.mjs b/dist/content-Dt0Os_WQ.mjs
+index ca3b4b17..a2a98204 100644
+--- a/dist/content-Dt0Os_WQ.mjs
++++ b/dist/content-Dt0Os_WQ.mjs
+@@ -1106,14 +1106,15 @@ var ContentRepository = class {
  	/**
  	* Delete content (soft delete - moves to trash)
  	*/
@@ -107,11 +107,11 @@ index ce03f4d9..00d27c53 100644
  		`.execute(this.db)).numAffectedRows ?? 0n) > 0n;
  		if (changed) invalidateCollectionCache(type);
  		return changed;
-diff --git a/dist/emdash-runtime-C4oFeVpN.mjs b/dist/emdash-runtime-C4oFeVpN.mjs
-index aa2147df..6643c105 100644
---- a/dist/emdash-runtime-C4oFeVpN.mjs
-+++ b/dist/emdash-runtime-C4oFeVpN.mjs
-@@ -2843,6 +2843,7 @@ var EmDashRuntime = class EmDashRuntime {
+diff --git a/dist/emdash-runtime-DwezbIqQ.mjs b/dist/emdash-runtime-DwezbIqQ.mjs
+index fb9ec018..839140dc 100644
+--- a/dist/emdash-runtime-DwezbIqQ.mjs
++++ b/dist/emdash-runtime-DwezbIqQ.mjs
+@@ -2858,6 +2858,7 @@ var EmDashRuntime = class EmDashRuntime {
  				}
  				const revisionRepo = new RevisionRepository(this.db);
  				let existing = await repo.findById(collection, resolvedId);
@@ -119,7 +119,7 @@ index aa2147df..6643c105 100644
  				if (body._rev && existing) {
  					const revCheck = validateRev(body._rev, existing);
  					if (!revCheck.valid) return {
-@@ -2970,7 +2971,7 @@ var EmDashRuntime = class EmDashRuntime {
+@@ -2985,7 +2986,7 @@ var EmDashRuntime = class EmDashRuntime {
  		};
  		return hydrated;
  	}
@@ -128,7 +128,7 @@ index aa2147df..6643c105 100644
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
  			if (!allowed) return {
-@@ -2982,7 +2983,7 @@ var EmDashRuntime = class EmDashRuntime {
+@@ -2997,7 +2998,7 @@ var EmDashRuntime = class EmDashRuntime {
  			};
  		}
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
@@ -137,18 +137,11 @@ index aa2147df..6643c105 100644
  		if (result.success) {
  			await this.clearScheduledPolicyRejection(collection, result.data.id, policyRejectionRevision);
  			await this.refreshContentUsageAfterSuccessfulWrite(collection, [result.data.id]);
-@@ -4360,4 +4361,4 @@ async function normalizePrimaryImageValue(value, getProvider) {
- 
- //#endregion
- export { EmDashRuntime as n, DB_INIT_DEADLINE_MS as t };
--//# sourceMappingURL=emdash-runtime-C4oFeVpN.mjs.map
-\ No newline at end of file
-+//# sourceMappingURL=emdash-runtime-C4oFeVpN.mjs.map
-diff --git a/dist/storage-query-BOBmeDMD.d.mts b/dist/storage-query-BOBmeDMD.d.mts
-index f09f8bb4..a56e8bef 100644
---- a/dist/storage-query-BOBmeDMD.d.mts
-+++ b/dist/storage-query-BOBmeDMD.d.mts
-@@ -196,7 +196,7 @@ declare class ContentRepository {
+diff --git a/dist/storage-query-Cy0SZ8iG.d.mts b/dist/storage-query-Cy0SZ8iG.d.mts
+index 30ae1b97..af1f71be 100644
+--- a/dist/storage-query-Cy0SZ8iG.d.mts
++++ b/dist/storage-query-Cy0SZ8iG.d.mts
+@@ -198,7 +198,7 @@ declare class ContentRepository {
    /**
     * Delete content (soft delete - moves to trash)
     */
@@ -158,10 +151,10 @@ index f09f8bb4..a56e8bef 100644
     * Restore content from trash
     *
 diff --git a/src/api/handlers/content.ts b/src/api/handlers/content.ts
-index fcdea398..0dc4af20 100644
+index ce77178b..4bb12cd5 100644
 --- a/src/api/handlers/content.ts
 +++ b/src/api/handlers/content.ts
-@@ -1868,12 +1868,15 @@ export async function handleContentDelete(
+@@ -1958,12 +1958,15 @@ export async function handleContentDelete(
  	db: Kysely<Database>,
  	collection: string,
  	id: string,
@@ -178,7 +171,7 @@ index fcdea398..0dc4af20 100644
  			if (deleted) {
  				await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			}
-@@ -1884,8 +1887,8 @@ export async function handleContentDelete(
+@@ -1974,8 +1977,8 @@ export async function handleContentDelete(
  			return {
  				success: false,
  				error: {
@@ -190,19 +183,19 @@ index fcdea398..0dc4af20 100644
  			};
  		}
 diff --git a/src/astro/routes/api/content/[collection]/[id].ts b/src/astro/routes/api/content/[collection]/[id].ts
-index 39cddb51..d59b7458 100644
+index 2916b922..de4c76c7 100644
 --- a/src/astro/routes/api/content/[collection]/[id].ts
 +++ b/src/astro/routes/api/content/[collection]/[id].ts
-@@ -12,7 +12,7 @@ import type { APIRoute } from "astro";
- import { requirePerm, requireOwnerPerm } from "#api/authorize.js";
+@@ -17,7 +17,7 @@ import {
+ } from "#api/authorize.js";
  import { apiError, mapErrorStatus, unwrapResult } from "#api/error.js";
  import { claimEntryLockForWrite } from "#api/handlers/entry-lock.js";
 -import { parseBody, isParseError } from "#api/parse.js";
 +import { parseBody, parseOptionalBody, isParseError } from "#api/parse.js";
  import { contentUpdateBody } from "#api/schemas.js";
+ import { invalidateRouteCache } from "#cache/route-cache.js";
  
- export const prerender = false;
-@@ -150,7 +150,9 @@ export const PUT: APIRoute = async ({ params, request, locals, cache }) => {
+@@ -162,7 +162,9 @@ export const PUT: APIRoute = async ({ params, request, locals, cache }) => {
  	return unwrapResult(result);
  };
  
@@ -213,7 +206,7 @@ index 39cddb51..d59b7458 100644
  	const { emdash, user } = locals;
  	const collection = params.collection!;
  	const id = params.id!;
-@@ -199,7 +201,7 @@ export const DELETE: APIRoute = async ({ params, locals, url, cache }) => {
+@@ -211,7 +213,7 @@ export const DELETE: APIRoute = async ({ params, locals, url, cache }) => {
  		});
  	}
  
@@ -223,10 +216,10 @@ index 39cddb51..d59b7458 100644
  	if (!result.success) return unwrapResult(result);
  
 diff --git a/src/database/repositories/content.ts b/src/database/repositories/content.ts
-index b7b05f0e..18c8424d 100644
+index 2f52ef0a..372bfc9e 100644
 --- a/src/database/repositories/content.ts
 +++ b/src/database/repositories/content.ts
-@@ -1615,15 +1615,16 @@ export class ContentRepository {
+@@ -1670,15 +1670,16 @@ export class ContentRepository {
  	/**
  	 * Delete content (soft delete - moves to trash)
  	 */
@@ -246,10 +239,10 @@ index b7b05f0e..18c8424d 100644
  
  		const changed = (result.numAffectedRows ?? 0n) > 0n;
 diff --git a/src/emdash-runtime.ts b/src/emdash-runtime.ts
-index 774a25a3..5ffefb4e 100644
+index 4567e813..b5c59693 100644
 --- a/src/emdash-runtime.ts
 +++ b/src/emdash-runtime.ts
-@@ -3869,6 +3869,7 @@ export class EmDashRuntime {
+@@ -3898,6 +3898,7 @@ export class EmDashRuntime {
  
  				const revisionRepo = new RevisionRepository(this.db);
  				let existing = await repo.findById(collection, resolvedId);
@@ -257,7 +250,7 @@ index 774a25a3..5ffefb4e 100644
  				if (body._rev && existing) {
  					const revCheck = validateRev(body._rev, existing);
  					if (!revCheck.valid) {
-@@ -4090,7 +4091,7 @@ export class EmDashRuntime {
+@@ -4119,7 +4120,7 @@ export class EmDashRuntime {
  		return hydrated;
  	}
  
@@ -266,7 +259,7 @@ index 774a25a3..5ffefb4e 100644
  		// Run beforeDelete hooks (trusted plugins)
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
-@@ -4108,7 +4109,7 @@ export class EmDashRuntime {
+@@ -4137,7 +4138,7 @@ export class EmDashRuntime {
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
  
  		// Delete the content

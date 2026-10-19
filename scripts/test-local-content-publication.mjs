@@ -267,7 +267,9 @@ function assertReleaseDetails(html) {
   assert.ok(html.includes('A1') && html.includes('B1') && html.includes('3:42'));
   assert.match(html, /<strong>Bold description<\/strong>/);
   assert.match(html, /href="https:\/\/example.com\/band"/);
-  assert.ok(html.indexOf('Bold description') < html.indexOf('Local opening track'));
+  assert.match(html, /id="release-description-title"/);
+  assert.match(html, /id="release-tracklist-title"/);
+  assert.ok(html.indexOf('id="release-description-title"') < html.indexOf('id="release-tracklist-title"'));
 }
 for (const [collection, slug, storeSlug, tracklist] of [
   [

@@ -34,20 +34,36 @@ const media = [
     filename: 'Ouranopithecus-band-photo.jpg',
     alt: 'Ouranopithecus band portrait',
     storageKey: 'artist-photo.jpg',
+    mimeType: 'image/jpeg',
+    width: 800,
+    height: 1200,
   },
   {
     id: 'record-cover',
     filename: 'mass-culture-barren-point-cover.jpg',
     alt: 'Barren Point sleeve',
     storageKey: 'record-cover.jpg',
+    mimeType: 'image/jpeg',
+    width: 1200,
+    height: 1189,
   },
   {
     id: 'chronoboros',
     filename: 'Chronoboros-band-logo.jpg',
     alt: 'Chronoboros artwork',
     storageKey: 'chronoboros.jpg',
+    mimeType: 'image/jpeg',
+    width: 1200,
+    height: 1200,
   },
 ];
+for (const item of media) {
+  item.url = `/_emdash/api/media/file/${item.storageKey}`;
+  item.size = 1;
+  item.createdAt = '2026-10-01T00:00:00.000Z';
+  item.authorId = null;
+  item.folderId = null;
+}
 const images = {
   'artist-photo.jpg': 'artists/Ouranopithecus-band-photo.jpg',
   'record-cover.jpg': 'releases/mass-culture-barren-point-cover.jpg',
@@ -778,7 +794,20 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/_emdash/api/media') {
       if (req.method === 'POST') {
         if (state.failUpload) return fail(500);
-        const uploaded = { id: 'uploaded', filename: 'uploaded.png', alt: null, storageKey: 'uploaded.png' };
+        const uploaded = {
+          id: 'uploaded',
+          filename: 'uploaded.png',
+          alt: null,
+          storageKey: 'uploaded.png',
+          mimeType: 'image/png',
+          width: 96,
+          height: 96,
+          url: '/_emdash/api/media/file/uploaded.png',
+          size: pixels.byteLength,
+          createdAt: '2026-10-01T00:00:00.000Z',
+          authorId: null,
+          folderId: null,
+        };
         media.unshift(uploaded);
         return ok({ item: uploaded });
       }
@@ -792,6 +821,7 @@ const server = createServer(async (req, res) => {
         ...(matching.length > offset + 2 ? { nextCursor: String(offset + 2) } : {}),
       });
     }
+    if (['/_emdash/api/media/folders', '/_emdash/api/media/providers'].includes(url.pathname)) return ok({ items: [] });
     if (url.pathname.startsWith('/_emdash/api/media/'))
       return ok({ item: media.find((item) => item.id === url.pathname.split('/').at(-1)) });
     if (url.pathname.startsWith('/_emdash/api/content/')) {
@@ -883,6 +913,18 @@ else if (process.argv.includes('--editor-recovery')) {
   page.on('pageerror', (error) => console.error(error.message));
   await mkdir(artifacts, { recursive: true });
   try {
+    records.releases[0].data.body = [
+      {
+        _type: 'image',
+        _key: 'replacement',
+        asset: { _ref: 'artist-photo' },
+        alt: 'Replacement image',
+        width: 800,
+        height: 1200,
+        displayWidth: 240,
+        displayHeight: 360,
+      },
+    ];
     await page.goto(`${origin}/content/?collection=releases&id=releases-1`);
     const releaseArtist = page.getByRole('combobox', { name: 'Artist', exact: true });
     await releaseArtist.waitFor();
@@ -892,6 +934,26 @@ else if (process.argv.includes('--editor-recovery')) {
     const fullEditor = fullText.getByRole('textbox', { name: 'Full text', exact: true });
     await fullEditor.waitFor();
     assert.equal(await fullText.getByRole('button', { name: 'Insert image', exact: true }).count(), 1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fullEditor.getByRole('img', { name: 'Replacement image', exact: true }).click();
+    await page.getByRole('button', { name: 'Replace', exact: true }).click();
+    const imagePicker = page.getByRole('dialog');
+    await imagePicker
+      .getByRole('searchbox', { name: 'Search media', exact: true })
+      .fill('mass-culture-barren-point-cover');
+    await imagePicker.getByRole('button', { name: 'mass-culture-barren-point-cover.jpg', exact: true }).click();
+    await imagePicker.getByRole('button', { name: 'Replace', exact: true }).click();
+    await imagePicker.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => document.querySelector('.ProseMirror img')?.naturalWidth === 1200);
+    const dimensions = await fullEditor.locator('img').evaluate((image) => ({
+      width: image.getBoundingClientRect().width,
+      height: image.getBoundingClientRect().height,
+    }));
+    assert.ok(Math.abs(dimensions.width - 240) < 2, 'Replacement preserves the chosen display width');
+    assert.ok(Math.abs(dimensions.height - 238) < 2, 'Replacement uses the new image proportions');
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    await fullEditor.press('ArrowRight');
+    await fullEditor.press('Enter');
     await fullEditor.fill('');
     await fullEditor.pressSequentially('/video');
     await page.locator('[data-slash-command-menu]').getByText('No results', { exact: true }).waitFor();
@@ -1075,7 +1137,10 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.getByLabel('Genre', { exact: true }).fill('Post Rock / Post Metal');
     await page.getByRole('button', { name: 'Choose artist image', exact: true }).click();
     await page.getByRole('button', { name: 'Upload', exact: true }).click();
-    await page.locator('input[type=file]').setInputFiles({ name: 'artist.png', mimeType: 'image/png', buffer: pixels });
+    await page
+      .getByRole('dialog')
+      .locator('input[type=file]:enabled')
+      .setInputFiles({ name: 'artist.png', mimeType: 'image/png', buffer: pixels });
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
     await page.getByRole('button', { name: 'Change artist image', exact: true }).waitFor();
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
@@ -1093,7 +1158,10 @@ else if (process.argv.includes('--editor-recovery')) {
     assert.equal(release.data.release_date ?? '', '');
     await page.getByRole('button', { name: 'Choose cover image', exact: true }).click();
     await page.getByRole('button', { name: 'Upload', exact: true }).click();
-    await page.locator('input[type=file]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: pixels });
+    await page
+      .getByRole('dialog')
+      .locator('input[type=file]:enabled')
+      .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: pixels });
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
     await page.getByLabel('Release stage', { exact: true }).selectOption('released');
     await page.getByLabel('Digital release date', { exact: true }).fill('2026-09-27');

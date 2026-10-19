@@ -4,5 +4,5 @@
 /* Native editor dialogs and menus must clear the staff and text-editor sticky toolbars. */
 body.staff-body > [data-base-ui-portal] {
   position: relative;
-  z-index: 60;
+  z-index: 110;
 }

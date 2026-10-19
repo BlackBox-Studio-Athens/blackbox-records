@@ -12,12 +12,13 @@ const { values } = parseArgs({
   options: { 'source-state': { type: 'string' }, 'source-history': { type: 'string', default: 'auto' } },
 });
 assert.ok(
-  ['auto', 'current', 'legacy', '1.1.0'].includes(values['source-history']),
-  'Select auto, current (1.0.1), legacy or 1.1.0 source history',
+  ['auto', 'current', 'legacy', '1.1.0', '1.2.0'].includes(values['source-history']),
+  'Select auto, current (1.0.1), legacy, 1.1.0 or 1.2.0 source history',
 );
 const targetMigrations = await getCoreMigrationIdentity();
 // Copy only a stopped Local store. The supplied source is never opened by Wrangler or modified.
 const source = resolve(values['source-state'] ?? join(backend, '.wrangler/state'));
+console.log(`Source history: ${values['source-history']}; store: ${source}`);
 const state = await mkdtemp(join(backend, '.emdash/upgrade-'));
 let worker;
 const configPath = join(backend, 'dist/server/wrangler.json');
@@ -103,7 +104,7 @@ async function createPendingReleaseDraft() {
     const legacy = !(await db
       .prepare("SELECT name FROM _emdash_migrations WHERE name = '088_cron_oneshot_utc'")
       .first());
-    const source110 = Boolean(
+    const through091 = Boolean(
       await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '091_redirect_artifacts'").first(),
     );
     if (values['source-history'] !== 'auto')
@@ -112,8 +113,13 @@ async function createPendingReleaseDraft() {
         values['source-history'] === 'legacy',
         'Supplied store must match the selected source history',
       );
+    // 1.1.0 and 1.2.0 share this schema; their version label comes from the source artifact's provenance.
     if (values['source-history'] !== 'auto')
-      assert.equal(source110, values['source-history'] === '1.1.0', 'Supplied store must match the selected version');
+      assert.equal(
+        through091,
+        ['1.1.0', '1.2.0'].includes(values['source-history']),
+        'Supplied store must match the selected migration history',
+      );
     if (!legacy)
       assert.ok(
         await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '089_auto_seed_completion'").first(),

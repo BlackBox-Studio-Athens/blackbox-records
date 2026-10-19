@@ -97,6 +97,47 @@ describe('EmDash checkpoint composition', () => {
     expect(env.STRIPE_SECRET_KEY).toBe('sk_test_old');
   });
 
+  it('streams preview binary bodies before completion and preserves private response headers', async () => {
+    let source!: ReadableStreamDefaultController<Uint8Array>;
+    const first = Uint8Array.from({ length: 20_000 }, (_, index) => index % 251);
+    const original = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          source = controller;
+          controller.enqueue(first);
+        },
+      }),
+      { headers: { 'Content-Type': 'font/woff2', 'Cache-Control': 'private, no-store' } },
+    );
+    const env = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      LOCAL_OPERATOR_EMAIL: 'operator@example.com',
+      PUBLIC_SITE: { fetch: vi.fn().mockResolvedValue(original) },
+    } as unknown as ConstructorParameters<typeof CmsRuntime>[1];
+    const runtime = new CmsRuntime({} as DurableObjectState, env);
+    const bindings = {
+      ...env,
+      CMS_RUNTIME: { getByName: () => runtime },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+    const response = await worker.fetch(
+      new Request('http://localhost:8787/blackbox-records/_astro/font.1234abcd.woff2'),
+      bindings,
+      {} as ExecutionContext,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('font/woff2');
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    const reader = response.body!.getReader();
+    const received = (await reader.read()).value!;
+    expect(received).toEqual(first);
+    first.fill(0);
+    expect(received[1]).toBe(1);
+    source.enqueue(new Uint8Array([1, 2, 3]));
+    source.close();
+    expect((await reader.read()).value).toEqual(new Uint8Array([1, 2, 3]));
+    expect((await reader.read()).done).toBe(true);
+  });
+
   it('validates native navigation booleans before publishing newly imported records', async () => {
     vi.mocked(authenticate).mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
     const runtime = new CmsRuntime(

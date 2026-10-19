@@ -379,7 +379,7 @@ async function checkInteractions(page, name) {
     await player.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
     await frame.getByRole('button', { name: /Minimize/ }).click();
     const originalPlayer = await player.elementHandle();
-    await frame.locator(`[data-release-id="${item.slug}"] .release-card-image-shell`).click();
+    await frame.locator(`[data-release-id="${item.slug}"] [data-release-detail]`).click();
     await frame.getByRole('button', { name: 'Load video', exact: true }).waitFor();
     assert.equal(videoRequests.length, 0, 'Videos stay unloaded until explicit activation');
     await frame.getByRole('button', { name: 'Load video', exact: true }).click();
@@ -641,25 +641,6 @@ if (process.argv.includes('--browsers')) {
     if (process.env.PREVIEW_BROWSER && process.env.PREVIEW_BROWSER !== type.name()) continue;
     const browser = await type.launch();
     const context = await browser.newContext();
-    // Routing disables the browser HTTP cache. Reuse real font responses within this
-    // run so iframe replacement does not repeatedly cancel cross-origin downloads.
-    const fontResponses = new Map();
-    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async (route) => {
-      const url = route.request().url();
-      let cached = fontResponses.get(url);
-      if (!cached) {
-        const response = await route.fetch({ maxRetries: 2 });
-        assert.equal(response.status(), 200, `Font resource: ${url}`);
-        cached = {
-          response,
-          body: url.startsWith('https://fonts.googleapis.com/')
-            ? (await response.text()).replaceAll('font-display: optional', 'font-display: swap')
-            : await response.body(),
-        };
-        fontResponses.set(url, cached);
-      }
-      await route.fulfill(cached);
-    });
     const page = await context.newPage();
     page.on('response', async (response) => {
       if (response.request().method() !== 'POST') return;
@@ -812,6 +793,9 @@ try {
                 failedImages: [...window.document.images]
                   .filter((image) => image.complete && !image.naturalWidth)
                   .map((image) => image.currentSrc),
+                failedFonts: [...window.document.fonts]
+                  .filter((font) => font.status === 'error')
+                  .map((font) => ({ family: font.family, weight: font.weight, display: font.display })),
               })),
             );
           throw error;
@@ -821,9 +805,17 @@ try {
         const assets = await frame.evaluate(() => ({
           styles: [...window.document.querySelectorAll('link[rel="stylesheet"]')].every((link) => !!link.sheet),
           background: getComputedStyle(window.document.body).backgroundColor,
+          backgroundVariable: getComputedStyle(window.document.body).getPropertyValue('--background'),
+          readyState: window.document.readyState,
+          stylesheets: [...window.document.styleSheets].map((sheet) => ({
+            href: sheet.href,
+            disabled: sheet.disabled,
+            media: sheet.media.mediaText,
+            rules: sheet.cssRules.length,
+          })),
         }));
         assert.ok(assets.styles, name + ' ' + collection + ': stylesheet missing');
-        assert.notEqual(assets.background, 'rgba(0, 0, 0, 0)');
+        assert.notEqual(assets.background, 'rgba(0, 0, 0, 0)', JSON.stringify(assets));
         console.error('Rendered ' + name + ' ' + collection + '/' + view);
       }
       for (const path of ['/_emdash/api/content/news', '/api/internal/variants', '/api/checkout/sessions']) {

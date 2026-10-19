@@ -319,6 +319,7 @@ const revisionImage = z
     blurhash: z.string().optional(),
     dominantColor: z.string().optional(),
     alt: z.string().optional(),
+    caption: z.string().optional(),
     focalX: z.number().min(0).max(1).optional(),
     focalY: z.number().min(0).max(1).optional(),
     meta: z

@@ -14,6 +14,7 @@ import {
   productSafetyContentSchema,
   productSafetyOfferInformation,
   productSafetyOfferSchema,
+  validateCmsRevisionContent,
 } from '@blackbox/content-model';
 
 test('editorial images retain presentation without native delivery metadata and reject unsafe links', () => {
@@ -78,6 +79,33 @@ test('editorial videos normalize approved providers and discard autoplay', () =>
   assert.deepEqual(cmsBodySchema.parse(body), body);
   assert.equal(proseSchema.safeParse(body).success, false);
   assert.equal(cmsBodySchema.safeParse([{ ...body[0], src: 'https://example.com/video' }]).success, false);
+});
+
+test('native revision images accept captions without widening editorial writes', () => {
+  const image = { id: 'image', provider: 'local', meta: { storageKey: 'image.png' } };
+  const data = { title: 'Artist', genre: 'Hardcore', bio: 'Biography', image_alt: 'Portrait' };
+  for (const value of [
+    image,
+    { ...image, caption: 'Photo credit' },
+    { ...image, caption: '' },
+    { ...image, meta: { ...image.meta, caption: 'Legacy caption' } },
+    { ...image, caption: '', meta: { ...image.meta, caption: '' } },
+  ]) {
+    const stored = { ...data, image: value };
+    const before = structuredClone(stored);
+    assert.deepEqual(validateCmsRevisionContent('artists', stored), []);
+    assert.deepEqual(stored, before, 'Revision validation preserves stored captions');
+    assert.ok(validateCmsContent('artists', stored).length, 'Native metadata is not an editorial write shape');
+    assert.ok(validateCmsDraft('artists', stored).length, 'Draft writes retain their strict image contract');
+  }
+  for (const value of [
+    { ...image, caption: null },
+    { ...image, caption: 42 },
+    { ...image, caption: 'Credit', unknown: 'not allowed' },
+    { ...image, meta: { ...image.meta, unknown: 'not allowed' } },
+  ])
+    assert.ok(validateCmsRevisionContent('artists', { ...data, image: value }).length);
+  assert.deepEqual(validateCmsContent('artists', { ...data, image: { id: 'image' } }), []);
 });
 
 test('Artist activity retains legacy defaults and native false through draft and publication', () => {

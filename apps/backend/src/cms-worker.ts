@@ -516,7 +516,18 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   private async fetchRequest(request: Request, config: CommerceRuntimeConfig): Promise<Response> {
     const bindings = { ...this.env, ...commerceRuntimeConfigFromBindings(config) };
     const url = new URL(request.url);
-    if (isPreviewHost(request, bindings)) return this.previewRead(request, bindings);
+    if (isPreviewHost(request, bindings)) {
+      const response = await this.previewRead(request, bindings);
+      // Copy before RPC serialization; Local's asset router otherwise reuses binary buffers.
+      const body = response.body?.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            controller.enqueue(chunk.slice());
+          },
+        }),
+      );
+      return new Response(body, response);
+    }
     if (
       publicationWorkflowPaths.has(url.pathname) &&
       !(url.pathname === publicationCatalogPath && bindings.PRODUCT_ENVIRONMENT === 'LOCAL')

@@ -36,17 +36,19 @@ try {
     { env: { ...process.env, CI: 'true' }, encoding: 'utf8', windowsHide: true },
   );
   assert.equal(commerceMigration.status, 0, commerceMigration.stdout + commerceMigration.stderr);
-  worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
-    config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
-    ip: '127.0.0.1',
-    port: 8799,
-    local: true,
-    persist: true,
-    persistTo: localState,
-    envFiles: [],
-    logLevel: 'error',
-    experimental: { disableExperimentalWarning: true },
-  });
+  const startWorker = () =>
+    unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
+      config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
+      ip: '127.0.0.1',
+      port: 8799,
+      local: true,
+      persist: true,
+      persistTo: localState,
+      envFiles: [],
+      logLevel: 'error',
+      experimental: { disableExperimentalWarning: true },
+    });
+  worker = await startWorker();
   const stock = await fetch('http://127.0.0.1:8799/api/internal/variants');
   assert.equal(stock.status, 200, await stock.clone().text());
   assert.deepEqual(await stock.json(), []);
@@ -88,6 +90,9 @@ try {
     code: 'publication_unavailable',
     error: 'PUBLICATION_UNAVAILABLE',
   });
+  // Stop the Local D1 owner before a synchronous migration subprocess opens the same SQLite store.
+  await worker.stop();
+  worker = undefined;
   const migrate = (...args) => {
     const result = spawnSync(
       process.execPath,
@@ -102,8 +107,10 @@ try {
     '0002_publication_dispatch.sql',
     '0003_local_publication_receipt.sql',
     '0004_runtime_publication.sql',
+    '0005_publication_history.sql',
   ]);
   migrate('--apply');
+  worker = await startWorker();
 
   // Incomplete new editorial entries can be discarded without publishing or deleting media.
   const disposableArtist = await request('/content/artists', 'POST', {
@@ -258,9 +265,13 @@ try {
         'Artwork approval does not publish the item',
       );
     }
-    assert.equal((await request(idPath, 'PUT', { _rev: current.body.data._rev, data, slug: 'renamed' })).status, 400);
-    assert.equal((await request(path, 'POST', { slug: '../unsafe', data })).status, 400);
-    assert.equal((await request(path, 'POST', { slug: 'metadata-check', data, status: 'published' })).status, 400);
+    const rename = await request(idPath, 'PUT', { _rev: current.body.data._rev, data, slug: 'renamed' });
+    assert.equal(rename.status, 400, `${collection} rename: ${JSON.stringify(rename.body)}`);
+    const createData = collection === 'releases' ? { ...data, catalog_number: 'BBR#999' } : data;
+    const unsafeSlug = await request(path, 'POST', { slug: '../unsafe', data: createData });
+    assert.equal(unsafeSlug.status, 400, `${collection} unsafe slug: ${JSON.stringify(unsafeSlug.body)}`);
+    const metadata = await request(path, 'POST', { slug: 'metadata-check', data: createData, status: 'published' });
+    assert.equal(metadata.status, 400, `${collection} metadata: ${JSON.stringify(metadata.body)}`);
     const saved = await request(idPath, 'PUT', { _rev: current.body.data._rev, data });
     assert.equal(saved.status, 200, collection + ': ' + JSON.stringify(saved));
     assert.equal((await request(idPath, 'PUT', { _rev: current.body.data._rev, data })).status, 409);
