@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn, publicTitleClass } from '@/components/ui/utils';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
-import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 import { connectSurfaceHistory, readHistoryEntryMarker } from '@/platform/lib/surface-history';
+
+const InternationalOrderNotice = lazy(() => import('./cart/InternationalOrderNotice'));
 
 // Home builds these at render from the accepted snapshot; only Store Items the open pre-order projection lists appear.
 export type StorePreorderShowcaseCandidate = {
@@ -419,7 +420,9 @@ function PreorderChapter({
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
       )}
-      <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
+      <Suspense fallback={null}>
+        <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
+      </Suspense>
     </div>
   );
   const terms = (
