@@ -1,5 +1,6 @@
 import { getPurchaseInformation, isPurchaseInformationDraft } from '@/platform/lib/purchase-information';
 import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
+import { priceDisclosure } from '@blackbox/api-client/public';
 import LegalGuaranteeNotice from './LegalGuaranteeNotice';
 import Prose from './Prose';
 
@@ -26,12 +27,23 @@ export default function PurchaseInformation({
   presentation,
 }: {
   information?: ApprovedPurchaseInformation | null;
-  presentation?: 'checkout';
+  presentation?: 'checkout' | 'checkout-support';
 }) {
   const termsHref = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`;
   const deliverySummary =
     information?.terms.delivery.summary ??
     'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.';
+  if (presentation === 'checkout-support') {
+    return (
+      <div className="checkout-review__information" data-purchase-information>
+        <div className="checkout-review__support">
+          <a href={termsHref}>Delivery &amp; returns</a>
+          <a href={`${termsHref}#support`}>Purchase help</a>
+        </div>
+        <LegalGuaranteeNotice />
+      </div>
+    );
+  }
   if (presentation === 'checkout') {
     return (
       <div className="checkout-review__information" data-purchase-information>
@@ -39,13 +51,6 @@ export default function PurchaseInformation({
           <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
         )}
         <Prose value={deliverySummary} />
-        <div className="checkout-review__support">
-          <a href={`${termsHref}#delivery`}>Delivery information</a>
-          <a href={`${termsHref}#returns`}>Returns and refunds</a>
-          <a href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/withdrawal/`}>Withdraw from an order</a>
-          <a href={`${termsHref}#support`}>Purchase help</a>
-        </div>
-        <LegalGuaranteeNotice />
       </div>
     );
   }
@@ -54,23 +59,11 @@ export default function PurchaseInformation({
       {import.meta.env.DEV && information && isPurchaseInformationDraft && (
         <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
       )}
-      {information && <Prose value={information.terms.dispatch.summary} />}
-      <Prose value={deliverySummary} />
-      <div className="flex flex-wrap gap-x-5">
-        <a className={linkClass} href={`${termsHref}#delivery`}>
-          Delivery information
-        </a>
-        <a className={linkClass} href={`${termsHref}#returns`}>
-          Returns and refunds
-        </a>
-        <a className={linkClass} href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/withdrawal/`}>
-          Withdraw from an order
-        </a>
-        <a className={linkClass} href={`${termsHref}#support`}>
-          Purchase help
-        </a>
-        <PrivacyLink information={information} />
-      </div>
+      <p>{priceDisclosure}</p>
+      <p>BOX NOW locker delivery within Greece.</p>
+      <a className={linkClass} href={termsHref}>
+        Delivery &amp; returns
+      </a>
     </div>
   );
 }

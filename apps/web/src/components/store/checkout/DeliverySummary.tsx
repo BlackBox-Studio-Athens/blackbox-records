@@ -125,23 +125,27 @@ export function DeliverySummary({
             </dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt>BOX NOW locker delivery</dt>
+            <dt>Delivery</dt>
             <dd>
               <span className="font-display leading-none">{quote ? money(quote.amountMinor) : '…'}</span>
             </dd>
           </div>
-          {!isDrawer && (
-            <div className="checkout-review__total flex justify-between gap-4 font-semibold">
-              <dt>Total, charged today</dt>
-              <dd>
-                {quote?.totalAmountMinor === null ? (
-                  'Shown before payment'
-                ) : (
-                  <span className="font-display leading-none">{quote ? money(quote.totalAmountMinor) : '…'}</span>
-                )}
-              </dd>
-            </div>
-          )}
+          <div
+            className={
+              isDrawer
+                ? 'flex justify-between gap-4 border-t border-border pt-2 font-semibold'
+                : 'checkout-review__total flex justify-between gap-4 font-semibold'
+            }
+          >
+            <dt>Total</dt>
+            <dd>
+              {quote?.totalAmountMinor === null ? (
+                'Shown before payment'
+              ) : (
+                <span className="font-display leading-none">{quote ? money(quote.totalAmountMinor) : '…'}</span>
+              )}
+            </dd>
+          </div>
         </dl>
       )}
       {retry && (error === 'temporary' || retrying) && (
@@ -158,11 +162,7 @@ export function DeliverySummary({
               : 'Tax details are shown before payment.'}
         </p>
       )}
-      {isDrawer ? (
-        <p>Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.</p>
-      ) : (
-        <PurchaseInformation presentation="checkout" />
-      )}
+      {isDrawer ? <p>BOX NOW locker delivery within Greece.</p> : <PurchaseInformation presentation="checkout" />}
     </div>
   );
 }

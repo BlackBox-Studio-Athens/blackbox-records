@@ -153,6 +153,7 @@ describe('StoreItemPurchaseActions', () => {
         cartSeed={null}
         releaseDate={releaseDate}
         isVinyl={isVinyl}
+        purchaseHint="Legacy recovery guidance"
       />,
     );
 
@@ -160,6 +161,15 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).toContain('>Pre-order</button>');
     if (!isVinyl) expect(html).not.toContain('vinyl');
     if (hint === STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint) expect(html).not.toContain('album is out');
+  });
+
+  it('leaves pre-order facts to the price block when no recovery hint is requested', () => {
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseActions cartItem={{ ...cartItem, preorder: { shipEstimate: null } }} cartSeed={null} />,
+    );
+    expect(html).toContain('>Pre-order</button>');
+    expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint);
+    expect(html).not.toContain('We send');
   });
 
   it('does not keep release-aware pre-order hints after a fresh ordinary or unavailable offer', async () => {

@@ -6,7 +6,7 @@ export const deliveryQuantityBands = Object.freeze([
   { maxUnits: 8, amountMinor: 600 },
   { maxUnits: null, amountMinor: 1000 },
 ]);
-export const priceDisclosure = 'Shipping calculated in your cart. The complete total is shown before payment.';
+export const priceDisclosure = 'Shipping calculated in your cart.';
 export type TaxCollectionMode = 'STRIPE_AUTOMATIC_TAX' | 'NO_TAX_COLLECTED';
 export function taxCollectionDisclosure(mode: TaxCollectionMode): string {
   return mode === 'NO_TAX_COLLECTED'

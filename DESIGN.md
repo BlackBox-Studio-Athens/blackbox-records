@@ -225,6 +225,8 @@ Buttons are hard, typographic controls with direct action language: one family (
 
 **The Header Cart Rule.** The bag control appears when the cart has items or the shopper is on a store route; its box is reserved so the navigation never shifts.
 
+**Purchase flow refinement, approved 20 October 2026.** The header bag uses the existing ghost icon control, with no permanent rectangle on ordinary pages or checkout; preserve its 44px target, count, supplementary Cart label and keyboard focus. Keep Continue to Payment in the native ink face and center the official white Powered by Stripe badge beneath that button. Item purchase information follows the action as one short shipping note and Delivery & returns link; existing authoritative pre-order facts stay above the action, without repeated prose beneath it. Cart and checkout show costs before delivery and conditional ships-together information. Checkout keeps the address/locker clarification before payment and secondary policy/help and the existing legal-guarantee disclosure after the handoff. Preserve full accepted policy documents, contextual privacy and optional newsletter consent, global withdrawal access, product safety, artwork, typography, page columns and responsive layout.
+
 ### Chips
 
 Chips and badges are compact metadata, not decorative pills.

@@ -494,7 +494,7 @@ describe('CheckoutOfferStatus helpers', () => {
       expected: 'When it arrives',
     },
   ] satisfies { lines: CartLine[]; expected: string }[])(
-    'shows one shared notice before delivery, using $expected',
+    'shows one shared notice after costs and delivery, using $expected',
     ({ lines, expected }) => {
       cartState.lines = lines;
       const markup = renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
@@ -507,11 +507,9 @@ describe('CheckoutOfferStatus helpers', () => {
       expect(markup).toContain(expected);
       expect(markup).toContain('Together to your BOX NOW locker');
       expect(markup).toContain(
-        lines.some((line) => !line.preorder)
-          ? 'Your whole order, in-stock items included, waits and travels with'
-          : 'Your order ships together when',
+        lines.some((line) => !line.preorder) ? 'Your in-stock' : 'Your order ships together when',
       );
-      expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
+      expect(markup.indexOf('class="preorder-notice"')).toBeGreaterThan(markup.indexOf('data-delivery-summary'));
       expect(markup).toContain('Calculating delivery and current prices');
       expect(markup).toContain('Confirming price and availability before payment opens.');
       if (expected === 'When it arrives') expect(markup).not.toContain('October 2026');
@@ -527,7 +525,7 @@ describe('CheckoutOfferStatus helpers', () => {
     );
     expect(markup.match(/Pre-order in this order/g)).toHaveLength(1);
     expect(markup).toContain('When it arrives');
-    expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
+    expect(markup.indexOf('class="preorder-notice"')).toBeGreaterThan(markup.indexOf('data-delivery-summary'));
   });
 
   it('keeps ordinary cart review unchanged and ignores a fallback that is not in the cart', () => {

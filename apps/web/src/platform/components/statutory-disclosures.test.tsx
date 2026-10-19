@@ -38,8 +38,11 @@ describe('legal guarantee notice', () => {
     expect(markup).toContain('Ελάχιστη νόμιμη εγγύηση δύο ετών');
   });
 
-  it('appears only in the checkout presentation of purchase information', () => {
-    expect(renderToStaticMarkup(<PurchaseInformation presentation="checkout" />)).toContain('data-legal-guarantee');
+  it('remains in checkout support while compact item information stays concise', () => {
+    expect(renderToStaticMarkup(<PurchaseInformation presentation="checkout-support" />)).toContain(
+      'data-legal-guarantee',
+    );
+    expect(renderToStaticMarkup(<PurchaseInformation presentation="checkout" />)).not.toContain('data-legal-guarantee');
     expect(renderToStaticMarkup(<PurchaseInformation />)).not.toContain('data-legal-guarantee');
   });
 

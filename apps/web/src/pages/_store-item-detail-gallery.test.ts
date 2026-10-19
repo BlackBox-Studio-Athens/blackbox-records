@@ -144,7 +144,7 @@ describe('Store Item listening context contract', () => {
     expect(purchaseActions).toContain('client:load');
     expect(purchaseActions).toContain('cartItem={cartItem}');
     expect(purchaseActions).toContain('cartSeed={cartSeed}');
-    expect(purchaseActions).toContain('purchaseHint=');
+    expect(purchaseActions).not.toContain('purchaseHint=');
     expect(source).toContain('embeddedPlayerData={embeddedPlayerData}');
     expect(storeCard).toContain('storeItem.embeddedPlayerData && (');
     // The card's corner Listen names its record, so the icon-only phone control stays distinct.

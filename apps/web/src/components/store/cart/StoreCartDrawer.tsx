@@ -340,8 +340,8 @@ export function StoreCartDrawerPanel({
             </div>
 
             <div className="store-cart-drawer__summary">
-              <PreorderCartNotice lines={visibleLines} presentation="drawer" />
               {deliverySummary}
+              <PreorderCartNotice lines={visibleLines} presentation="drawer" />
               <InternationalOrderNotice variant="card" itemTitles={visibleLines.map((line) => line.title)} />
             </div>
           </>

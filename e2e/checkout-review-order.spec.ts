@@ -5,7 +5,62 @@ const titles = [
   'Barren Point, another extended vinyl edition title',
 ];
 
-for (const width of [320, 390, 1440]) {
+for (const width of [320, 390, 768, 1440]) {
+  test(`item purchase copy is compact and pre-order facts remain visible at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('store/disintegration-black-vinyl-lp/');
+    await waitForShell(page);
+    const information = page.locator('[data-purchase-information]');
+    await expect(information).toHaveCount(1);
+    await expect(information).toContainText('Shipping calculated in your cart.');
+    await expect(information).toContainText('BOX NOW locker delivery within Greece.');
+    await expect(information.getByRole('link', { name: 'Delivery & returns', exact: true })).toHaveAttribute(
+      'href',
+      /\/terms\/$/,
+    );
+    await expect(information.getByRole('link')).toHaveCount(1);
+    await expect(page.locator('.preorder-facts')).toHaveCount(0);
+    await expect(
+      page.getByText('Add it to the cart to review this item before checkout.', { exact: true }),
+    ).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await testInfo.attach(`stocked-item-${width}px`, {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: 'image/png',
+    });
+
+    await page.route('**/api/store/items/disintegration-black-vinyl-lp', (route) =>
+      route.fulfill({
+        json: {
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'disintegration-black-vinyl-lp_standard',
+          availability: { label: 'Pre-order', status: 'available' },
+          canCheckout: true,
+          catalogStatus: 'ready',
+          price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
+          preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' } },
+        },
+      }),
+    );
+    await page.reload();
+    await waitForShell(page);
+    const facts = page.locator('.preorder-facts');
+    await expect(facts).toContainText('Around mid November 2026');
+    await expect(facts).toContainText('Charged in full today');
+    const action = page.getByRole('button', { name: 'Pre-order', exact: true });
+    await expect(action).toBeEnabled();
+    expect((await facts.boundingBox())!.y + (await facts.boundingBox())!.height).toBeLessThanOrEqual(
+      (await action.boundingBox())!.y,
+    );
+    await expectNoHorizontalOverflow(page);
+    await testInfo.attach(`preorder-item-${width}px`, {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: 'image/png',
+    });
+  });
+
   test(`checkout item review precedes payment at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
     page,
   }, testInfo) => {
@@ -81,6 +136,31 @@ for (const width of [320, 390, 1440]) {
     await expect(summary.getByRole('heading', { name: titles[1], exact: true })).toBeVisible();
     await expect(pay).toBeEnabled();
     await expect(payment.locator('.checkout-review__total')).toContainText('€58.50');
+    const stripe = payment.locator('[data-checkout-stripe-badge]');
+    await expect(stripe).toHaveAccessibleName('Powered by Stripe');
+    await expect(stripe).toBeVisible();
+    expect(await stripe.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+    const buttonBox = (await pay.boundingBox())!;
+    const stripeBox = (await stripe.boundingBox())!;
+    expect(stripeBox.y).toBeGreaterThanOrEqual(buttonBox.y + buttonBox.height);
+    expect(Math.abs(stripeBox.x + stripeBox.width / 2 - (buttonBox.x + buttonBox.width / 2))).toBeLessThan(1);
+    const support = payment.getByRole('link', { name: 'Purchase help', exact: true });
+    expect((await support.boundingBox())!.y).toBeGreaterThan(stripeBox.y + stripeBox.height);
+    await expect(payment).toContainText('A street address collected at payment does not mean home delivery.');
+    await expect(payment).not.toContainText('Payment is taken on the Stripe page');
+    await expect(payment.getByRole('checkbox')).not.toBeChecked();
+    await expect(page.getByRole('link', { name: 'Withdraw from an order', exact: true })).toHaveCount(1);
+    const cartTrigger = page.locator('[data-store-cart-trigger]').first();
+    await expect(cartTrigger).toHaveClass(/site-button--ghost/);
+    await expect(cartTrigger).toHaveCSS('border-color', 'rgba(0, 0, 0, 0)');
+    await expect(cartTrigger).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    const cartBox = (await cartTrigger.boundingBox())!;
+    expect(cartBox.width).toBeGreaterThanOrEqual(44);
+    expect(cartBox.height).toBeGreaterThanOrEqual(44);
+    if (width === 1440) {
+      await expect(pay).toBeInViewport({ ratio: 1 });
+      await expect(stripe).toBeInViewport({ ratio: 1 });
+    }
     expect(
       await page.locator('.checkout-review__columns').evaluate((columns) => {
         const review = columns.querySelector('.checkout-review__summary')!;

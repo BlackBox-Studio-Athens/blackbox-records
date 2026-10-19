@@ -20,7 +20,7 @@ import {
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
 import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
-import { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/platform/components/PurchaseInformation';
+import PurchaseInformation, { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 import { clearCheckoutAttempt, getOrCreateCheckoutAttempt } from './checkout-attempt';
@@ -266,10 +266,10 @@ export default function CheckoutOfferStatus({
           </Badge>
         </div>
 
-        <PreorderCartNotice lines={reviewLines} />
         {(isCartLoading || hasCheckoutLine) && (
           <DeliverySummary {...delivery} loading={isCartLoading || delivery.loading} />
         )}
+        <PreorderCartNotice lines={reviewLines} />
         {hasCheckoutLine && (
           <InternationalOrderNotice
             variant="card"
@@ -309,35 +309,46 @@ export default function CheckoutOfferStatus({
                 </p>
               )}
 
-              <Button
-                type="button"
-                variant={payView.variant}
-                className={cn(
-                  'checkout-review__pay whitespace-normal',
-                  payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
-                )}
-                disabled={isStartingCheckout || delivery.loading || !delivery.quote}
-                aria-busy={isStartingCheckout || payView.isWaitingForQuote ? 'true' : undefined}
-                data-checkout-pay-state={payView.variant === 'default' ? 'ready' : 'waiting'}
-                onClick={() => {
-                  void handleStartCheckout();
-                }}
-              >
-                {isStartingCheckout || payView.isWaitingForQuote ? (
-                  <LoadingButtonContent label={payView.label} />
-                ) : (
-                  <>
-                    <span className="min-w-0 leading-tight">{payView.label}</span>
-                    {payView.amountDisplay && (
-                      <span className="sr-only" aria-hidden="true" data-checkout-pay-amount>
-                        {payView.amountDisplay}
-                      </span>
-                    )}
-                  </>
-                )}
-              </Button>
-
-              <p className="checkout-review__note">Payment is taken on the Stripe page, the same as for any order.</p>
+              <div className="checkout-review__payment-handoff">
+                <Button
+                  type="button"
+                  variant={payView.variant}
+                  className={cn(
+                    'checkout-review__pay whitespace-normal',
+                    payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
+                  )}
+                  disabled={isStartingCheckout || delivery.loading || !delivery.quote}
+                  aria-busy={isStartingCheckout || payView.isWaitingForQuote ? 'true' : undefined}
+                  data-checkout-pay-state={payView.variant === 'default' ? 'ready' : 'waiting'}
+                  onClick={() => {
+                    void handleStartCheckout();
+                  }}
+                >
+                  {isStartingCheckout || payView.isWaitingForQuote ? (
+                    <LoadingButtonContent label={payView.label} />
+                  ) : (
+                    <>
+                      <span className="min-w-0 leading-tight">{payView.label}</span>
+                      {payView.amountDisplay && (
+                        <span className="sr-only" aria-hidden="true" data-checkout-pay-amount>
+                          {payView.amountDisplay}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </Button>
+                <div className="checkout-review__stripe-badge">
+                  {payView.badgeSrc && (
+                    <img
+                      src={payView.badgeSrc}
+                      alt="Powered by Stripe"
+                      width="150"
+                      height="34"
+                      data-checkout-stripe-badge
+                    />
+                  )}
+                </div>
+              </div>
             </>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">
@@ -350,6 +361,8 @@ export default function CheckoutOfferStatus({
                     : 'Payment opens after price and availability are confirmed.'}
             </p>
           )}
+
+          {(isCartLoading || hasCheckoutLine) && <PurchaseInformation presentation="checkout-support" />}
 
           {checkoutError && (
             <div className="space-y-3">

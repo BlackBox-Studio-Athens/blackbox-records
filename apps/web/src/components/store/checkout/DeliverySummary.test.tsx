@@ -57,7 +57,7 @@ describe('delivery summary', () => {
       expect(inclusive).toContain('VAT is included, never added again.');
     },
   );
-  it('uses authoritative amounts and locker copy in the drawer without a duplicate total', () => {
+  it('uses authoritative amounts and locker copy with one visible drawer total', () => {
     const html = renderToStaticMarkup(
       <DeliverySummary
         presentation="drawer"
@@ -72,12 +72,13 @@ describe('delivery summary', () => {
       />,
     );
     expect(html).toContain('>Items</dt>');
-    expect(html).toContain('>BOX NOW locker delivery</dt>');
+    expect(html).toContain('>Delivery</dt>');
     expect(html).toContain('€45.00');
     expect(html).toContain('€3.50');
-    expect(html).toContain('Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.');
+    expect(html).toContain('BOX NOW locker delivery within Greece.');
     expect(html).not.toContain('Total, VAT included');
-    expect(html).not.toContain('€48.50');
+    expect(html).toContain('€48.50');
+    expect(html.match(/>Total<\/dt>/g)).toHaveLength(1);
     expect(html).not.toContain('[DELIVERY FEE]');
   });
 
@@ -94,8 +95,8 @@ describe('delivery summary', () => {
     expect(html).toContain('€24.80');
     expect(html).toContain(tier === 'small' ? '€2.50' : '€3.50');
     expect(html).toContain(tier === 'small' ? '€27.30' : '€28.30');
-    expect(html).toContain('Total, charged today');
-    expect(html).toContain('/terms/');
+    expect(html).toContain('>Total</dt>');
+    expect(html).toContain('does not mean home delivery');
   });
   it('never presents an unavailable or loading quote as free delivery', () => {
     for (const loading of [true, false]) {

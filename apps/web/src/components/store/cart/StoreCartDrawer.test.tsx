@@ -102,7 +102,7 @@ describe('StoreCartDrawer', () => {
     }
   });
 
-  it('marks only pre-order lines and places one latest-estimate notice before delivery', () => {
+  it('marks only pre-order lines and places one latest-estimate notice after delivery', () => {
     const earlier: CartLineItemSnapshot = {
       ...cartItem,
       variantId: 'variant_earlier',
@@ -131,7 +131,7 @@ describe('StoreCartDrawer', () => {
     expect(markup).toContain('>Available</p>');
     expect(markup.match(/Ships together/g)).toHaveLength(1);
     expect(markup).toContain('On 20 November 2026');
-    expect(markup.indexOf('Ships together')).toBeLessThan(markup.indexOf('Delivery summary fixture'));
+    expect(markup.indexOf('Ships together')).toBeGreaterThan(markup.indexOf('Delivery summary fixture'));
     expect(markup).toContain('href="/blackbox-records/store/checkout/"');
     expect(markup).toContain('Decrease quantity for Disintegration');
   });

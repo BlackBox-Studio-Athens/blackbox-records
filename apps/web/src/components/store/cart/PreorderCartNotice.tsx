@@ -43,7 +43,7 @@ export function PreorderCartNotice({
           ? availableCount
             ? `The in-stock ${availableCount === 1 ? 'item waits' : 'items wait'} for ${waitingFor} and ${availableCount === 1 ? 'travels' : 'travel'} with ${estimates.length === 1 ? 'it' : 'them'}. Want ${availableCount === 1 ? 'it' : 'them'} sooner? Check ${availableCount === 1 ? 'it' : 'them'} out as a separate order.`
             : `Your order ships together when ${estimates.length === 1 ? 'the pre-order arrives' : 'all pre-orders arrive'}. We email you if the estimate changes.`
-          : `${expected ? `${waitingFor} ${estimates.length === 1 ? 'is' : 'are'} expected to ship ${expected.replace(/^on /, '')}. ` : ''}${availableCount ? `Your whole order, in-stock items included, waits and travels with ${estimates.length === 1 ? 'it' : 'them'}.` : `Your order ships together when ${estimates.length === 1 ? 'the pre-order arrives' : 'all pre-orders arrive'}.`} If the estimate changes we email you.`}
+          : `${availableCount ? `Your in-stock ${availableCount === 1 ? 'item waits' : 'items wait'} for ${waitingFor}. Check ${availableCount === 1 ? 'it' : 'them'} out separately if you want ${availableCount === 1 ? 'it' : 'them'} sooner.` : `Your order ships together when ${estimates.length === 1 ? 'the pre-order arrives' : 'all pre-orders arrive'}.`} If the estimate changes we email you.`}
       </p>
     </section>
   );

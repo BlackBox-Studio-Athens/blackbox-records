@@ -28,9 +28,10 @@ it('renders the shared formatted fixture in React prose and purchase wording', (
     terms: {
       ...information.terms,
       dispatch: { summary: formattedProse, paragraphs: [formattedProse] },
+      delivery: { summary: formattedProse, paragraphs: [formattedProse] },
     },
   };
-  expect(renderToStaticMarkup(<PurchaseInformation information={richInformation} />)).toContain(
+  expect(renderToStaticMarkup(<PurchaseInformation information={richInformation} presentation="checkout" />)).toContain(
     '<strong>Bold description</strong>',
   );
   expect(renderToStaticMarkup(<PurchaseDocument kind="terms" information={richInformation} />)).toContain(
@@ -77,18 +78,29 @@ describe('purchase information publication', () => {
     expect(renderToStaticMarkup(<PrivacyLink />)).toBe('');
     const html = renderToStaticMarkup(<PurchaseInformation />);
     expect(html).not.toMatch(/to be confirmed|example.invalid|\/privacy\//i);
-    expect(html).toContain('/terms/#returns');
-    expect(html).toContain('does not mean home delivery');
+    expect(html).toContain('href="/terms/"');
+    expect(html).toContain('Delivery &amp; returns');
+    expect(html).not.toContain('does not mean home delivery');
     expect(html).not.toContain('€');
   });
 
   it('renders every full document section and shared summaries without JavaScript', () => {
     vi.stubEnv('DEV', true);
     const information = getPurchaseInformation()!;
-    const summary = renderToStaticMarkup(<PurchaseInformation information={information} />);
-    expect(summary).toContain(information.terms.dispatch.summary);
-    expect(summary).toContain(information.terms.delivery.summary);
-    expect(summary).toContain('/privacy/');
+    const compact = renderToStaticMarkup(<PurchaseInformation information={information} />);
+    const checkout = renderToStaticMarkup(<PurchaseInformation information={information} presentation="checkout" />);
+    const support = renderToStaticMarkup(
+      <PurchaseInformation information={information} presentation="checkout-support" />,
+    );
+    expect(compact).not.toContain(information.terms.dispatch.summary);
+    expect(compact).not.toContain(information.terms.delivery.summary);
+    expect(compact).toContain('Shipping calculated in your cart.');
+    expect(compact.match(/<a /g)).toHaveLength(1);
+    expect(compact).not.toContain('/privacy/');
+    expect(checkout).toContain(information.terms.delivery.summary);
+    expect(support).toContain('data-legal-guarantee');
+    expect(support).toContain('/terms/#support');
+    expect(renderToStaticMarkup(<PrivacyLink information={information} />)).toContain('/privacy/');
     for (const kind of ['terms', 'privacy'] as const) {
       const html = renderToStaticMarkup(<PurchaseDocument kind={kind} information={information} />);
       const headings = kind === 'terms' ? purchaseTermsHeadings : purchasePrivacyHeadings;

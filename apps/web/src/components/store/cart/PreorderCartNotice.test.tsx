@@ -60,7 +60,8 @@ describe('PreorderCartNotice', () => {
         lines={[{ title: 'Lotus', preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: null } } }]}
       />,
     );
-    expect(markup).toContain('LOTUS is expected to ship around November 2026.');
+    expect(markup).toContain('Around November 2026');
+    expect(markup.match(/November 2026/g)).toHaveLength(1);
     expect(markup).toContain('Your order ships together when the pre-order arrives.');
     expect(markup).not.toContain('in-stock items included');
     expect(markup).not.toContain('waits and travels');
@@ -134,7 +135,7 @@ describe('PreorderCartNotice', () => {
     expect(markup).toContain(arrival);
     expect(markup).toContain('Together to your BOX NOW locker');
     expect(markup).toContain(
-      `Your whole order, in-stock items included, waits and travels with ${estimates.length === 1 ? 'it' : 'them'}. If the estimate changes we email you.`,
+      `Your in-stock items wait for ${estimates.length === 1 ? 'the pre-order' : 'the pre-orders'}. Check them out separately if you want them sooner. If the estimate changes we email you.`,
     );
     const headingId = /aria-labelledby="([^"]+)"/.exec(markup)?.[1];
     expect(headingId).toBeTruthy();

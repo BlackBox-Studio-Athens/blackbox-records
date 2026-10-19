@@ -42,7 +42,7 @@ export default function StoreCartButton({ cartState, onClick }: StoreCartButtonP
         aria-label={label}
         data-store-cart-trigger
         data-store-cart-count={cartCount}
-        className={buttonVariants({ variant: 'outline', size: 'icon' })}
+        className={buttonVariants({ variant: 'ghost', size: 'icon' })}
         onClick={() => {
           setLabelDismissed(true);
           onClick?.();

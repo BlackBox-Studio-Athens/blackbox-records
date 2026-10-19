@@ -7993,6 +7993,25 @@ body.is-app-shell-overlay-open {
   background: var(--foreground);
 }
 
+.checkout-review__payment-handoff {
+  display: grid;
+  justify-items: center;
+  align-self: flex-start;
+  max-width: 100%;
+  gap: 12px;
+}
+
+.checkout-review__stripe-badge {
+  width: 150px;
+  height: 34px;
+}
+
+.checkout-review__stripe-badge img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .checkout-review__newsletter {
   display: flex;
   flex-direction: column;
@@ -8145,8 +8164,10 @@ body.is-app-shell-overlay-open {
     grid-template-areas: 'summary' 'payment';
   }
 
+  .checkout-review__payment-handoff,
   .checkout-review__pay {
     width: 100%;
+    align-self: stretch;
   }
 }
 
@@ -8169,7 +8190,6 @@ body.is-app-shell-overlay-open {
   body:has(#main > .checkout-review) header [data-store-cart-trigger] {
     width: 44px;
     height: 44px;
-    border-color: var(--border);
     background: transparent;
   }
 

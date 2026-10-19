@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { priceDisclosure } from '@blackbox/api-client/public';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
@@ -148,13 +147,6 @@ export default function StoreOfferPriceDisplay({
             <span className="preorder-badge">Pre-order</span>
           </>
         )}
-      </span>
-      <span className="mt-2 block text-xs leading-5 text-muted-foreground">
-        {priceDisclosure}{' '}
-        <a className="underline" href={`${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`}>
-          Delivery rates and terms
-        </a>
-        .
       </span>
       {preorderFacts && view.tone === 'ready' && view.preorder && (
         <dl className="preorder-facts" style={{ marginTop: '1rem' }}>

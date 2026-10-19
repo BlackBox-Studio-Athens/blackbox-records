@@ -321,7 +321,7 @@ export default function StoreItemPurchaseActions({
       <span className="sr-only" aria-live="polite">
         {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.addedAnnouncement : ''}
       </span>
-      {(activeCartItem.preorder || purchaseHint) && (
+      {purchaseHint && (
         <p className="text-sm leading-relaxed text-muted-foreground">
           {activeCartItem.preorder ? preorderHint : purchaseHint}
         </p>
