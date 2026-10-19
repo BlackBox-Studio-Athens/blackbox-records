@@ -549,9 +549,12 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
     [390, 1],
     [320, 1],
     [390, 1.25],
+    [320, 2],
+    [390, 2],
   ] as const) {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto('./');
+    // Use a prose route for the 200% reading-size check so unrelated Home media does not own this footer test.
+    await page.goto(textScale === 2 ? './privacy/' : './');
     await page.evaluate((scale) => (document.documentElement.style.fontSize = `${scale * 100}%`), textScale);
     const footer = page.locator('footer.site-footer-shell');
     const sitemap = page.locator('.site-footer-nav-list');
@@ -564,10 +567,13 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
         (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
       );
     }
-    // Compact at the 390px reference (198px measured; 301 and 417 before); enlarged text grows it instead of clipping.
+    // Approved Flowing links reference; enlarged text grows rather than clipping to meet the budget.
     const height = (await footer.boundingBox())?.height ?? 0;
-    if (width === 390 && textScale === 1) expect(height).toBeLessThanOrEqual(200);
+    if (textScale === 1) expect(height).toBeLessThanOrEqual(width === 390 ? 360 : 380);
     await expect(footer.getByText('All rights reserved.')).toBeVisible();
+    await expect(footer.locator('.site-footer-disclosure')).toHaveText(
+      'This website was designed and developed with assistance from generative AI tools.',
+    );
     // The top rule stops at the page gutters (1rem, so it follows enlarged text).
     const rule = await footer.locator('.site-footer-top').evaluate((element) => {
       const before = getComputedStyle(element, '::before');

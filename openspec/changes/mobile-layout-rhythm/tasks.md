@@ -2,7 +2,7 @@
 
 Apply C1 first; coordinate shared styles and frame work with C2. Claude owns rendering, interaction, copy and UI tests except for the owner's task-scoped Codex playback override in task 2.1. The owner subsequently authorized a local commit, a push to UAT and a UAT-only test-film publication. PRD remains outside this authorization.
 
-Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1.4, 1.6 and 1.8 remain open: the supplied renders establish amber presentation, but do not directly verify the specified Releases height/gaps, Artists height/columns/reflow or footer height/layout/wrapping/player-clearance checks. Task 3.4 remains open because the supplied evidence does not establish the combined F1–F22 review, Graphify refresh or complete source/screenshots/acceptance-row record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
+Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1.4 and 1.6 remain open for Releases and Artists geometry/reflow acceptance. Footer task 1.8 is superseded by `redesign-footer-flowing-links`; its historical acceptance is not claimed. Task 3.4 remains open because the supplied evidence does not establish the combined F1–F22 review, Graphify refresh or complete source/screenshots/acceptance-row record. The owner's UAT visual review remains open. Previously checked tasks retain their recorded evidence scope.
 
 ## 1. Claude (UI)
 
@@ -13,7 +13,7 @@ Round-2 release evidence is recorded in validation.md (16 October 2026). Tasks 1
 - [x] 1.5 Add the accessible three-line phone summary disclosure with full-text no-JavaScript fallback, natural expansion and focus retention; verify short/absent summaries, Read more/Show less, policy links and desktop full text.
 - [ ] 1.6 Round 2: verify inline source-derived counts and two roster columns from 360px, tighter padding and retained 3:4 photos; compare the supplied 390px page heights of 3065px and 1583px, including long metadata and natural reflow.
 - [x] 1.7 Contain Home News/Artists swipe peeks and use 44×44 dots with amber #e3b56c current marks; update and run e2e/home-swipe-rows.spec.ts for swipe, keyboard, shell re-entry and reduced-motion behavior.
-- [ ] 1.8 Round 2: verify the approximately 200px footer at 390px (measured 198px), logo/socials on one 44px row, tagline in two 12px lines, eight links in four column-first columns of two 44px rows and one 12px sentence-case meta line including Est. 2026; retain copy, destinations, wrapping and player clearance.
+- [x] 1.8 Reconcile the superseded footer prescription with the owner's approved `redesign-footer-flowing-links`; implementation, wrapping, size and player-clearance acceptance are tracked there. This closes the supersession record, not the old visual acceptance.
 - [x] 1.9 Update DESIGN.md's page frame, Home chapter/motion, Releases hierarchy/price/summary, artist counter and footer rules; verify it agrees with C1/C2 and retains production copy/content ownership.
 - [x] 1.10 Update and run e2e/release-merchandising.spec.ts and e2e/routes.spec.ts for the rebuilt cards, hidden headings, containment, control sizes and overflow; retain existing detail/purchase/artist navigation assertions.
 

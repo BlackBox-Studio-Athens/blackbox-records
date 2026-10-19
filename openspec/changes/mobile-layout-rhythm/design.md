@@ -53,7 +53,7 @@ Round 2 uses two roster columns from 360px with tighter card padding and the exi
 
 Home Artists/News still swipe below 40rem and keep desktop grids. Clip the row at the right content edge; the next-card peek remains inside that frame (approximately 42px for the approved News reference). Each dot has a 44×44 target, with the small current mark in amber #e3b56c, position name and aria-current. Retain script-free fade fallback and reduced motion; no page horizontal scrolling.
 
-Round-2 phone footer targets about 200px at 390px (supplied measurement: 198px), superseding 290px. Put the production logo and social icons on one 44px row, the tagline in two 12px lines, eight links in four columns of two 44px rows filled column-first so no link sits alone, and meta in one 12px sentence-case line including Est. 2026. Preserve copy, destinations and reading order including Delivery information. Hide the Sitemap label visually on phones; retain its desktop Flint 500 #889396 treatment. Social icon controls remain 44×44 and link hover underlines use amber. Compact gaps, not targets or legal copy. Preserve Staff text's natural wrapping, allow additional height at enlarged text or narrower widths, and keep the footer visible above the minimized player.
+Footer decisions are superseded by the owner-approved `redesign-footer-flowing-links` on 19 October 2026. Use its compact identity row, naturally wrapping links, copyright/disclosure area and reference ceilings (360px at 390px, 380px at 320px). Retain full Staff text, native destinations, 44px targets, natural growth and player clearance. Earlier 198px/200px and four-column measurements remain historical evidence, not current acceptance criteria.
 
 ### Research backing and alternatives
 
@@ -84,7 +84,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 | F15  | Retain dated research, evidence limits and measured browser acceptance                              | C1, C2 and C3                    |
 | F16  | Keep approved 16px phone gutter; remove double insets                                               | C3                               |
 | F17  | Contain rules/media; header and hero film are the only bleed exceptions                             | C3                               |
-| F18  | Compact phone footer, approximately 200px at 390px, with 44px tap rows                              | C3                               |
+| F18  | Superseded by approved Flowing links footer; preserve 44px targets and content                      | redesign-footer-flowing-links    |
 | F19  | Inline artist release counter                                                                       | C3                               |
 | F20  | Release actions beside one another near cover; compact hierarchy                                    | C1 pair contract; C3 composition |
 | F21  | Flint Buy keeps the format mark; context-specific label                                             | C1; C2 Store placement           |
@@ -92,7 +92,7 @@ C1 = accent-and-button-system; C2 = store-mobile-first-browse; C3 = mobile-layou
 
 ## Resolved open items and remaining evidence
 
-The owner settled hero-film bleed, 16px gutters, approximately 200px footer with 44px tap rows, inline count, removed manual chapter motion controls on every viewport, adjacent pairs, ink Veneer titles, amber marks and Flint 300 form-error text beside Error; error red is reserved for international restriction notices. C1 owns the hero CTA's 48px exception and global error/colour rules; the owner-approved 16 October 2026 CTA metrics are Bebas 18px, padding 22px start/18px end, an 11px icon gap and tagline-to-button spacing increased by 16px on phones and 24px from 48rem, with sideways-phone hero height unchanged (commit 3e8ee282). Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
+Historical 16 October decision: the owner settled hero-film bleed, 16px gutters, an approximately 200px footer with 44px tap rows, inline count, removed manual chapter motion controls on every viewport, adjacent pairs, ink Veneer titles, amber marks and Flint 300 form-error text beside Error; error red is reserved for international restriction notices. The footer portion is superseded by `redesign-footer-flowing-links`. C1 owns the hero CTA's 48px exception and global error/colour rules; the owner-approved 16 October 2026 CTA metrics are Bebas 18px, padding 22px start/18px end, an 11px icon gap and tagline-to-button spacing increased by 16px on phones and 24px from 48rem, with sideways-phone hero height unchanged (commit 3e8ee282). Preserve current motto content/cycling; differing screenshot word-cycle states do not authorize a copy edit.
 
 The owner-chosen phone film strip uses prepared film for video releases, with poster/photo and 160px sleeve fallbacks as defined above. Exact wrapping, long-content height, final image crop and typography need rendered implementation verification, not another palette decision. Catalog desktop was not drawn in the supplied Store/Releases board set; preserve the existing 32.8px catalog title and grid as recorded in those notes.
 

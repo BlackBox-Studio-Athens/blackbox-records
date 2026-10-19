@@ -8,8 +8,9 @@ import { buttonVariants } from '@/components/ui/button';
 import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 import { navigationLinkAttributes } from '@/platform/utils/urls';
 import { formatYear } from '@/utils/content';
+import { footerNavigationItems } from '@/lib/footer-navigation';
 
-const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
+const [footerNavigationItemsFromContent, socialItems, labelSettings] = await Promise.all([
   getFooterNavigationItems(),
   getSocialItems(),
   getLabelSettings(),
@@ -22,61 +23,73 @@ const showEstablishedYear = establishedYear > 0 && establishedYear <= currentYea
 const footerDescription = labelSettings.footer_text?.trim() || siteConfig.description;
 const footerLabel = labelSettings.label_name || siteConfig.title;
 const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.url.trim() !== '#');
+const footerLinks = footerNavigationItems(footerNavigationItemsFromContent, Boolean(getPurchaseInformation()));
+const supportUrls = new Set(['/terms/', '/withdrawal/', '/privacy/']);
+const firstSupportUrl = footerLinks.find((item) => supportUrls.has(item.url))?.url;
 ---
 
 <footer class="site-footer-shell mt-12">
   <div class="layout-container site-footer-top site-footer-content-shell">
     <div class="site-footer-brand">
-      <div class="site-footer-brand-topbar">
-        <Image src={logo} alt="BlackBox Records" class="site-footer-logo" width={152} />
-        <div class="site-footer-social-row" aria-label="Connect">
-          {footerSocialItems.map((item) => {
-            const linkAttributes = resolveLinkAttributes(item.url);
-
-            return (
-              <a
-                href={linkAttributes.href}
-                target={linkAttributes.target}
-                rel={linkAttributes.rel}
-                class={buttonVariants({ variant: 'outline', size: 'icon' })}
-                aria-label={item.title}
-                title={item.title}
-              >
-                <SocialIcon title={item.title} />
-                <span class="accessibility-visually-hidden-text">{item.title}</span>
-              </a>
-            );
-          })}
-        </div>
-      </div>
+      <a
+        class="site-footer-home"
+        aria-label="BlackBox Records home"
+        {...navigationLinkAttributes('/', Astro.url.pathname)}
+      >
+        <Image src={logo} alt="" class="site-footer-logo" width={56} height={56} />
+      </a>
       <p class="site-footer-description">{footerDescription}</p>
+      <nav class="site-footer-social-row" aria-label="Connect">
+        {footerSocialItems.map((item) => {
+          const linkAttributes = resolveLinkAttributes(item.url);
+
+          return (
+            <a
+              href={linkAttributes.href}
+              target={linkAttributes.target}
+              rel={linkAttributes.rel}
+              class={buttonVariants({ variant: 'outline', size: 'icon' })}
+              aria-label={item.title}
+              title={item.title}
+            >
+              <SocialIcon title={item.title} />
+              <span class="accessibility-visually-hidden-text">{item.title}</span>
+            </a>
+          );
+        })}
+      </nav>
     </div>
 
-    <div class="space-y-3">
-      <h3 class="site-footer-heading">Sitemap</h3>
+    <nav class="site-footer-navigation" aria-label="Footer">
       <ul class="site-footer-nav-list">
-        {[
-          { title: 'Withdraw from an order', url: '/withdrawal/' as const },
-          ...(getPurchaseInformation() ? [{ title: 'Privacy information', url: '/privacy/' as const }] : []),
-          ...footerNavigationItems,
-        ].map((item) => (
-          <li>
+        {footerLinks.map((item) => (
+          <li
+            class:list={[
+              supportUrls.has(item.url) && 'site-footer-nav-item--support',
+              item.url === firstSupportUrl && 'site-footer-nav-item--support-start',
+            ]}
+          >
             <a class="site-nav-link site-nav-link--footer" {...navigationLinkAttributes(item.url, Astro.url.pathname)}>
               <span class="site-nav-link__label">{item.title}</span>
             </a>
           </li>
         ))}
       </ul>
-    </div>
+    </nav>
   </div>
 
-  <div class="layout-container site-footer-meta py-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
-    <p class="site-footer-meta-copy">
-      <span>
-        &copy; {copyrightYears} {footerLabel.toUpperCase()}.
-      </span>{' '}
-      <span class="text-muted-foreground">All rights reserved.</span>
+  <div class="layout-container site-footer-meta">
+    <div class="site-footer-copyright-row">
+      <p class="site-footer-meta-copy">
+        <span>
+          &copy; {copyrightYears} {footerLabel.toUpperCase()}.
+        </span>{' '}
+        <span class="text-muted-foreground">All rights reserved.</span>
+      </p>
+      {showEstablishedYear && <p class="site-footer-meta-established">Est. {establishedYear}</p>}
+    </div>
+    <p class="site-footer-disclosure">
+      This website was designed and developed with assistance from generative AI tools.
     </p>
-    {showEstablishedYear && <p class="site-footer-meta-established">Est. {establishedYear}</p>}
   </div>
 </footer>

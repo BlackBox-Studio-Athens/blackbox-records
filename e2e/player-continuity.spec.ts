@@ -33,7 +33,11 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   const originalIframe = await iframe.elementHandle();
   const isOriginalIframeConnected = () => originalIframe.evaluate((element) => element.isConnected);
 
-  await openSection(page, 'Store', isMobile);
+  const footerHome = page.getByRole('contentinfo').getByRole('link', { name: 'BlackBox Records home' });
+  await press(footerHome, isMobile);
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  expect(await isOriginalIframeConnected()).toBe(true);
+  await press(page.getByRole('contentinfo').getByRole('link', { name: 'Store', exact: true }), isMobile);
   // The local server renders a complete Store document before the shell can commit this route.
   await expect(page).toHaveURL(/\/store\/$/, { timeout: 60_000 });
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
@@ -46,8 +50,8 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   await expect(modal).toBeHidden();
 
   await page.goBack();
-  await expect(page).toHaveURL(/\/releases\/$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Releases' })).toBeVisible();
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  await expect(page.locator('.homepage-hero-section')).toBeVisible();
   await page.goForward();
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
   expect(await sentinelIntact(page)).toBe(true);

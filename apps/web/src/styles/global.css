@@ -625,21 +625,6 @@ body {
     text-transform: uppercase;
   }
 
-  .site-nav-link--footer {
-    --nav-link-underline-offset: 3px;
-    min-height: 2.75rem;
-    font-size: 0.84rem;
-    letter-spacing: 0.01em;
-    line-height: 1;
-  }
-
-  /* Touch-sized by default; a mouse can use the compact sitemap. */
-  @media (hover: hover) and (pointer: fine) {
-    .site-nav-link--footer {
-      min-height: 0;
-    }
-  }
-
   .site-menu-button {
     --nav-link-rest: var(--foreground);
     min-height: 2.75rem;
@@ -1119,13 +1104,13 @@ body {
     background: rgb(13 13 13 / 74%);
   }
 
-  /* The ground stays edge to edge over the fixed hero photo; the top rule stops at the gutters and the meta row has
-     none (openspec/changes/mobile-layout-rhythm). */
+  /* Opaque over the fixed Home photo; both footer rules stay inside the shared page frame. */
   .site-footer-shell {
     background-color: var(--background);
   }
 
-  .site-footer-top::before {
+  .site-footer-top::before,
+  .site-footer-meta::before {
     position: absolute;
     top: 0;
     right: max(var(--page-gutter), env(safe-area-inset-right));
@@ -1137,22 +1122,23 @@ body {
 
   .site-footer-top {
     position: relative;
-    display: grid;
-    gap: 1.35rem;
     padding-top: 1.5rem;
-    padding-bottom: 1.25rem;
+    padding-bottom: 0;
   }
 
   .site-footer-brand {
     display: grid;
-    gap: 0.9rem;
+    grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+    gap: 1.25rem;
+    align-items: center;
   }
 
-  .site-footer-brand-topbar {
+  .site-footer-home {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.9rem;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
   }
 
   .site-footer-logo {
@@ -1162,87 +1148,167 @@ body {
   }
 
   .site-footer-description {
-    max-width: 28rem;
+    min-width: 0;
+    max-width: 48ch;
     color: var(--muted-foreground);
-    font-size: 0.8rem;
-    line-height: 1.45;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
 
-  .site-footer-heading {
-    color: var(--foreground);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.3em;
-    line-height: 1;
-    text-transform: uppercase;
+  .site-footer-navigation {
+    margin-top: 1rem;
   }
 
   .site-footer-nav-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.1rem 0.85rem;
+    gap: 0 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  /* Phones: two fixed rows of 44px filled down each of four columns, so the eight links (Delivery information last)
-     never leave one alone in a row; DOM and reading order stay the sitemap order and a long label wraps inside its
-     cell. Cells are top-aligned and each item owns the 44px box as a flex container, which blockifies the link
-     whatever display other rules give it, so a wrapped label never drops below its row-mates. */
-  @media (width < 48rem) {
-    .site-footer-nav-list {
-      display: grid;
-      grid-template-rows: repeat(2, minmax(2.75rem, auto));
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-auto-flow: column;
-      align-items: start;
-      gap: 0 0.5rem;
-    }
+  .site-footer-nav-list > li {
+    min-width: 0;
+    max-width: 100%;
+  }
 
-    .site-footer-nav-list > li {
-      display: flex;
-      min-width: 0;
-      min-height: 2.75rem;
-    }
+  .site-footer-nav-item--support-start {
+    margin-inline-start: auto;
+  }
 
-    /* A long word (information at 200% text) breaks inside its column instead of pushing the page wider. */
-    .site-footer-nav-list :is(.site-nav-link--footer, .site-nav-link__label) {
-      min-width: 0;
-      overflow-wrap: anywhere;
-    }
+  .site-footer-nav-list .site-nav-link--footer {
+    --nav-link-rest: var(--foreground);
+    --nav-link-hover: var(--amber-500);
+    --nav-link-underline-offset: 3px;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding-block: 0.5rem;
+    font-size: 0.8125rem;
+    letter-spacing: normal;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
 
-    .site-footer-nav-list .site-nav-link--footer {
-      display: flex;
-      width: 100%;
-      min-height: 2.75rem;
-      font-size: 0.75rem;
-      line-height: 1.2;
-    }
+  .site-footer-nav-item--support .site-nav-link--footer {
+    --nav-link-rest: var(--muted-foreground);
+  }
+
+  .site-footer-home:focus-visible,
+  .site-footer-nav-list .site-nav-link--footer:focus-visible {
+    outline: 2px solid var(--amber-500);
+    outline-offset: 3px;
   }
 
   .site-footer-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.7rem;
+    position: relative;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 1rem;
+    color: var(--muted-foreground);
     font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    line-height: 1.3;
+    line-height: 1.5;
+  }
+
+  .site-footer-copyright-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
   }
 
   .site-footer-meta-copy,
-  .site-footer-meta-established {
+  .site-footer-meta-established,
+  .site-footer-disclosure {
+    min-width: 0;
     margin: 0;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+  }
+
+  .site-footer-meta-copy {
+    flex: 1;
   }
 
   .site-footer-meta-established {
     color: var(--amber-500);
+    white-space: nowrap;
+  }
+
+  .site-footer-disclosure {
+    max-width: 76ch;
+    margin-top: 0.25rem;
   }
 
   .site-footer-social-row {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  @media (width < 45rem) {
+    .site-footer-brand {
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+      gap: 1rem;
+    }
+
+    .site-footer-top {
+      padding-top: 1.25rem;
+    }
+
+    .site-footer-home,
+    .site-footer-logo {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .site-footer-nav-item--support-start {
+      margin-inline-start: 0;
+    }
+  }
+
+  @media (width < 28.75rem) {
+    .site-footer-top {
+      padding-top: 1rem;
+    }
+
+    .site-footer-brand {
+      grid-template-columns: 2.75rem minmax(0, 1fr);
+      gap: 0.5rem 1rem;
+    }
+
+    .site-footer-social-row {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .site-footer-description {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      max-width: none;
+      font-size: 0.75rem;
+    }
+
+    .site-footer-navigation {
+      margin-top: 0.5rem;
+    }
+
+    .site-footer-nav-list {
+      column-gap: 1.125rem;
+    }
+
+    .site-footer-meta {
+      margin-top: 0.5rem;
+      padding-top: 0.625rem;
+      padding-bottom: 0.875rem;
+    }
+
+    .site-footer-copyright-row {
+      gap: 0.5rem;
+    }
   }
 
   .home-featured-roster-grid {
@@ -3743,57 +3809,6 @@ body.is-app-shell-overlay-open {
     line-height: 1.62;
   }
 
-  /* Compact phone footer (about 200px at 390px): the logo and the social icons on one 44px row, the 12px tagline, the
-     sitemap in two 44px rows (label hidden), then the copyright and Est. 2026 on one 12px line. */
-  .site-footer-top {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.25rem;
-    padding-top: 0.375rem;
-    padding-bottom: 0;
-  }
-
-  .site-footer-brand {
-    gap: 0.25rem;
-  }
-
-  .site-footer-brand-topbar {
-    gap: 0.75rem;
-  }
-
-  .site-footer-logo {
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-
-  .site-footer-description {
-    max-width: none;
-    font-size: 0.75rem;
-    line-height: 1.25;
-  }
-
-  .site-footer-heading {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .site-footer-meta {
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding-block: 0 0.375rem;
-    letter-spacing: 0;
-    /* Sentence case keeps the copyright and Est. 2026 on one line at 390px. */
-    text-transform: none;
-  }
-
-  .site-footer-meta-copy {
-    min-width: 0;
-    white-space: normal;
-  }
-
   .home-section-header--centered {
     gap: 0.8rem;
   }
@@ -3971,42 +3986,6 @@ body.is-app-shell-overlay-open {
   .services-tiles,
   .services-process__steps {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .site-nav-link--footer {
-    font-size: 0.85rem;
-  }
-
-  .site-footer-meta {
-    gap: 1rem;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-  }
-
-  .site-footer-top {
-    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.15fr);
-    gap: 1.5rem;
-    align-items: start;
-    padding-top: 1.9rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .site-footer-brand-topbar {
-    justify-content: flex-start;
-    gap: 0.9rem;
-  }
-
-  .site-footer-logo {
-    width: 4.75rem;
-    height: 4.75rem;
-  }
-
-  .site-footer-description {
-    font-size: 0.82rem;
-  }
-
-  .site-footer-nav-list {
-    gap: 0.35rem 1rem;
   }
 }
 

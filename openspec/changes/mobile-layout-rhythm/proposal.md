@@ -10,7 +10,7 @@ The Local audit measured a 1296px Home pre-order showcase, a 1084px featured Rel
 - Rebuild Home pre-order chapters below 48rem as the owner-chosen film strip: a 16:9 film/poster/photo band with only the corner 44px Watch control when a clip exists, facts and the equal-half 44px Sea Pre-order/amber Listen pair beneath, or a 160px sleeve beside identity/price when neither clip nor band photo exists. Desktop composition stays unchanged; the owner removed manual chapter motion controls on every viewport, with reduced motion as the opt-out.
 - Make artist release counts inline and use two roster columns from 360px with tighter padding and retained 3:4 photos (390px page height 3065px to 1583px); use amber current swipe dots in 44px targets and keep swipe peeks inside the gutter.
 - Reduce Releases card gaps and padding (390px page height 2748px to 2556px) while retaining intrinsic sizing.
-- Compact the phone footer to approximately 200px at 390px (measured 198px): logo/socials on one 44px row, tagline in two 12px lines, eight links in four column-first columns of two 44px rows, and one 12px sentence-case meta line including Est. 2026.
+- Footer follow-up: the owner-approved `redesign-footer-flowing-links` supersedes this change's original 200px/four-column prescription. The new change owns footer implementation and acceptance; the original measurements remain historical evidence here.
 - Assign the affected DESIGN.md composition rules and UI/browser tests to Claude.
 
 ## Capabilities
