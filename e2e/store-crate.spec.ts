@@ -17,6 +17,7 @@ async function stockEverything(page: Page, route: string) {
       })),
     }),
   );
+  return html;
 }
 
 function crateOf(page: Page) {
@@ -357,3 +358,98 @@ test.describe('Store Crate on phones @phone', () => {
     await expectNoHorizontalOverflow(page);
   });
 });
+
+for (const width of [1440, 390]) {
+  test(`compact Store BUY uses the same static disc across Grid and Crate formats at ${width}px${width === 390 ? ' @phone' : ''}`, async ({
+    page,
+    hasTouch,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const html = await stockEverything(page, 'store/');
+    const ssr = await page.evaluate((markup) => {
+      const document = new DOMParser().parseFromString(markup, 'text/html');
+      return [...document.querySelectorAll('[data-store-card-buy]')].map((button) => ({
+        format: button.closest('[data-distro-format-key]')?.getAttribute('data-distro-format-key'),
+        label: button.querySelector('[data-store-card-buy-label]')?.textContent,
+        icons: button.querySelectorAll('svg.store-card-buy-icon').length,
+        layered: button.querySelectorAll('.store-buy-icon, img').length,
+        hidden: button.hasAttribute('hidden'),
+      }));
+    }, html);
+    expect(ssr.length).toBeGreaterThan(3);
+    expect(new Set(ssr.map((item) => item.format)).size).toBeGreaterThan(2);
+    expect(ssr.every((item) => item.label === 'Buy' && item.icons === 1 && item.layered === 0 && item.hidden)).toBe(
+      true,
+    );
+    await page.goto('store/');
+    await waitForShell(page);
+    await page.evaluate(() => document.fonts.ready);
+    const check = async (button: Locator) => {
+      await expect(button).toHaveText('Buy');
+      await expect(button.locator('svg.store-card-buy-icon')).toHaveCount(1);
+      await expect(button.locator('.store-buy-icon, img')).toHaveCount(0);
+      await expect(button).toHaveCSS('min-width', '112px');
+      await expect(button).toHaveCSS('padding-left', '16px');
+      await expect(button).toHaveCSS('column-gap', '8px');
+      await expect(button).toHaveCSS('flex-grow', '0');
+      await expect(button).toHaveCSS('font-size', '16px');
+      await expect(button).toHaveCSS('background-color', 'rgb(98, 110, 114)');
+      await expect(button.locator('.store-card-buy-icon')).toHaveCSS('animation-name', 'none');
+      await expect.poll(async () => (await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.99);
+      await expect.poll(async () => (await button.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(111.99);
+    };
+    const gridBuys = page.locator('[data-store-card-buy]:visible');
+    await expect(gridBuys).toHaveCount(ssr.length);
+    // Read every card in one browser pass; per-property protocol calls across101 cards exceed WebKit's test budget.
+    const gridGeometry = await gridBuys.evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const style = getComputedStyle(button),
+          box = button.getBoundingClientRect();
+        const icon = button.querySelector('svg.store-card-buy-icon');
+        return {
+          label: button.textContent?.trim(),
+          icons: button.querySelectorAll('svg.store-card-buy-icon').length,
+          layered: button.querySelectorAll('.store-buy-icon, img').length,
+          min: style.minWidth,
+          pad: style.paddingLeft,
+          gap: style.columnGap,
+          grow: style.flexGrow,
+          font: style.fontSize,
+          face: style.backgroundColor,
+          animation: icon && getComputedStyle(icon).animationName,
+          width: box.width,
+          height: box.height,
+        };
+      }),
+    );
+    expect(
+      gridGeometry.filter(
+        (item) =>
+          item.label !== 'Buy' ||
+          item.icons !== 1 ||
+          item.layered !== 0 ||
+          item.min !== '112px' ||
+          item.pad !== '16px' ||
+          item.gap !== '8px' ||
+          item.grow !== '0' ||
+          item.font !== '16px' ||
+          item.face !== 'rgb(98, 110, 114)' ||
+          item.animation !== 'none' ||
+          item.width < 111.99 ||
+          item.height < 43.99,
+      ),
+    ).toEqual([]);
+    const press = (locator: Locator) => (hasTouch ? locator.tap() : locator.click());
+    const crate = await openCrate(page, press);
+    // This catalog has fewer than seven tapes, so its tape cards stay in Grid under the existing bin threshold.
+    for (const name of [/Vinyl 12-inch/, /CDs/]) {
+      await press(page.getByRole('group', { name: 'Bins' }).getByRole('button', { name }));
+      await check(crate.hand.locator('[data-store-card-buy]'));
+      await expectNoHorizontalOverflow(page);
+    }
+    if (width < 1024) await press(page.locator('[data-store-filter-trigger]'));
+    await press(crate.grid);
+    await expect(crate.root).not.toHaveAttribute('data-store-crate', 'open');
+    await expectNoHorizontalOverflow(page);
+  });
+}

@@ -12,12 +12,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { publicTitleClass } from '@/components/ui/utils';
 import { createProjectRelativeUrl } from '@/platform/config/site';
-import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
-import { getReleaseCommerceLink } from './release-commerce';
+import {
+  createReleaseDetailPath,
+  resolveArtistProfileForRelease,
+  resolveReleaseArtistDisplayName,
+} from '@/lib/catalog-data';
+import { getReleaseCommerceLink, getReleasePresentationEntry } from './release-commerce';
 import ReleaseStoreLink from './ReleaseStoreLink';
+import ReleaseFormats from './ReleaseFormats.astro';
+import ReleaseDateMetadata from './ReleaseDateMetadata';
 import { projectedListing } from './release-presentation';
 import { readOpenPreorders } from '@/lib/open-preorders';
-import { formatDayMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
@@ -32,12 +37,11 @@ const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
 const artistUrl = releaseArtist
   ? createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`)
   : createProjectRelativeUrl('/artists/');
-const releaseDate = formatDayMonthYear(release.data.release_date);
-const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0, 10);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
-// The link's pre-order label and badges are in the HTML when the rendered projection lists its Store Item.
+const presentationEntry = getReleasePresentationEntry(release, commerceLink);
+// SSR retains the pre-order projection until a live offer read succeeds.
 const storeSlug = commerceLink?.isNativeStoreLink ? commerceLink.href.split('/').filter(Boolean).at(-1) : undefined;
 const projectedPreorder = storeSlug ? readOpenPreorders().find((item) => item.storeItemSlug === storeSlug) : undefined;
 const hasBody = release.data.editorial_body ? release.data.editorial_body.length > 0 : Boolean(release.body?.trim());
@@ -77,7 +81,7 @@ const galleryImages =
     : [];
 ---
 
-<section class="layout-container pt-14">
+<section class="layout-container [overflow-wrap:anywhere] pt-14">
   <Card className="surface-card overflow-hidden">
     <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.85fr_1.15fr]">
       <div class="relative overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
@@ -116,20 +120,7 @@ const galleryImages =
             {artistName}
           </a>
         </p>
-        <p class="text-sm uppercase tracking-[0.12em] text-muted-foreground">
-          <span>Release date</span>
-          <span aria-hidden="true"> / </span>
-          {releaseDateMachineValue ? (
-            <time datetime={releaseDateMachineValue}>{releaseDate}</time>
-          ) : (
-            <span>{releaseDate}</span>
-          )}
-          <span aria-hidden="true"> · </span>
-          <span class="whitespace-nowrap" data-release-catalog-number>
-            <span class="sr-only">Catalog number </span>
-            {release.data.catalog_number}
-          </span>
-        </p>
+        <ReleaseDateMetadata date={release.data.release_date} catalogNumber={release.data.catalog_number} />
         {release.data.summary && (
           <Prose
             class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-sm"
@@ -138,51 +129,65 @@ const galleryImages =
             data-content-path="summary"
           />
         )}
-        {release.data.formats && (
-          <ul class="flex flex-wrap items-center gap-2">
-            {release.data.formats.map((format) => (
-              <li>
-                <Badge variant="secondary" className="text-xs tracking-[0.12em] uppercase">
-                  {format}
-                </Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div class="flex flex-wrap items-center gap-3 pt-1">
-          {commerceLink?.isNativeStoreLink ? (
+        <div class="release-detail-purchase pt-1">
+          {commerceLink?.isNativeStoreLink || presentationEntry.edition.kind === 'announced' ? (
             <ReleaseStoreLink
-              client:idle
-              href={commerceLink.href}
+              client:load
+              href={commerceLink?.href ?? createReleaseDetailPath(release)}
               className={buttonVariants()}
-              releaseDate={releaseDateMachineValue}
-              physicalFormat={commerceLink.physicalFormat}
+              physicalFormat={presentationEntry.edition.kind !== 'none' ? presentationEntry.edition.format : undefined}
+              announced={presentationEntry.edition.kind === 'announced'}
               projected={projectedPreorder && projectedListing(projectedPreorder)}
-            />
+            >
+              <div slot="formats">
+                <ReleaseFormats
+                  formats={release.data.formats}
+                  physicalFormat={
+                    presentationEntry.edition.kind !== 'none' ? presentationEntry.edition.format : undefined
+                  }
+                  href={commerceLink?.href ?? createReleaseDetailPath(release)}
+                />
+              </div>
+              {embeddedPlayerData && (
+                <MusicStreamingServiceListenTrigger
+                  embeddedPlayerData={embeddedPlayerData}
+                  includeCardAttribute
+                  tone="accent"
+                  variant="standalone"
+                />
+              )}
+            </ReleaseStoreLink>
           ) : (
-            commerceLink && (
-              <a
-                href={commerceLink.href}
-                target={commerceLink.target}
-                rel={commerceLink.rel}
-                class={buttonVariants({ className: commerceLink.target ? 'pr-6' : undefined })}
-              >
-                {commerceLink.label}
-                {commerceLink.target && (
-                  <span class="site-button-external-mark" aria-hidden="true">
-                    ↗
-                  </span>
+            <>
+              <div class="release-edition-actions">
+                {commerceLink && (
+                  <a
+                    href={commerceLink.href}
+                    target={commerceLink.target}
+                    rel={commerceLink.rel}
+                    class={buttonVariants({ className: commerceLink.target ? 'pr-6' : undefined })}
+                  >
+                    {commerceLink.label}
+                    {commerceLink.target && (
+                      <span class="site-button-external-mark" aria-hidden="true">
+                        ↗
+                      </span>
+                    )}
+                  </a>
                 )}
-              </a>
-            )
-          )}
-          {embeddedPlayerData && (
-            <MusicStreamingServiceListenTrigger
-              embeddedPlayerData={embeddedPlayerData}
-              includeCardAttribute
-              tone="accent"
-              variant="standalone"
-            />
+                {embeddedPlayerData && (
+                  <MusicStreamingServiceListenTrigger
+                    embeddedPlayerData={embeddedPlayerData}
+                    includeCardAttribute
+                    tone="accent"
+                    variant="standalone"
+                  />
+                )}
+              </div>
+              <div class="release-edition-facts">
+                <ReleaseFormats formats={release.data.formats} />
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -191,7 +196,11 @@ const galleryImages =
 </section>
 
 {hasBody && (
-  <section class="layout-container mt-12" aria-labelledby="release-description-title" data-content-path="body">
+  <section
+    class="layout-container [overflow-wrap:anywhere] mt-12"
+    aria-labelledby="release-description-title"
+    data-content-path="body"
+  >
     <Card className="surface-card">
       <CardContent className="space-y-5 p-7 sm:p-9">
         <h2 id="release-description-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
@@ -206,7 +215,11 @@ const galleryImages =
 )}
 
 {trackGroups.length > 0 && (
-  <section class="layout-container mt-12" aria-labelledby="release-tracklist-title" data-content-path="tracklist">
+  <section
+    class="layout-container [overflow-wrap:anywhere] mt-12"
+    aria-labelledby="release-tracklist-title"
+    data-content-path="tracklist"
+  >
     <Card className="surface-card">
       <CardContent className="space-y-6 p-7 sm:p-9">
         <h2 id="release-tracklist-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
@@ -236,7 +249,7 @@ const galleryImages =
 )}
 
 {(singles.length > 0 || clips.length > 0) && (
-  <section class="layout-container mt-12" aria-labelledby="release-media-title">
+  <section class="layout-container [overflow-wrap:anywhere] mt-12" aria-labelledby="release-media-title">
     <Card className="surface-card">
       <CardContent className="space-y-8 p-7 sm:p-9">
         <h2 id="release-media-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
@@ -288,7 +301,7 @@ const galleryImages =
 )}
 
 {release.data.credits && release.data.credits.length > 0 && (
-  <section class="layout-container mt-12">
+  <section class="layout-container [overflow-wrap:anywhere] mt-12">
     <Card className="surface-card">
       <CardContent className="p-7 sm:p-9">
         <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Credits</h2>
@@ -306,7 +319,7 @@ const galleryImages =
 )}
 
 {showRouteNavigation && (
-  <section class="layout-container mt-12">
+  <section class="layout-container [overflow-wrap:anywhere] mt-12">
     <Card className="surface-card">
       <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
         <p class="text-xs uppercase tracking-[0.14em] text-muted-foreground">Back to catalog</p>

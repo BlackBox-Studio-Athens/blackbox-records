@@ -1,0 +1,28 @@
+---
+import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
+
+interface Props {
+  formats: string[] | undefined;
+  physicalFormat?: Tracklist['format'] | undefined;
+  href?: string | undefined;
+}
+
+const { formats, physicalFormat, href } = Astro.props;
+---
+
+{formats?.length && (
+  <p class="release-card-formats">
+    {formats.map((format, index) => (
+      <>
+        {index > 0 && <span aria-hidden="true"> / </span>}
+        {href && physicalFormat && tracklistFormat(format) === physicalFormat ? (
+          <a class="release-format-link" href={href} data-astro-prefetch>
+            {format}
+          </a>
+        ) : (
+          <span>{format}</span>
+        )}
+      </>
+    ))}
+  </p>
+)}

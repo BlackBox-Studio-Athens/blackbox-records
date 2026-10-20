@@ -5067,20 +5067,9 @@ body.is-app-shell-overlay-open {
   font-variant-numeric: tabular-nums;
 }
 
-/* One filled action beside the price; on two-up phones it hugs its label instead of the 112px minimum. */
-.store-item-card__buy {
-  min-width: 0;
-  padding-inline: 0.625rem;
-}
-
 @media (min-width: 64rem) {
   .store-item-card__price {
     font-size: 1.5rem;
-  }
-
-  .store-item-card__buy {
-    min-width: 7rem;
-    padding-inline: 1rem;
   }
 }
 
@@ -5400,88 +5389,95 @@ body.is-app-shell-overlay-open {
   font-size: 0.75rem;
 }
 
-/* A non-buyable edition's action is a mono label held in brackets that close in while it is engaged. The brackets
-   stay out of the accessible name. */
-.release-detail-link {
+.release-format-link {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
-  color: var(--foreground);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-
-.release-detail-link::before,
-.release-detail-link::after {
+  min-width: 44px;
   color: var(--muted-foreground);
-  transition:
-    margin 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
-    color 0.3s;
-}
-
-.release-detail-link::before {
-  content: '[';
-  content: '[' / '';
-  margin-right: 0.7rem;
-}
-
-.release-detail-link::after {
-  content: ']';
-  content: ']' / '';
-  margin-left: 0.7rem;
-}
-
-.release-detail-link:focus-visible::before {
-  margin-right: 0.2rem;
-  color: var(--foreground);
-}
-
-.release-detail-link:focus-visible::after {
-  margin-left: 0.2rem;
-  color: var(--foreground);
+  font: 400 0.8125rem/1.25rem var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 @media (hover: hover) {
-  .release-detail-link:hover::before {
-    margin-right: 0.2rem;
-    color: var(--foreground);
-  }
-
-  .release-detail-link:hover::after {
-    margin-left: 0.2rem;
+  .release-format-link:hover {
     color: var(--foreground);
   }
 }
 
-.release-detail-link:focus-visible {
+.release-format-link:focus-visible {
   outline: 2px solid var(--foreground);
   outline-offset: 4px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .release-detail-link::before,
-  .release-detail-link::after {
-    transition: none;
-  }
+.release-physical-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 7rem;
+  min-height: 2.75rem;
+  border: 1px dashed var(--flint-700);
+  padding: 0.5rem 1rem;
+  color: var(--foreground);
+  font: 400 1rem/1.2 var(--font-display-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+:is(#releases-merchandising, .release-detail-purchase) .release-physical-status[data-availability-state='sold_out'] {
+  border-style: solid;
+  border-color: #bc4945;
+}
+.release-edition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+/* Store BUY and release actions share the approved intrinsic control proportions. */
+.store-item-card__buy,
+:is(#releases-merchandising .release-card-actions, .release-detail-purchase .release-edition-actions)
+  :is(a, button, .release-physical-status) {
+  flex: none;
+  min-width: 112px;
+  max-width: 100%;
+  min-height: 44px;
+  height: auto;
+  gap: 8px;
+  padding-inline: 16px;
+  font: 400 1rem/1.25rem var(--font-display-ui);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.store-item-card__buy .store-card-buy-icon,
+:is(#releases-merchandising .release-card-actions, .release-detail-purchase .release-edition-actions) svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.release-edition-facts {
+  display: grid;
+  gap: 0;
+  margin-top: 0.25rem;
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.25rem var(--font-sans);
+}
+.release-edition-fact {
+  margin-top: 0.5rem;
+  font-size: inherit;
+  line-height: inherit;
+}
+[data-release-purchase][hidden],
+[data-release-status][hidden],
+[data-release-purchase-slot][hidden],
+[data-release-terms][hidden] {
+  display: none;
 }
 
 /* A Releases card with a native edition links its artwork and its edition action to that edition. Engaging either one
    (pointer on the artwork, pointer or keyboard focus on the action) gives both the same feedback: the action's own
    hover look. This rule is the only place that condition is written. */
 [data-release-edition-link]:has(:is([data-release-artwork], [data-release-purchase]):is(:hover, :focus-visible)) {
-  .release-detail-link::before {
-    margin-right: 0.2rem;
-    color: var(--foreground);
-  }
-
-  .release-detail-link::after {
-    margin-left: 0.2rem;
-    color: var(--foreground);
-  }
-
   .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
     border-color: var(--flint-500);
     background-color: var(--flint-800);
@@ -5527,12 +5523,7 @@ body.is-app-shell-overlay-open {
   }
 }
 
-[data-store-card-buy].preorder-action .store-buy-icon {
-  display: none;
-}
-
-/* Stacked full-canvas layers; each spin layer turns about the origin StoreBuyIcon sets from its file.
-   StoreListingPricePresentation marks the button for one flick on press, mouse entry or keyboard focus. */
+/* Release CD/cassette marks retain their existing stacked images. */
 .store-buy-icon {
   position: relative;
   display: inline-block;
@@ -5547,24 +5538,6 @@ body.is-app-shell-overlay-open {
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-@keyframes store-buy-icon-flick {
-  from {
-    rotate: 0turn;
-  }
-
-  to {
-    rotate: 1turn;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-store-card-buy-flick] .store-buy-icon__spin {
-    animation-name: store-buy-icon-flick;
-    animation-duration: 1s;
-    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
-  }
 }
 
 /* Pre-order is the filled Sea control with a white label: Sea means pre-order and nothing else. Hover and focus darken
@@ -8486,16 +8459,23 @@ body.is-app-shell-overlay-open {
   outline: 2px solid var(--foreground);
   outline-offset: -2px;
 }
-/* Phones read cover, the purchase/Listen pair 12px below it, date and catalog line, title, artist, formats with the
-   price at the right, status and the summary; from 40rem a grid moves the pair after the artist, beside the price. */
+/* The card's DOM and visual order agree at every width: identity, actions, facts, shipping/terms, digital date. */
 #releases-merchandising .release-card-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: flex-start;
-  padding-top: 0.75rem;
+  padding-top: 1.25rem;
 }
 #releases-merchandising .release-card-year-text {
+  margin-top: 0.75rem;
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.125rem var(--font-sans);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+#releases-merchandising [data-release-catalog-number] {
   color: var(--amber-500);
 }
 #releases-merchandising .releases-feature__copy {
@@ -8503,9 +8483,11 @@ body.is-app-shell-overlay-open {
 }
 #releases-merchandising .release-card-copy > .brand-card-title {
   max-width: 100%;
-  margin: 0.5rem 0 0;
+  margin: 0;
+  font-size: 2rem;
+  line-height: 2.25rem;
 }
-#releases-merchandising .releases-feature__title {
+#releases-merchandising .release-card-copy > .releases-feature__title {
   font-size: 2.35rem;
   line-height: 0.94;
   letter-spacing: 0.025em;
@@ -8524,14 +8506,14 @@ body.is-app-shell-overlay-open {
   outline-offset: 4px;
 }
 #releases-merchandising .release-card-artist-text {
-  margin-top: 0.375rem;
+  margin-top: 0.25rem;
   color: rgba(214, 214, 214, 0.78);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
   letter-spacing: 0.03em;
 }
 #releases-merchandising .releases-feature__copy .release-card-artist-text {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   color: var(--muted-foreground);
   font-size: 1.125rem;
   line-height: 1.625rem;
@@ -8549,97 +8531,56 @@ body.is-app-shell-overlay-open {
 #releases-merchandising .release-card-format-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   align-self: stretch;
   justify-content: space-between;
   column-gap: 1rem;
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
 }
 #releases-merchandising .release-card-format-row:empty {
   display: none;
 }
-#releases-merchandising .release-card-formats {
+.release-card-formats {
   margin: 0;
   color: rgba(245, 245, 245, 0.66);
   font-size: 0.8125rem;
-  line-height: 1.5;
-  text-wrap: pretty;
-}
-#releases-merchandising .releases-feature__copy .release-card-formats {
-  font-size: 0.875rem;
-}
-#releases-merchandising [data-release-badges] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0.5rem 0 0;
-}
-#releases-merchandising [data-release-badges]:empty {
-  display: none;
-}
-#releases-merchandising [data-release-badges] :is(.store-item-card__release-status, .preorder-badge) {
-  display: inline-block;
-  align-self: flex-start;
-  max-width: 100%;
-  border: 0;
-  padding: 0;
-  font-family: var(--font-sans);
-  font-size: 0.8125rem;
   line-height: 1.25rem;
-  white-space: normal;
-  text-wrap: balance;
-  overflow-wrap: break-word;
-}
-#releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state] {
-  border: 1px dashed #8c8c8c;
-  padding: calc(0.35rem - 1px) calc(0.5rem - 1px) calc(0.3rem - 1px);
-}
-#releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state='sold_out'] {
-  border-style: solid;
-  border-color: var(--flint-700);
-}
-#releases-merchandising [data-release-badges] .preorder-badge {
-  color: var(--sea-500);
+  text-wrap: pretty;
 }
 #releases-merchandising [data-release-shipping] {
   margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
-/* The pair: the filled Buy or Pre-order and the amber Listen, half the row each, 16px apart. The price arrives with
-   the offer read. */
 #releases-merchandising .release-card-actions {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   align-self: stretch;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-top: 0.75rem;
 }
-#releases-merchandising .release-card-actions:empty {
+#releases-merchandising .release-card-actions:not(:has(> :not([hidden]))) {
   display: none;
 }
 #releases-merchandising .release-card-actions > * {
   min-width: 0;
+  flex: none;
+}
+#releases-merchandising .release-purchase-slot {
+  max-width: 100%;
 }
 #releases-merchandising .release-card-price {
-  margin: 0 0 0 auto;
+  margin: 0;
   color: var(--foreground);
-  font: 400 1.5rem/1.2 var(--font-display-ui);
+  font: 400 1.5rem/1.75rem var(--font-display-ui);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 #releases-merchandising .releases-feature__copy .release-card-price {
   font-size: 1.75rem;
 }
-/* Catalog Buy wears the Store card Buy chrome and record mark; the mark shows only while the action reads Buy. */
-#releases-merchandising [data-release-role='catalog'] [data-release-purchase].purchase-action {
-  gap: 0.375rem;
-  padding-inline: 0.875rem;
-}
-#releases-merchandising [data-release-purchase]:not(.purchase-action) .store-buy-icon {
-  display: none;
-}
-/* Read more (phones) and the terms link share one 44px row that can wrap. */
+/* Read more stays with the editorial summary, after the purchase facts and digital metadata. */
 #releases-merchandising .releases-feature__links {
   display: flex;
   flex-wrap: wrap;
@@ -8686,14 +8627,11 @@ body.is-app-shell-overlay-open {
   align-items: center;
   max-width: 100%;
   min-height: 2.75rem;
+  margin-top: 0.5rem;
   color: var(--muted-foreground);
   font: 400 0.8125rem/1.5 var(--font-sans);
   text-decoration: underline;
   text-underline-offset: 4px;
-}
-/* Reserved until a pre-order is confirmed, so offers arriving never push the next row down. */
-#releases-merchandising .releases-feature__terms[inert] {
-  visibility: hidden;
 }
 #releases-merchandising .releases-feature__terms:focus-visible {
   color: var(--foreground);
@@ -8740,7 +8678,7 @@ body.is-app-shell-overlay-open {
   #releases-merchandising .releases-feature__copy {
     padding-top: 0;
   }
-  #releases-merchandising .releases-feature__title {
+  #releases-merchandising .release-card-copy > .releases-feature__title {
     font-size: clamp(2.35rem, 16cqi, 4.15rem);
   }
   #releases-merchandising .releases-feature__copy .release-card-price {
@@ -8751,43 +8689,6 @@ body.is-app-shell-overlay-open {
   }
   #releases-merchandising .releases-feature__more {
     display: none;
-  }
-  /* The pair follows the artist: price, the filled action and Listen share row 4 of the copy grid. */
-  #releases-merchandising .release-card-copy {
-    display: grid;
-    grid-template-columns: auto auto auto minmax(0, 1fr);
-    align-content: start;
-    justify-items: start;
-  }
-  #releases-merchandising .release-card-copy > * {
-    grid-column: 1 / -1;
-  }
-  #releases-merchandising :is(.release-card-actions, .release-card-format-row) {
-    display: contents;
-  }
-  #releases-merchandising :is(.release-card-actions > *, .release-card-price) {
-    grid-row: 4;
-    align-self: center;
-    margin-top: 1rem;
-  }
-  #releases-merchandising .release-card-price {
-    grid-column: 1;
-    margin-right: 1rem;
-  }
-  #releases-merchandising .release-card-actions > * {
-    grid-column: 2;
-    min-width: 7rem;
-  }
-  #releases-merchandising .release-card-actions > * + * {
-    grid-column: 3;
-    margin-left: 1rem;
-  }
-  #releases-merchandising .release-card-formats {
-    grid-column: 1 / -1;
-    margin-top: 1rem;
-  }
-  #releases-merchandising .releases-feature__copy .release-card-formats {
-    margin-top: 1.5rem;
   }
   #releases-merchandising .releases-catalog-section {
     padding-top: 3rem;

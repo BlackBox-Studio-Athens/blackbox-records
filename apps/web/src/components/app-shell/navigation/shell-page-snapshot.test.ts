@@ -245,31 +245,22 @@ describe('shell page snapshots', () => {
           textContent: actionName === 'Pre-order vinyl' ? 'Expected to ship around November 2026' : '',
           hidden: actionName !== 'Pre-order vinyl',
         };
-        const badges = {
-          children: [
-            {
-              textContent: actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
-              className: actionName === 'Pre-order vinyl' ? 'preorder-badge' : 'store-item-card__release-status',
-            },
-          ],
-          replaceChildren(...children: Array<{ textContent: string; className: string }>) {
-            this.children = children;
-          },
-        };
         const price = { textContent: actionName === 'Pre-order vinyl' ? '€28.00' : '€25.00', hidden: false };
-        const terms = { inert: actionName !== 'Pre-order vinyl' };
+        const terms = { hidden: actionName !== 'Pre-order vinyl' };
+        const status = { textContent: '', hidden: true, dataset: {} };
+        const slot = { hidden: false };
         const fields = {
           '[data-release-purchase]': purchase,
           '[data-release-shipping]': shipping,
-          '[data-release-badges]': badges,
           '[data-release-price]': price,
           '[data-release-terms]': terms,
+          '[data-release-status]': status,
+          '[data-release-purchase-slot]': slot,
         };
         const card = {
           dataset: {
             releaseId: 'release',
             releaseRole: 'lead',
-            releaseDate: '2000-01-01',
             releasePhysicalFormat: 'vinyl',
             releaseStoreSlug: 'edition',
             releaseSourceOrder: '0',
@@ -286,7 +277,7 @@ describe('shell page snapshots', () => {
           ownerDocument: { createElement: () => ({ textContent: '', className: '' }) },
           querySelector: (selector: string) => fields[selector as keyof typeof fields] ?? null,
         };
-        return { card, purchase, shipping, badges, price, terms };
+        return { card, purchase, shipping, price, terms, status, slot };
       };
       const live = makeCard();
       const cloned = makeCard();
@@ -301,9 +292,10 @@ describe('shell page snapshots', () => {
               html: JSON.stringify({
                 purchase: model.purchase,
                 shipping: model.shipping,
-                badges: model.badges.children,
                 price: model.price,
                 terms: model.terms,
+                status: model.status,
+                slot: model.slot,
                 role: model.card.dataset.releaseRole,
               }),
             },
@@ -322,9 +314,6 @@ describe('shell page snapshots', () => {
         'https://example.test/releases/',
       );
       expect(live.purchase.textContent).toBe(actionName);
-      expect(live.badges.children[0]?.textContent).toBe(
-        actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
-      );
       expect(cloned.card.dataset.releaseRole).toBe('lead');
       expect(snapshot?.mainClassName).toBe('releases-page-layout');
       if (projected) {
@@ -333,21 +322,22 @@ describe('shell page snapshots', () => {
         expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(/Buy vinyl|Vinyl available|€25\.00/);
         expect(cloned.purchase.className).toContain('preorder-action');
         expect(cloned.price).toEqual({ textContent: '€28.00', hidden: false });
-        expect(cloned.terms.inert).toBe(false);
+        expect(cloned.terms.hidden).toBe(false);
         return;
       }
-      expect(fragmentHtml(snapshot?.mainContent)).toContain('Vinyl edition');
-      // Before the offer is read again the card carries only its digital badge.
-      expect(fragmentHtml(snapshot?.mainContent)).toContain('Digital out now');
+      expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(/View details|Digital out now|In stock/);
+      expect(cloned.purchase).toHaveProperty('hidden', true);
+      expect(cloned.slot.hidden).toBe(true);
+      expect(cloned.status.hidden).toBe(true);
       expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(
         /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available|unconfirmed|€/,
       );
       expect(cloned.shipping).toEqual({ textContent: '', hidden: true });
       // Prices and the pre-order terms wait for the fresh offer read, like the actions they sit beside.
       expect(cloned.price).toEqual({ textContent: '', hidden: true });
-      expect(cloned.terms.inert).toBe(true);
+      expect(cloned.terms.hidden).toBe(true);
       expect(live.price.hidden).toBe(false);
-      expect(cloned.purchase.className).toBe('release-detail-link');
+      expect(cloned.purchase.className).toBe('');
       expect(cloned.card.dataset.releaseRole).toBe('lead');
       expect(snapshot?.mainClassName).toBe('releases-page-layout');
     },

@@ -1,4 +1,50 @@
 import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import type { Locator } from '@playwright/test';
+
+async function expectIntrinsicReleaseControls(controls: Locator) {
+  const geometry = await controls.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const style = getComputedStyle(node);
+      const box = node.getBoundingClientRect();
+      const label =
+        node.querySelector('[data-release-purchase-label], [data-music-listen-label]') ??
+        node.querySelector(':scope > span:last-child');
+      const range = document.createRange();
+      range.selectNodeContents(label ?? node);
+      const icon = node.querySelector('svg, .store-buy-icon');
+      const iconWidth = icon?.getBoundingClientRect().width ?? 0;
+      const content = range.getBoundingClientRect().width + (iconWidth ? iconWidth + parseFloat(style.columnGap) : 0);
+      const expected = Math.max(
+        parseFloat(style.minWidth),
+        content +
+          parseFloat(style.paddingLeft) +
+          parseFloat(style.paddingRight) +
+          parseFloat(style.borderLeftWidth) +
+          parseFloat(style.borderRightWidth),
+      );
+      return {
+        width: box.width,
+        height: box.height,
+        expected,
+        minWidth: style.minWidth,
+        padding: style.paddingLeft,
+        gap: style.columnGap,
+        font: style.fontSize,
+        family: style.fontFamily,
+        grow: style.flexGrow,
+        iconWidth,
+      };
+    }),
+  );
+  for (const control of geometry) {
+    expect(control.height).toBeGreaterThanOrEqual(43.99);
+    expect(control.width).toBeGreaterThanOrEqual(112);
+    expect(Math.abs(control.width - control.expected)).toBeLessThan(1);
+    expect(control).toMatchObject({ minWidth: '112px', padding: '16px', gap: '8px', font: '16px', grow: '0' });
+    expect(control.family).toContain('Bebas Neue');
+    if (control.iconWidth) expect(control.iconWidth).toBe(18);
+  }
+}
 
 // The e2e build renders Releases from e2e/preorder-projection.json: Disintegration vinyl is an open pre-order.
 
@@ -14,7 +60,7 @@ test('releases show their catalog number in the date line on the page and on eve
   await expect(numbers.first()).toContainText('Catalog number BBR#002');
   await page.goto('releases/disintegration/');
   await waitForShell(page);
-  await expect(page.locator('p', { hasText: /^Release date/ }).locator('[data-release-catalog-number]')).toHaveText(
+  await expect(page.locator('p', { hasText: /^Digital release/ }).locator('[data-release-catalog-number]')).toHaveText(
     /Catalog number BBR#002$/,
   );
   await expectNoHorizontalOverflow(page);
@@ -122,10 +168,10 @@ test('Releases keeps SSR roles, the projected pre-order and square artwork while
     // The two featured records are twins: their covers match at every width.
     expect(Math.abs(artwork[0]!.width - artwork[1]!.width)).toBeLessThan(1);
     await expectNoHorizontalOverflow(page);
-    if (width === 2120 || width < 768)
+    if ([320, 390, 768, 1440].includes(width))
       await page
         .locator('#releases-merchandising')
-        .screenshot({ path: `.codex-artifacts/catalog-repairs/releases-${testInfo.project.name}-${width}.png` });
+        .screenshot({ path: `.codex-artifacts/quiet-actions/releases-${testInfo.project.name}-${width}.png` });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await plantSentinel(page);
@@ -148,105 +194,87 @@ test('Releases keeps SSR roles, the projected pre-order and square artwork while
   expect(await sentinelIntact(page)).toBe(true);
 });
 
-for (const [label, releaseDate, digitalStatus] of [
-  ['released', '2026-06-06', 'Digital out now'],
-  ['unreleased', '2099-11-06', 'Out 6 November 2099'],
-  ['undated', undefined, ''],
+for (const [label, date] of [
+  ['released', '2026-06-06'],
+  ['unreleased', '2099-11-06'],
+  ['undated', undefined],
 ] as const) {
-  test(`Vinyl reads Coming Soon from its offer while the digital album is ${label}`, async ({ page }, testInfo) => {
-    await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
+  test(`quiet physical offers leave ${label} digital metadata unchanged`, async ({ page }) => {
     await page.route('**/releases/', async (route) => {
       const response = await route.fetch();
       const html = await response.text();
-      const body = html.replace(/<div\b[^>]*\bdata-release-id="anarchotribal"[^>]*>/, (tag) =>
-        tag
-          .replace(/\sdata-release-date="[^"]*"/, '')
-          .replace('<div', `<div${releaseDate ? ` data-release-date="${releaseDate}"` : ''}`),
-      );
-      expect(body).not.toBe(html);
-      await route.fulfill({ response, body });
+      const start = html.indexOf('data-release-id="anarchotribal"');
+      const end = html.indexOf('data-release-id="caregivers"');
+      const card = html.slice(start, end);
+      const metadata = `<p class="release-card-year-text">${date ? `Digital release · <time datetime="${date}">${date}</time> · ` : ''}<span data-release-catalog-number>Catalog number BBR#003</span></p>`;
+      const updated = card.replace(/<p class="release-card-year-text">[\s\S]*?<\/p>/, metadata);
+      expect(updated).not.toBe(card);
+      await route.fulfill({ response, body: html.slice(0, start) + updated + html.slice(end) });
     });
-    let current = { ...stocked, availabilityState: 'coming_soon', expectedMonth: '2026-11' } as
+    let current = { ...stocked, availabilityState: 'coming_soon', expectedMonth: '2099-11' } as
       typeof stocked | typeof preorder;
-    let failed = false;
+    let missing = false;
     await page.route('**/api/store/listing-prices*', (route) =>
-      failed
-        ? route.fulfill({ contentType: 'application/json', body: '{' })
-        : route.fulfill({
-            json: [
+      route.fulfill({
+        json: missing
+          ? []
+          : [
               { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
               { ...stocked, storeItemSlug: 'caregivers-vinyl' },
               { ...current, storeItemSlug: 'anarchotribal-vinyl' },
             ],
-          }),
+      }),
     );
     await page.goto('releases/');
     await waitForShell(page);
-    await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
-      'Pre-order vinyl',
-    );
-    const announced = page.locator('[data-release-id="anarchotribal"]');
-    await expect(announced).toHaveAttribute('data-release-role', 'supporting');
-    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl Coming Soon`);
-    const physical = announced.locator('[data-release-badges] [data-availability-state="coming_soon"]');
-    await expect(physical).toHaveText('Vinyl Coming Soon');
-    await expect(physical).toHaveCSS('border-top-style', 'dashed');
-    await expect(announced.locator('[data-release-shipping]')).toHaveText('Expected November 2026');
-    const details = announced.locator('[data-release-purchase]');
-    await expect(details).toHaveText('Vinyl edition');
-    await expect(details).toHaveClass('release-detail-link');
-    await expect(details).toHaveCSS('text-transform', 'uppercase');
-    await expect(details).toHaveAccessibleName('Vinyl edition, Anarchotribal');
-    // A Coming Soon offer shows the Store card's price beside the edition link, without pre-order terms.
-    await expect(announced.locator('[data-release-price]')).toHaveText('€28.00');
-    await expect(announced.locator('[data-release-terms]')).toHaveAttribute('inert', '');
-    await expect(page.locator('[data-release-id]')).toHaveCount(3);
-    await expect(page.getByRole('heading', { name: 'More releases', exact: true })).toHaveCount(1);
-    await expect(page.getByText('Our Releases', { exact: true })).toHaveCount(0);
-    await expect(announced.locator('.preorder-action, .purchase-action')).toHaveCount(0);
-
-    if (label === 'released') {
-      await page.setViewportSize({ width: 390, height: 900 });
-      await announced.scrollIntoViewIfNeeded();
-      await page.evaluate(() => document.fonts.ready);
-      await expect
-        .poll(() =>
-          announced
-            .locator('.release-card-image-shell img')
-            .evaluate((image) => (image as HTMLImageElement).naturalWidth),
-        )
-        .toBeGreaterThan(0);
-      await expect(announced.locator('[data-release-badges]')).toHaveText('Digital out nowVinyl Coming Soon');
-      await announced.screenshot({
-        path: `.codex-artifacts/catalog-video-contact/anarchotribal-${testInfo.project.name}-390.png`,
-      });
-      await page.setViewportSize({ width: 1440, height: 900 });
+    const card = page.locator('[data-release-id="anarchotribal"]');
+    const metadata = card.locator('.release-card-year-text');
+    const original = await metadata.innerHTML();
+    await expect(metadata).toContainText('BBR#003');
+    if (date) await expect(metadata.locator('time')).toHaveAttribute('datetime', date);
+    else {
+      await expect(metadata.locator('time')).toHaveCount(0);
+      await expect(metadata).not.toContainText('Digital release');
     }
-
-    await plantSentinel(page);
-    await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists', exact: true }).click();
-    await expect(page.getByRole('heading', { level: 1, name: /^Artists$/i })).toBeVisible();
-    failed = true;
-    const failedRead = page.waitForResponse(
-      (response) => response.url().includes('/api/store/listing-prices') && response.status() === 200,
-    );
-    await page.goBack();
-    await failedRead;
-    // Without an offer there is no physical badge and no price; the digital badge stays.
-    await expect(announced.locator('[data-release-badges]')).toHaveText(digitalStatus);
-    await expect(announced.locator('[data-release-purchase]')).toHaveText('Vinyl edition');
-    await expect(announced.locator('[data-release-price]')).toBeHidden();
-    expect(await sentinelIntact(page)).toBe(true);
-
-    failed = false;
-    current = preorder;
+    const status = card.locator('[data-release-status]');
+    await expect(status).toHaveText('Coming soon');
+    await expect(status).toHaveCSS('border-top-style', 'dashed');
+    expect(
+      await status.evaluate((element) => ({
+        tag: element.tagName,
+        tab: (element as HTMLElement).tabIndex,
+        cursor: getComputedStyle(element).cursor,
+      })),
+    ).toEqual({ tag: 'SPAN', tab: -1, cursor: 'auto' });
+    await expect(card.locator('[data-release-shipping]')).toHaveText('Expected November 2099');
+    await expect(card.locator('.release-format-link')).toHaveAttribute('href', /\/store\/anarchotribal-vinyl\/$/);
+    for (const [offer, expectedStatus, action] of [
+      [preorder, '', 'Pre-order vinyl'],
+      [stocked, '', 'Buy vinyl'],
+      [{ ...stocked, availabilityState: 'repressing' }, 'Repressing', ''],
+      [{ ...stocked, availabilityState: 'sold_out' }, 'Sold out', ''],
+      [{ ...stocked, availabilityState: 'unavailable' }, '', ''],
+    ] as const) {
+      current = offer;
+      await page.reload();
+      if (action) await expect(card.locator('[data-release-purchase]')).toHaveText(action);
+      else await expect(card.locator('[data-release-purchase]')).toBeHidden();
+      if (expectedStatus) await expect(status).toHaveText(expectedStatus);
+      else await expect(status).toBeHidden();
+      if (expectedStatus === 'Sold out') await expect(status).toHaveCSS('border-top-color', 'rgb(188, 73, 69)');
+      await expect(card.locator('[data-release-price]')).toHaveText('€28.00');
+      if (offer.preorder) await expect(card.locator('[data-release-terms]')).toBeVisible();
+      else await expect(card.locator('[data-release-terms]')).toBeHidden();
+      expect(await metadata.innerHTML()).toBe(original);
+      await expect(card.locator('[data-release-badges], [data-release-stock], [data-release-details]')).toHaveCount(0);
+      await expect(card).not.toContainText(/In stock|Digital out now|View details|Unknown offer/);
+    }
+    missing = true;
     await page.reload();
-    await expect(announced.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
-    current = stocked;
-    await page.reload();
-    await expect(announced.locator('[data-release-purchase]')).toHaveText('Buy vinyl');
-    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl available`);
-    await expect(page.locator('[data-release-id]')).toHaveCount(3);
+    await expect(card.locator('[data-release-purchase-slot]')).toBeHidden();
+    await expect(card.locator('[data-release-price]')).toBeHidden();
+    expect(await metadata.innerHTML()).toBe(original);
+    await expectNoHorizontalOverflow(page);
   });
 }
 
@@ -279,16 +307,18 @@ for (const width of [320, 360, 390, 430, 768]) {
           role: card.getAttribute('data-release-role'),
           artwork: { x: artwork.x, y: artwork.y, width: artwork.width, right: artwork.right, bottom: artwork.bottom },
           copy: { x: copy.x, y: copy.y },
+          artistBottom: card.querySelector('.release-card-artist-text')!.getBoundingClientRect().bottom,
           transform: getComputedStyle(image).transform,
           // Controls only: the price beside them is inert text.
-          actions: [...card.querySelectorAll('[data-release-actions] a, .music-listen-trigger')].map((action) => {
+          actions: [...card.querySelectorAll('[data-release-actions] a:not([hidden]), .music-listen-trigger')].map(
+            (action) => {
+              const rect = action.getBoundingClientRect();
+              return { x: rect.x, right: rect.right, height: rect.height };
+            },
+          ),
+          pair: [...card.querySelectorAll('[data-release-actions] > :not([hidden])')].map((action) => {
             const rect = action.getBoundingClientRect();
-            return { x: rect.x, right: rect.right, height: rect.height };
-          }),
-          pair: [...card.querySelectorAll('[data-release-actions] > *')].map((action) => {
-            const rect = action.getBoundingClientRect();
-            const textLink = action.classList.contains('release-detail-link');
-            return { x: rect.x, y: rect.y, right: rect.right, width: rect.width, textLink };
+            return { x: rect.x, y: rect.y, right: rect.right, width: rect.width };
           }),
         };
       }),
@@ -308,10 +338,9 @@ for (const width of [320, 360, 390, 430, 768]) {
         expect(card.artwork.width).toBe(contentWidth - 32);
         expect(card.copy.x).toBe(16);
         expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
-        expect(card.pair[0]!.y - card.artwork.bottom).toBeCloseTo(12, 0);
-        // Two controls share the row equally; a non-buyable edition's bracketed text link is not a control face.
-        if (card.pair.length === 2 && !card.pair[0]!.textLink) {
-          expect(card.pair[0]!.width).toBeCloseTo(card.pair[1]!.width, 0);
+        expect(card.pair[0]!.y - card.artistBottom).toBeCloseTo(12, 0);
+        // The static physical slot shares the same geometry as the buying action.
+        if (card.pair.length === 2) {
           expect(card.pair[1]!.x - card.pair[0]!.right).toBeCloseTo(16, 0);
         }
       } else if (card.role !== 'catalog') {
@@ -353,7 +382,7 @@ for (const width of [1024, 1440]) {
 }
 
 for (const width of [390, 1280]) {
-  test(`Releases keeps badge typography and date spacing after entering from Home at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
+  test(`Releases keeps quiet typography and date spacing after entering from Home at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -365,29 +394,25 @@ for (const width of [390, 1280]) {
     await waitForShell(page);
     await plantSentinel(page);
     if (width < 640) await page.getByRole('banner').getByRole('button', { name: 'Menu', exact: true }).click();
-    await page.getByRole('link', { name: 'Releases', exact: true }).filter({ visible: true }).first().click();
+    await page
+      .getByRole('navigation', { name: width < 640 ? 'Mobile' : 'Primary' })
+      .getByRole('link', { name: 'Releases', exact: true })
+      .click();
     const lead = page.locator('[data-release-role="lead"]');
     await expect(lead).toHaveAttribute('data-release-id', 'disintegration');
     await expect(lead.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
-    const status = lead.locator('[data-release-badges] .store-item-card__release-status');
-    await expect(status).toHaveText('Digital out now');
-    // Status is a plain Inter line without a box (accent-and-button-system).
-    await expect(status).toHaveCSS('font-family', /Inter/);
-    await expect(status).toHaveCSS('text-transform', 'none');
-    await expect(status).toHaveCSS('border-width', '0px');
-    // Status follows the formats line; the purchase/Listen pair sits under the cover on phones and after the artist on
-    // wider screens (mobile-layout-rhythm).
-    const badges = await lead.locator('[data-release-badges]').boundingBox();
-    const formats = await lead.locator('.release-card-formats').boundingBox();
-    const action = await lead.locator('[data-release-purchase]').boundingBox();
-    const cover = await lead.locator('.releases-cover').boundingBox();
+    await expect(lead.locator('[data-release-badges], [data-release-stock], [data-release-details]')).toHaveCount(0);
+    const metadata = lead.locator('.release-card-year-text');
+    await expect(metadata).toContainText('Digital release');
+    await expect(metadata).toHaveCSS('font-size', '12px');
     const artist = await lead.locator('.release-card-artist-text').boundingBox();
-    expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
-    if (width < 640) expect(action!.y - cover!.y - cover!.height).toBeCloseTo(12, 0);
-    else {
-      expect(action!.y).toBeGreaterThanOrEqual(artist!.y + artist!.height);
-      expect(formats!.y).toBeGreaterThanOrEqual(action!.y + action!.height);
-    }
+    const action = await lead.locator('[data-release-actions]').boundingBox();
+    const formats = await lead.locator('.release-card-format-row').boundingBox();
+    const terms = await lead.locator('[data-release-terms]').boundingBox();
+    const date = await metadata.boundingBox();
+    expect(action!.y - artist!.y - artist!.height).toBeCloseTo(12, 0);
+    expect(formats!.y - action!.y - action!.height).toBeCloseTo(4, 0);
+    expect(date!.y - terms!.y - terms!.height).toBeCloseTo(12, 0);
     expect(await sentinelIntact(page)).toBe(true);
     await expectNoHorizontalOverflow(page);
   });
@@ -424,22 +449,15 @@ for (const width of [320, 390, 1280]) {
     const preorderAction = lead.getByRole('link', { name: 'Pre-order vinyl, Disintegration', exact: true });
     await expect(preorderAction).toHaveClass(/preorder-action/);
     await expect(preorderAction).toHaveText('Pre-order vinyl');
-    await expect(lead.locator('.preorder-badge')).toHaveText('Pre-order · ships around October 2026');
-    await expect(lead.locator('[data-release-badges]')).toContainText('Digital out now');
+    await expect(lead.locator('.preorder-badge')).toHaveCount(0);
+    await expect(lead.locator('[data-release-shipping]')).toHaveText('Expected to ship around October 2026');
+    await expect(lead.locator('.release-card-year-text')).toContainText('Digital release');
     // The price and the pre-order terms come from the same offer read, beside the action.
     await expect(lead.locator('[data-release-price]')).toHaveText('€28.00');
     await expect(lead.locator('[data-release-price]')).toHaveCSS('font-family', /Bebas Neue/);
     await expect(lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true })).toBeVisible();
-    const status = lead.locator('[data-release-badges] .store-item-card__release-status');
-    await expect(status).toHaveCSS('font-family', /Inter/);
-    await expect(status).toHaveCSS('color', 'rgb(171, 181, 184)');
-    await expect(status).toHaveCSS('border-width', '0px');
-    await expect(lead.locator('.preorder-badge')).toHaveCSS('color', 'rgb(76, 169, 153)');
-    const [badges, formats] = await Promise.all([
-      lead.locator('[data-release-badges]').boundingBox(),
-      lead.locator('.release-card-formats').boundingBox(),
-    ]);
-    expect(badges!.y - formats!.y - formats!.height).toBeGreaterThanOrEqual(4);
+    await expect(lead.locator('[data-release-badges], [data-release-stock], [data-release-details]')).toHaveCount(0);
+    await expect(lead.locator('[data-release-shipping]')).toHaveCSS('color', 'rgb(171, 181, 184)');
     // Catalog Buy fills Flint with the record mark; the featured Pre-order fills Sea Green.
     const catalogBuy = page
       .locator('[data-release-role="catalog"]')
@@ -447,7 +465,8 @@ for (const width of [320, 390, 1280]) {
     await expect(catalogBuy).toHaveClass(/purchase-action/);
     await expect(catalogBuy).toHaveCSS('background-color', 'rgb(98, 110, 114)');
     await expect(catalogBuy).toHaveCSS('color', 'rgb(245, 245, 245)');
-    await expect(catalogBuy.locator('.store-buy-icon')).toBeVisible();
+    await expect(catalogBuy.locator('.release-vinyl-icon')).toBeVisible();
+    await expect(catalogBuy.locator('.store-buy-icon')).toHaveCount(0);
     await expect(page.locator('[data-release-role="catalog"] [data-release-price]')).toHaveText('€28.00');
     await expect(page.getByText('Featured records', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Our Releases', { exact: true })).toHaveCount(0);
@@ -524,6 +543,149 @@ for (const width of [320, 390, 1280]) {
   });
 }
 
+test('a source-less release keeps the purchase slot without a Listen placeholder @phone', async ({ page }) => {
+  await page.route('**/releases/', async (route) => {
+    const response = await route.fetch();
+    const html = await response.text();
+    const body = html.replace(
+      /<button\b(?=[^>]*\bdata-music-streaming-service-embedded-player-trigger)[^>]*>[\s\S]*?<\/button>/g,
+      '',
+    );
+    expect(body).not.toBe(html);
+    await route.fulfill({ response, body });
+  });
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [{ ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' }] }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  const actions = page.locator('[data-release-role="lead"] [data-release-actions]');
+  await expect(actions.getByRole('button')).toHaveCount(0);
+  await expect(actions.locator(':scope > *')).toHaveCount(2);
+  await expect(actions.locator('[data-release-price]')).toHaveCount(1);
+  await expect(actions.getByRole('link', { name: 'Pre-order vinyl, Disintegration', exact: true })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+for (const width of [390, 1440]) {
+  test(`release purchase controls stay together with outline vinyl icons at ${width}px${width === 390 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    let current = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2099-11', part: null } } } as
+      typeof stocked | typeof preorder;
+    await page.route('**/api/store/listing-prices*', (route) =>
+      route.fulfill({
+        headers: { 'access-control-allow-origin': '*' },
+        json: [
+          { ...current, storeItemSlug: 'disintegration-black-vinyl-lp' },
+          { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+        ],
+      }),
+    );
+    const html = await (await page.request.get('releases/disintegration/')).text();
+    const rowStart = html.indexOf('class="release-edition-actions"');
+    const factsStart = html.indexOf('class="release-edition-facts"', rowStart);
+    expect(rowStart).toBeGreaterThan(-1);
+    expect(factsStart).toBeGreaterThan(rowStart);
+    expect(html.slice(rowStart, factsStart)).toContain('music-listen-trigger');
+    expect(html.slice(rowStart, factsStart)).not.toMatch(/In stock|Digital out now|Expected to ship/);
+    const checkBlock = async (block: ReturnType<typeof page.locator>) => {
+      const row = block.locator('.release-edition-actions');
+      const action = row.getByRole('link');
+      const listen = row.getByRole('button', { name: /^Listen/i });
+      await expect(listen).toHaveCount(1);
+      await expect(action).toHaveText(current.preorder ? 'Pre-order vinyl' : 'Buy vinyl');
+      await expect(action.locator('.release-vinyl-icon')).toHaveCount(1);
+      await expect(action.locator('.store-buy-icon')).toHaveCount(0);
+      await expect(action.locator('.release-vinyl-icon')).toHaveCSS('animation-name', 'none');
+      const [actionBox, listenBox, factsBox] = await Promise.all([
+        action.boundingBox(),
+        listen.boundingBox(),
+        block.locator('.release-edition-facts').boundingBox(),
+      ]);
+      expect(Math.abs(actionBox!.y - listenBox!.y)).toBeLessThan(1);
+      expect(actionBox!.height).toBeGreaterThanOrEqual(44);
+      expect(listenBox!.height).toBeGreaterThanOrEqual(44);
+      expect(factsBox!.y).toBeGreaterThanOrEqual(
+        Math.max(actionBox!.y + actionBox!.height, listenBox!.y + listenBox!.height),
+      );
+      await expect(row).not.toContainText(/In stock|Digital out now|Expected to ship|View details/);
+    };
+    for (const preorderOpen of [true, false]) {
+      if (!preorderOpen) current = stocked;
+      await page.goto('releases/disintegration/');
+      await waitForShell(page);
+      await checkBlock(page.locator('.release-detail-purchase'));
+      await page.goto('releases/');
+      await waitForShell(page);
+      const card = page.locator('[data-release-id="disintegration"]');
+      const purchase = card.locator('[data-release-purchase]');
+      await expect(purchase).toHaveText(preorderOpen ? 'Pre-order vinyl' : 'Buy vinyl');
+      await expect(purchase.locator('.release-vinyl-icon')).toHaveCount(1);
+      await expect(card.locator('[data-release-actions]')).not.toContainText(
+        /In stock|Digital out now|Expected to ship/,
+      );
+      await card.locator('.release-card-title-link').click();
+      await checkBlock(page.getByRole('dialog').locator('.release-detail-purchase'));
+      await expectNoHorizontalOverflow(page);
+    }
+  });
+}
+
+test('release detail and overlay use compact physical controls with independent digital timing @phone', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
+  let current = preorder as typeof stocked | typeof preorder;
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [{ ...current, storeItemSlug: 'disintegration-black-vinyl-lp' }] }),
+  );
+  await page.goto('releases/disintegration/');
+  await waitForShell(page);
+  const block = page.locator('.release-detail-purchase');
+  await expect(block.getByRole('link', { name: 'Pre-order vinyl', exact: true })).toHaveAttribute(
+    'href',
+    /\/store\/disintegration-black-vinyl-lp\/$/,
+  );
+  await expect(block).toContainText('Expected to ship around October 2026');
+  await expect(block).not.toContainText(/Digital out now|Digital release|View details|In stock/);
+  await expect(page.locator('p', { hasText: /^Digital release/ })).toHaveCount(1);
+  await expect(block.locator('.preorder-badge')).toHaveCount(0);
+  await expect(block.getByRole('link', { name: 'Pre-order & delivery information', exact: true })).toBeVisible();
+  for (const [state, label, border] of [
+    ['coming_soon', 'Coming soon', 'dashed'],
+    ['repressing', 'Repressing', 'dashed'],
+    ['sold_out', 'Sold out', 'solid'],
+    ['unavailable', '', ''],
+  ] as const) {
+    current = { ...stocked, availabilityState: state };
+    await page.reload();
+    await expect(block.locator('.release-format-link').first()).toHaveAttribute(
+      'href',
+      /\/store\/disintegration-black-vinyl-lp\/$/,
+    );
+    await expect(block.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+    if (label) {
+      await expect(block.locator('.release-physical-status')).toHaveText(label);
+      await expect(block.locator('.release-physical-status')).toHaveCSS('border-top-style', border);
+    } else await expect(block.locator('.release-physical-status')).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+  }
+  current = stocked;
+  await page.goto('releases/');
+  await waitForShell(page);
+  await expect(page.locator('[data-release-id="disintegration"] .purchase-action')).toBeVisible();
+  await plantSentinel(page);
+  await page.locator('[data-release-id="disintegration"] .release-card-title-link').click();
+  const dialog = page.getByRole('dialog');
+  await expect(
+    dialog.locator('.release-detail-purchase').getByRole('link', { name: 'Buy vinyl', exact: true }),
+  ).toBeVisible();
+  await expect(dialog.locator('.release-detail-purchase')).not.toContainText(/In stock|Digital out now|View details/);
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
 test('Releases changes buying actions while retaining placement on a fresh offer read', async ({ page }) => {
   let current = preorder as typeof stocked | typeof preorder;
   let unknown = false;
@@ -551,12 +713,12 @@ test('Releases changes buying actions while retaining placement on a fresh offer
   current = { ...stocked, availabilityState: 'sold_out' };
   await page.reload();
   await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'disintegration');
-  await expect(page.locator('[data-release-id="disintegration"] [data-release-badges]')).toContainText('Sold Out');
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-status]')).toHaveText('Sold out');
   unknown = true;
   await page.reload();
   await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'disintegration');
   await expect(page.locator('[data-release-id]')).toHaveCount(3);
-  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText('Vinyl edition');
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase-slot]')).toBeHidden();
   await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
   await expect(page.locator('[data-release-price]:visible')).toHaveCount(0);
 });
@@ -581,7 +743,7 @@ test('a long featured summary opens from three lines on phones and stays whole o
     lead.getByRole('link', { name: 'Pre-order & delivery information', exact: true }).boundingBox(),
   ]);
   expect(moreBox!.height).toBeGreaterThanOrEqual(44);
-  expect(Math.abs(moreBox!.y - termsBox!.y)).toBeLessThan(1);
+  expect(moreBox!.y).toBeGreaterThan(termsBox!.y + termsBox!.height);
   await more.focus();
   await page.keyboard.press('Enter');
   await expect(lead.locator('[data-release-more]')).toHaveAttribute('open', '');
@@ -623,13 +785,7 @@ test('Releases keeps native destinations distinct from inert copy and status', a
       const card = page.locator(`[data-release-role="${role}"]`);
       await expect(card.locator('.prose-card-link, a a, a button')).toHaveCount(0);
       await expect(card.locator('.release-card-title-link')).toBeVisible();
-      for (const selector of [
-        '[data-release-summary]',
-        '.release-card-year-text',
-        '.release-card-formats',
-        '[data-release-badges]',
-        '[data-release-price]',
-      ]) {
+      for (const selector of ['[data-release-summary]', '.release-card-year-text', '[data-release-price]']) {
         const copy = card.locator(selector);
         if (await copy.isVisible()) {
           await copy.click();
@@ -638,9 +794,6 @@ test('Releases keeps native destinations distinct from inert copy and status', a
         }
       }
     }
-    await lead.locator('.release-card-copy').click({ position: { x: 2, y: 2 } });
-    await expect(page).toHaveURL(/\/releases\/$/);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
   }
 
   const artwork = lead.locator('.release-card-artwork-link');
@@ -677,9 +830,10 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await expect(artwork).toHaveAttribute('tabindex', '-1');
   await expect(title).toHaveAccessibleName(/disintegration/i);
   await expect(lead.locator('[data-release-actions]').getByRole('link')).toHaveCount(1);
-  await purchase.focus();
-  // The purchase/Listen pair leads the copy (under the cover on phones), then the title and artist links.
-  for (const control of [purchase, listen, title, artist]) {
+  await title.focus();
+  const format = lead.locator('.release-format-link');
+  // Keyboard and visual sequence agree at every width.
+  for (const control of [title, artist, purchase, listen, format]) {
     await expect(control).toBeFocused();
     expect(await control.evaluate((element) => parseFloat(getComputedStyle(element).outlineWidth))).toBeGreaterThan(0);
     await page.keyboard.press('Tab');
@@ -778,17 +932,314 @@ for (const result of ['unavailable', 'failed'] as const) {
     expect(inserted?.some((action) => /^Buy /.test(action))).toBe(false);
     expect(inserted).toContain('Pre-order vinyl');
     await respond!();
-    const badges = page.locator('[data-release-id="disintegration"] [data-release-badges]');
+    const physical = page.locator('[data-release-id="disintegration"] [data-release-status]');
     if (result === 'failed') {
       // A failed read keeps the rendered pre-order; buying still reaches the authoritative Store Item offer.
       await expect(page.locator('[data-release-id="disintegration"] .preorder-action')).toHaveText('Pre-order vinyl');
       await expect(page.locator('.purchase-action')).toHaveCount(0);
       await expect(page.locator('[data-release-id="disintegration"] [data-release-price]')).toHaveText('€28.00');
     } else {
-      await expect(badges.locator('[data-availability-state="sold_out"]')).toHaveText('Vinyl Sold Out');
+      await expect(physical).toHaveAttribute('data-availability-state', 'sold_out');
+      await expect(physical).toHaveText('Sold out');
       await expect(page.locator('.purchase-action, .preorder-action, .preorder-badge')).toHaveCount(0);
-      await expect(page.locator('[data-release-terms]:not([inert])')).toHaveCount(0);
+      await expect(page.locator('[data-release-terms]:visible')).toHaveCount(0);
     }
     expect(await sentinelIntact(page)).toBe(true);
   });
+}
+
+test('quiet cards retain native format access by keyboard and modified click', async ({ page, context }) => {
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({
+      json: [{ ...stocked, availabilityState: 'sold_out', storeItemSlug: 'disintegration-black-vinyl-lp' }],
+    }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  const card = page.locator('[data-release-id="disintegration"]');
+  await expect(card.locator('[data-release-status]')).toHaveText('Sold out');
+  const format = card.locator('.release-format-link');
+  await expect(format).toHaveCount(1);
+  await expect(format).toHaveAttribute('href', /\/store\/disintegration-black-vinyl-lp\/$/);
+  expect((await format.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const [opened] = await Promise.all([context.waitForEvent('page'), format.click({ modifiers: ['Control'] })]);
+  await opened.waitForLoadState('domcontentloaded');
+  await expect(opened).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
+  await opened.close();
+  await expect(page).toHaveURL(/\/releases\/$/);
+  await format.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
+});
+
+test('quiet cards wrap enlarged text and prescribed text spacing at320px @phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 1000 });
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({
+      json: [
+        { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
+        { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+      ],
+    }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addStyleTag({
+    content:
+      'html {font-size:200%} #releases-merchandising * {line-height:1.5!important;letter-spacing:.12em!important;word-spacing:.16em!important} #releases-merchandising p {margin-bottom:2em!important}',
+  });
+  await expectNoHorizontalOverflow(page);
+  for (const action of await page
+    .locator('[data-release-actions] a:visible, [data-release-actions] button:visible, .release-format-link:visible')
+    .all()) {
+    const target = (await action.boundingBox())!;
+    expect(target.height).toBeGreaterThanOrEqual(44);
+    expect(target.width).toBeGreaterThanOrEqual(44);
+  }
+  await page
+    .locator('#releases-merchandising')
+    .screenshot({ path: '.codex-artifacts/quiet-actions/text-spacing-320.png' });
+});
+
+test('release actions use intrinsic controls with one adjacent price before formats at every width', async ({
+  page,
+}) => {
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({
+      json: [
+        { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
+        { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+      ],
+    }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const role of ['lead', 'supporting', 'catalog']) {
+      const card = page.locator(`[data-release-role="${role}"]`);
+      const row = card.locator('[data-release-actions]');
+      await expectIntrinsicReleaseControls(row.locator('a:visible, button:visible, .release-physical-status:visible'));
+      await expect(card.locator('[data-release-price]')).toHaveCount(1);
+      if (role !== 'supporting') {
+        await expect(row.locator('[data-release-price]')).toBeVisible();
+        expect(
+          await row.evaluate((element) => {
+            const children = [...element.children];
+            return (
+              children.indexOf(element.querySelector('.music-listen-trigger')!) <
+              children.indexOf(element.querySelector('[data-release-price]')!)
+            );
+          }),
+        ).toBe(true);
+        if (width === 1440) {
+          const [listen, price] = await Promise.all([
+            row.locator('.music-listen-trigger').boundingBox(),
+            row.locator('[data-release-price]').boundingBox(),
+          ]);
+          expect(price!.x - listen!.x - listen!.width).toBeCloseTo(16, 0);
+          expect(price!.y + price!.height / 2).toBeCloseTo(listen!.y + listen!.height / 2, 0);
+          expect(listen!.width).toBeLessThan((await card.locator('.release-card-copy').boundingBox())!.width / 2);
+        }
+      }
+      expect(
+        await card.evaluate((element) => {
+          const price = element.querySelector('[data-release-price]')!;
+          const formats = element.querySelector('.release-card-format-row')!;
+          return Boolean(price.compareDocumentPosition(formats) & Node.DOCUMENT_POSITION_FOLLOWING);
+        }),
+      ).toBe(true);
+    }
+    await expectNoHorizontalOverflow(page);
+  }
+});
+
+for (const physicalFormat of ['vinyl', 'cd', 'cassette']) {
+  test(`intrinsic ${physicalFormat} control label geometry covers all states, missing Listen and enlarged text @phone`, async ({
+    page,
+  }) => {
+    let offer: Record<string, unknown> | undefined = stocked;
+    let noListen = false;
+    await page.route('**/api/store/listing-prices*', (route) =>
+      route.fulfill({ json: offer ? [{ ...offer, storeItemSlug: 'disintegration-black-vinyl-lp' }] : [] }),
+    );
+    for (const state of [
+      'stocked',
+      'preorder',
+      'withheld',
+      'coming_soon',
+      'repressing',
+      'sold_out',
+      'unavailable',
+      'missing',
+      'no-listen',
+    ]) {
+      noListen = state === 'no-listen';
+      offer =
+        state === 'missing'
+          ? undefined
+          : state === 'preorder'
+            ? preorder
+            : state === 'withheld'
+              ? { ...stocked, preorder: { shipEstimate: null } }
+              : { ...stocked, availabilityState: ['stocked', 'no-listen'].includes(state) ? 'stocked' : state };
+      await page.goto('releases/disintegration/');
+      await waitForShell(page);
+      const block = page.locator('.release-detail-purchase');
+      const actions = block.locator('.release-edition-actions');
+      const controls = actions.locator('a:visible, button:visible, .release-physical-status:visible');
+      if (['stocked', 'preorder', 'withheld', 'no-listen'].includes(state)) {
+        const prefix = state === 'preorder' || state === 'withheld' ? 'Pre-order' : 'Buy';
+        await expect(actions.getByRole('link')).toHaveText(`${prefix} vinyl`);
+        // Geometry-only label fixture; component tests verify actual CD/cassette rendering and icons.
+        const label = physicalFormat === 'cd' ? 'CD' : physicalFormat;
+        await actions
+          .getByRole('link')
+          .locator('span')
+          .last()
+          .evaluate((node, text) => {
+            node.textContent = text;
+          }, `${prefix} ${label}`);
+      } else if (state === 'unavailable' || state === 'missing') await expect(actions.getByRole('link')).toHaveCount(0);
+      else await expect(actions.locator('.release-physical-status')).toBeVisible();
+      // Remove only after hydration: a layout fixture must not corrupt Astro's SSR child slots.
+      if (noListen) await actions.getByRole('button').evaluate((node) => node.remove());
+      await expect(actions.getByRole('button')).toHaveCount(noListen ? 0 : 1);
+      await expect(block.locator('[data-release-price], .release-card-price')).toHaveCount(0);
+      for (const width of [320, 390, 768, 1440]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await expectIntrinsicReleaseControls(controls);
+        await expectNoHorizontalOverflow(page);
+      }
+      await page.setViewportSize({ width: 320, height: 1000 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.addStyleTag({
+        content:
+          'html{font-size:200%}.release-detail-purchase *{line-height:1.5!important;letter-spacing:.12em!important;word-spacing:.16em!important}.release-detail-purchase p{margin-bottom:2em!important}',
+      });
+      const overflow = await page.evaluate(() =>
+        [...document.querySelectorAll('body *')]
+          .filter((node) => node.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+          .slice(0, 12)
+          .map((node) => ({
+            tag: node.tagName,
+            class: node.className,
+            right: node.getBoundingClientRect().right,
+            minWidth: getComputedStyle(node).minWidth,
+            width: getComputedStyle(node).width,
+          })),
+      );
+      await expectNoHorizontalOverflow(page, `${state}: ${JSON.stringify(overflow)}`);
+    }
+  });
+}
+
+for (const width of [1440, 390]) {
+  test(`release format links retain 44px width and height on cards, direct detail and overlay at ${width}px${width === 390 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.route('**/api/store/listing-prices*', (route) => route.fulfill({ json: [] }));
+    const check = async (links: Locator) => {
+      for (const link of await links.all()) {
+        await expect.poll(async () => (await link.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(43.99);
+        await expect.poll(async () => (await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.99);
+      }
+    };
+    const checkShortCd = async (link: Locator) => {
+      // Target-size fixture only; keep the verified destination and never navigate a fabricated CD route.
+      await link.evaluate((node) => {
+        node.textContent = 'CD';
+      });
+      await check(link);
+    };
+    await page.goto('releases/');
+    await waitForShell(page);
+    await check(page.locator('#releases-merchandising .release-format-link'));
+    const card = page.locator('[data-release-id="anarchotribal"]');
+    await checkShortCd(card.locator('.release-format-link'));
+    await card.locator('.release-card-title-link').click();
+    const overlayLinks = page.getByRole('dialog').locator('.release-detail-purchase .release-format-link');
+    await expect(overlayLinks.first()).toBeVisible();
+    await check(overlayLinks);
+    await checkShortCd(overlayLinks.first());
+    await page.goto('releases/anarchotribal/');
+    await waitForShell(page);
+    const detailLinks = page.locator('.release-detail-purchase .release-format-link');
+    await check(detailLinks);
+    await checkShortCd(detailLinks.first());
+    await expectNoHorizontalOverflow(page);
+  });
+}
+
+for (const width of [1440, 390]) {
+  for (const surface of ['card', 'direct detail', 'overlay'] as const) {
+    test(`delayed offer correction preserves keyboard focus on ${surface} at ${width}px${width === 390 ? ' @phone' : ''}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      const storeItemSlug = 'disintegration-black-vinyl-lp';
+      for (const result of ['sold_out', 'unavailable', 'elsewhere', 'failed'] as const) {
+        let delayed = surface !== 'overlay';
+        let respond: (() => Promise<void>) | undefined;
+        await page.route('**/api/store/listing-prices*', (route) => {
+          if (!delayed) return route.fulfill({ json: [{ ...preorder, storeItemSlug }] });
+          respond = () =>
+            result === 'failed'
+              ? route.fulfill({ status: 200, contentType: 'application/json', body: 'Invalid listing response' })
+              : route.fulfill({
+                  json: [
+                    {
+                      ...stocked,
+                      storeItemSlug,
+                      availabilityState: result === 'sold_out' ? 'sold_out' : 'unavailable',
+                    },
+                  ],
+                });
+        });
+        await page.goto(surface === 'direct detail' ? 'releases/disintegration/' : 'releases/');
+        await waitForShell(page);
+        if (surface === 'overlay') {
+          const card = page.locator('[data-release-id="disintegration"]');
+          await expect(card.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
+          delayed = true;
+          await card.locator('.release-card-title-link').click();
+          await expect(page.getByRole('button', { name: 'Close detail view' })).toBeFocused();
+        }
+        const root =
+          surface === 'card'
+            ? page.locator('[data-release-id="disintegration"]')
+            : surface === 'overlay'
+              ? page.getByRole('dialog').locator('.release-detail-purchase')
+              : page.locator('.release-detail-purchase');
+        const buy = root.locator(surface === 'card' ? '[data-release-purchase]' : '.release-edition-actions > a');
+        const format = root.locator('.release-card-formats .release-format-link').first();
+        const listen = root.locator('.music-listen-trigger');
+        await expect.poll(() => Boolean(respond)).toBe(true);
+        await expect(buy).toHaveText('Pre-order vinyl');
+        await buy.focus();
+        await expect(buy).toBeFocused();
+        if (result === 'elsewhere') await listen.focus();
+        await respond!();
+        if (result === 'failed') {
+          await expect(buy).toHaveText('Pre-order vinyl');
+          await expect(buy).toBeFocused();
+        } else {
+          await expect(buy).toBeHidden();
+          if (result === 'elsewhere') {
+            await expect(listen).toBeFocused();
+            await expect(format).not.toBeFocused();
+          } else await expect(format).toBeFocused();
+        }
+        await page.unroute('**/api/store/listing-prices*');
+      }
+    });
+  }
 }

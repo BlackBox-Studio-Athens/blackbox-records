@@ -14,6 +14,7 @@ const hooks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/components/store/StoreListingPricePresentation', () => ({ readPublicStoreListingPrices: vi.fn() }));
+vi.mock('@/platform/config/site', () => ({ createProjectRelativeUrl: (path: string) => `/blackbox-records${path}` }));
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof React>();
   return {
@@ -37,7 +38,6 @@ vi.mock('react', async (importOriginal) => {
 const props = {
   href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
   className: buttonVariants(),
-  releaseDate: '2026-10-16',
   physicalFormat: 'vinyl' as const,
 };
 const ready: ReadyListing = {
@@ -74,9 +74,11 @@ describe('ReleaseStoreLink', () => {
     const className = buttonVariants({ variant });
     expect(renderToStaticMarkup(<ReleaseStoreLink {...props} physicalFormat={null} className={className} />)).toBe(
       renderToStaticMarkup(
-        <a href={props.href} className={className}>
-          Shop release
-        </a>,
+        <div className="release-edition-actions">
+          <a href={props.href} className={className}>
+            Shop release
+          </a>
+        </div>,
       ),
     );
     expect(read).not.toHaveBeenCalled();
@@ -85,38 +87,90 @@ describe('ReleaseStoreLink', () => {
   it('switches a matching ready stocked pre-order after one authoritative listing read', async () => {
     read.mockResolvedValue([ready]);
     const result = await hydrate();
-    expect(result.initial).toContain('class="release-detail-link">Vinyl edition</a>');
+    expect(result.initial).not.toMatch(/View details|In stock|Digital out now|>Out /);
     expect(result.initial).not.toContain('data-availability-state');
-    expect(result.initial).toContain('>Out 16 October 2026</span>');
     expect(result.rendered).toContain('preorder-action');
-    expect(result.rendered).toContain('>Pre-order vinyl</a>');
-    expect(result.rendered).toContain('Pre-order · out 16 Oct 2026');
+    expect(result.rendered).toContain('>Pre-order vinyl</span></a>');
+    expect(result.rendered).toContain('Expected to ship around early November 2026');
     expect(result.rendered).toContain(`href="${props.href}"`);
     expect(read).toHaveBeenCalledExactlyOnceWith(expect.any(AbortSignal));
     if (typeof result.cleanup === 'function') result.cleanup();
     expect(read.mock.calls[0]?.[0]?.aborted).toBe(true);
   });
 
-  it('uses Digital out now and ship-estimate badges after the release date', async () => {
+  it('keeps supplied shipping without a duplicate digital badge or date', async () => {
     vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
     read.mockResolvedValue([ready]);
     const result = await hydrate();
-    expect(result.rendered).toContain('class="store-item-card__release-status">Digital out now');
-    expect(result.rendered).toContain('Pre-order · ships around early November 2026');
+    expect(result.rendered).not.toMatch(/Digital out now|Digital release|<time/);
+    expect(result.rendered).toContain('Expected to ship around early November 2026');
   });
 
-  it('retains a Pre-order badge when the estimate is withheld', async () => {
+  it('retains the Pre-order action without inventing shipping when the estimate is withheld', async () => {
     vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
     read.mockResolvedValue([{ ...ready, preorder: { shipEstimate: null } }]);
-    expect((await hydrate()).rendered).toContain('class="preorder-badge">Pre-order</span>');
+    const rendered = (await hydrate()).rendered;
+    expect(rendered).toContain('>Pre-order vinyl</span></a>');
+    expect(rendered).not.toContain('Expected to ship');
+    expect(rendered).not.toContain('preorder-badge');
+  });
+
+  it('renders announced editions as static status without an offer read', async () => {
+    const result = await hydrate({ announced: true });
+    expect(result.rendered).toContain(
+      'class="release-physical-status" data-availability-state="coming_soon">Coming soon</span>',
+    );
+    expect(result.rendered).not.toMatch(/View details|In stock|Digital out now|Unknown offer/);
+    expect(result.rendered).not.toContain('tabindex');
+    expect(result.rendered).not.toContain('purchase-action');
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['cd', 'CD', false],
+    ['cd', 'CD', true],
+    ['cassette', 'cassette', false],
+    ['cassette', 'cassette', true],
+  ] as const)('uses the %s (%s) icon and label, preorder %s', async (physicalFormat, label, preorder) => {
+    read.mockResolvedValue([{ ...ready, preorder: preorder ? ready.preorder : null }]);
+    const result = await hydrate({ physicalFormat });
+    expect(result.rendered).toContain(`>${preorder ? 'Pre-order' : 'Buy'} ${label}</span></a>`);
+    expect(result.rendered).toContain(`/buy-icons/${physicalFormat}-base.svg`);
+  });
+
+  it.each([
+    ['preorder', ready],
+    ['available', { ...ready, preorder: null }],
+    ['sold_out', { ...ready, availabilityState: 'sold_out' as const }],
+    ['unknown', undefined],
+  ] satisfies [string, Listing | undefined][])(
+    'keeps Listen beside the %s control in SSR and hydration, with facts below',
+    async (_state, record) => {
+      read.mockResolvedValue(record ? [record] : []);
+      hooks.listing = record;
+      const result = await hydrate({ projected: record, children: <button>Listen</button> });
+      for (const html of [result.initial, result.rendered]) {
+        const actions = /<div class="release-edition-actions">([\s\S]*?)<\/div>/.exec(html)![1]!;
+        expect(actions).toContain('<button>Listen</button>');
+        expect(actions).not.toMatch(/In stock|Digital out now|Expected to ship|View details|delivery information/);
+        expect(html.indexOf('release-edition-facts')).toBeGreaterThan(html.indexOf('<button>Listen</button>'));
+      }
+    },
+  );
+
+  it.each([null, ready.preorder])('uses only the static outline disc for vinyl with preorder %s', async (preorder) => {
+    read.mockResolvedValue([{ ...ready, preorder }]);
+    const result = await hydrate();
+    expect(result.rendered).toContain('release-vinyl-icon');
+    expect(result.rendered).not.toMatch(/store-buy-icon|buy-icons\//);
   });
 
   it.each([
     ['missing', [], null, null],
     ['another item', [{ ...ready, storeItemSlug: 'other-vinyl' }], null, null],
-    ['sold out', [{ ...ready, availabilityState: 'sold_out' }], 'Vinyl Sold Out', 'sold_out'],
-    ['coming soon', [{ ...ready, availabilityState: 'coming_soon' }], 'Vinyl Coming Soon', 'coming_soon'],
-    ['repressing', [{ ...ready, availabilityState: 'repressing' }], 'Vinyl Repressing', 'repressing'],
+    ['sold out', [{ ...ready, availabilityState: 'sold_out' }], 'Sold out', 'sold_out'],
+    ['coming soon', [{ ...ready, availabilityState: 'coming_soon' }], 'Coming soon', 'coming_soon'],
+    ['repressing', [{ ...ready, availabilityState: 'repressing' }], 'Repressing', 'repressing'],
     ['paused', [{ ...ready, availabilityState: 'unavailable' }], null, null],
     [
       'unavailable price',
@@ -132,14 +186,14 @@ describe('ReleaseStoreLink', () => {
       null,
     ],
   ] satisfies [string, Listing[], string | null, string | null][])(
-    'keeps the details text link for %s',
+    'omits buying and duplicate labels for %s',
     async (_name, records, badge, state) => {
       read.mockResolvedValue(records);
       const result = await hydrate();
-      expect(result.rendered).toContain('class="release-detail-link">Vinyl edition</a>');
+      expect(result.rendered).not.toMatch(/View details|In stock|Digital out now|Unknown offer/);
       if (badge)
         expect(result.rendered).toContain(
-          `class="store-item-card__release-status" data-availability-state="${state}">${badge}</span>`,
+          `class="release-physical-status" data-availability-state="${state}">${badge}</span>`,
         );
       else expect(result.rendered).not.toContain('data-availability-state');
       expect(result.rendered).not.toMatch(/Out of Stock|Currently Unavailable|Unavailable|unconfirmed|coming later/);
@@ -151,34 +205,36 @@ describe('ReleaseStoreLink', () => {
   it('puts the expected month on the shipping line', async () => {
     read.mockResolvedValue([{ ...ready, preorder: null, availabilityState: 'repressing', expectedMonth: '2027-01' }]);
     const result = await hydrate();
-    expect(result.rendered).toContain('Vinyl Repressing');
-    expect(result.rendered).toContain('<span class="text-sm text-muted-foreground">Expected January 2027</span>');
+    expect(result.rendered).toContain('Repressing');
+    expect(result.rendered).toContain(
+      '<span class="release-edition-fact text-sm text-muted-foreground">Expected January 2027</span>',
+    );
   });
 
   it('reflects the regular buying offer when the preorder has ended', async () => {
     read.mockResolvedValue([{ ...ready, preorder: null }]);
     const result = await hydrate();
-    expect(result.rendered).toContain('>Buy vinyl</a>');
+    expect(result.rendered).toContain('>Buy vinyl</span></a>');
     expect(result.rendered).toContain('purchase-action');
-    expect(result.rendered).toContain('Vinyl available');
+    expect(result.rendered).not.toContain('In stock');
     expect(result.rendered).not.toContain('coming later');
   });
 
-  it.each(['2026-06-06', '2026-11-14', undefined])(
-    'keeps the digital badge independent of a Coming Soon vinyl for %s',
-    async (releaseDate) => {
-      read.mockResolvedValue([{ ...ready, preorder: null, availabilityState: 'coming_soon' }]);
-      const result = await hydrate({ releaseDate });
-      expect(result.initial).not.toContain('Vinyl Coming Soon');
-      expect(result.rendered).toContain('Vinyl Coming Soon');
-      if (releaseDate)
-        expect(result.rendered).toContain(releaseDate === '2026-06-06' ? 'Digital out now' : 'Out 14 November 2026');
-      else expect(result.rendered).not.toMatch(/Digital out now|>Out /);
-      expect(result.rendered).not.toContain('Album upcoming');
-      expect(result.rendered).not.toContain('preorder-action');
-      expect(result.rendered).not.toContain('purchase-action');
-    },
-  );
+  it('retains supplied format access through SSR and correction without a generic details link', async () => {
+    read.mockResolvedValue([{ ...ready, preorder: null, availabilityState: 'sold_out' }]);
+    const formats = (
+      <p>
+        <a href={props.href}>Vinyl LP</a>
+        <span> / CD</span>
+      </p>
+    );
+    const result = await hydrate({ formats });
+    for (const html of [result.initial, result.rendered]) {
+      expect(html).toContain(`href="${props.href}">Vinyl LP</a>`);
+      expect(html).toContain('<span> / CD</span>');
+      expect(html).not.toMatch(/View details|In stock|Digital out now|Digital release|<time/);
+    }
+  });
 
   it('retains the original link when the read fails', async () => {
     read.mockRejectedValue(new Error('offline'));
@@ -190,8 +246,8 @@ describe('ReleaseStoreLink', () => {
     read.mockRejectedValue(new Error('offline'));
     const server = markup({ projected: ready });
     expect(server).toContain('preorder-action');
-    expect(server).toContain('>Pre-order vinyl</a>');
-    expect(server).toContain('Pre-order · out 16 Oct 2026');
+    expect(server).toContain('>Pre-order vinyl</span></a>');
+    expect(server).toContain('Expected to ship around early November 2026');
     hooks.listing = ready;
     const result = await hydrate({ projected: ready });
     expect(result.initial).toBe(server);
@@ -202,9 +258,9 @@ describe('ReleaseStoreLink', () => {
     read.mockResolvedValue([{ ...ready, preorder: null }]);
     hooks.listing = ready;
     const result = await hydrate({ projected: ready });
-    expect(result.initial).toContain('>Pre-order vinyl</a>');
+    expect(result.initial).toContain('>Pre-order vinyl</span></a>');
     expect(result.rendered).toContain('purchase-action');
-    expect(result.rendered).toContain('>Buy vinyl</a>');
+    expect(result.rendered).toContain('>Buy vinyl</span></a>');
     expect(result.rendered).not.toContain('Pre-order ·');
   });
 

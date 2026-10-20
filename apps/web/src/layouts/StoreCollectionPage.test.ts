@@ -96,7 +96,7 @@ describe('Store collection category surfaces', () => {
     const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
     expect(buyButton).toContain('data-store-card-buy-label="Buy"');
     expect(buyButton).toMatch(
-      /\shidden\s*>\s*<StoreBuyIcon formatGroup=\{formatGroup\} \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
+      /\shidden\s*>\s*<Disc3 className="store-card-buy-icon" size=\{18\} aria-hidden="true" \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
     );
     expect(storeBuyIconSource).toMatch(/<span className="store-buy-icon" aria-hidden="true">/);
     // Every layer is one shared file URL, never a data: URI repeated on each card.

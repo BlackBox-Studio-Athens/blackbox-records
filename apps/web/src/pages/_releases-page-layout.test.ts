@@ -9,13 +9,20 @@ const proseCssPath = fileURLToPath(new URL('../styles/prose.css', import.meta.ur
 const releaseDetailPath = fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url));
 
 describe('Releases page layout', () => {
-  it('loads Releases availability together while retaining idle detail links and external merch anchors', () => {
+  it('loads Releases and detail availability with the shell-registered directive while retaining external merch anchors', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
     const detail = readFileSync(releaseDetailPath, 'utf8');
     expect(page).toMatch(/<ReleaseCatalogPresentation[^>]*client:load/);
-    expect(detail).toMatch(/\.isNativeStoreLink \? \(\s*<ReleaseStoreLink\s+client:idle/s);
-    expect(detail).toMatch(/<ReleaseStoreLink[\s\S]*?href=\{commerceLink\.href\}/);
-    expect(detail).toMatch(/<ReleaseStoreLink[\s\S]*?releaseDate=\{releaseDateMachineValue\}/);
+    expect(detail).toMatch(
+      /\.isNativeStoreLink \|\| presentationEntry\.edition\.kind === 'announced' \? \(\s*<ReleaseStoreLink\s+client:load/s,
+    );
+    expect(detail).toMatch(
+      /<ReleaseStoreLink[\s\S]*?href=\{commerceLink\?\.href \?\? createReleaseDetailPath\(release\)\}/,
+    );
+    expect(detail).toContain("announced={presentationEntry.edition.kind === 'announced'}");
+    expect(detail).toContain(
+      '<ReleaseDateMetadata date={release.data.release_date} catalogNumber={release.data.catalog_number} />',
+    );
     expect(detail).toContain('site-button-external-mark');
     for (const markup of [readFileSync(releaseCardPath, 'utf8'), detail]) {
       expect(markup).toContain('target={commerceLink.target}');
@@ -66,23 +73,24 @@ describe('Releases page layout', () => {
     expect(card.match(/data-release-detail\b/g)).toHaveLength(1);
   });
 
-  it('pairs the purchase action with Listen directly after the cover, with nothing over Releases artwork', () => {
+  it('keeps one actions-first reading order and no purchase labels over the artwork', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
     const css = readFileSync(globalCssPath, 'utf8');
-    // Releases artwork carries no scrim or Listen overlay; the other variants keep theirs.
     expect(card).not.toContain('data-release-artwork-scrim');
-    expect(card).not.toMatch(/isReleaseShowcase && !isPrincipal && \(\s*<div class="release-card-meta-row/s);
-    expect(card).toMatch(/\{!isReleaseShowcase && \(\s*<div class="release-card-meta-row/s);
-    // Phones read the pair first in the copy (12px under the cover); from 40rem the copy grid moves it after the artist.
-    expect(card).toMatch(
-      /<div class="release-card-actions" data-release-actions>[\s\S]*?data-release-purchase[\s\S]*?<MusicStreamingServiceListenTrigger[\s\S]*?context=\{`\$\{release\.data\.title\} by \$\{artistName\}`\}[\s\S]*?<p class="release-card-year-text/,
-    );
-    expect(css).toMatch(
-      /#releases-merchandising \.release-card-actions\s*{\s*display:\s*grid;\s*grid-auto-columns:\s*minmax\(0, 1fr\);\s*grid-auto-flow:\s*column;/,
-    );
-    expect(css).toMatch(
-      /@media \(width >= 40rem\)[\s\S]*?#releases-merchandising :is\(\.release-card-actions > \*, \.release-card-price\)\s*{\s*grid-row:\s*4;/,
-    );
+    const title = card.indexOf('<HeadingTag');
+    const artist = card.indexOf('<p class="release-card-artist-text');
+    const actions = card.indexOf('<div class="release-card-actions"');
+    const facts = card.indexOf('<div class="release-card-format-row"');
+    const date = card.indexOf('<p class="release-card-year-text">');
+    const summary = card.indexOf('data-release-summary');
+    expect(title).toBeLessThan(artist);
+    expect(artist).toBeLessThan(actions);
+    expect(actions).toBeLessThan(facts);
+    expect(facts).toBeLessThan(date);
+    expect(date).toBeLessThan(summary);
+    expect(card).not.toMatch(/data-release-(badges|stock|details)\b/);
+    expect(css).not.toMatch(/#releases-merchandising[^}]*grid-row:\s*4/);
+    expect(card).toContain('Digital release · <time datetime={releaseDateMachineValue}>');
   });
 
   it('stacks the featured records as twin rows whose covers match at every width', () => {
@@ -121,13 +129,13 @@ describe('Releases page layout', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
     expect(card).toMatch(/releasePresentation\(presentationEntry, projected && projectedListing\(projected\)\)/);
     expect(card).toContain('data-release-projected={projected ? JSON.stringify(projected) : undefined}');
-    // One price, beside the formats on phones and beside the action from 40rem.
+    // One price follows both controls in DOM order, before the formats at every width.
     expect(card).toMatch(
-      /<div class="release-card-format-row">[\s\S]*?<p class="release-card-price" data-release-price hidden=\{!presentation\.price\}>/,
+      /<div class="release-card-actions"[\s\S]*?<MusicStreamingServiceListenTrigger[\s\S]*?<p class="release-card-price" data-release-price hidden=\{!presentation\.price\}>[\s\S]*?<div class="release-card-format-row">/,
     );
     expect(card.match(/data-release-price /g)).toHaveLength(1);
     expect(card).toMatch(
-      /\{editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+inert=\{presentation\.state !== 'preorder'\}/s,
+      /\{editionHref && \(\s*<a\s+class="releases-feature__terms"[^>]*data-release-terms\s+hidden=\{presentation\.state !== 'preorder'\}/s,
     );
     expect(card).toContain('<span data-release-purchase-label>{presentation.action}</span>');
     expect(card).toContain('aria-label={`${presentation.action}, ${release.data.title}`}');

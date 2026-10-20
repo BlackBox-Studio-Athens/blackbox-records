@@ -1,131 +1,171 @@
 import { expect, expectNoHorizontalOverflow, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-test('Store card Buy and Releases Buy vinyl fill Flint with restrained, stationary feedback', async ({ page }) => {
-  const storeItemSlug = 'disintegration-black-vinyl-lp';
-  await page.route('**/api/store/listing-prices*', (route) =>
-    route.fulfill({
-      json: [
-        {
-          storeItemSlug,
-          presentationState: 'ready',
-          availabilityState: 'stocked',
-          displayPrice: '€28.00',
-          preorder: null,
-        },
-      ],
-    }),
-  );
-  let offerReads = 0;
-  let releaseOffer: (() => Promise<void>) | undefined;
-  await page.route(`**/api/store/items/${storeItemSlug}`, (route) => {
-    offerReads += 1;
-    releaseOffer = () =>
+for (const width of [1440, 390]) {
+  test(`Store card Buy and Releases Buy vinyl fill Flint with compact static controls at ${width}px${width === 390 ? ' @phone' : ''}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const storeItemSlug = 'disintegration-black-vinyl-lp';
+    await page.route('**/api/store/listing-prices*', (route) =>
       route.fulfill({
-        json: {
-          storeItemSlug,
-          variantId: `${storeItemSlug}_standard`,
-          availability: { label: 'In stock', status: 'available' },
-          canCheckout: true,
-          catalogStatus: 'ready',
-          price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
-        },
-      });
-  });
-  await page.goto('store/');
-  await waitForShell(page);
-  const card = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
-  const buy = card.locator('[data-store-card-buy]');
-  const listen = card.locator('.store-item-card__listen .music-listen-trigger');
-  await expect(buy).toHaveClass(/purchase-action/);
-  await expect(buy).toHaveAccessibleName('Buy');
-  await buy.scrollIntoViewIfNeeded();
-  await page.mouse.move(0, 0);
-  const appearance = (element: Element) => {
-    const style = getComputedStyle(element);
-    return {
-      face: style.backgroundColor,
-      edge: style.borderColor,
-      shadow: style.boxShadow,
-      transform: style.transform,
-    };
-  };
-  const cardAppearance = () =>
-    card.evaluate((element) => {
-      const surface = getComputedStyle(element.querySelector('.store-item-card__surface')!);
-      return {
-        face: surface.backgroundColor,
-        edge: surface.borderColor,
-        title: getComputedStyle(element.querySelector('h2')!).textDecorationColor,
-      };
+        json: [
+          {
+            storeItemSlug,
+            presentationState: 'ready',
+            availabilityState: 'stocked',
+            displayPrice: '€28.00',
+            preorder: null,
+          },
+        ],
+      }),
+    );
+    let offerReads = 0;
+    let depleted = false;
+    let releaseOffer: (() => Promise<void>) | undefined;
+    await page.route(`**/api/store/items/${storeItemSlug}`, (route) => {
+      offerReads += 1;
+      releaseOffer = () =>
+        route.fulfill({
+          json: {
+            storeItemSlug,
+            variantId: `${storeItemSlug}_standard`,
+            availability: {
+              label: depleted ? 'Sold Out' : 'In stock',
+              status: depleted ? 'sold_out' : 'available',
+              state: depleted ? 'sold_out' : 'stocked',
+            },
+            canCheckout: !depleted,
+            catalogStatus: depleted ? 'sold_out' : 'ready',
+            price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
+          },
+        });
     });
-  const resting = await buy.evaluate(appearance);
-  const cardResting = await cardAppearance();
-  const footprint = await buy.boundingBox();
-  await buy.hover();
-  await buy.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
-  const hovering = await buy.evaluate(appearance);
-  // Flint 700 face at rest; hover darkens to Flint 800 and lights the edge Flint 500.
-  expect(resting).toMatchObject({ face: 'rgb(98, 110, 114)', edge: 'rgb(98, 110, 114)' });
-  expect(hovering).toMatchObject({ face: 'rgb(77, 89, 92)', edge: 'rgb(136, 147, 150)' });
-  await expect(buy).toHaveCSS('color', 'rgb(245, 245, 245)');
-  expect(hovering).not.toEqual(resting);
-  expect(hovering.transform).toBe('none');
-  expect(hovering.shadow === 'none' || hovering.shadow.includes('inset')).toBe(true);
-  expect(await buy.boundingBox()).toEqual(footprint);
-  expect(await cardAppearance()).toEqual(cardResting);
-  await listen.hover();
-  expect(await cardAppearance()).toEqual(cardResting);
-  await buy.focus();
-  await expect(buy).toBeFocused();
-  await expect(buy).toHaveCSS('outline-width', '2px');
-  await expect(buy).toHaveCSS('outline-style', 'solid');
-  expect(await cardAppearance()).toEqual(cardResting);
-  await page.mouse.move(0, 0);
-  await buy.click();
-  await expect(buy).toHaveAttribute('aria-busy', 'true');
-  await expect(buy).toHaveText('Adding');
-  await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
-  await buy.click();
-  await expect.poll(() => offerReads).toBe(1);
-  await releaseOffer!();
-  const cart = page.getByRole('dialog', { name: 'Cart' });
-  await expect(cart).toBeVisible();
-  await expect(page).toHaveURL(/\/store\/$/);
-  await page.keyboard.press('Escape');
-  await expect(cart).toBeHidden();
+    await page.goto('store/');
+    await waitForShell(page);
+    await page.evaluate(() => document.fonts.ready);
+    // The background card becomes inert while Cart is open; inspect its retained confirmation by DOM hook.
+    const card = page.locator('.store-item-card--listing[aria-label="Disintegration by Afterwise"]').first();
+    const buy = card.locator('[data-store-card-buy]');
+    const listen = card.locator('.store-item-card__listen .music-listen-trigger');
+    await expect(buy).toHaveClass(/purchase-action/);
+    await expect(buy).toHaveAccessibleName('Buy');
+    await expect(buy.locator('.store-card-buy-icon')).toHaveCount(1);
+    await expect(buy.locator('.store-buy-icon, img')).toHaveCount(0);
+    await expect(buy).toHaveCSS('min-width', '112px');
+    await expect(buy).toHaveCSS('padding-left', '16px');
+    await expect(buy).toHaveCSS('column-gap', '8px');
+    await expect(buy).toHaveCSS('font-size', '16px');
+    expect((await buy.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    expect((await buy.boundingBox())!.width).toBeGreaterThanOrEqual(112);
+    await buy.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    const canHover = await page.evaluate(() => matchMedia('(hover: hover)').matches);
+    const appearance = (element: Element) => {
+      const style = getComputedStyle(element);
+      return {
+        face: style.backgroundColor,
+        edge: style.borderColor,
+        shadow: style.boxShadow,
+        transform: style.transform,
+      };
+    };
+    const cardAppearance = () =>
+      card.evaluate((element) => {
+        const surface = getComputedStyle(element.querySelector('.store-item-card__surface')!);
+        return {
+          face: surface.backgroundColor,
+          edge: surface.borderColor,
+          title: getComputedStyle(element.querySelector('h2')!).textDecorationColor,
+        };
+      });
+    const resting = await buy.evaluate(appearance);
+    const cardResting = await cardAppearance();
+    const footprint = await buy.boundingBox();
+    await buy.hover();
+    await buy.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+    const hovering = await buy.evaluate(appearance);
+    await expect(buy.locator('.store-card-buy-icon')).toHaveCSS('animation-name', 'none');
+    await expect(buy.locator('.store-card-buy-icon')).toHaveCSS('width', '18px');
+    // Flint 700 face at rest; hover darkens to Flint 800 and lights the edge Flint 500.
+    expect(resting).toMatchObject({ face: 'rgb(98, 110, 114)', edge: 'rgb(98, 110, 114)' });
+    expect(hovering).toMatchObject(canHover ? { face: 'rgb(77, 89, 92)', edge: 'rgb(136, 147, 150)' } : resting);
+    await expect(buy).toHaveCSS('color', 'rgb(245, 245, 245)');
+    if (canHover) expect(hovering).not.toEqual(resting);
+    else expect(hovering).toEqual(resting);
+    expect(hovering.transform).toBe('none');
+    expect(hovering.shadow === 'none' || hovering.shadow.includes('inset')).toBe(true);
+    expect(await buy.boundingBox()).toEqual(footprint);
+    expect(await cardAppearance()).toEqual(cardResting);
+    await listen.hover();
+    expect(await cardAppearance()).toEqual(cardResting);
+    await buy.focus();
+    await expect(buy).toBeFocused();
+    await expect(buy).toHaveCSS('outline-width', '2px');
+    await expect(buy).toHaveCSS('outline-style', 'solid');
+    expect(await cardAppearance()).toEqual(cardResting);
+    await page.mouse.move(0, 0);
+    await buy.click();
+    await expect(buy).toHaveAttribute('aria-busy', 'true');
+    await expect(buy).toHaveText('Adding');
+    await expect(buy.locator('.store-card-buy-icon')).toHaveCount(1);
+    await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
+    await buy.click();
+    await expect.poll(() => offerReads).toBe(1);
+    await releaseOffer!();
+    await expect(buy).toHaveText('Added');
+    await expect(buy.locator('.store-card-buy-icon')).toHaveCount(1);
+    const cart = page.getByRole('dialog', { name: 'Cart' });
+    await expect(cart).toBeVisible();
+    await expect(page).toHaveURL(/\/store\/$/);
+    await page.keyboard.press('Escape');
+    await expect(cart).toBeHidden();
 
-  // A native disabled visual fixture checks shared styling; Store Buy's real pending state above uses aria-busy.
-  await buy.evaluate((button: HTMLButtonElement) => {
-    button.disabled = true;
-  });
-  await expect(buy).toBeDisabled();
-  await expect(buy).toHaveCSS('pointer-events', 'none');
-  await expect(buy).toHaveCSS('opacity', '0.45');
-  await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
-  await buy.evaluate((button: HTMLButtonElement) => {
-    button.disabled = false;
-  });
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect(buy).toHaveCSS('transition-duration', '0s');
-  await expect(card.locator('.store-item-card__surface')).toHaveCSS('transition-duration', '0s');
-  await buy.hover();
-  expect(await buy.evaluate(appearance)).toEqual(hovering);
+    // A native disabled visual fixture checks shared styling; Store Buy's real pending state above uses aria-busy.
+    await buy.evaluate((button: HTMLButtonElement) => {
+      button.disabled = true;
+    });
+    await expect(buy).toBeDisabled();
+    await expect(buy).toHaveCSS('pointer-events', 'none');
+    await expect(buy).toHaveCSS('opacity', '0.45');
+    await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
+    await buy.evaluate((button: HTMLButtonElement) => {
+      button.disabled = false;
+    });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(buy).toHaveCSS('transition-duration', '0s');
+    await expect(card.locator('.store-item-card__surface')).toHaveCSS('transition-duration', '0s');
+    await buy.hover();
+    expect(await buy.evaluate(appearance)).toEqual(hovering);
 
-  await page.goto('releases/');
-  await waitForShell(page);
-  // Releases action names add the release after the visible label.
-  const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: /^Buy vinyl, / });
-  await expect(releaseBuy).toHaveClass(/purchase-action/);
-  await releaseBuy.scrollIntoViewIfNeeded();
-  await page.mouse.move(0, 0);
-  const releaseResting = await releaseBuy.evaluate(appearance);
-  await releaseBuy.hover();
-  const releaseHovering = await releaseBuy.evaluate(appearance);
-  expect(releaseHovering).not.toEqual(releaseResting);
-  expect(releaseHovering.transform).toBe('none');
-  expect(releaseHovering.shadow === 'none' || releaseHovering.shadow.includes('inset')).toBe(true);
-  await expect(releaseBuy).toHaveCSS('transition-duration', '0s');
-});
+    await page.goto('releases/');
+    await waitForShell(page);
+    // Releases action names add the release after the visible label.
+    const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: /^Buy vinyl, / });
+    await expect(releaseBuy).toHaveClass(/purchase-action/);
+    await releaseBuy.scrollIntoViewIfNeeded();
+    await page.mouse.move(0, 0);
+    const releaseResting = await releaseBuy.evaluate(appearance);
+    await releaseBuy.hover();
+    const releaseHovering = await releaseBuy.evaluate(appearance);
+    expect(releaseHovering).not.toEqual(releaseResting);
+    expect(releaseHovering.transform).toBe('none');
+    expect(releaseHovering.shadow === 'none' || releaseHovering.shadow.includes('inset')).toBe(true);
+    await expect(releaseBuy).toHaveCSS('transition-duration', '0s');
+
+    // A listing projection cannot promise stock after the authoritative offer has depleted.
+    depleted = true;
+    await page.goto('store/');
+    await waitForShell(page);
+    await expect(buy).toHaveText('Buy');
+    await buy.click();
+    await expect.poll(() => offerReads).toBe(2);
+    await releaseOffer!();
+    await expect(buy).toBeHidden();
+    await expect(card.locator('[data-store-listing-availability]')).toHaveText('Sold Out');
+    await expect(card.locator('[data-store-listing-price]')).toHaveText('€28.00');
+    await expectNoHorizontalOverflow(page);
+  });
+}
 
 test('Store categories center and reflow with complete touch-sized labels', async ({ page }, testInfo) => {
   await page.goto('store/');

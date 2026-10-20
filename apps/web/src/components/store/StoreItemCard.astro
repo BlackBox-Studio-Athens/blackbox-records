@@ -5,7 +5,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { publicTitleClass } from '@/components/ui/utils';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
-import StoreBuyIcon from '@/components/store/StoreBuyIcon';
+import { Disc3 } from 'lucide-react';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
 import { artBoxOf, binOfFormatGroup } from '@/components/store/crate/crate-bins';
 import {
@@ -134,13 +134,13 @@ const widths = [360, 720];
         {cartSeed && (
           <button
             type="button"
-            class={buttonVariants({ className: 'store-item-card__buy ml-auto gap-1.5' })}
+            class={buttonVariants({ className: 'store-item-card__buy ml-auto' })}
             data-store-card-buy={JSON.stringify(cartSeed)}
             data-store-card-buy-label="Buy"
             data-store-item-slug={storeItem.slug}
             hidden
           >
-            <StoreBuyIcon formatGroup={formatGroup} />
+            <Disc3 className="store-card-buy-icon" size={18} aria-hidden="true" />
             <span data-store-card-buy-label>Buy</span>
           </button>
         )}

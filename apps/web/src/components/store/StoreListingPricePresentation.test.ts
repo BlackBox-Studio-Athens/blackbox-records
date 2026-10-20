@@ -64,6 +64,8 @@ function availabilityPlaceholder(storeItemSlug: string, releaseDate?: string) {
 function buyButton(storeItemSlug: string) {
   const attributes = new Map<string, string>();
   const classes = new Set<string>();
+  const label = { textContent: STORE_LISTING_PRICE_COPY.buy as string };
+  let iconPresent = true;
   let pressListener: ((event: Event) => void) | undefined;
   const status = { dataset: {} as Record<string, string>, hidden: true, textContent: '' };
   const cardLink = { focus: vi.fn() };
@@ -81,7 +83,17 @@ function buyButton(storeItemSlug: string) {
     },
     hidden: false,
     disabled: false,
-    textContent: STORE_LISTING_PRICE_COPY.buy as string,
+    querySelector: (selector: string) => (selector === '[data-store-card-buy-label]' ? label : null),
+    get textContent() {
+      return label.textContent;
+    },
+    set textContent(value: string) {
+      iconPresent = false;
+      label.textContent = value;
+    },
+    get iconPresent() {
+      return iconPresent;
+    },
     parentElement: { querySelector: () => status },
     closest: () => ({ querySelector: () => cardLink }),
     getAttribute: (name: string) => attributes.get(name) ?? null,
@@ -700,15 +712,20 @@ describe('Store listing-price presentation', () => {
       });
 
       await vi.waitFor(() => expect(buy.hidden).toBe(false));
+      expect(buy.textContent).toBe(preorder ? 'Pre-order' : 'Buy');
+      expect(buy.iconPresent).toBe(true);
       buy.press();
       expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.adding);
       expect(buy.getAttribute('aria-busy')).toBe('true');
+      expect(buy.iconPresent).toBe(true);
 
       await vi.waitFor(() => expect(buy.textContent).toBe('Added'));
       expect(requestStoreCartAddFromSeed).toHaveBeenCalledWith({ storeItemSlug: 'item', title: 'Item' });
       expect(buy.getAttribute('aria-busy')).toBeNull();
+      expect(buy.iconPresent).toBe(true);
       vi.advanceTimersByTime(4000);
       expect(buy.textContent).toBe(preorder ? 'Pre-order' : 'Buy');
+      expect(buy.iconPresent).toBe(true);
       expect(buy.classList.contains('preorder-action')).toBe(preorder);
       expect(buy.classList.contains('purchase-action')).toBe(!preorder);
     },

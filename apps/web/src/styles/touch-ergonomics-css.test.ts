@@ -64,7 +64,7 @@ describe('touch ergonomics', () => {
   });
 
   it('keeps keyboard focus faces outside the hover gate', () => {
-    for (const selector of ['.store-format-links a:focus-visible', '.release-detail-link:focus-visible::before']) {
+    for (const selector of ['.store-format-links a:focus-visible', '.release-format-link:focus-visible']) {
       const rule = rules().find(({ prelude }) => prelude === selector);
       expect(rule, selector).toBeDefined();
       expect(rule!.ancestors.some((parent) => parent.includes('hover'))).toBe(false);

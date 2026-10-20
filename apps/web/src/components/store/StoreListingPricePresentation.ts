@@ -122,16 +122,9 @@ function showStoreCardStatus(button: HTMLButtonElement, label: string | null, av
   button.closest('.store-item-card--listing')?.querySelector<HTMLElement>('.prose-card-link')?.focus();
 }
 
-// One flick on press, mouse entry or keyboard focus. global.css plays it without reduced motion; it starts at speed
-// because on phones the bag covers the card about half a second after the tap.
-function flickStoreCardBuyIcon(button: HTMLElement) {
-  button.dataset.storeCardBuyFlick ??= '';
-}
-
 // Cards are not islands, so the purchase code loads on the first press; the Worker offer stays the authority.
 async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: Map<HTMLButtonElement, number>) {
   if (button.disabled || button.getAttribute('aria-busy') === 'true') return;
-  flickStoreCardBuyIcon(button);
   window.clearTimeout(confirmationTimers.get(button));
   button.setAttribute('aria-busy', 'true');
   setStoreCardBuyLabel(button, STORE_LISTING_PRICE_COPY.adding);
@@ -172,22 +165,9 @@ export function connectStoreListingPricePresentation({
   const confirmationTimers = new Map<HTMLButtonElement, number>();
   const handleBuyClick = (event: Event) =>
     void buyFromStoreCard(event.currentTarget as HTMLButtonElement, confirmationTimers);
-  // Mouse entry or keyboard focus; a touch entry has no focus ring and waits for the press.
-  const handleBuyAttention = (event: Event) => {
-    const button = event.currentTarget as HTMLElement;
-    if ((event as PointerEvent).pointerType === 'mouse' || button.matches?.(':focus-visible')) {
-      flickStoreCardBuyIcon(button);
-    }
-  };
-  const handleBuyFlickEnd = (event: Event) => {
-    delete (event.currentTarget as HTMLElement).dataset.storeCardBuyFlick;
-  };
   const { signal } = abortController;
   buyButtons.forEach((button) => {
     button.addEventListener('click', handleBuyClick, { signal });
-    button.addEventListener('pointerenter', handleBuyAttention, { signal });
-    button.addEventListener('focus', handleBuyAttention, { signal });
-    button.addEventListener('animationend', handleBuyFlickEnd, { signal });
   });
 
   void readListingPrices(abortController.signal)
