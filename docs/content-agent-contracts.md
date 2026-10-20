@@ -1,0 +1,12 @@
+# Content and data
+
+Read for content, persistence, publication or commerce seams.
+
+- EmDash owns normal editorial work. [Content workspace](content-workspace.md) owns editing and preview; [content publication](content-publication.md) owns accepted snapshots. Repository content supports retained static builds and explicit migration/recovery, not parallel live editing.
+- Collection schemas and public loaders meet in [content.config.ts](../apps/web/src/content.config.ts). Portable contracts belong to [content-model](../packages/content-model/src/index.ts); image processing stays in web. Content query helpers are in [site-data.ts](../apps/web/src/lib/site-data.ts).
+- Editorial content must not acquire commerce controls or provider identifiers. Store categories are derived presentation views, not additional stock, offer, Stripe or D1 authority.
+- EmDash calendar dates use validated `YYYY-MM-DD` strings. Apply [CMS application migrations](../apps/backend/cms-migrations/README.md) before native core migrations. Retain concurrent-save/delete protection until the existing race smoke passes without it.
+- Persistence uses domain repository seams and Prisma/D1. Wrangler applies migrations through `COMMERCE_DB`; do not introduce `prisma migrate dev`, `prisma db push`, `prisma migrate deploy` or a runtime database URL. Preserve deployed migration history.
+- Retain `COMMERCE_DB`, the `COMMERCE_RUNTIME` Durable Object binding and its migration. The [boundary spec](../openspec/specs/module-boundaries/spec.md) defines ownership; entrypoints and dependencies are declared in each module's `project.json` `metadata.boundaries`, and the [manifest](../openspec/specs/module-boundaries/module-boundaries.manifest.json) keeps workspace-package policy. Move callers directly instead of adding temporary compatibility facades.
+- D1 owns stock and order state. StoreCart is browser convenience state behind [store-cart.ts](../apps/web/src/components/store/cart/store-cart.ts), using native localStorage for its current scope. [Checkout](../openspec/specs/commerce-checkout/spec.md) and [project language](../openspec/specs/project-language/spec.md) define payload and authority constraints.
+- Hosted operator identity comes from verified Access JWT claims, not an email header. The Local bypass is loopback-only. [Commerce operations](commerce-operations.md) owns protected stock operations; [shipping](../openspec/specs/shipping-fulfillment/spec.md) owns Greece-only manual fulfillment.

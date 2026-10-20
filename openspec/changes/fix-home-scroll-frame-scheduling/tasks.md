@@ -39,7 +39,7 @@ The owner reports that Messenger on the same phone still freezes on UAT. Reopen 
 - [x] 5.1 Record sustained native scrolling with the same two-film Home workload, the owner's actual user agent, and the remaining engine/media limitations.
 - [x] 5.2 Make the Local regression detect prolonged renderer stalls and prepare opt-in UAT comparisons for video playback and the fixed background.
 - [x] 5.3 Finish repository and production-exclusion checks, then deliver only the scrolling diagnostic to UAT under the authorized repository scope.
-- [ ] 5.4 Use the affected phone's comparison to identify and implement the repair, verify it locally and on UAT, and obtain physical Messenger acceptance.
+- [x] 5.4 Use the affected phone's comparison to identify and implement the repair, verify it locally and on UAT, and obtain physical Messenger acceptance.
 
 The owner authorized publishing the diagnostics on 2026-10-17 in response to the isolated-worktree request. Prepare the seven-file candidate from `origin/main` at `d7c56bb5`, excluding the unpublished shipping-email commit `ed215ad4` and unrelated harness edits in the primary checkout. Deliver to UAT only; the physical freeze remains unresolved.
 
@@ -62,3 +62,5 @@ The owner reports the same problem in normal, video-off and fixed-background-off
 - [x] 8.1 Make the confirmed behavior the default for hoverless coarse-pointer input, update the affected contracts and verify the regression fails before the CSS repair.
 - [x] 8.2 Verify portrait/landscape touch, fine-pointer effects, films, swipe rows and player continuity; pass builds, strict OpenSpec, Graphify and final validation.
 - [x] 8.3 Commit and deliver the scoped repair to UAT, verify the release and hand off normal Home without the diagnostic query. Task 5.4 retains final physical acceptance.
+
+The owner confirmed normal UAT Home works in Messenger on their Pixel 6a / Android 17 on 2026-10-17, satisfying task 5.4, and explicitly authorized PRD promotion of release 619 through the existing workflow. The release continuation must promote `5dfced7e07982773e04abc600ea4302161597e62` without pushing primary main or publishing its unrelated shipping-email commit.

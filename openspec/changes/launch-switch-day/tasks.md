@@ -13,6 +13,7 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
 
 - [ ] 2.1 [Claude or Codex] Remove the one-off schedule from `launch-switch.yml`; retire the Holding Page workflow, branch, source, artifact and `noindex` remnants; remove `pages.dev` from PRD allowed origins and return URLs; update the environment model, catalog promotion and holding-page specs and docs.
 - [ ] 2.2 [Claude or Codex] Record the cutover and finalize evidence; run strict OpenSpec validation and `pnpm validate`; archive this change.
+- [x] 2.3 [Claude or Codex] Under the owner's separate mirror-retirement request, redirect the PRD Pages address and its aliases to the public apex with 301 and path/query preservation; verify live Home, assets and release checks. Completed independently of full finalization; tasks 1.4, 2.1 and 2.2 retain their remaining scope.
 
 ## 3. Replaced changes
 

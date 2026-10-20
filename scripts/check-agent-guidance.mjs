@@ -2,7 +2,19 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_DOCUMENTS = ['AGENTS.md', 'CLAUDE.md', 'docs/agent-workflow.md', 'docs/agent-reference.md'];
+const DEFAULT_DOCUMENTS = [
+  'AGENTS.md',
+  'CLAUDE.md',
+  'docs/agent-workflow.md',
+  'docs/agent-reference.md',
+  'docs/agent-acceptance.md',
+  'docs/local-runtime.md',
+  'docs/content-agent-contracts.md',
+  'docs/frontend-agent-contracts.md',
+  'apps/web/src/components/app-shell/MODULE.md',
+  'apps/web/src/components/store/checkout/MODULE.md',
+  'apps/backend/src/application/commerce/checkout/MODULE.md',
+];
 const IMPORT_LINE = /^@(\S+)\s*$/;
 const CODE_SPAN = /(`+)(.*?)\1/g;
 const INLINE_LINK = /!?\[[^\]]*\]\(\s*(?:<([^>]+)>|((?:\\.|[^()\s]|\([^)]*\))*))/g;
