@@ -95,6 +95,401 @@ function bucket() {
   };
 }
 
+async function backupFixture(t) {
+  const source = bucket();
+  const backups = bucket();
+  const sql = Buffer.from('snapshot');
+  await source.put('first.png', 'first media', {
+    httpMetadata: { contentType: 'image/png', cacheExpiry: new Date('2027-01-01T00:00:00Z') },
+    customMetadata: { caption: 'first image' },
+  });
+  await source.put('second.png', 'second media', {
+    httpMetadata: { contentType: 'image/png' },
+    customMetadata: { caption: 'second image' },
+  });
+  const wait = t.mock.fn(async () => {});
+  const exportSnapshot = t.mock.fn(async () => ({ sql, mediaKeys: ['first.png', 'second.png'] }));
+  const log = t.mock.method(console, 'log', () => {});
+  const bytes = sql.byteLength + [...source.files.values()].reduce((sum, file) => sum + file.bytes.length, 0);
+  const options = {
+    source,
+    backups,
+    exportSnapshot,
+    environment: 'local',
+    now: new Date('2026-10-21T00:00:00Z'),
+    maxBytes: bytes,
+    wait,
+  };
+  return { source, backups, sql, bytes, wait, exportSnapshot, log, options };
+}
+
+test('retries a media request or body with a fresh get and preserves completed capture work', async (t) => {
+  for (const phase of ['request', 'body']) {
+    await t.test(phase, async (t) => {
+      const { source, backups, sql, bytes, wait, exportSnapshot, options } = await backupFixture(t);
+      const getSource = source.get.bind(source);
+      let failed = false;
+      const get = t.mock.method(source, 'get', async (key) => {
+        const object = await getSource(key);
+        if (key === 'second.png' && !failed) {
+          failed = true;
+          if (phase === 'request') throw new Error('Network connection lost.');
+          object.arrayBuffer = async () => {
+            throw new Error('Network connection lost.');
+          };
+        }
+        return object;
+      });
+      const result = await backupCms(options);
+      assert.equal(result.bytes, bytes, 'A recovered object counts once at the exact byte ceiling.');
+      assert.equal(result.objects, 2);
+      assert.equal(result.retries, 1);
+      assert.deepEqual(
+        get.mock.calls.map((call) => call.arguments[0]),
+        ['first.png', 'second.png', 'second.png'],
+      );
+      assert.deepEqual(
+        wait.mock.calls.map((call) => call.arguments[0]),
+        [1000],
+      );
+      assert.equal(exportSnapshot.mock.callCount(), 1);
+      const destination = bucket();
+      let restored;
+      await restoreCms({
+        backups,
+        destination,
+        environment: 'local',
+        point: result.point,
+        importSql: async (value) => {
+          restored = value;
+        },
+      });
+      assert.deepEqual(Buffer.from(restored), sql);
+      assert.deepEqual(destination.files, source.files, 'Recovery retains exact media bytes and metadata.');
+    });
+  }
+});
+
+test('stops a sustained storage failure after three attempts and retains the previous point', async (t) => {
+  const { source, backups, wait, exportSnapshot, options } = await backupFixture(t);
+  await backupCms({ ...options, now: new Date('2026-10-20T00:00:00Z') });
+  const previous = Buffer.from(backups.files.get('cms/local/points/2026-10-20-daily.json').bytes);
+  const failure = new Error('Network connection lost.');
+  const get = t.mock.method(source, 'get', async () => {
+    throw failure;
+  });
+  await assert.rejects(backupCms(options), (error) => error === failure);
+  assert.equal(get.mock.callCount(), 3);
+  assert.deepEqual(
+    wait.mock.calls.map((call) => call.arguments[0]),
+    [1000, 2000],
+  );
+  assert.equal(exportSnapshot.mock.callCount(), 1, 'The failed first pass never reaches another D1 snapshot.');
+  assert.equal(backups.files.has('cms/local/points/2026-10-21-daily.json'), false);
+  assert.deepEqual(backups.files.get('cms/local/points/2026-10-20-daily.json').bytes, previous);
+});
+
+test('recovers transient R2 actions and lost acknowledgements without damaging retained points', async (t) => {
+  const cases = [
+    { name: 'source list', target: 'source', method: 'list' },
+    { name: 'point list', method: 'list', match: (options) => options.prefix.endsWith('/points/') },
+    { name: 'blob list', method: 'list', match: (options) => options.prefix.endsWith('/blobs/') },
+    { name: 'blob head', method: 'head' },
+    { name: 'blob write acknowledgement', method: 'put', match: (key) => key.includes('/blobs/'), after: true },
+    { name: 'point write acknowledgement', method: 'put', match: (key) => key.includes('/points/'), after: true },
+    { name: 'retained point request', method: 'get', message: 'get: Unspecified error (0)' },
+    { name: 'retained point body', method: 'get', body: true },
+    { name: 'unused blob delete acknowledgement', method: 'delete', after: true },
+    {
+      name: 'expired point delete acknowledgement',
+      method: 'delete',
+      match: (key) => key.includes('/points/'),
+      after: true,
+      seed: true,
+    },
+  ];
+  for (const scenario of cases) {
+    await t.test(scenario.name, async (t) => {
+      const { source, backups, wait, exportSnapshot, log, options } = await backupFixture(t);
+      if (scenario.seed) {
+        for (let day = 1; day <= 7; day++)
+          await backupCms({ ...options, now: new Date(`2026-10-${String(day).padStart(2, '0')}T00:00:00Z`) });
+      }
+      const orphan = `cms/local/blobs/${'0'.repeat(64)}`;
+      await backups.put(orphan, 'unused bytes');
+      const target = scenario.target === 'source' ? source : backups;
+      const original = target[scenario.method].bind(target);
+      const failure = scenario.message
+        ? new Error(scenario.message)
+        : Object.assign(new Error('private provider payload'), { status: 503 });
+      let failed = false;
+      let failedKey;
+      const operation = t.mock.method(target, scenario.method, async (...args) => {
+        if (!failed && (!scenario.match || scenario.match(args[0]))) {
+          failed = true;
+          failedKey = args[0];
+          if (scenario.body) {
+            const object = await original(...args);
+            object.json = async () => {
+              throw failure;
+            };
+            return object;
+          }
+          if (scenario.after) await original(...args);
+          throw failure;
+        }
+        return original(...args);
+      });
+      const snapshotsBefore = exportSnapshot.mock.callCount();
+      const result = await backupCms(options);
+      assert.ok(failed, 'The selected action must actually receive the injected failure.');
+      assert.equal(result.retries, 1);
+      assert.equal(result.objects, 2);
+      assert.equal(result.bytes, options.maxBytes);
+      assert.equal(exportSnapshot.mock.callCount(), snapshotsBefore + 1);
+      assert.deepEqual(
+        wait.mock.calls.map((call) => call.arguments[0]),
+        [1000],
+      );
+      assert.equal(backups.files.has(orphan), false);
+      const points = [...backups.files].filter(([key]) => key.includes('/points/'));
+      assert.equal(points.length, scenario.seed ? 7 : 1);
+      for (const [, file] of points) {
+        const manifest = JSON.parse(file.bytes);
+        assert.equal(manifest.version, 2);
+        for (const entry of [manifest.database, ...manifest.media]) {
+          const stored = backups.files.get(`cms/local/blobs/${entry.sha256}`).bytes;
+          assert.equal(createHash('sha256').update(stored).digest('hex'), entry.sha256);
+          assert.equal(stored.byteLength, entry.bytes);
+        }
+      }
+      if (scenario.method === 'put') {
+        const writes = operation.mock.calls.filter((call) => call.arguments[0] === failedKey);
+        assert.equal(writes.length, 2);
+        assert.deepEqual(writes[0].arguments, writes[1].arguments, 'Replay exactly the same key and bytes.');
+      }
+      const diagnostics = log.mock.calls.map((call) => call.arguments[0]).join('\n');
+      assert.match(diagnostics, /attempt 2\/3, retry 1\/20/);
+      assert.doesNotMatch(diagnostics, /first\.png|second\.png|private provider payload|cms\/local\/blobs/);
+    });
+  }
+});
+
+test('retries a failed list page before advancing its cursor', async (t) => {
+  const { source, options, wait } = await backupFixture(t);
+  const listSource = source.list.bind(source);
+  let failed = false;
+  const cursors = [];
+  source.list = async (args) => {
+    cursors.push(args.cursor);
+    if (args.cursor === '1' && !failed) {
+      failed = true;
+      throw Object.assign(new Error('Service unavailable'), { statusCode: 502 });
+    }
+    const { objects } = await listSource(args);
+    const start = Number(args.cursor ?? 0);
+    return { objects: objects.slice(start, start + 1), truncated: start === 0, cursor: '1' };
+  };
+  const result = await backupCms(options);
+  assert.equal(result.objects, 2);
+  assert.deepEqual(cursors, [undefined, '1', '1', undefined, '1']);
+  assert.equal(wait.mock.callCount(), 1);
+});
+
+test('shares a twenty-retry limit across otherwise recoverable objects', async (t) => {
+  const { source, backups, options, wait, exportSnapshot } = await backupFixture(t);
+  source.files.clear();
+  for (let index = 0; index < 21; index++) await source.put(String(index).padStart(2, '0'), 'x');
+  const getSource = source.get.bind(source);
+  const failed = new Set();
+  const failure = new Error('Network connection lost.');
+  const get = t.mock.method(source, 'get', async (key) => {
+    if (!failed.has(key)) {
+      failed.add(key);
+      throw failure;
+    }
+    return getSource(key);
+  });
+  await assert.rejects(backupCms({ ...options, maxBytes: 1000 }), (error) => error === failure);
+  assert.equal(get.mock.callCount(), 41);
+  assert.equal(wait.mock.callCount(), 20);
+  assert.ok(wait.mock.calls.every((call) => call.arguments[0] === 1000));
+  assert.equal(exportSnapshot.mock.callCount(), 0);
+  assert.equal(
+    [...backups.files.keys()].some((key) => key.includes('/points/')),
+    false,
+  );
+});
+
+test('authentication, quota and unknown failures do not trigger retries', async (t) => {
+  const failures = [
+    Object.assign(new Error('Network connection lost.'), { status: 401 }),
+    Object.assign(new Error('Forbidden'), { status: 403 }),
+    Object.assign(new Error('Daily quota exceeded'), { status: 429 }),
+    Object.assign(new Error('Storage full'), { statusCode: 507 }),
+    new Error('Unexpected storage error'),
+    new SyntaxError('Malformed provider data'),
+  ];
+  for (const failure of failures) {
+    await t.test(failure.message, async (t) => {
+      const { source, backups, options, wait } = await backupFixture(t);
+      const get = t.mock.method(source, 'get', async () => {
+        throw failure;
+      });
+      await assert.rejects(backupCms(options), (error) => error === failure);
+      assert.equal(get.mock.callCount(), 1);
+      assert.equal(wait.mock.callCount(), 0);
+      assert.equal(
+        [...backups.files.keys()].some((key) => key.includes('/points/')),
+        false,
+      );
+    });
+  }
+});
+
+test('a missing or changed referenced object after a retry still prevents publication', async (t) => {
+  for (const change of ['missing', 'changed']) {
+    await t.test(change, async (t) => {
+      const { source, backups, options, wait } = await backupFixture(t);
+      const getSource = source.get.bind(source);
+      let failed = false;
+      source.get = async (key) => {
+        const object = await getSource(key);
+        if (key === 'second.png' && !failed) {
+          failed = true;
+          object.arrayBuffer = async () => {
+            if (change === 'missing') await source.delete(key);
+            else await source.put(key, 'changed');
+            throw new Error('Network connection lost.');
+          };
+        }
+        return object;
+      };
+      await assert.rejects(backupCms(options), /missing 1 media object/);
+      assert.equal(wait.mock.callCount(), 1);
+      assert.equal(
+        [...backups.files.keys()].some((key) => key.includes('/points/')),
+        false,
+      );
+    });
+  }
+});
+
+test('byte and object limits remain fatal after storage recovery', async (t) => {
+  await t.test('captured bytes', async (t) => {
+    const { source, backups, options, wait } = await backupFixture(t);
+    const getSource = source.get.bind(source);
+    let failed = false;
+    source.get = async (key) => {
+      if (!failed) {
+        failed = true;
+        throw new Error('Network connection lost.');
+      }
+      return getSource(key);
+    };
+    await assert.rejects(backupCms({ ...options, maxBytes: options.maxBytes - 1 }), /exceeds the byte budget/);
+    assert.equal(wait.mock.callCount(), 1);
+    assert.equal(
+      [...backups.files.keys()].some((key) => key.includes('/points/')),
+      false,
+    );
+  });
+  await t.test('listed objects', async (t) => {
+    const { source, options, wait, exportSnapshot } = await backupFixture(t);
+    source.list = async () => ({
+      objects: Array.from({ length: 10001 }, (_, index) => ({ key: String(index) })),
+      truncated: false,
+    });
+    await assert.rejects(backupCms(options), /exceeds the object budget/);
+    assert.equal(wait.mock.callCount(), 0);
+    assert.equal(exportSnapshot.mock.callCount(), 0);
+  });
+});
+
+test('the D1 row guard and snapshot errors are not replayed', async (t) => {
+  await t.test('row ceiling', async (t) => {
+    const { options, wait } = await backupFixture(t);
+    const database = {
+      prepare(sql) {
+        return {
+          sql,
+          async all() {
+            return {
+              results:
+                sql === 'PRAGMA table_list'
+                  ? [{ schema: 'main', type: 'table', name: 'content' }]
+                  : [{ name: 'content', tbl_name: 'content', type: 'table', sql: 'CREATE TABLE content (id INTEGER)' }],
+            };
+          },
+        };
+      },
+      async batch(statements) {
+        return statements.map(({ sql }) => ({
+          results: sql.startsWith('PRAGMA')
+            ? [{ name: 'id', hidden: 0 }]
+            : Array.from({ length: 10001 }, () => ({ 0: '1' })),
+        }));
+      },
+    };
+    const snapshot = t.mock.fn(() => exportCmsSnapshot(database));
+    await assert.rejects(backupCms({ ...options, exportSnapshot: snapshot }), /exceeds the row budget/);
+    assert.equal(snapshot.mock.callCount(), 1);
+    assert.equal(wait.mock.callCount(), 0);
+  });
+  await t.test('snapshot connection failure', async (t) => {
+    const { options, wait } = await backupFixture(t);
+    const failure = new Error('Network connection lost.');
+    const snapshot = t.mock.fn(async () => {
+      throw failure;
+    });
+    await assert.rejects(backupCms({ ...options, exportSnapshot: snapshot }), (error) => error === failure);
+    assert.equal(snapshot.mock.callCount(), 1);
+    assert.equal(wait.mock.callCount(), 0);
+  });
+});
+
+test('malformed retained manifests stop pruning without a retry', async (t) => {
+  const { backups, options, wait } = await backupFixture(t);
+  const previous = 'cms/local/points/2026-10-20-daily.json';
+  const orphan = `cms/local/blobs/${'0'.repeat(64)}`;
+  await backups.put(previous, '{invalid');
+  await backups.put(orphan, 'retained until manifests can be checked');
+  await assert.rejects(backupCms(options), SyntaxError);
+  assert.equal(wait.mock.callCount(), 0);
+  assert.equal(backups.files.has(previous), true);
+  assert.equal(backups.files.has(orphan), true);
+});
+
+test('restore imports retain their original single-attempt behavior', async (t) => {
+  const { backups, options } = await backupFixture(t);
+  const { point } = await backupCms(options);
+  const failure = new Error('Network connection lost.');
+  const importSql = t.mock.fn(async () => {
+    throw failure;
+  });
+  await assert.rejects(
+    restoreCms({ backups, destination: bucket(), environment: 'local', point, importSql }),
+    (error) => error === failure,
+  );
+  assert.equal(importSql.mock.callCount(), 1);
+});
+
+test('capture progress reports safe counts every hundred objects', async (t) => {
+  const { source, options, log } = await backupFixture(t);
+  source.files.clear();
+  for (let index = 0; index < 100; index++) await source.put(`private-name-${index}`, 'x');
+  const result = await backupCms({
+    ...options,
+    maxBytes: 1000,
+    exportSnapshot: async () => ({ sql: Buffer.from('snapshot'), mediaKeys: [] }),
+  });
+  assert.equal(result.retries, 0);
+  assert.deepEqual(
+    log.mock.calls.map((call) => JSON.parse(call.arguments[0])),
+    [{ environment: 'local', stage: 'media', objects: 100, bytes: 100 }],
+  );
+});
+
 test('captures one D1 snapshot while CMS content and media change', async () => {
   const source = bucket();
   const backups = bucket();

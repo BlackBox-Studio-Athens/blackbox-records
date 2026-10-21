@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { DatabaseSync } from 'node:sqlite';
+import { setTimeout as delay } from 'node:timers/promises';
 import { getPlatformProxy } from 'wrangler';
 import ts from 'typescript';
 
@@ -95,11 +96,13 @@ export async function exportCmsSql(database) {
   return (await exportCmsSnapshot(database)).sql;
 }
 
-async function list(bucket, prefix = '') {
+async function list(bucket, prefix = '', readPage = (action) => action()) {
   const objects = [];
   let cursor;
   do {
-    const page = await bucket.list({ prefix, cursor, limit: 1000, include: ['httpMetadata', 'customMetadata'] });
+    const page = await readPage(() =>
+      bucket.list({ prefix, cursor, limit: 1000, include: ['httpMetadata', 'customMetadata'] }),
+    );
     objects.push(...page.objects);
     assert.ok(objects.length <= 10000, 'Backup exceeds the object budget.');
     cursor = page.truncated ? page.cursor : undefined;
@@ -115,6 +118,7 @@ export async function backupCms({
   kind = 'daily',
   maxBytes = 256 * 1024 * 1024,
   now = new Date(),
+  wait = delay,
 }) {
   assert.ok(['local', 'uat', 'prd'].includes(environment));
   assert.ok(['daily', 'pre-upgrade'].includes(kind));
@@ -123,10 +127,32 @@ export async function backupCms({
   const etags = new Map();
   const changed = new Set();
   let bytes = 0;
+  let retries = 0;
+  async function retry(operation, action) {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await action();
+      } catch (error) {
+        const status = error?.status ?? error?.statusCode;
+        const transient =
+          status === undefined
+            ? /^(?:Network connection lost\.?|(?:get|head|put|list|delete): Unspecified error \(0\))$/.test(
+                error?.message ?? '',
+              )
+            : [408, 500, 502, 503, 504].includes(status);
+        if (!transient || attempt >= 3 || retries >= 20) throw error;
+        retries++;
+        console.log(
+          `::warning title=CMS backup storage retry::${environment} ${operation}: attempt ${attempt + 1}/3, retry ${retries}/20.`,
+        );
+        await wait(1000 * attempt);
+      }
+    }
+  }
   async function store(body) {
     const sha256 = hash(body);
     const key = `${prefix}blobs/${sha256}`;
-    if (!(await backups.head(key))) await backups.put(key, body);
+    if (!(await retry('blob head', () => backups.head(key)))) await retry('blob write', () => backups.put(key, body));
     return { sha256, bytes: body.byteLength };
   }
   async function capture(items) {
@@ -136,13 +162,16 @@ export async function backupCms({
         continue;
       }
       assert.ok(media.size < 10000, 'Backup exceeds the object budget.');
-      const object = await source.get(item.key);
+      const { object, body } = await retry('media read', async () => {
+        const object = await source.get(item.key);
+        const body = object && object.etag === item.etag ? new Uint8Array(await object.arrayBuffer()) : undefined;
+        return { object, body };
+      });
       if (!object) continue;
       if (object.etag !== item.etag) {
         changed.add(item.key);
         continue;
       }
-      const body = new Uint8Array(await object.arrayBuffer());
       bytes += body.byteLength;
       assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
       media.set(item.key, {
@@ -152,14 +181,16 @@ export async function backupCms({
         customMetadata: object.customMetadata,
       });
       etags.set(item.key, item.etag);
+      if (media.size % 100 === 0)
+        console.log(JSON.stringify({ environment, stage: 'media', objects: media.size, bytes }));
     }
   }
-  await capture(await list(source));
+  await capture(await list(source, '', (action) => retry('media list', action)));
   const snapshot = await exportSnapshot();
   bytes += snapshot.sql.byteLength;
   assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
   const database = await store(snapshot.sql);
-  await capture(await list(source));
+  await capture(await list(source, '', (action) => retry('media list', action)));
   const missingMedia = snapshot.mediaKeys.filter((key) => !media.has(key) || changed.has(key));
   assert.equal(
     missingMedia.length,
@@ -175,9 +206,10 @@ export async function backupCms({
     database,
     media: [...media.values()],
   };
-  await backups.put(`${prefix}points/${point}.json`, JSON.stringify(manifest));
+  const manifestBytes = JSON.stringify(manifest);
+  await retry('point write', () => backups.put(`${prefix}points/${point}.json`, manifestBytes));
   // Seven daily points plus the last pre-upgrade point; shared immutable bytes are stored once.
-  const points = (await list(backups, `${prefix}points/`)).reverse();
+  const points = (await list(backups, `${prefix}points/`, (action) => retry('point list', action))).reverse();
   const keep = new Set();
   for (const selectedKind of ['daily', 'pre-upgrade']) {
     for (const item of points
@@ -188,20 +220,20 @@ export async function backupCms({
   const retained = new Set();
   for (const item of points) {
     if (!keep.has(item.key)) {
-      await backups.delete(item.key);
+      await retry('expired point delete', () => backups.delete(item.key));
       continue;
     }
-    const saved = await (await backups.get(item.key)).json();
+    const saved = await retry('retained point read', async () => (await backups.get(item.key)).json());
     for (const blob of [saved.database, ...saved.media]) retained.add(`${prefix}blobs/${blob.sha256}`);
   }
-  for (const blob of await list(backups, `${prefix}blobs/`))
-    if (!retained.has(blob.key)) await backups.delete(blob.key);
+  for (const blob of await list(backups, `${prefix}blobs/`, (action) => retry('blob list', action)))
+    if (!retained.has(blob.key)) await retry('unused blob delete', () => backups.delete(blob.key));
   // Early warning (GitHub Actions annotation) before the byte cap starts failing daily runs.
   if (bytes * 4 > maxBytes * 3)
     console.log(
       `::warning title=CMS backup nearing its byte ceiling::${environment} captured ${bytes} of ${maxBytes} bytes (${Math.round((bytes / maxBytes) * 100)}%). Review docs/cms-backup.md before it fails.`,
     );
-  return { point, objects: media.size, bytes, maxBytes };
+  return { point, objects: media.size, bytes, maxBytes, retries };
 }
 
 export async function restoreCms({ backups, destination, importSql, environment, point }) {
