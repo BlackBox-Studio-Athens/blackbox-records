@@ -49,7 +49,9 @@ for (const width of [320, 390, 768, 1440]) {
     const facts = page.locator('.preorder-facts');
     await expect(facts).toContainText('Around mid November 2026');
     await expect(facts).toContainText('Charged in full today');
-    const action = page.getByRole('button', { name: 'Pre-order', exact: true });
+    // The inline action; on phones the buy bar repeats it with the same name until the shopper reaches it.
+    const action = page.locator('[data-store-item-add-to-cart]');
+    await expect(action).toHaveAccessibleName('Pre-order');
     await expect(action).toBeEnabled();
     expect((await facts.boundingBox())!.y + (await facts.boundingBox())!.height).toBeLessThanOrEqual(
       (await action.boundingBox())!.y,

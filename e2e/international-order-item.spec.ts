@@ -113,7 +113,10 @@ test('International item notice follows the complete pre-order presentation @pho
   await waitForIsland(page, 'StoreItemPurchaseActions');
   const purchase = page.locator('[data-store-purchase-group]');
   await expect(purchase.locator('.preorder-facts')).toBeVisible();
-  await expect(purchase.getByRole('button', { name: 'Pre-order', exact: true })).toHaveClass(/preorder-action/);
+  // The inline action; on phones the buy bar repeats it with the same name.
+  const inlineAction = purchase.locator('[data-store-item-add-to-cart]');
+  await expect(inlineAction).toHaveAccessibleName('Pre-order');
+  await expect(inlineAction).toHaveClass(/preorder-action/);
   await expect(purchase.getByText(/We send/)).toHaveCount(0);
   await expect(purchase.getByRole('link', { name: 'Email us to order', exact: true })).toBeVisible();
   await expect(purchase.locator('[data-purchase-information]')).toBeVisible();
