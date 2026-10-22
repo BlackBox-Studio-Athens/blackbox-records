@@ -7,6 +7,11 @@
   - Source fingerprint before and after: `146ed3ae5eda68da5295820aead97551724e95a0cdb984601173079b3518dd30` (42 changed files).
   - Summary: `.codex-artifacts/validation/2026-10-22T11-43-23-220Z-39656-b542a2/summary.json`.
   - Two earlier runs failed and were fixed: two lint idioms in test files, and a partial Stripe gateway mock type in `delivery-quote.worker.test.ts`.
+- After rebasing onto `0888a906` (SEO release 627) as commit `13bb273d66aab7a9050be434eab32ce4848a3c0f`, `pnpm validate` **passed** again (`mode: local`, one pass).
+  - Fingerprint `83078fde6366d171bfc24c085bd29c29868521f1261c4250d041e52fad54536a`.
+  - Summary: `.codex-artifacts/validation/2026-10-22T14-12-18-453Z-61424-c7cf58/summary.json`.
+  - The one rebase conflict, in `scripts/pages-public-gateway.mjs`, combines SEO's slashless normalization and base path with the Caregivers redirect; the redirect now matches the base-relative path. Gateway tests pass. Before publication the slashless legacy URL first consolidates to its slash form.
+  - Local test commands could appear to hang: Nx daemons started from redirected output inherited the pipe. The run used `NX_DAEMON=false` and the orphaned daemons were stopped.
 - `pnpm build:web` passed, including cache policy, Veneer delivery, image markup and sitemap checks. The News lead image slot check moved to the 660px reading card.
 - `pnpm performance:bundles` (Codex): initial shell closure 41,149 Brotli bytes against 104,448 allowed; evidence in `.codex-artifacts/ux-laws-group5/bundle-graphs.json`.
 
@@ -14,18 +19,19 @@
 
 Product Environment: Local only (Playwright web server built from this worktree). Selected behaviour:
 
-| Behaviour | Evidence |
-| --- | --- |
-| Phone item buy bar (present at load, leaves on reach, one-way, fling, same action, cart opens) | `e2e/store-buy-bar.spec.ts`, chromium-mobile |
-| Buy bar motion: zero layouts during transition, reduced motion instant | `e2e/store-buy-bar.spec.ts` (Chromium LayoutCount) |
-| Mini player lifts above the bar and returns; no bar or lift after shell navigation | `e2e/store-buy-bar.spec.ts` |
-| No bar from 40rem | `e2e/store-buy-bar.spec.ts`, chromium-desktop |
-| Pre-order cart Checkout readable on Sea Green | `e2e/store-buy-bar.spec.ts` colour check, `touch-ergonomics-css.test.ts` |
-| News 60 to 75 and About 55 to 75 characters per line on desktop; phone layout unchanged; About contact list fits | `e2e/reading-measure.spec.ts` |
-| Newsletter order and consent error placement, Services General, cart copy, drawer pending rows | component tests plus phone screenshots |
+| Behaviour                                                                                                                                               | Evidence                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Phone item buy bar (present at load, leaves on reach, one-way, fling, same action, cart opens)                                                          | `e2e/store-buy-bar.spec.ts`, chromium-mobile                                     |
+| Buy bar motion: zero layouts during transition, reduced motion instant                                                                                  | `e2e/store-buy-bar.spec.ts` (Chromium LayoutCount)                               |
+| Mini player lifts above the bar and returns; no bar or lift after shell navigation                                                                      | `e2e/store-buy-bar.spec.ts`                                                      |
+| No bar from 40rem                                                                                                                                       | `e2e/store-buy-bar.spec.ts`, chromium-desktop                                    |
+| Pre-order cart Checkout readable on Sea Green                                                                                                           | `e2e/store-buy-bar.spec.ts` colour check, `touch-ergonomics-css.test.ts`         |
+| News 60 to 75 and About 55 to 75 characters per line on desktop; phone layout unchanged; About contact list fits                                        | `e2e/reading-measure.spec.ts`                                                    |
+| Newsletter order and consent error placement, Services General, cart copy, drawer pending rows                                                          | component tests plus phone screenshots                                           |
 | Regression: store cart, checkout loading and delivery recovery, About contact, shell navigation, player continuity, item pre-orders, international cart | 164 passed in the first combined run, failures fixed and rerun green (see below) |
 
 Excluded rows, with reasons:
+
 - CMS, Content Publication and provider (Stripe or Resend) acceptance: no content or provider change ships here. The Caregivers slug rename is a separate, owner-approved publication.
 - Hosted UAT and PRD behaviour and live timing: not deployed.
 
