@@ -18,14 +18,14 @@ interface Props {
 const { item, imagePriority = true } = Astro.props;
 const sectionLabel = item.data.section_label || 'News';
 const leadImageWidths = [720, 1080, 1440, 1800];
-// .layout-container, the card border and its p-7 / sm:p-9 padding, and the image frame border.
-const leadImageSizes =
-  '(min-width: 72rem) 63.25rem, (min-width: 64rem) calc(100vw - 8.75rem), (min-width: 40rem) calc(100vw - 7.75rem), calc(100vw - 5.75rem)';
+// The 46rem reading card from 40rem, its p-7 / sm:p-9 padding, and the card and image frame borders.
+const leadImageSizes = '(min-width: 49rem) 41.25rem, (min-width: 40rem) calc(100vw - 7.75rem), calc(100vw - 5.75rem)';
 ---
 
 <InternalPageHero sectionLabel={sectionLabel} title={item.data.title} />
 <section class="layout-container">
-  <Card className="surface-card">
+  <!-- A 46rem reading card keeps the 16px body near 66 characters per line. -->
+  <Card className="surface-card sm:max-w-[46rem]">
     <CardContent className="space-y-6 p-7 sm:p-9">
       <Badge
         variant="outline"
@@ -56,7 +56,7 @@ const leadImageSizes =
           data-content-path="summary"
         />
       )}
-      <div class="news-markdown-content text-base leading-relaxed text-muted-foreground sm:text-sm">
+      <div class="news-markdown-content text-base leading-relaxed text-muted-foreground">
         <EditorialContent entry={item} />
       </div>
     </CardContent>

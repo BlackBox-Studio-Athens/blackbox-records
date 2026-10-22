@@ -17,28 +17,26 @@ type ServicesInquiryFormProps = {
   submitText: string;
 };
 
-export const SERVICES_INQUIRY_DETAIL_PROMPTS = {
-  General: {
-    hint: 'Add any useful context.',
-    label: 'Useful context',
-  },
-  'Tour Booking': {
-    hint: 'Add the date, city, and venue if known.',
-    label: 'Date / City / Venue',
-  },
-  'Merch Printing': {
-    hint: 'Add the item, quantity, and deadline if known.',
-    label: 'Item / Quantity / Deadline',
-  },
-  'Vinyl Pressing': {
-    hint: 'Add the format, quantity, and target date if known.',
-    label: 'Format / Quantity / Target Date',
-  },
-  'Share your demo': {
-    hint: 'Add a listening link. If it needs a listening password, include it in your message.',
-    label: 'Demo / Listening link',
-  },
-} satisfies Record<ServicesInquiryService, { hint: string; label: string }>;
+// General has no details prompt: its Message already carries any context.
+export const SERVICES_INQUIRY_DETAIL_PROMPTS: Partial<Record<ServicesInquiryService, { hint: string; label: string }>> =
+  {
+    'Tour Booking': {
+      hint: 'Add the date, city, and venue if known.',
+      label: 'Date / City / Venue',
+    },
+    'Merch Printing': {
+      hint: 'Add the item, quantity, and deadline if known.',
+      label: 'Item / Quantity / Deadline',
+    },
+    'Vinyl Pressing': {
+      hint: 'Add the format, quantity, and target date if known.',
+      label: 'Format / Quantity / Target Date',
+    },
+    'Share your demo': {
+      hint: 'Add a listening link. If it needs a listening password, include it in your message.',
+      label: 'Demo / Listening link',
+    },
+  };
 
 export type ServicesInquiryAdaptiveDetailsState = {
   service: ServicesInquiryService;
@@ -153,7 +151,8 @@ export async function submitServicesInquiryForm({
   pending.current = true;
   onStatusChange('submitting');
 
-  const serviceDetails = values.serviceDetails.trim();
+  // Details typed under another service are dropped when the chosen service has no details prompt.
+  const serviceDetails = SERVICES_INQUIRY_DETAIL_PROMPTS[values.service] ? values.serviceDetails.trim() : '';
   const body: ServicesInquiryBody = {
     ...(values.bandOrProject ? { bandOrProject: values.bandOrProject } : {}),
     email: values.email,
@@ -381,22 +380,24 @@ export default function ServicesInquiryForm({
         </div>
       </div>
 
-      <label className="services-inquiry-form__field" htmlFor="services-inquiry-details">
-        <span className="services-inquiry-form__label">{detailPrompt.label}</span>
-        <Input
-          aria-describedby="services-inquiry-details-hint"
-          className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
-          disabled={isSubmitting}
-          id="services-inquiry-details"
-          maxLength={300}
-          name="serviceDetails"
-          value={serviceDetails}
-          onChange={(event) => dispatch({ field: 'serviceDetails', type: 'change', value: event.target.value })}
-        />
-        <span className="text-sm leading-6 text-muted-foreground" id="services-inquiry-details-hint">
-          {detailPrompt.hint}
-        </span>
-      </label>
+      {detailPrompt && (
+        <label className="services-inquiry-form__field" htmlFor="services-inquiry-details">
+          <span className="services-inquiry-form__label">{detailPrompt.label}</span>
+          <Input
+            aria-describedby="services-inquiry-details-hint"
+            className="services-inquiry-form__input h-11 rounded-none border-flint-850 bg-[#111111] text-base md:text-[0.95rem]"
+            disabled={isSubmitting}
+            id="services-inquiry-details"
+            maxLength={300}
+            name="serviceDetails"
+            value={serviceDetails}
+            onChange={(event) => dispatch({ field: 'serviceDetails', type: 'change', value: event.target.value })}
+          />
+          <span className="text-sm leading-6 text-muted-foreground" id="services-inquiry-details-hint">
+            {detailPrompt.hint}
+          </span>
+        </label>
+      )}
 
       <label className="services-inquiry-form__field">
         <span className="services-inquiry-form__label">Message</span>
@@ -418,7 +419,6 @@ export default function ServicesInquiryForm({
           aria-busy={isSubmitting ? 'true' : undefined}
           disabled={isSubmitting}
           type="submit"
-          variant="outline"
         >
           {isSubmitting ? 'Sending inquiry…' : submitText}
         </Button>

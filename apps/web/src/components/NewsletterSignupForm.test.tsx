@@ -66,7 +66,12 @@ describe('NewsletterSignupForm', () => {
     expect(html).toContain('No spam. Unsubscribe anytime.');
     expect(html).toContain('newsletter-signup-consent-checkbox');
     expect(html).toContain('rounded-none');
-    expect(html).toContain('sm:flex-row');
+    // Email, then consent, then Subscribe, in DOM and focus order at every width.
+    const email = html.indexOf('type="email"');
+    const consent = html.indexOf('type="checkbox"');
+    const submit = html.indexOf('type="submit"');
+    expect(email).toBeLessThan(consent);
+    expect(consent).toBeLessThan(submit);
     expect(html).toContain('role="status"');
     expect(html).toContain('role="alert"');
     expect(html).toContain('aria-live="assertive"');
@@ -179,6 +184,33 @@ describe('NewsletterSignupForm', () => {
       emailInvalid: false,
       errorMessage: 'Confirm newsletter consent before subscribing.',
     });
+  });
+
+  it('shows a consent error directly under the checkbox, before Subscribe', () => {
+    const noop = vi.fn();
+    const state = vi
+      .mocked(React.useState)
+      .mockReturnValueOnce([true, noop])
+      .mockReturnValueOnce(['listener@example.com', noop])
+      .mockReturnValueOnce([false, noop])
+      .mockReturnValueOnce([
+        { kind: 'error', message: 'Confirm newsletter consent before subscribing.', target: 'consent' },
+        noop,
+      ]);
+    try {
+      const html = renderToStaticMarkup(
+        <NewsletterSignupForm buttonLabel="Subscribe" formId="newsletter-email" placeholder="your@email.com" />,
+      );
+      const consent = html.indexOf(NEWSLETTER_CONSENT_LABEL);
+      const error = html.indexOf('Confirm newsletter consent before subscribing.');
+      const submit = html.indexOf('type="submit"');
+      expect(consent).toBeLessThan(error);
+      expect(error).toBeLessThan(submit);
+      expect(html.match(/role="alert"/g)).toHaveLength(1);
+      expect(html).toMatch(/type="checkbox"[^>]*aria-describedby="newsletter-email-error"[^>]*aria-invalid="true"/);
+    } finally {
+      state.mockRestore();
+    }
   });
 
   it('marks invalid email API errors against the email control', () => {

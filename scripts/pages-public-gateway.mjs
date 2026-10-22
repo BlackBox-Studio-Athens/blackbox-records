@@ -44,6 +44,24 @@ export function createPublicGateway(patterns, basePath = '/') {
             ))) &&
         routes.some((pattern) => pattern.test(`${path}/`));
       if (normalizeDocument) url.pathname = `${path}/`;
+      const headers = new Headers({ Accept: request.headers.get('Accept') ?? '*/*' });
+      const caregiversPath = `${base}/news/caregivers/`;
+      if (
+        (documentPath === '/news/lorem-ipsum' || documentPath === '/news/lorem-ipsum/') &&
+        routes.some((pattern) => pattern.test(caregiversPath))
+      ) {
+        const target = new URL(request.url);
+        target.pathname = caregiversPath;
+        // News routes are dynamic: only the accepted publication can prove that this slug exists.
+        const published = await env.PUBLIC_SITE.fetch(
+          new Request(target, { method: 'HEAD', headers: { Accept: 'text/html' } }),
+        ).catch(() => null);
+        const exists =
+          published?.status === 200 && published.headers.get('Content-Type')?.toLowerCase().startsWith('text/html');
+        await published?.body?.cancel();
+        if (exists)
+          return new Response(null, { status: 308, headers: { Location: target.href, 'Cache-Control': 'no-store' } });
+      }
       if (
         !normalizeDocument &&
         !routes.some((pattern) => pattern.test(path)) &&
@@ -52,7 +70,6 @@ export function createPublicGateway(patterns, basePath = '/') {
         !['/release.json', '/content-version.json'].includes(path)
       )
         return notFoundDocument(request, env);
-      const headers = new Headers({ Accept: request.headers.get('Accept') ?? '*/*' });
       const etag = request.headers.get('If-None-Match');
       if (etag !== null) headers.set('If-None-Match', etag);
       const response = await env.PUBLIC_SITE.fetch(new Request(url, { method: request.method, headers }));

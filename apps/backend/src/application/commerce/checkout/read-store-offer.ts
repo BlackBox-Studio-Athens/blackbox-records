@@ -99,7 +99,12 @@ export async function readStoreOffer(
     return null;
   }
 
-  const availability = await itemAvailability.findByVariantId(storeItem.variantId);
+  const [availabilityResult, projectionResult] = await Promise.allSettled([
+    itemAvailability.findByVariantId(storeItem.variantId),
+    Promise.resolve().then(() => productProjections.findByStoreItem(storeItem)),
+  ]);
+  if (availabilityResult.status === 'rejected') throw availabilityResult.reason;
+  const availability = availabilityResult.value;
 
   const currentStock =
     availability && !(availability.status === 'available' && !availability.canBuy)
@@ -116,8 +121,9 @@ export async function readStoreOffer(
     );
   }
 
-  const productProjection = await productProjections.findByStoreItem(storeItem);
-
+  // A projection failure must not replace the existing sold-out result.
+  if (projectionResult.status === 'rejected') throw projectionResult.reason;
+  const productProjection = projectionResult.value;
   if (!productProjection) {
     return catalogDriftOffer(storeItem.storeItemSlug, storeItem.variantId);
   }

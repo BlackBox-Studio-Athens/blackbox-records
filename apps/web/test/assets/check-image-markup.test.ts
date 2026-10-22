@@ -429,13 +429,12 @@ describe('check-image-markup', () => {
     const ladder = '/a-720.webp 720w, /a-1080.webp 1080w, /a-1440.webp 1440w, /a-1800.webp 1800w';
     const leadTag = (sizes: string) =>
       `<img class="news-detail-lead__image" srcset="${ladder}" sizes="${sizes}" width="1800" height="1200">`;
-    const leadSizes =
-      '(min-width: 72rem) 63.25rem, (min-width: 64rem) calc(100vw - 8.75rem), (min-width: 40rem) calc(100vw - 7.75rem), calc(100vw - 5.75rem)';
+    const leadSizes = '(min-width: 49rem) 41.25rem, (min-width: 40rem) calc(100vw - 7.75rem), calc(100vw - 5.75rem)';
 
     it('evaluates media conditions and calc() lengths in px, rem and vw', () => {
       expect(evaluateSizes(leadSizes, 390)).toBe(298);
-      expect(evaluateSizes(leadSizes, 1024)).toBe(884);
-      expect(evaluateSizes(leadSizes, 1440)).toBe(1012);
+      expect(evaluateSizes(leadSizes, 700)).toBe(576);
+      expect(evaluateSizes(leadSizes, 1440)).toBe(660);
       expect(evaluateSizes('(min-width: 87rem) 39rem, calc((100vw - 4.25rem) * 1.03)', 390)).toBeCloseTo(331.66);
       expect(evaluateSizes('(min-width: 1024px) 36vw, 100vw', 1440)).toBeCloseTo(518.4);
       expect(evaluateSizes('(max-width: 40rem) 50vw, 20rem', 390)).toBe(195);
@@ -447,8 +446,8 @@ describe('check-image-markup', () => {
       const tag = leadTag(leadSizes);
       expect(pickSrcsetCandidate(tag, 298, 2)?.width).toBe(720);
       expect(pickSrcsetCandidate(tag, 298, 3)?.width).toBe(1080);
-      expect(pickSrcsetCandidate(tag, 1012, 1)?.width).toBe(1080);
-      expect(pickSrcsetCandidate(tag, 1012, 2)?.width).toBe(1800);
+      expect(pickSrcsetCandidate(tag, 660, 1)?.width).toBe(720);
+      expect(pickSrcsetCandidate(tag, 660, 2)?.width).toBe(1440);
     });
 
     it('flags sizes that overstate the slot by a rung, as the full-viewport news lead did', () => {
@@ -466,7 +465,7 @@ describe('check-image-markup', () => {
         },
         {
           route: 'news/lead/index.html',
-          message: 'news-detail-lead__image fetches 1440w at 1440@1 where 1080w covers its 1016px slot.',
+          message: 'news-detail-lead__image fetches 1440w at 1440@1 where 720w covers its 662px slot.',
         },
       ]);
       expect(checkSrcsetSelections(new Map([['news/lead/index.html', leadTag(leadSizes)]]), check)).toEqual([]);

@@ -11,7 +11,7 @@ import {
   STORE_CART_ITEM_ADDED_EVENT,
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
-import { DIGITAL_RELEASE_BADGE, preorderBadges } from '@/platform/lib/preorder-estimate';
+import { DIGITAL_RELEASE_BADGE, preorderBadges, preorderChipText } from '@/platform/lib/preorder-estimate';
 import { availabilityLabel, availabilityTone, isNotifiable } from '@/platform/lib/availability-copy';
 
 // Most shoppers see a buyable item, so the zero-stock status, its icons and Notify me load only when one renders.
@@ -32,6 +32,8 @@ type StoreItemPurchaseActionsProps = {
   purchaseHint?: string;
   releaseDate?: Date | string | null | undefined;
   isVinyl?: boolean;
+  /** The Store item page opts in to the phone buy bar; other placements keep only the inline action. */
+  buyBar?: boolean;
 };
 
 type StoreItemPurchaseActionState = {
@@ -64,6 +66,76 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
 
 // The purchase control confirms in place: it reads Added for this long after a successful add.
 export const STORE_ITEM_ADDED_CONFIRMATION_MS = 4000;
+
+export const STORE_BUY_BAR_LABEL = 'Quick purchase';
+
+/**
+ * Tracks whether the shopper has reached the inline purchase action: its top edge is at or above the viewport bottom.
+ * The root margin extends the viewport upward, so passing the action is one intersection change even in a fast fling.
+ */
+export function observeStoreBuyBarReach(target: Element, onChange: (reached: boolean) => void) {
+  const observer = new IntersectionObserver(([entry]) => onChange(Boolean(entry?.isIntersecting)), {
+    rootMargin: '100000px 0px 0px 0px',
+  });
+  observer.observe(target);
+  return () => observer.disconnect();
+}
+
+// Phone buy bar: present while the inline action is still below the viewport; the shell's mini player lifts above it.
+function StoreBuyBar({
+  action,
+  price,
+  shown,
+  status,
+  statusClassName,
+}: {
+  action: React.ReactNode;
+  price: string;
+  shown: boolean;
+  status: string | null;
+  statusClassName: string;
+}) {
+  const barRef = React.useRef<HTMLDivElement>(null);
+  const [ready, setReady] = React.useState(false);
+
+  // Motion switches on after the first paint, so the bar is simply present at load.
+  React.useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => setReady(true));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // The lift itself is CSS (:has on the shown bar), so it ends whenever the bar leaves the page, even without unmount.
+  React.useEffect(() => {
+    const bar = barRef.current;
+    if (!shown || !bar) return;
+    const resize = new ResizeObserver(() =>
+      document.documentElement.style.setProperty('--buy-bar-height', `${bar.offsetHeight}px`),
+    );
+    resize.observe(bar);
+    return () => resize.disconnect();
+  }, [shown]);
+
+  // Rendered inside the page content, so shell navigation removes it with the page.
+  return (
+    <div
+      ref={barRef}
+      className="store-buy-bar"
+      role="region"
+      aria-label={STORE_BUY_BAR_LABEL}
+      data-shown={shown ? 'true' : 'false'}
+      data-ready={ready ? '' : undefined}
+      inert={!shown}
+    >
+      <div className="store-buy-bar__info">
+        <span className="store-buy-bar__price">{price}</span>
+        {status && <span className={statusClassName}>{status}</span>}
+      </div>
+      {action}
+    </div>
+  );
+}
 
 // Label and tone follow the offer's typed state, never its label text.
 export function readStoreItemPurchaseStatus(
@@ -149,6 +221,7 @@ export default function StoreItemPurchaseActions({
   purchaseHint,
   releaseDate,
   isVinyl = false,
+  buyBar = false,
 }: StoreItemPurchaseActionsProps) {
   const [purchaseState, setPurchaseState] = React.useState<StoreItemPurchaseActionState>(() =>
     cartSeed
@@ -163,6 +236,14 @@ export default function StoreItemPurchaseActions({
   const [addedCount, setAddedCount] = React.useState(0);
   const [isAddedVisible, setIsAddedVisible] = React.useState(false);
   const [readAttempt, setReadAttempt] = React.useState(0);
+  // null until the observer reports, so the bar never flashes before its position is known.
+  const [reachedAction, setReachedAction] = React.useState<boolean | null>(null);
+  const [inlineAction, setInlineAction] = React.useState<HTMLButtonElement | null>(null);
+
+  React.useEffect(() => {
+    if (!buyBar || !inlineAction) return;
+    return observeStoreBuyBarReach(inlineAction, setReachedAction);
+  }, [buyBar, inlineAction]);
 
   // An unreadable offer is read again when the shopper presses Try again or the phone reconnects.
   const isUnreadable = Boolean(purchaseState.unreadable);
@@ -282,15 +363,18 @@ export default function StoreItemPurchaseActions({
     );
   }
 
-  const addToCartButton = (
+  // The inline action and the phone buy bar share one handler, label and Added feedback.
+  const renderAddToCart = (layoutClassName: string, inline: boolean) => (
     <Button
       type="button"
       variant={isAddedVisible ? 'outline' : 'default'}
       className={cn(
-        purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses,
+        layoutClassName,
         activeCartItem.preorder ? 'preorder-action' : !isAddedVisible && 'purchase-action',
       )}
-      data-store-item-add-to-cart
+      ref={inline ? setInlineAction : undefined}
+      data-store-item-add-to-cart={inline || undefined}
+      data-store-buy-bar-action={!inline || undefined}
       data-store-item-added={isAddedVisible ? '' : undefined}
       onClick={() => requestStoreCartAddItem(activeCartItem)}
     >
@@ -304,9 +388,28 @@ export default function StoreItemPurchaseActions({
       )}
     </Button>
   );
+  const addToCartButton = renderAddToCart(
+    purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses,
+    true,
+  );
 
   return (
     <>
+      {buyBar && reachedAction !== null && (
+        <StoreBuyBar
+          action={renderAddToCart('store-buy-bar__action', false)}
+          price={activeCartItem.priceDisplay}
+          shown={!reachedAction}
+          status={
+            activeCartItem.preorder
+              ? preorderChipText(activeCartItem.preorder.shipEstimate)
+              : (purchaseState.lowStockLabel ?? null)
+          }
+          statusClassName={
+            activeCartItem.preorder ? 'store-buy-bar__status store-buy-bar__status--preorder' : 'store-buy-bar__status'
+          }
+        />
+      )}
       {purchaseState.lowStockLabel ? (
         // The notice and Add To Cart read as one unit: the tab shares the button's width and top edge.
         <div className={cn(purchaseActionLayoutClasses, 'store-low-stock-purchase')}>

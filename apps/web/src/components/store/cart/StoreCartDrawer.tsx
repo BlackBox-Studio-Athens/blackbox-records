@@ -39,7 +39,8 @@ type StoreCartDrawerPanelProps = Omit<StoreCartDrawerProps, 'onOpenChange' | 'op
 export const STORE_CART_DRAWER_COPY = {
   checkout: 'Checkout',
   continueShopping: 'Continue Shopping',
-  emptyDetail: 'Add store items to review the cart draft before checkout.',
+  description: 'Review your items before checkout.',
+  emptyDetail: 'Nothing here yet.',
   emptyTitle: 'Your cart is empty',
   remove: 'Remove',
   removed: 'Removed',
@@ -218,8 +219,8 @@ export function StoreCartDrawerPanel({
           >
             <X aria-hidden="true" strokeWidth={1.5} />
           </Button>
-          <SheetDescription className="store-cart-drawer__description">
-            Cart state stays browser-only. Checkout stays secure through Stripe.
+          <SheetDescription className="accessibility-visually-hidden-text">
+            {STORE_CART_DRAWER_COPY.description}
           </SheetDescription>
         </SheetHeader>
       )}

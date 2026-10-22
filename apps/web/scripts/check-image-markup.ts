@@ -544,7 +544,8 @@ export const srcsetSlotChecks: SrcsetSlotCheck[] = [
   {
     route: 'news/*/index.html',
     className: 'news-detail-lead__image',
-    slot: byViewport([298, 302], [1012, 1016]),
+    // The 46rem reading card from 40rem: card and frame borders and the sm:p-9 padding leave 660px for the image.
+    slot: byViewport([298, 302], [658, 662]),
   },
   { route: 'news/index.html', className: 'news-card__image', slot: byViewport([356, 360], [347, 352]) },
   // Home phones show News in a swipe row whose cards are 82% of the container.

@@ -3611,6 +3611,13 @@ body {
     @apply mt-5;
   }
 
+  /* Running text stops near 70 characters inside the 46rem reading card (owner choice, 22 October 2026). */
+  .news-markdown-content > *,
+  .about-prose > p,
+  .about-prose > div > p {
+    max-width: 34rem;
+  }
+
   .news-markdown-content :is(h1, h2) {
     margin-top: 2.5rem;
     color: var(--foreground);
@@ -5742,14 +5749,6 @@ body.is-app-shell-overlay-open {
   background: transparent;
 }
 
-.store-cart-drawer__description {
-  margin: 10px 0 0;
-  color: var(--muted-foreground);
-  font: 500 0.8125rem/1.4 var(--font-sans);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
 .store-cart-drawer__scroll {
   display: flex;
   flex: 1;
@@ -6010,7 +6009,9 @@ body.is-app-shell-overlay-open {
   letter-spacing: 0.08em;
 }
 
-.store-cart-drawer__checkout {
+/* A cart holding a pre-order keeps the Sea Green Checkout face (owner choice, 22 October 2026); the ink face here
+   used to paint over it and left a white label on white. */
+.store-cart-drawer__checkout:not(.preorder-action) {
   background: var(--foreground);
 }
 
@@ -6019,8 +6020,95 @@ body.is-app-shell-overlay-open {
   background: transparent;
 }
 
-/* Short viewports (landscape phones): the fixed header and actions shrink so the cart lines keep a usable window.
-   The note stays the dialog's accessible description, only visually hidden. */
+/* Phone buy bar (apply-ux-laws-review-fixes, approved 22 October 2026): present while the item's inline purchase action
+   is still below the viewport. Rise is transform and opacity only, with explicit resting values so no layer is created
+   or dropped mid-transition; reduced motion changes state instantly. */
+.store-buy-bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  border-top: 1px solid var(--flint-850);
+  background: var(--card);
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.store-buy-bar[data-shown='false'] {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.store-buy-bar[data-ready] {
+  transition:
+    transform 195ms cubic-bezier(0.7, 0, 0.84, 0),
+    opacity 150ms cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+.store-buy-bar[data-ready][data-shown='true'] {
+  transition:
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.store-buy-bar__info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.store-buy-bar__price {
+  font: 400 1.75rem/1 var(--font-display-ui);
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+
+/* Long estimates ("Pre-order · ships around November 2026") wrap rather than run under the action. */
+.store-buy-bar__status {
+  display: block;
+  justify-self: start;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+/* The same Sea Green line as the item's own pre-order status, without its .preorder-badge hook. */
+.store-buy-bar__status--preorder {
+  color: var(--sea-500);
+}
+
+.store-buy-bar__action {
+  flex: 0 0 auto;
+  min-width: 9.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-buy-bar[data-ready],
+  .store-buy-bar[data-ready][data-shown='true'] {
+    transition: none;
+  }
+}
+
+@media (width >= 40rem) {
+  .store-buy-bar {
+    display: none;
+  }
+}
+
+/* The floating player sits above the shown buy bar; it keeps its own transform transition. */
+@media (width < 40rem) {
+  :root:has(.store-buy-bar[data-shown='true']) .music-streaming-service-embedded-player-mini-player[data-state='open'] {
+    transform: translateY(calc(-1 * var(--buy-bar-height, 0px)));
+  }
+}
+
+/* Short viewports (landscape phones): the fixed header and actions shrink so the cart lines keep a usable window. */
 @media (max-height: 30rem) {
   .store-cart-drawer__header {
     padding: 10px 24px 6px;
@@ -6028,15 +6116,6 @@ body.is-app-shell-overlay-open {
 
   .store-cart-drawer__close {
     top: 0;
-  }
-
-  .store-cart-drawer__description {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .store-cart-drawer__actions {

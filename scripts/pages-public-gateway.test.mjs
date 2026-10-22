@@ -4,6 +4,82 @@ import { createPublicGateway, publicGatewayRoutes } from './pages-public-gateway
 
 const gateway = createPublicGateway(['^/$', '^/store/?$', '^/artists/[^/]+/?$', '^/store/[^/]+/checkout/?$']);
 
+test('the retired News slug redirects only after the target is published', async () => {
+  const gateway = createPublicGateway(['^/news/[^/]+/?$']);
+  for (const method of ['GET', 'HEAD']) {
+    for (const suffix of ['', '/']) {
+      let published = false;
+      const requests = [];
+      const { env } = captureEnv();
+      env.PUBLIC_SITE.fetch = async (request) => {
+        requests.push(request);
+        const target = new URL(request.url).pathname === '/news/caregivers/';
+        return new Response(request.method === 'HEAD' ? null : 'old article', {
+          status: target && !published ? 404 : 200,
+          headers: { 'Content-Type': 'text/html' },
+        });
+      };
+      const request = new Request(`https://site.invalid/news/lorem-ipsum${suffix}?source=archive`, {
+        method,
+        headers: { Cookie: 'private', Authorization: 'secret', 'If-None-Match': 'old', Accept: 'text/html' },
+      });
+      const before = await gateway.fetch(request, env);
+      // Before publication the old article serves as usual; its slashless form consolidates to the slash form first.
+      if (suffix) {
+        assert.equal(before.status, 200);
+        assert.equal(before.headers.get('Location'), null);
+      } else {
+        assert.equal(before.status, 308);
+        assert.equal(before.headers.get('Location'), 'https://site.invalid/news/lorem-ipsum/?source=archive');
+      }
+      assert.equal(requests.length, 2);
+      assert.equal(requests[0].method, 'HEAD');
+      assert.deepEqual([...requests[0].headers], [['accept', 'text/html']]);
+      published = true;
+      requests.length = 0;
+      const after = await gateway.fetch(request, env);
+      assert.equal(after.status, 308);
+      assert.equal(after.headers.get('Location'), 'https://site.invalid/news/caregivers/?source=archive');
+      assert.equal(after.headers.get('Cache-Control'), 'no-store');
+      assert.equal(after.body, null);
+      assert.equal(requests.length, 1);
+    }
+  }
+});
+
+test('a failed or non-HTML target check keeps the retired route working', async () => {
+  const gateway = createPublicGateway(['^/news/[^/]+/?$']);
+  for (const targetReply of [
+    () => new Response('unavailable', { status: 503 }),
+    () => new Response('{}', { headers: { 'Content-Type': 'application/json' } }),
+    () => new Response(null, { status: 302, headers: { Location: '/login/' } }),
+    () => Promise.reject(new Error('Renderer unavailable')),
+  ]) {
+    const { env } = captureEnv();
+    env.PUBLIC_SITE.fetch = async (request) =>
+      new URL(request.url).pathname === '/news/caregivers/'
+        ? targetReply()
+        : new Response('old article', { headers: { 'Content-Type': 'text/html' } });
+    const response = await gateway.fetch(new Request('https://site.invalid/news/lorem-ipsum/'), env);
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'old article');
+    assert.equal(response.headers.get('Location'), null);
+  }
+});
+
+test('the News redirect respects the target route allowlist after the old route retires', async () => {
+  const { env, forwarded } = captureEnv();
+  const oldOnly = createPublicGateway(['^/news/lorem-ipsum/$']);
+  const request = new Request('https://site.invalid/news/lorem-ipsum/');
+  assert.equal((await oldOnly.fetch(request, env)).status, 200);
+  assert.equal(forwarded.length, 1);
+  assert.equal(new URL(forwarded[0].url).pathname, '/news/lorem-ipsum/');
+  env.PUBLIC_SITE.fetch = async () => new Response(null, { headers: { 'Content-Type': 'text/html' } });
+  const newOnly = createPublicGateway(['^/news/caregivers/$']);
+  assert.equal((await newOnly.fetch(request, env)).status, 308);
+  assert.equal((await createPublicGateway([]).fetch(request, env)).status, 404);
+});
+
 function captureEnv() {
   const forwarded = [];
   return {

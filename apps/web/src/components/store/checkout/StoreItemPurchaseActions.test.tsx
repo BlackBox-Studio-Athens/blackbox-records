@@ -7,7 +7,9 @@ import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/componen
 import StoreItemPurchaseActions, {
   createCartLineItemSnapshotFromWorkerOffer,
   loadStoreItemPurchaseActionState,
+  observeStoreBuyBarReach,
   readStoreItemPurchaseStatus,
+  STORE_BUY_BAR_LABEL,
   requestStoreCartAddItem,
   STORE_ITEM_PURCHASE_ACTION_COPY,
   type StoreItemCartSeed,
@@ -635,6 +637,46 @@ describe('Notify me', () => {
       source: 'availability-alert-form',
     });
     await expect(joinNewsletter(api, 'listener@example.com')).resolves.toBe('failed');
+  });
+});
+
+describe('phone buy bar', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('reports reach as one intersection change, so a fling past the action cannot be missed', () => {
+    let callback: IntersectionObserverCallback | undefined;
+    let options: IntersectionObserverInit | undefined;
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(next: IntersectionObserverCallback, init?: IntersectionObserverInit) {
+          callback = next;
+          options = init;
+        }
+        observe() {}
+        disconnect = disconnect;
+      },
+    );
+    const reached: boolean[] = [];
+    const stop = observeStoreBuyBarReach({} as Element, (value) => reached.push(value));
+
+    // The root grows far upward: only the viewport bottom edge decides whether the action was reached.
+    expect(options?.rootMargin).toBe('100000px 0px 0px 0px');
+    callback?.([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver);
+    callback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    expect(reached).toEqual([false, true]);
+    stop();
+    expect(disconnect).toHaveBeenCalledOnce();
+  });
+
+  it('renders no bar on the server, before the client knows where the action is', () => {
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseActions buyBar cartItem={{ ...cartItem, preorder: { shipEstimate: null } }} cartSeed={null} />,
+    );
+    expect(html).toContain('data-store-item-add-to-cart');
+    expect(html).not.toContain(STORE_BUY_BAR_LABEL);
+    expect(html).not.toContain('store-buy-bar');
   });
 });
 

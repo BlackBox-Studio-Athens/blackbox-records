@@ -213,6 +213,25 @@ describe('StoreCartDrawer', () => {
     expect(STORE_CART_DRAWER_COPY.continueShopping).toBe('Continue Shopping');
     expect(STORE_CART_DRAWER_COPY.checkout).toBe('Checkout');
     expect(STORE_CART_DRAWER_COPY.shipping).toBe('Greece-only shipping details are collected during checkout.');
+    expect(STORE_CART_DRAWER_COPY.description).toBe('Review your items before checkout.');
+    expect(STORE_CART_DRAWER_COPY.emptyDetail).toBe('Nothing here yet.');
+  });
+
+  it('speaks shopper language in the empty cart', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={createEmptyStoreCartState()}
+        renderHeader={false}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        resolveHref={resolveHref}
+      />,
+    );
+    expect(markup).toContain('Your cart is empty');
+    expect(markup).toContain('Nothing here yet.');
+    expect(markup).not.toMatch(/browser-only|cart draft|Stripe/i);
   });
 
   it('represents exactly one filled CartLine with subtotal and checkout action data', () => {

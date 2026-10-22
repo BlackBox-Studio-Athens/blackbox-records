@@ -2,6 +2,7 @@ import * as React from 'react';
 import { taxCollectionDisclosure } from '@blackbox/api-client/public';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import { Button } from '@/components/ui/button';
+import { getCartSubtotalDisplay, type CartLine } from '@/components/store/cart/store-cart';
 import {
   PublicCheckoutApiError,
   readDeliveryQuote,
@@ -20,6 +21,7 @@ export function useDeliveryQuote(lines: Lines) {
   const [request, setRequest] = React.useState({ key: '', attempt: 0 });
   const attempt = request.attempt;
   const requesting = React.useRef(false);
+  const hasRequested = React.useRef(false);
   const [result, setResult] = React.useState<{
     key: string;
     attempt: number;
@@ -32,28 +34,32 @@ export function useDeliveryQuote(lines: Lines) {
     const controller = new AbortController();
     const requestedLines: Lines = JSON.parse(key);
     requesting.current = requestedLines.length > 0;
-    const timer = requestedLines.length
-      ? setTimeout(() => {
-          void readDeliveryQuote(requestedLines, controller.signal).then(
-            ({ quote }) => {
-              if (!active) return;
-              requesting.current = false;
-              setResult({ key, attempt, quote, error: quote ? null : 'unavailable' });
-            },
-            (error: unknown) => {
-              if (!active) return;
-              requesting.current = false;
-              const rejectedCart =
-                error instanceof PublicCheckoutApiError &&
-                error.status >= 400 &&
-                error.status < 500 &&
-                error.status !== 408 &&
-                error.status !== 429;
-              setResult({ key, attempt, quote: null, error: rejectedCart ? 'unavailable' : 'temporary' });
-            },
-          );
-        }, 250)
-      : undefined;
+    const readQuote = () => {
+      hasRequested.current = true;
+      void readDeliveryQuote(requestedLines, controller.signal).then(
+        ({ quote }) => {
+          if (!active) return;
+          requesting.current = false;
+          setResult({ key, attempt, quote, error: quote ? null : 'unavailable' });
+        },
+        (error: unknown) => {
+          if (!active) return;
+          requesting.current = false;
+          const rejectedCart =
+            error instanceof PublicCheckoutApiError &&
+            error.status >= 400 &&
+            error.status < 500 &&
+            error.status !== 408 &&
+            error.status !== 429;
+          setResult({ key, attempt, quote: null, error: rejectedCart ? 'unavailable' : 'temporary' });
+        },
+      );
+    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (requestedLines.length) {
+      if (hasRequested.current) timer = setTimeout(readQuote, 250);
+      else readQuote();
+    }
     return () => {
       active = false;
       clearTimeout(timer);
@@ -85,14 +91,16 @@ export function DeliverySummary({
   retry,
   retrying = false,
   presentation = 'review',
+  pendingItemsDisplay = null,
 }: Pick<ReturnType<typeof useDeliveryQuote>, 'loading' | 'quote'> & {
   error?: ReturnType<typeof useDeliveryQuote>['error'];
   retry?: () => void;
   retrying?: boolean;
   presentation?: 'drawer' | 'review';
+  // The cart's own fixed-price subtotal, shown for Items until the quote replaces it.
+  pendingItemsDisplay?: string | null;
 }) {
   const isDrawer = presentation === 'drawer';
-  const waitingReview = loading && !isDrawer;
   return (
     <div
       className={isDrawer ? 'store-cart-drawer__delivery' : 'checkout-review__delivery'}
@@ -100,19 +108,17 @@ export function DeliverySummary({
       aria-busy={loading}
       data-delivery-summary
     >
-      {loading && isDrawer ? (
-        <p className="min-h-[4.75rem]">Calculating delivery and current prices…</p>
-      ) : !quote && !waitingReview ? (
+      {!quote && !loading ? (
         <p className="min-h-[4.75rem]">
           {error === 'temporary'
             ? "We couldn't calculate delivery. Please try again. Your cart is unchanged."
             : 'Delivery is unavailable for this cart. Please review the items.'}
         </p>
       ) : (
-        // Review reserves the real rows, including their font metrics, while the Worker quote is pending.
+        // Both presentations reserve the real rows, including their font metrics, while the Worker quote is pending.
         <dl
           className={isDrawer ? 'space-y-2' : 'checkout-review__amounts'}
-          aria-label={waitingReview ? 'Calculating delivery and current prices…' : undefined}
+          aria-label={loading ? 'Calculating delivery and current prices…' : undefined}
         >
           <div className="flex justify-between gap-4">
             <dt>Items</dt>
@@ -120,7 +126,9 @@ export function DeliverySummary({
               {quote?.merchandiseGrossMinor === null ? (
                 'Choose amount at payment'
               ) : (
-                <span className="font-display leading-none">{quote ? money(quote.merchandiseGrossMinor) : '…'}</span>
+                <span className="font-display leading-none">
+                  {quote ? money(quote.merchandiseGrossMinor) : (pendingItemsDisplay ?? '…')}
+                </span>
               )}
             </dd>
           </div>
@@ -171,15 +179,25 @@ export default function CartDeliverySummary({
   lines,
   onTotalDisplayChange,
 }: {
-  lines: Lines;
+  lines: CartLine[];
   // The cart's Checkout action shows the quoted total beside its label once the quote is known.
   onTotalDisplayChange?: (totalDisplay: string | null) => void;
 }) {
   const delivery = useDeliveryQuote(lines);
+  const currency = lines[0]?.priceCurrencyCode;
+  const fixedPriced = lines.every(
+    (line) => line.priceKind === 'fixed' && line.priceAmountMinor !== null && line.priceCurrencyCode === currency,
+  );
 
   React.useEffect(() => {
     onTotalDisplayChange?.(delivery.totalDisplay);
   }, [onTotalDisplayChange, delivery.totalDisplay]);
 
-  return <DeliverySummary {...delivery} presentation="drawer" />;
+  return (
+    <DeliverySummary
+      {...delivery}
+      presentation="drawer"
+      pendingItemsDisplay={fixedPriced ? getCartSubtotalDisplay(lines) : null}
+    />
+  );
 }

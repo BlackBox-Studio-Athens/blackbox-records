@@ -117,7 +117,8 @@ const storeCartDrawerSurface = createShellSurfaceLoader(() =>
     StoreCartDrawer: drawerModule.default,
   })),
 );
-const STORE_CART_INTENT_SELECTOR = '[data-store-cart-header-root], [data-store-item-add-to-cart]';
+const STORE_CART_INTENT_SELECTOR =
+  '[data-store-cart-header-root], [data-store-item-add-to-cart], [data-store-card-buy]';
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;

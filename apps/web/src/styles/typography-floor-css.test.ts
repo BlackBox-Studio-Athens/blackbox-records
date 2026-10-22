@@ -88,9 +88,10 @@ describe('Phone typography floor', () => {
       (rule) => rule.prelude === '.artist-detail-prose p' && rule.ancestors.includes('@media (max-width: 48rem)'),
     );
     expect(phoneBio?.body).toContain('font-size: 1rem;');
-    expect(read('components/editorial/NewsDetailContent.astro')).toContain(
-      'news-markdown-content text-base leading-relaxed text-muted-foreground sm:text-sm',
-    );
+    // News bodies stay at 1rem at every width, inside a 46rem reading card.
+    const newsDetail = read('components/editorial/NewsDetailContent.astro');
+    expect(newsDetail).toContain('news-markdown-content text-base leading-relaxed text-muted-foreground"');
+    expect(newsDetail).toContain('surface-card sm:max-w-[46rem]');
   });
 });
 

@@ -123,7 +123,9 @@ for (const width of [1440, 390]) {
           await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
         }
       }
-      const preorder = purchase.getByRole('button', { name: 'Pre-order', exact: true });
+      // The inline action; on phones the buy bar repeats it with the same name until the shopper reaches it.
+      const preorder = purchase.locator('[data-store-item-add-to-cart]');
+      await expect(preorder).toHaveAccessibleName('Pre-order');
       await expect(preorder).toBeVisible();
       await expect(preorder).toHaveClass(/preorder-action/);
       await preorder.scrollIntoViewIfNeeded();

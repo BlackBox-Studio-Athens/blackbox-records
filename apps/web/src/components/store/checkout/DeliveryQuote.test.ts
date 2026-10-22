@@ -72,6 +72,18 @@ afterEach(() => {
 });
 
 describe('delivery quote lifecycle', () => {
+  it('requests the first nonempty cart immediately and only once across equivalent renders', async () => {
+    vi.useFakeTimers();
+    hooks.read.mockResolvedValue({ quote: { totalAmountMinor: 2300 } });
+    render();
+    expect(hooks.read).toHaveBeenCalledTimes(1);
+    expect(hooks.read.mock.calls[0]![0]).toEqual(lines(1));
+    render();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(render().totalDisplay).toBe('€23.00');
+    expect(hooks.read).toHaveBeenCalledTimes(1);
+  });
+
   it('requests only settled quantities and ignores late success and failure for an abandoned cart', async () => {
     vi.useFakeTimers();
     const pending = [deferred(), deferred(), deferred()];
@@ -80,16 +92,21 @@ describe('delivery quote lifecycle', () => {
       .mockImplementationOnce(() => pending[1]!.promise)
       .mockImplementationOnce(() => pending[2]!.promise);
     render(1);
+    expect(hooks.read).toHaveBeenCalledTimes(1);
+    const firstSignal = hooks.read.mock.calls[0]![1] as AbortSignal;
     await vi.advanceTimersByTimeAsync(100);
     render(2);
-    await vi.advanceTimersByTimeAsync(249);
-    expect(hooks.read).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
-    expect(hooks.read.mock.calls[0]![0]).toEqual(lines(2));
-    const firstSignal = hooks.read.mock.calls[0]![1] as AbortSignal;
-    render(3);
     expect(firstSignal.aborted).toBe(true);
-    await vi.advanceTimersByTimeAsync(250);
+    await vi.advanceTimersByTimeAsync(249);
+    expect(hooks.read).toHaveBeenCalledTimes(1);
+    render(3);
+    await vi.advanceTimersByTimeAsync(249);
+    expect(hooks.read).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(hooks.read.mock.calls[1]![0]).toEqual(lines(3));
+    render(3);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(hooks.read).toHaveBeenCalledTimes(2);
     render(4);
     await vi.advanceTimersByTimeAsync(250);
     pending[2]!.resolve({ quote: { totalAmountMinor: 4000 } });
@@ -197,12 +214,23 @@ describe('delivery quote lifecycle', () => {
     const pending = deferred();
     hooks.read.mockReturnValue(pending.promise);
     render();
-    await vi.advanceTimersByTimeAsync(250);
+    expect(hooks.read).toHaveBeenCalledTimes(1);
     cleanup!();
     expect((hooks.read.mock.calls[0]![1] as AbortSignal).aborted).toBe(true);
     const before = [...hooks.slots];
     pending.resolve({ quote: { totalAmountMinor: 2300 } });
     await Promise.resolve();
     expect(hooks.slots).toEqual(before);
+  });
+
+  it('cancels a pending quantity timer on unmount', async () => {
+    vi.useFakeTimers();
+    hooks.read.mockResolvedValue({ quote: { totalAmountMinor: 2300 } });
+    render();
+    await Promise.resolve();
+    render(2);
+    cleanup!();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(hooks.read).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,12 +1,49 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { connectShellSurfaceIntent, createShellSurfaceLoader, warmShellSurface } from './view/shell-surface-loader';
 
 const source = readFileSync(fileURLToPath(new URL('./AppShellRoot.tsx', import.meta.url)), 'utf8');
 const portalSource = readFileSync(fileURLToPath(new URL('./view/ShellPortalOutlets.tsx', import.meta.url)), 'utf8');
 
 describe('app shell startup closure', () => {
+  it.each(['pointerover', 'pointerdown', 'focusin'])('warms both cart modules on Store card %s', async (eventType) => {
+    const selector = /const STORE_CART_INTENT_SELECTOR =\s*'([^']+)'/.exec(source)?.[1];
+    expect(selector).toBeDefined();
+    expect(source).toContain(
+      '{ selector: STORE_CART_INTENT_SELECTOR, warm: () => warmShellSurface(storeCartDrawerSurface) }',
+    );
+    expect(source).toMatch(
+      /const storeCartDrawerSurface = createShellSurfaceLoader\(\(\) =>\s*Promise\.all\(\[\s*import\('@\/components\/store\/cart\/StoreCartDrawer'\),\s*import\('@\/components\/store\/checkout\/DeliverySummary'\)/,
+    );
+    const drawer = vi.fn(async () => ({}));
+    const summary = vi.fn(async () => ({}));
+    const surface = createShellSurfaceLoader(() => Promise.all([drawer(), summary()]));
+    const listeners = new Map<string, EventListener>();
+    const disconnect = connectShellSurfaceIntent(
+      {
+        addEventListener: (type: string, listener: EventListener) => listeners.set(type, listener),
+        removeEventListener: (type: string) => listeners.delete(type),
+      } as never,
+      [{ selector: selector!, warm: () => warmShellSurface(surface) }],
+    );
+    expect(drawer).not.toHaveBeenCalled();
+    expect(summary).not.toHaveBeenCalled();
+    const card = {
+      closest: (value: string) =>
+        value.split(',').some((part) => part.trim() === '[data-store-card-buy]') ? card : null,
+    };
+    const event = { target: card } as unknown as Event;
+    listeners.get(eventType)!(event);
+    listeners.get(eventType)!(event);
+    await surface.load();
+    expect(drawer).toHaveBeenCalledTimes(1);
+    expect(summary).toHaveBeenCalledTimes(1);
+    disconnect();
+    expect(listeners.size).toBe(0);
+  });
+
   it('keeps dormant presentation behind direct intent-owned imports', () => {
     for (const [loaderName, modulePath] of [
       ['mobileNavigationSheetSurface', './view/MobileNavigationSheet'],

@@ -105,6 +105,38 @@ describe('delivery summary', () => {
       expect(html).not.toContain('€0.00');
     }
   });
+  it('reserves the drawer rows while pending, with the local subtotal for Items', () => {
+    const pending = renderToStaticMarkup(
+      <DeliverySummary presentation="drawer" loading quote={null} pendingItemsDisplay="€20.00" />,
+    );
+    expect(pending).toContain('aria-busy="true"');
+    expect(pending).toContain('aria-label="Calculating delivery and current prices…"');
+    expect(pending.match(/<dt>(Items|Delivery|Total)<\/dt>/g)).toHaveLength(3);
+    expect(pending).toContain('€20.00');
+    expect(pending.match(/>…</g)).toHaveLength(2);
+
+    const withoutSubtotal = renderToStaticMarkup(<DeliverySummary presentation="drawer" loading quote={null} />);
+    expect(withoutSubtotal.match(/>…</g)).toHaveLength(3);
+
+    const quoted = renderToStaticMarkup(
+      <DeliverySummary
+        presentation="drawer"
+        loading={false}
+        pendingItemsDisplay="€20.00"
+        quote={{
+          tier: 'small',
+          amountMinor: 300,
+          totalAmountMinor: 2400,
+          merchandiseGrossMinor: 2100,
+          currencyCode: 'EUR',
+        }}
+      />,
+    );
+    expect(quoted).toContain('€21.00');
+    expect(quoted).not.toContain('€20.00');
+    expect(quoted.match(/<dt>(Items|Delivery|Total)<\/dt>/g)).toHaveLength(3);
+  });
+
   it('leaves the selected custom amount and exact VAT to payment', () => {
     const html = renderToStaticMarkup(
       <DeliverySummary

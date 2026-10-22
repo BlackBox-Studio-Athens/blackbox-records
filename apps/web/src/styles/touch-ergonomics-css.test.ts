@@ -101,10 +101,21 @@ describe('Store layout on phones', () => {
     expect(crateCss).toMatch(/\.store-crate \[data-store-crate-hand\] \{\s*content-visibility: visible;/);
   });
 
+  it('leaves a pre-order cart its Sea Green Checkout face', () => {
+    // The ink face applies only without pre-orders; painting it over .preorder-action left a white label on white.
+    expect(ruleBody('.store-cart-drawer__checkout:not(.preorder-action)', null)).toMatch(
+      /background:\s*var\(--foreground\)/,
+    );
+    expect(
+      rules().some(
+        (rule) => rule.prelude.trim() === '.store-cart-drawer__checkout' && rule.body.includes('background'),
+      ),
+    ).toBe(false);
+  });
+
   it('keeps the cart lines a window on short viewports', () => {
     const short = '@media (max-height: 30rem)';
     expect(ruleBody('.store-cart-drawer__actions', short)).toMatch(/flex-direction:\s*row/);
-    expect(ruleBody('.store-cart-drawer__description', short)).toMatch(/clip-path:\s*inset\(50%\)/);
   });
 
   it('sizes the phone item artwork by the viewport height', () => {

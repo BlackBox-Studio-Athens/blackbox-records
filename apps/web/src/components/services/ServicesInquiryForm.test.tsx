@@ -34,15 +34,13 @@ describe('ServicesInquiryForm', () => {
       /<select(?=[^>]*id="services-inquiry-service")(?=[^>]*name="service")(?=[^>]*required="")[^>]*>/,
     );
     expect(html).toMatch(/<label[^>]*for="services-inquiry-service"[^>]*>Service<\/label>/);
-    const detailsControl = /<input(?=[^>]*name="serviceDetails")[^>]*>/.exec(html)?.[0];
-    expect(detailsControl).toContain('id="services-inquiry-details"');
-    expect(detailsControl).toContain('maxLength="300"');
-    expect(detailsControl).toContain('aria-describedby="services-inquiry-details-hint"');
-    expect(detailsControl).not.toContain('required');
+    // General, the initial service, offers no optional details control.
+    expect(html).not.toContain('name="serviceDetails"');
+    expect(html).not.toContain('Useful context');
     expect(html).toMatch(/<textarea(?=[^>]*name="message")(?=[^>]*maxLength="2000")(?=[^>]*required="")[^>]*>/);
-    expect(html).toContain('Useful context');
-    expect(html).toContain('Add any useful context.');
     expect(html).toContain('<option value="Share your demo">Share your demo</option>');
+    // Send Inquiry is the form's primary action: the neutral ink face, not the outline.
+    expect(/<button[^>]*type="submit"[^>]*>/.exec(html)?.[0]).toContain('site-button--primary');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).not.toContain('role="alert"');
@@ -112,9 +110,25 @@ describe('ServicesInquiryForm', () => {
     expect(componentSource).not.toMatch(/window\.(?:open|location)|location\.(?:assign|replace)|target=["']_blank/);
   });
 
-  it('maps every service to the approved adaptive details prompt', () => {
+  it('renders the tailored optional details control for a specific service', () => {
+    const inquiryContainer = { dataset: { servicesInquiryTargetService: 'Tour Booking' } };
+    vi.stubGlobal('document', { querySelector: () => inquiryContainer });
+    try {
+      const html = renderToStaticMarkup(<ServicesInquiryForm submitText="Send Inquiry" />);
+      const detailsControl = /<input(?=[^>]*name="serviceDetails")[^>]*>/.exec(html)?.[0];
+      expect(detailsControl).toContain('id="services-inquiry-details"');
+      expect(detailsControl).toContain('maxLength="300"');
+      expect(detailsControl).toContain('aria-describedby="services-inquiry-details-hint"');
+      expect(detailsControl).not.toContain('required');
+      expect(html).toContain('Date / City / Venue');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('maps every specific service to the approved adaptive details prompt, and General to none', () => {
+    expect(SERVICES_INQUIRY_DETAIL_PROMPTS.General).toBeUndefined();
     expect(SERVICES_INQUIRY_DETAIL_PROMPTS).toEqual({
-      General: { hint: 'Add any useful context.', label: 'Useful context' },
       'Tour Booking': { hint: 'Add the date, city, and venue if known.', label: 'Date / City / Venue' },
       'Merch Printing': {
         hint: 'Add the item, quantity, and deadline if known.',
@@ -254,6 +268,31 @@ describe('ServicesInquiryForm', () => {
         name: 'Alex',
         service: 'General',
         serviceDetails: '   ',
+      },
+    });
+
+    expect(submitServicesInquiry).toHaveBeenCalledWith({
+      email: 'alex@example.com',
+      message: 'General question.',
+      name: 'Alex',
+      service: 'General',
+    });
+  });
+
+  it('drops details typed under another service when General is submitted', async () => {
+    const submitServicesInquiry = vi.fn().mockResolvedValue({ status: 'submitted' });
+
+    await submitServicesInquiryForm({
+      onStatusChange: vi.fn(),
+      pending: { current: false },
+      submitInquiry: submitServicesInquiry,
+      values: {
+        bandOrProject: '',
+        email: 'alex@example.com',
+        message: 'General question.',
+        name: 'Alex',
+        service: 'General',
+        serviceDetails: 'October / Athens / Temple',
       },
     });
 

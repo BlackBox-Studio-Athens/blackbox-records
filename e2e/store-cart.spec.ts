@@ -930,7 +930,7 @@ test('a landscape phone cart keeps the first line and the actions in view', asyn
   await waitForShell(page);
   await page.locator('[data-store-cart-trigger]').first().click();
   const drawer = page.getByRole('dialog', { name: 'Cart' });
-  await expect(drawer).toHaveAccessibleDescription(/Cart state stays browser-only/);
+  await expect(drawer).toHaveAccessibleDescription('Review your items before checkout.');
   const items = drawer.locator('[data-store-cart-line-item]');
   // Measured a 205px line window at 844x390 (was 59px): the first line whole and the second starting.
   await expect(items.first()).toBeInViewport({ ratio: 1 });

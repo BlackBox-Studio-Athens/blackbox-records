@@ -88,48 +88,56 @@ export default function NewsletterSignupForm({
     }
   }
 
+  const errorMessage = (
+    <p
+      id={errorId}
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      className={view.errorMessage ? 'text-sm leading-relaxed text-flint-300' : 'accessibility-visually-hidden-text'}
+    >
+      {view.errorMessage && (
+        <>
+          <span className="form-error-label">Error</span>
+          {view.errorMessage}
+        </>
+      )}
+    </p>
+  );
+
+  // Order follows the task: email, consent, then Subscribe, with a consent error next to its checkbox.
   return (
     <form className="mt-5 grid gap-3" aria-describedby={statusId} onSubmit={(event) => void handleSubmit(event)}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="accessibility-visually-hidden-text" htmlFor={formId}>
-          Email address
-        </label>
-        <Input
-          id={formId}
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder={placeholder}
-          required
-          value={email}
-          className="h-11 rounded-none border-border/70 bg-background/85"
-          disabled={disabled}
-          aria-describedby={view.emailInvalid ? errorId : undefined}
-          aria-invalid={view.emailInvalid ? 'true' : undefined}
-          onChange={(event) => {
-            setEmail(event.currentTarget.value);
-            if (state.kind === 'error' && state.target === 'email') {
-              setState({ kind: 'idle' });
-            }
-          }}
-          onInvalid={(event) => {
-            event.preventDefault();
-            setState({
-              kind: 'error',
-              message: NEWSLETTER_INVALID_EMAIL_MESSAGE,
-              target: 'email',
-            });
-          }}
-        />
-        <Button
-          type="submit"
-          className="min-w-36"
-          disabled={disabled}
-          aria-busy={view.isSubmitting ? 'true' : undefined}
-        >
-          {view.isSubmitting ? <LoadingButtonContent label="Sending" /> : buttonLabel}
-        </Button>
-      </div>
+      <label className="accessibility-visually-hidden-text" htmlFor={formId}>
+        Email address
+      </label>
+      <Input
+        id={formId}
+        name="email"
+        type="email"
+        autoComplete="email"
+        placeholder={placeholder}
+        required
+        value={email}
+        className="h-11 rounded-none border-border/70 bg-background/85"
+        disabled={disabled}
+        aria-describedby={view.emailInvalid ? errorId : undefined}
+        aria-invalid={view.emailInvalid ? 'true' : undefined}
+        onChange={(event) => {
+          setEmail(event.currentTarget.value);
+          if (state.kind === 'error' && state.target === 'email') {
+            setState({ kind: 'idle' });
+          }
+        }}
+        onInvalid={(event) => {
+          event.preventDefault();
+          setState({
+            kind: 'error',
+            message: NEWSLETTER_INVALID_EMAIL_MESSAGE,
+            target: 'email',
+          });
+        }}
+      />
 
       <label className="flex max-w-2xl items-start gap-3 text-xs leading-relaxed text-muted-foreground">
         <input
@@ -149,6 +157,16 @@ export default function NewsletterSignupForm({
         />
         <span>{NEWSLETTER_CONSENT_LABEL}</span>
       </label>
+      {view.consentInvalid && errorMessage}
+
+      <Button
+        type="submit"
+        className="min-w-36 sm:justify-self-start"
+        disabled={disabled}
+        aria-busy={view.isSubmitting ? 'true' : undefined}
+      >
+        {view.isSubmitting ? <LoadingButtonContent label="Sending" /> : buttonLabel}
+      </Button>
 
       {note !== undefined && (
         <Prose className="text-xs uppercase tracking-[0.08em] text-muted-foreground" value={note} />
@@ -163,20 +181,7 @@ export default function NewsletterSignupForm({
         {view.statusMessage}
       </p>
 
-      <p
-        id={errorId}
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-        className={view.errorMessage ? 'text-sm leading-relaxed text-flint-300' : 'accessibility-visually-hidden-text'}
-      >
-        {view.errorMessage && (
-          <>
-            <span className="form-error-label">Error</span>
-            {view.errorMessage}
-          </>
-        )}
-      </p>
+      {!view.consentInvalid && errorMessage}
     </form>
   );
 }

@@ -150,8 +150,9 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
           line.storeItemSlug,
         );
         if (!offer?.canCheckout || offer.variantId !== line.variantId) return null;
-        const availableStock = await effectiveStock.findByVariantId(offer.variantId);
-        if (!availableStock || availableStock.onlineQuantity < line.quantity) return null;
+        // This query reads current stock and holds together, after the provider wait.
+        const availableQuantity = await checkoutHolds.findEffectiveAvailability(offer.variantId);
+        if (availableQuantity === null || availableQuantity < line.quantity) return null;
         if (offer.price.kind === 'pay_what_you_want') {
           if (merged.size !== 1 || line.quantity !== 1) return null;
           merchandiseGrossMinor = null;
