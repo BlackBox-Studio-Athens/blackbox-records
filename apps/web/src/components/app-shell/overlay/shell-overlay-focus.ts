@@ -41,6 +41,8 @@ export function scheduleOverlayContentFocus({
     const scrollContainer = getScrollContainer();
     // A late frame after unmount must not turn a missing panel into the document scroll root.
     if (!scrollContainer?.isConnected) return;
+    // Opening schedules this twice; focus already inside the detail belongs to the shopper and stays with its scroll.
+    if (scrollContainer.contains(scrollContainer.ownerDocument.activeElement)) return;
     scrollWithLenis(scrollContainer, 0, { immediate: true });
     getCloseButton()?.focus({ preventScroll: true });
   });

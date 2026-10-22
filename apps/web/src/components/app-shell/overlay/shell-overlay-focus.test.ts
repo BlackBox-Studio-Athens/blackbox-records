@@ -14,6 +14,8 @@ type FakeFocusableElement = Pick<HTMLElement, 'focus' | 'isConnected'> & {
 
 type FakeScrollContainer = Pick<HTMLElement, 'scrollTo' | 'isConnected'> & {
   scrollTo: ReturnType<typeof vi.fn<(options: ScrollToOptions) => void>>;
+  contains: (node: unknown) => boolean;
+  ownerDocument: { activeElement: unknown };
 };
 
 function createScheduler() {
@@ -40,9 +42,13 @@ function createFocusableElement({ isConnected = true } = {}): FakeFocusableEleme
   };
 }
 
+const detailLink = { id: 'detail-link' };
+
 function createScrollContainer(): FakeScrollContainer {
   return {
+    contains: (node) => node === detailLink,
     isConnected: true,
+    ownerDocument: { activeElement: null },
     scrollTo: vi.fn<(options: ScrollToOptions) => void>(),
   };
 }
@@ -114,6 +120,23 @@ describe('overlay focus scheduling', () => {
     expect(scrollContainer.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
     expect(closeButton.focus).toHaveBeenCalledOnce();
     expect(closeButton.focus).toHaveBeenCalledWith({ preventScroll: true });
+  });
+
+  it('keeps focus and scroll the shopper already moved into the detail', () => {
+    const scheduler = createScheduler();
+    const closeButton = createFocusableElement();
+    const scrollContainer = createScrollContainer();
+
+    scheduleOverlayContentFocus({
+      getCloseButton: () => closeButton,
+      getScrollContainer: () => scrollContainer as unknown as HTMLElement,
+      scheduler,
+    });
+    scrollContainer.ownerDocument.activeElement = detailLink;
+    scheduler.flush();
+
+    expect(scrollContainer.scrollTo).not.toHaveBeenCalled();
+    expect(closeButton.focus).not.toHaveBeenCalled();
   });
 
   it.each(['removed', 'disconnected'] as const)('does not move the page after the overlay is %s', (state) => {
