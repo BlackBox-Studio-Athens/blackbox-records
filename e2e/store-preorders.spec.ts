@@ -313,7 +313,11 @@ for (const state of [
       if (stocked) {
         const button = (await action.boundingBox())!;
         expect(button.height).toBeGreaterThanOrEqual(44);
-        expect(Math.abs(price.y + price.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
+        if (width < 640) {
+          // Phone cards give Buy its own full-width line below the price.
+          expect(button.y).toBeGreaterThanOrEqual(price.y + price.height);
+          expect(button.width).toBeGreaterThan(content.width - 21);
+        } else expect(Math.abs(price.y + price.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
         if (state.badge) {
           const badge = (await card.locator('[data-store-listing-preorder]').boundingBox())!;
           // Content padding is 10px on two-up phones and 12px from 40rem.

@@ -70,13 +70,8 @@ for (const width of [1440, 390]) {
           availabilityStarts: '2026-06-09',
         },
       });
-      await expect(
-        purchase.getByText(
-          released
-            ? 'The album is out. We send the vinyl when the copies arrive. If the estimate changes we email you.'
-            : 'We send it when the copies arrive. If the estimate changes we email you.',
-        ),
-      ).toBeVisible();
+      // The pre-order facts above already state the estimate; no hint repeats it below the action.
+      await expect(purchase.getByText(/We send/)).toHaveCount(0);
       await expect(purchase.locator('.preorder-badge')).toHaveText('Pre-order');
       await expect(purchase.locator('.store-item-card__release-status')).toHaveCount(released ? 1 : 0);
       await expect(purchase.locator('[data-music-streaming-service-embedded-player-trigger]')).toBeVisible();

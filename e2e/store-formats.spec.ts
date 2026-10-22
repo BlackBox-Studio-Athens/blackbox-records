@@ -51,12 +51,14 @@ for (const width of [1440, 390]) {
     await expect(buy).toHaveAccessibleName('Buy');
     await expect(buy.locator('.store-card-buy-icon')).toHaveCount(1);
     await expect(buy.locator('.store-buy-icon, img')).toHaveCount(0);
-    await expect(buy).toHaveCSS('min-width', '112px');
-    await expect(buy).toHaveCSS('padding-left', '16px');
+    // Phone cards give Buy its own full-width line below the price.
+    const phone = width < 640;
+    await expect(buy).toHaveCSS('min-width', phone ? '0px' : '112px');
+    await expect(buy).toHaveCSS('padding-left', phone ? '12px' : '16px');
     await expect(buy).toHaveCSS('column-gap', '8px');
     await expect(buy).toHaveCSS('font-size', '16px');
     expect((await buy.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    expect((await buy.boundingBox())!.width).toBeGreaterThanOrEqual(112);
+    expect((await buy.boundingBox())!.width).toBeGreaterThanOrEqual(phone ? 44 : 112);
     await buy.scrollIntoViewIfNeeded();
     await page.mouse.move(0, 0);
     const canHover = await page.evaluate(() => matchMedia('(hover: hover)').matches);

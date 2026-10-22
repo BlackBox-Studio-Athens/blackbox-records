@@ -384,19 +384,23 @@ for (const width of [1440, 390]) {
     await page.goto('store/');
     await waitForShell(page);
     await page.evaluate(() => document.fonts.ready);
+    // Phone cards give Buy its own full-width line below the price.
+    const phone = width < 640;
     const check = async (button: Locator) => {
       await expect(button).toHaveText('Buy');
       await expect(button.locator('svg.store-card-buy-icon')).toHaveCount(1);
       await expect(button.locator('.store-buy-icon, img')).toHaveCount(0);
-      await expect(button).toHaveCSS('min-width', '112px');
-      await expect(button).toHaveCSS('padding-left', '16px');
+      await expect(button).toHaveCSS('min-width', phone ? '0px' : '112px');
+      await expect(button).toHaveCSS('padding-left', phone ? '12px' : '16px');
       await expect(button).toHaveCSS('column-gap', '8px');
-      await expect(button).toHaveCSS('flex-grow', '0');
+      await expect(button).toHaveCSS('flex-grow', phone ? '1' : '0');
       await expect(button).toHaveCSS('font-size', '16px');
       await expect(button).toHaveCSS('background-color', 'rgb(98, 110, 114)');
       await expect(button.locator('.store-card-buy-icon')).toHaveCSS('animation-name', 'none');
       await expect.poll(async () => (await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(43.99);
-      await expect.poll(async () => (await button.boundingBox())?.width ?? 0).toBeGreaterThanOrEqual(111.99);
+      await expect
+        .poll(async () => (await button.boundingBox())?.width ?? 0)
+        .toBeGreaterThanOrEqual(phone ? 44 : 111.99);
     };
     const gridBuys = page.locator('[data-store-card-buy]:visible');
     await expect(gridBuys).toHaveCount(ssr.length);
@@ -428,14 +432,14 @@ for (const width of [1440, 390]) {
           item.label !== 'Buy' ||
           item.icons !== 1 ||
           item.layered !== 0 ||
-          item.min !== '112px' ||
-          item.pad !== '16px' ||
+          item.min !== (phone ? '0px' : '112px') ||
+          item.pad !== (phone ? '12px' : '16px') ||
           item.gap !== '8px' ||
-          item.grow !== '0' ||
+          item.grow !== (phone ? '1' : '0') ||
           item.font !== '16px' ||
           item.face !== 'rgb(98, 110, 114)' ||
           item.animation !== 'none' ||
-          item.width < 111.99 ||
+          item.width < (phone ? 44 : 111.99) ||
           item.height < 43.99,
       ),
     ).toEqual([]);

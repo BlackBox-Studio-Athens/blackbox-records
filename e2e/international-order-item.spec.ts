@@ -114,7 +114,7 @@ test('International item notice follows the complete pre-order presentation @pho
   const purchase = page.locator('[data-store-purchase-group]');
   await expect(purchase.locator('.preorder-facts')).toBeVisible();
   await expect(purchase.getByRole('button', { name: 'Pre-order', exact: true })).toHaveClass(/preorder-action/);
-  await expect(purchase.getByText(/We send the vinyl when the copies arrive/)).toBeVisible();
+  await expect(purchase.getByText(/We send/)).toHaveCount(0);
   await expect(purchase.getByRole('link', { name: 'Email us to order', exact: true })).toBeVisible();
   await expect(purchase.locator('[data-purchase-information]')).toBeVisible();
 });

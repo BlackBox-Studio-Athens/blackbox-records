@@ -5455,6 +5455,20 @@ body.is-app-shell-overlay-open {
   height: 18px;
   flex: none;
 }
+/* Phone Store cards are too narrow for the full control beside the price, so Buy takes its own full-width line. */
+@media (max-width: 39.99rem) {
+  /* Reserve the price line plus Buy's 44px line; a price without Buy sits on the bottom line. */
+  .store-item-card__price {
+    align-content: flex-end;
+    min-height: 5.5rem;
+  }
+
+  .store-item-card__buy {
+    flex: 1 0 100%;
+    min-width: 0;
+    padding-inline: 0.75rem;
+  }
+}
 .release-edition-facts {
   display: grid;
   gap: 0;

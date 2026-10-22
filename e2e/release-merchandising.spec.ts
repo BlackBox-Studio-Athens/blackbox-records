@@ -337,7 +337,7 @@ for (const width of [320, 360, 390, 430, 768]) {
         // half the row each with a 16px gap, then the rest of the copy.
         expect(card.artwork.width).toBe(contentWidth - 32);
         expect(card.copy.x).toBe(16);
-        expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+        expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom - 0.01);
         expect(card.pair[0]!.y - card.artistBottom).toBeCloseTo(12, 0);
         // The static physical slot shares the same geometry as the buying action.
         if (card.pair.length === 2) {

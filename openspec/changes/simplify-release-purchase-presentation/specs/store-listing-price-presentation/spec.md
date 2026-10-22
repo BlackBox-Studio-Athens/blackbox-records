@@ -11,6 +11,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer Buy 
 - **THEN** generic Buy uses the filled Flint face with the static Disc3 for every format
 - **AND** the card keeps its height because the price row reserves Buy's height
 - **AND** desktop/mobile Grid and the Store Crate's item in hand use the same compact geometry and existing price placement
+- **AND** below 40rem Buy keeps its icon, label and height but takes its own full-width line under the price, which the price row reserves
 
 #### Scenario: Pre-order card keeps its action
 
