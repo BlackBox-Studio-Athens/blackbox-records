@@ -3,6 +3,8 @@ import NewsDetailContent from '@/components/editorial/NewsDetailContent.astro';
 import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createNewsDetailStaticPaths, type NewsArticleEntry } from '@/lib/catalog-data';
+import { createAbsoluteSiteUrl, createCanonicalUrl } from '@/platform/config/site';
+import { createArticleStructuredData } from '@/platform/lib/structured-data';
 
 export async function getStaticPaths() {
   return createNewsDetailStaticPaths();
@@ -14,8 +16,28 @@ interface Props {
 
 const item = Astro.props.item ?? (await getEntry('news', Astro.params.slug ?? ''));
 if (!item) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
+const articleUrl = createCanonicalUrl(Astro.url, Astro.site);
+const article = createArticleStructuredData({
+  headline: item.data.title,
+  description: item.data.summary,
+  url: articleUrl,
+  image: new URL(item.data.image.src, Astro.site ?? Astro.url).href,
+  datePublished: item.data.date,
+  publisherUrl: createAbsoluteSiteUrl('/'),
+});
 ---
 
-<SiteLayout pageTitle={item.data.title} pageDescription={item.data.summary} layoutType="news" pageDate={item.data.date}>
+<SiteLayout
+  pageTitle={item.data.title}
+  pageDescription={item.data.summary}
+  layoutType="news"
+  pageDate={item.data.date}
+  structuredData={article}
+  breadcrumbs={[
+    { name: 'Home', url: createAbsoluteSiteUrl('/') },
+    { name: 'News', url: createAbsoluteSiteUrl('/news/') },
+    { name: item.data.title, url: articleUrl },
+  ]}
+>
   <NewsDetailContent item={item} />
 </SiteLayout>

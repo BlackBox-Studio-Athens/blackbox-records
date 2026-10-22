@@ -1,6 +1,6 @@
 # Tasks
 
-Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs the owner's Google sign-in or profile access. No task here changes visible UI.
+Tags: `[Claude]` owns UI/performance implementation and UI tests; `[SOL A]` and `[SOL B]` own the non-UI lanes below; `[Coordinator]` owns review and acceptance; `[Owner]` needs owner facts or provider access. The October 22 extension preserves visible appearance and copy. Historical completed tasks remain source-bound history, not acceptance of new edits.
 
 ## 1. Before switch day: sitemap and exclusions
 
@@ -46,4 +46,38 @@ Tags: `[Claude]` contains UI work; `[Claude or Codex]` has none; `[Owner]` needs
   - [Validation note](validation.md).
 - [ ] 5.2 [Claude or Codex] After promotion (on `pages.dev` before switch day, on the apex after): run Rich Results Test and Schema Markup Validator on one in-stock and one pre-order item, one sold-out item (expect no `Product` data), one release, one artist and Home; record results.
   - Correction release `1ea39f31` / run 566, promoted by PRD run 16: both validators passed the in-stock item, a genuine pre-order item, release, artist and Home. Schema.org reports 0 errors / 0 warnings for all five; Google's SKU warning is gone, with optional shipping/return-policy warnings remaining. The current listing has no sold-out item, so this task remains unchecked. See the [updated matrix and screenshots](validation.md#correction-release-and-external-validators--2026-10-13).
+
 - [ ] 5.3 [Claude or Codex] After switch day, confirm in Search Console that the submitted sitemap's URL count matches the generated sitemap; archive this change.
+  - 2026-10-22: GSC Success/122 discovered pages matches the 122-URL production crawl. The count comparison is evidenced in `.codex-artifacts/seo-20261022/gsc-observations.json`; archive remains pending unfinished implementation/provider acceptance.
+
+## 6. October 22: canonical URLs and non-visual navigation metadata
+
+- [x] 6.1 [SOL A] Normalize known document slash variants in gateway and canonical helper; preserve base/query handling and excluded route boundaries; add focused regression checks.
+  - Final supported `pnpm validate` passed, including backend-tooling gateway tests. See [combined validation](validation-20261022.md).
+- [x] 6.2 [SOL A] Synchronize route-owned social and entity head metadata through existing shell navigation; verify direct/navigation equivalence without changing UI behavior.
+  - Snapshot-level regression checks pass. Real-browser final-tree acceptance remains in 9.2.
+
+## 7. October 22: factual metadata, entities and content links
+
+- [x] 7.1 [SOL B] Correct Organization country code and physical-offer availability date mapping; preserve truthful policy/price/stock behavior and test the regression.
+- [x] 7.2 [SOL B] Make Home, About, News and Store/release metadata factual and distinctive using accepted content, artist and format facts; retain visible copy and H1s.
+- [x] 7.3 [SOL B] Add stable entity references and factual Article/Breadcrumb data where supported; verify sameAs identity claims and do not invent missing facts.
+- [x] 7.4 [SOL B] Correct or prepare the exact two old article anchor destinations through their authoritative content owner; preserve labels and image-source URLs; record publication dependency.
+  - SOL B return/fingerprints and 99 platform/85 page passing tests are in `.codex-artifacts/seo-implementation-20261022/`. `news-anchor-corrections.json` prepares the two CMS destination-only edits; live correction remains pending Content Publication under 9.3.
+
+## 8. October 22: appearance-preserving performance
+
+- [x] 8.1 [Claude] Rebaseline current source and record the selected delivery outcome without new image transformation profiles.
+  - The return records the owner's decision to close this slice as measured with no appearance-safe CSS delivery win; route splitting remains planning-only in `split-route-css`. The unstable baseline cannot establish a load improvement; none is claimed. Review did not approve the rejected footer technique as a delivery improvement.
+- [ ] 8.2 [Claude] Reproduce navigation interaction and Store/footer layout-shift outliers; fix established causes with UI tests and player-continuity evidence, or document measured non-reproduction for coordinator review.
+  - Card estimates implemented. Coordinator removed the rejected footer measurement reset under the user's explicit minimal-correction override and replaced its test with a direct Store-bottom session-window CLS regression. Menu event latency remains reproduced but unattributed/unfixed; route-stylesheet timing belongs to the separate CSS change. This broader performance task remains open.
+
+## 9. October 22: integration and provider acceptance
+
+- [x] 9.1 [Coordinator] Review both SOL returns and Claude return against exact source; run strict OpenSpec and final policy-permitted validation, update graphs once after the implementation batch, and record evidence.
+  - Rejected footer suppression removed under the user's scoped override; supporting tests/measurement corrected. Supported validation and AST refresh passed; documentation-inclusive final receipt is linked in [validation](validation-20261022.md).
+- [x] 9.2 [Coordinator] Verify local canonical/metadata/schema and direct/client-navigation behavior with the final tree; preserve noindex and visual/commerce/player acceptance.
+  - Chromium: all 55 applicable cases pass, 13 platform skips; WebKit phone: 23 pass, 5 platform skips. Matched middle-card pixels, direct/client head equality, truthful preorder schema and purchase/player/navigation behavior verified. Canonical/exclusion source checks pass in supported validation. Hosted deployment/Google acceptance remains 9.3.
+- [ ] 9.3 [Coordinator/Owner] After separately authorized software/content promotion, verify final HTTP responses, Google-rendered entities and corrected article links; leave future ranking/recrawl effects pending actual observation.
+- [x] 9.4 [Coordinator/Owner] Account for owned-profile links, secondary-domain intent/access, Google eligibility, image quota and retired GitHub removal; prepare concrete required actions and do not claim provider-pending or owner-dependent work complete.
+  - [Provider actions](provider-actions.md) records exact targets, current evidence and completion gates. This completes action accounting only: profile edits, business eligibility, DNS decisions, external outreach and search removal are not marked complete.

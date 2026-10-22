@@ -1,5 +1,9 @@
 # Search presence acceptance
 
+## Combined audit implementation — 2026-10-22
+
+See [combined review and validation](validation-20261022.md) for the current local implementation, reviewer corrections, source-bound repository checks, browser/appearance evidence and remaining release/provider gates. Historical releases below do not validate the new tree.
+
 ## Organization policy fallback — 2026-10-13
 
 **Released and verified.** Candidate `eeed383c799217b371545783558185e5e329720e` includes the policy commit `8d8221ff20bb3a45ab93307a9d5dc1a72953364b` and the separate analytics correction. [Release 568 / 38399857706](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38399857706) passed all 12 jobs on attempt 1: repository checks, content-free build, four Chromium shards, WebKit, both staff preview browsers and UAT deployment/identities/Access static smoke. Input-free [PRD promotion 18 / 38401002387](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/38401002387) passed on attempt 1, dispatched only after every UAT gate was green.

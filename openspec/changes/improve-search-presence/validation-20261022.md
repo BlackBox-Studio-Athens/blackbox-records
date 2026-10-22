@@ -1,0 +1,32 @@
+# Combined SEO acceptance — 22 October 2026
+
+Local implementation and review only. Nothing was committed, pushed, deployed or published. Starting HEAD is `d4d98b40241c1a74b59a067eef9be842f57cb7ac` on primary `main`. The user explicitly authorized Codex's minimal correction of the rejected Claude footer implementation and its regression check. Unrelated `.codex-remote-attachments/`, `test-db.sqlite` and the concurrently created `apply-ux-laws-review-fixes` planning change were preserved.
+
+## Review outcome
+
+The two SOL lanes' source/caller/test review passed, including canonical path/base/query/exclusion handling, immutable head metadata restoration, accurate price/stock/date/country facts, metadata uniqueness and factual entity references. The coordinator verified their supplied source hashes before integration. Final review removed the footer `display:none` / forced-layout / restore patch completely; `AppShellRoot.tsx` matches HEAD. Its claimed CLS gain is rejected and the retained Claude report has a supersession notice.
+
+The accepted UI change is the measured responsive card-height estimate (467 px below 22.5rem, 390 px above), with actual rendered sizes remembered. The replacement regression measures a direct Store-bottom jump and maximum session-window CLS, independently of navigation. The retained reproduction script now exposes the lifetime shift total separately. The fixed historical 520 px performance experiment arm is explicitly distinguished from the current CSS in `docs/runtime-performance.md`; the performance spec delta records the current estimates.
+
+## Commands and evidence
+
+- `pnpm validate` passed all 29 selected Nx tasks across 18 projects on the corrected tree. Source before/after fingerprint matched: `02740786c559de345df4b6468a00143a5c2a18626eed6b859174099bd9a9e913`. Mode: `local`. Summary: `.codex-artifacts/validation/2026-10-22T09-53-48-626Z-39640-15022b/summary.json`. The final documentation-inclusive run and exact final fingerprint are linked by `.codex-artifacts/seo-implementation-20261022/completion.json`.
+- The earlier run `2026-10-22T09-42-24-878Z-47924-e5a2d9` passed its task execution but correctly reported `invalidated` because source changed during review. It is not final acceptance evidence.
+- Strict OpenSpec validation passed for `improve-search-presence` and the planning-only `split-route-css` change.
+- Chromium desktop/mobile: `seo-presence`, `shell-navigation`, `player-continuity`, and `store-item-preorders` were selected. Initial run: 49 passed, 13 platform-specific skips, six failures solely from the old browser assertion requiring the incorrect album `availabilityStarts`. The assertion now requires absence of that field. Corrected preorder rerun: **7/7 passed**, including the visible release/shipping/payment facts, prices, responsive purchase controls and cart interaction. Across the selection, all 55 applicable distinct cases now pass. Retained summaries: `browser-initial/summary.json` and `preorders-final.json` in the implementation artifacts.
+- The new direct/client About head comparison passes at desktop and phone sizes, including social metadata, canonical, Organization country and stale Product removal.
+- Four same-middle-card comparisons (Store/Distro × desktop/phone) compare historical/current estimates and require identical screenshot bytes; all pass. This resolves the fractional-scroll screenshot ambiguity. Both images are attached in the initial JSON report; the phone Store pair is also extracted as `same-card-old-estimate.png` / `same-card-current-estimate.png`. The coordinator visually inspected the current card. These are representative appearance checks, not a claim that every possible state was pixel-compared.
+- The direct Store-bottom session-window CLS regression passes below 0.1 on Chromium desktop and phone without footer suppression. Browser fixtures also fail on application page/console errors. The Layout Instability API check is Chromium-only.
+- A bounded direct Local HTTP check verifies the Home Athens identity and four distinct titles for the Russian Circles/Pelican and ATATOA CD/vinyl pairs: `local-title-check.json`.
+- The standalone rerun initially timed out before tests because the Playwright-owned server did not become ready. `preorder-startup-timeout.json` retains that result. The supported `pnpm site:dev:bg` launcher then started the same Local source with e2e/projection configuration; the corrected rerun reused it successfully. No application workaround was added. Coordinator owns that server and stops it after browser acceptance.
+- `graphify update .` completed once, AST-only: 30,172 nodes / 47,620 edges. Existing limitations remain: missing SQL parser for 44 files, one parser warning in an existing workflow-contract test, and symbol-free data files. No dependencies, paid enrichment or semantic labeling were added.
+
+WebKit phone navigation/player checks passed: **23 passed, 5 platform-specific skips**, with zero failures. Summary: `webkit-final.json` in the implementation artifacts. The final review does not reuse Claude's pre-correction browser claims as proof of this tree.
+
+## Acceptance boundary and remaining work
+
+Selected matrix rows: shell/player/routing, metadata/entity behavior, scoped UI preservation and tooling checks. Commerce rules, APIs, persistence, publication and provider settings were not changed; mocked-offer browser coverage verifies that the existing purchase behavior survives. No new hosted requests or image transformations were needed for these Local checks.
+
+The load-performance baseline changed during capture; no load gain is claimed. Claude's return records the owner's choice to close the load slice as measured, with route-split CSS kept in its separate proposal. Menu event latency remains reproduced but unattributed/unfixed, and destination stylesheet timing remains a follow-up. Task 8.2 stays open for that broader performance work. Local card-stability acceptance does not prove field Core Web Vitals or improved rankings.
+
+The exact two article link corrections are prepared in `news-anchor-corrections.json`; they still need current revision/baseline review and Content Publication. Production HTTP redirects, Google-rendered schema, Search Console index changes, profile operations and eventual DuckDuckGo/Bing removal remain separately gated provider/release outcomes. Firefox and a physical phone were not rechecked in this turn. Review artifacts and generated reports stay under `.codex-artifacts/seo-implementation-20261022/`.

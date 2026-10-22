@@ -1431,10 +1431,18 @@ body {
     }
   }
 
+  /* Estimates are the measured median card heights (22 October 2026): 467px in one column, 355-422px from two
+     columns at 360-1920px. A taller estimate collapsed as rows rendered and shifted the visible footer. */
   .store-item-card--listing {
     contain: layout inline-size;
     content-visibility: auto;
-    contain-intrinsic-block-size: auto 520px;
+    contain-intrinsic-block-size: auto 467px;
+  }
+
+  @media (min-width: 22.5rem) {
+    .store-item-card--listing {
+      contain-intrinsic-block-size: auto 390px;
+    }
   }
 
   .store-item-card--listing .brand-card-title {

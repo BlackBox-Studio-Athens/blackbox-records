@@ -13,12 +13,112 @@ function captureEnv() {
       PUBLIC_SITE: {
         fetch: async (request) => {
           forwarded.push(request);
-          return new Response('rendered');
+          return new Response('rendered', { headers: { 'Content-Type': 'text/html' } });
         },
       },
     },
   };
 }
+
+test('slashless public documents redirect once, preserving queries for GET and HEAD', async () => {
+  for (const path of ['/store', '/artists/afterwise']) {
+    for (const method of ['GET', 'HEAD']) {
+      const { env, forwarded } = captureEnv();
+      const response = await gateway.fetch(
+        new Request(`https://site.invalid${path}?utm_source=test&x=%2F`, { method }),
+        env,
+      );
+      assert.equal(response.status, 308);
+      assert.equal(response.headers.get('Location'), `https://site.invalid${path}/?utm_source=test&x=%2F`);
+      assert.equal(forwarded.length, 1);
+      assert.equal(forwarded[0].url, response.headers.get('Location'));
+      const destination = await gateway.fetch(new Request(response.headers.get('Location'), { method }), env);
+      assert.equal(destination.status, 200);
+      assert.equal(forwarded.length, 2);
+    }
+  }
+});
+
+test('normalization respects the configured base and exact route allow-list', async () => {
+  for (const base of ['/preview/', '/blackbox-records']) {
+    const root = base.replace(/\/$/, '');
+    const gateway = createPublicGateway([`^${root}/$`, `^${root}/store/$`, `^${root}/artists/[^/]+/?$`], base);
+    const { env, forwarded } = captureEnv();
+    for (const path of [root, `${root}/store`, `${root}/artists/afterwise`]) {
+      const response = await gateway.fetch(new Request(`https://site.invalid${path}?q=1`), env);
+      assert.equal(response.status, 308);
+      assert.equal(response.headers.get('Location'), `https://site.invalid${path}/?q=1`);
+    }
+    for (const path of ['/store', `${root}/about`, `${root}/storehouse`, `${root}/private/store`]) {
+      assert.equal((await gateway.fetch(new Request(`https://site.invalid${path}`), env)).status, 404);
+    }
+    assert.equal(forwarded.length, 3);
+  }
+});
+
+test('unknown documents inside a dynamic route keep their 404 instead of redirecting', async () => {
+  for (const status of [404, 503]) {
+    const { env, forwarded } = captureEnv();
+    env.PUBLIC_SITE.fetch = async (request) => {
+      forwarded.push(request);
+      return new Response('Unavailable', {
+        status,
+        headers: { 'Content-Type': 'text/html', 'X-Robots-Tag': 'noindex' },
+      });
+    };
+    const response = await gateway.fetch(new Request('https://site.invalid/artists/missing?q=1'), env);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('Location'), null);
+    assert.equal(response.headers.get('X-Robots-Tag'), 'noindex');
+    assert.equal(forwarded.length, 1);
+  }
+  const { env } = captureEnv();
+  env.PUBLIC_SITE.fetch = async () => new Response('Not an HTML document');
+  assert.equal(
+    (await gateway.fetch(new Request('https://site.invalid/artists/not-a-document'), env)).headers.get('Location'),
+    null,
+  );
+});
+
+test('a conditional match still consolidates the slashless document', async () => {
+  const { env } = captureEnv();
+  env.PUBLIC_SITE.fetch = async () => new Response(null, { status: 304 });
+  const response = await gateway.fetch(
+    new Request('https://site.invalid/artists/afterwise?q=1', { headers: { 'If-None-Match': 'W/"published"' } }),
+    env,
+  );
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get('Location'), 'https://site.invalid/artists/afterwise/?q=1');
+});
+
+test('assets, media, endpoints, overlays, private, checkout and unknown routes never gain a document redirect', async () => {
+  const paths = [
+    '/assets/image.png',
+    '/_astro/client.js',
+    '/_image',
+    '/media/content/' + 'a'.repeat(64),
+    '/api/store',
+    '/_emdash/admin',
+    '/__publication/current',
+    '/content/item',
+    '/stock/item',
+    '/app-shell-overlay/artists/afterwise',
+    '/email-preferences',
+    '/store/checkout',
+    '/store/item/checkout',
+    '/unknown',
+    '/artists/band/admin',
+    '/release.json',
+    '/content-version.json',
+  ];
+  const admitted = createPublicGateway(paths.map((path) => `^${path}/?$`));
+  for (const path of paths) {
+    const { env } = captureEnv();
+    const response = await admitted.fetch(new Request(`https://site.invalid${path}?q=1`), env);
+    assert.equal(response.headers.get('Location'), null, path);
+    assert.notEqual(response.status, 308, path);
+  }
+});
 
 test('the gateway forwards only Accept to the public renderer', async () => {
   const { env, forwarded } = captureEnv();

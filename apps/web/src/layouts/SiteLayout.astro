@@ -18,6 +18,7 @@ import {
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';
 import {
+  createBreadcrumbStructuredData,
   createOrganizationStructuredData,
   createWebSiteStructuredData,
   serializeStructuredData,
@@ -35,6 +36,7 @@ interface Props {
   robots?: string;
   /** A page entity (MusicAlbum, MusicGroup) published beside the Organization data. */
   structuredData?: Record<string, unknown>;
+  breadcrumbs?: { name: string; url: string }[];
 }
 
 const {
@@ -48,6 +50,7 @@ const {
   redirectUrl,
   robots,
   structuredData,
+  breadcrumbs,
 } = Astro.props;
 
 const [labelSettings, socialItems] = await Promise.all([getLabelSettings(), getSocialItems()]);
@@ -175,6 +178,13 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       )}
     />
     {pageEntity && <script is:inline type="application/ld+json" set:html={serializeStructuredData(pageEntity)} />}
+    {breadcrumbs && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={serializeStructuredData(createBreadcrumbStructuredData(breadcrumbs))}
+      />
+    )}
     <link rel="preload" href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     {preloadGeistMono && (

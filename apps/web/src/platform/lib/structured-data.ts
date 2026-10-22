@@ -11,7 +11,6 @@ export type ProductFacts = {
   image: string;
   url: string;
   brand: string;
-  releaseDate?: Date | string | null | undefined;
 };
 
 export type MusicGroupFacts = {
@@ -27,6 +26,7 @@ export type MusicAlbumFacts = {
   url: string;
   image: string;
   label: string;
+  labelUrl?: string;
   artist?: { name: string; url?: string | undefined } | undefined;
   releaseDate?: Date | null | undefined;
   tracks?: { title: string; duration?: string | undefined }[];
@@ -41,7 +41,14 @@ export function serializeStructuredData(entity: Entity) {
 }
 
 export function createWebSiteStructuredData(name: string, url: string): Entity {
-  return { '@context': context, '@type': 'WebSite', name, url };
+  return {
+    '@context': context,
+    '@type': 'WebSite',
+    '@id': `${url}#website`,
+    name,
+    url,
+    publisher: { '@id': `${url}#organization` },
+  };
 }
 
 export function createOrganizationStructuredData(
@@ -60,7 +67,14 @@ export function createOrganizationStructuredData(
     '@context': context,
     '@type': 'Organization',
     ...organization,
-    address: { '@type': 'PostalAddress', ...organization.address },
+    '@id': `${organization.url}#organization`,
+    address: {
+      '@type': 'PostalAddress',
+      ...organization.address,
+      addressCountry: organization.address.addressCountry === 'Greece' ? 'GR' : organization.address.addressCountry,
+    },
+    // This collective's hub links the label alongside separate studio/art projects; it is not the label's identity.
+    sameAs: organization.sameAs.filter((url) => !/^https:\/\/linktr\.ee\/blackboxstudio82\/?$/i.test(url)),
     hasMerchantReturnPolicy: {
       '@type': 'MerchantReturnPolicy',
       applicableCountry: 'GR',
@@ -98,17 +112,18 @@ export function createProductStructuredData(offer: PublicStoreOffer, product: Pr
   return {
     '@context': context,
     '@type': 'Product',
+    '@id': `${product.url}#product`,
     name: product.name,
     description: product.description,
     image: product.image,
     brand: { '@type': 'Brand', name: product.brand },
     offers: {
       '@type': 'Offer',
+      '@id': `${product.url}#offer`,
       url: product.url,
       price: (offer.price.amountMinor / 100).toFixed(2),
       priceCurrency: offer.price.currencyCode,
       availability: `https://schema.org/${preorder ? 'PreOrder' : 'InStock'}`,
-      ...(preorder && product.releaseDate ? { availabilityStarts: isoDate(product.releaseDate) } : {}),
     },
   };
 }
@@ -117,6 +132,7 @@ export function createMusicGroupStructuredData(group: MusicGroupFacts): Entity {
   return {
     '@context': context,
     '@type': 'MusicGroup',
+    '@id': `${group.url}#music-group`,
     name: group.name,
     url: group.url,
     ...(group.image ? { image: group.image } : {}),
@@ -134,19 +150,25 @@ export function createMusicAlbumStructuredData(album: MusicAlbumFacts): Entity {
   return {
     '@context': context,
     '@type': 'MusicAlbum',
+    '@id': `${album.url}#music-album`,
     name: album.name,
     url: album.url,
     image: album.image,
     albumRelease: {
       '@type': 'MusicRelease',
-      recordLabel: { '@type': 'Organization', name: album.label },
+      '@id': `${album.url}#music-release`,
+      recordLabel: {
+        '@type': 'Organization',
+        ...(album.labelUrl ? { '@id': `${album.labelUrl}#organization` } : {}),
+        name: album.label,
+      },
     },
     ...(album.artist
       ? {
           byArtist: {
             '@type': 'MusicGroup',
             name: album.artist.name,
-            ...(album.artist.url ? { url: album.artist.url } : {}),
+            ...(album.artist.url ? { '@id': `${album.artist.url}#music-group`, url: album.artist.url } : {}),
           },
         }
       : {}),
@@ -161,5 +183,40 @@ export function createMusicAlbumStructuredData(album: MusicAlbumFacts): Entity {
           })),
         }
       : {}),
+  };
+}
+
+export function createArticleStructuredData(article: {
+  headline: string;
+  description: string;
+  url: string;
+  image: string;
+  datePublished: Date;
+  publisherUrl: string;
+}): Entity {
+  return {
+    '@context': context,
+    '@type': 'Article',
+    '@id': `${article.url}#article`,
+    headline: article.headline,
+    description: article.description,
+    url: article.url,
+    mainEntityOfPage: article.url,
+    image: article.image,
+    datePublished: isoDate(article.datePublished),
+    publisher: { '@id': `${article.publisherUrl}#organization` },
+  };
+}
+
+export function createBreadcrumbStructuredData(items: readonly { name: string; url: string }[]): Entity {
+  return {
+    '@context': context,
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   };
 }

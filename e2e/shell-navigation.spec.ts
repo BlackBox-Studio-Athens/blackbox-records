@@ -24,6 +24,52 @@ test('rapid Back and Forward cancel stale page swaps', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Releases' })).toHaveCount(0);
 });
 
+// Measure card-estimate correction independently of navigation and its destination stylesheet loading.
+test('jumping to the Store bottom keeps unexpected layout shift below 0.1', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'The Layout Instability API is Chromium-only.');
+  await page.goto('store/');
+  await waitForShell(page);
+  await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
+  await page.evaluate(() => document.fonts.ready);
+  type Shift = { time: number; value: number; nodes: string[] };
+  await page.evaluate(() => {
+    const shifts: Shift[] = [];
+    (window as unknown as { shifts: Shift[] }).shifts = shifts;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries() as (PerformanceEntry & {
+        value: number;
+        hadRecentInput: boolean;
+        sources: { node?: Node | null }[];
+      })[])
+        if (!entry.hadRecentInput)
+          shifts.push({
+            time: entry.startTime,
+            value: entry.value,
+            nodes: entry.sources.map(({ node }) =>
+              node instanceof Element ? `${node.localName}.${[...node.classList].join('.')}` : String(node?.nodeName),
+            ),
+          });
+    }).observe({ type: 'layout-shift' });
+  });
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(1000);
+  const shifts = await page.evaluate(() => (window as unknown as { shifts: Shift[] }).shifts);
+  let maximum = 0;
+  let score = 0;
+  let first = 0;
+  let last = -Infinity;
+  for (const shift of shifts) {
+    if (shift.time - last >= 1000 || shift.time - first >= 5000) {
+      first = shift.time;
+      score = 0;
+    }
+    score += shift.value;
+    last = shift.time;
+    maximum = Math.max(maximum, score);
+  }
+  expect(maximum, JSON.stringify(shifts)).toBeLessThan(0.1);
+});
+
 test('Back preserves the scrolled release listing through nested details and Forward', async ({ page }) => {
   await page.goto('releases/');
   await waitForShell(page);

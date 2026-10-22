@@ -67,9 +67,10 @@ for (const width of [1440, 390]) {
           price: '28.00',
           priceCurrency: 'EUR',
           availability: 'https://schema.org/PreOrder',
-          availabilityStarts: '2026-06-09',
         },
       });
+      // The album date and a month-only shipping estimate do not establish physical availability.
+      expect(productData[0].offers).not.toHaveProperty('availabilityStarts');
       // The pre-order facts above already state the estimate; no hint repeats it below the action.
       await expect(purchase.getByText(/We send/)).toHaveCount(0);
       await expect(purchase.locator('.preorder-badge')).toHaveText('Pre-order');

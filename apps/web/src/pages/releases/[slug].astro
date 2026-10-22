@@ -4,7 +4,8 @@ import ReleaseDetailContent from '@/components/editorial/ReleaseDetailContent.as
 import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { getLabelSettings } from '@/lib/site-data';
-import { createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
+import { createAbsoluteSiteUrl, createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
+import { createMusicPageMetadata } from '@/pages/_metadata';
 import { createMusicAlbumStructuredData } from '@/platform/lib/structured-data';
 import {
   createReleaseDetailStaticPaths,
@@ -25,11 +26,18 @@ const release = Astro.props.release ?? (await getEntry('releases', Astro.params.
 if (!release) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const releaseArtist = await resolveArtistProfileForRelease(release);
 const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
+const metadata = createMusicPageMetadata({
+  title: release.data.title,
+  artist: artistName,
+  summary: release.data.summary,
+  intent: 'release',
+});
 const album = createMusicAlbumStructuredData({
   name: release.data.title,
   url: createCanonicalUrl(Astro.url, Astro.site),
   image: new URL(release.data.cover_image.src, Astro.site ?? Astro.url).href,
   label: (await getLabelSettings()).label_name,
+  labelUrl: createAbsoluteSiteUrl('/'),
   artist: {
     name: artistName,
     url: releaseArtist
@@ -42,9 +50,14 @@ const album = createMusicAlbumStructuredData({
 ---
 
 <SiteLayout
-  pageTitle={release.data.title}
-  pageDescription={release.data.summary || `${release.data.title} by ${artistName}`}
+  pageTitle={metadata.title}
+  pageDescription={metadata.description}
   structuredData={album}
+  breadcrumbs={[
+    { name: 'Home', url: createAbsoluteSiteUrl('/') },
+    { name: 'Releases', url: createAbsoluteSiteUrl('/releases/') },
+    { name: release.data.title, url: createCanonicalUrl(Astro.url, Astro.site) },
+  ]}
 >
   <ReleaseDetailContent release={release} />
 </SiteLayout>

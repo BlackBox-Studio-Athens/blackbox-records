@@ -7,6 +7,7 @@ import { sanitizeReleaseCatalogPresentation } from '@/components/editorial/relea
 
 export type ShellPageSnapshot = {
   canonicalHref: string;
+  headMetadata?: readonly { tag: 'meta' | 'script'; attributes: readonly [string, string][]; text: string }[];
   href: string;
   mainClassName: string;
   // Sanitized children of main, owned by an inert document. Apply a clone, never the fragment itself: a snapshot is
@@ -21,6 +22,9 @@ export type ShellPageSnapshot = {
 };
 
 type PageStylesheet = { readonly href: string } | { readonly devId: string; readonly css: string };
+
+const routeHeadMetadataSelector =
+  'meta[property^="og:"], meta[property^="article:"], meta[name^="twitter:"], meta[name="robots"], script[type="application/ld+json"]';
 
 type ShellPageSnapshotCache = {
   cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
@@ -224,6 +228,15 @@ function createShellPageSnapshot(
 
   return {
     canonicalHref,
+    headMetadata: [...(targetDocument.head?.querySelectorAll<HTMLElement>(routeHeadMetadataSelector) ?? [])].map(
+      (element) => ({
+        tag: element.localName as 'meta' | 'script',
+        attributes: ['name', 'property', 'content', 'type', 'id']
+          .filter((name) => element.hasAttribute(name))
+          .map((name): [string, string] => [name, element.getAttribute(name)!]),
+        text: element.localName === 'script' ? (element.textContent ?? '') : '',
+      }),
+    ),
     href: resolvedUrl.toString(),
     mainClassName: mainElement.getAttribute('class') || '',
     mainContent,
@@ -370,5 +383,15 @@ export function updateDocumentMetadata(pageSnapshot: ShellPageSnapshot, targetDo
   const canonicalLinkElement = targetDocument.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
   if (canonicalLinkElement && pageSnapshot.canonicalHref) {
     canonicalLinkElement.href = pageSnapshot.canonicalHref;
+  }
+
+  if (pageSnapshot.headMetadata) {
+    targetDocument.head.querySelectorAll(routeHeadMetadataSelector).forEach((element) => element.remove());
+    for (const metadata of pageSnapshot.headMetadata) {
+      const element = targetDocument.createElement(metadata.tag);
+      for (const [name, value] of metadata.attributes) element.setAttribute(name, value);
+      element.textContent = metadata.text;
+      targetDocument.head.append(element);
+    }
   }
 }

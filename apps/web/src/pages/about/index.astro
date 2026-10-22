@@ -24,7 +24,10 @@ const {
 } = aboutContent;
 ---
 
-<SiteLayout pageTitle={aboutContent.hero.section_label} pageDescription="About the label.">
+<SiteLayout
+  pageTitle={aboutContent.hero.section_label}
+  pageDescription={`Meet ${labelSettings.label_name}, the independent record label in ${labelSettings.location.locality}, ${labelSettings.location.country}. Read our story, explore the roster and contact the label.`}
+>
   <InternalPageHero
     sectionLabel={aboutContent.hero.section_label}
     title={aboutContent.hero.title}

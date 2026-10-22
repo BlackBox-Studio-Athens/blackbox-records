@@ -7,7 +7,10 @@ import { listNewsArticles } from '@/lib/catalog-data';
 const newsArticles = await listNewsArticles();
 ---
 
-<SiteLayout pageTitle="News" pageDescription="News updates.">
+<SiteLayout
+  pageTitle="News"
+  pageDescription="Release announcements and artist updates from BlackBox Records, the independent record label in Athens, Greece."
+>
   <InternalPageHero sectionLabel="Updates" title="News" />
   <section class="layout-container">
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">

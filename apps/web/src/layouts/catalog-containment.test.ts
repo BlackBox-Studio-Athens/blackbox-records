@@ -30,7 +30,10 @@ describe('catalog containment', () => {
     const storeCard = source('../components/store/StoreItemCard.astro');
 
     expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility:\s*auto;/s);
-    expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*contain-intrinsic-block-size:\s*auto 520px;/s);
+    expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*contain-intrinsic-block-size:\s*auto 467px;/s);
+    expect(css).toMatch(
+      /@media \(min-width: 22\.5rem\)\s*{\s*\.store-item-card--listing\s*{\s*contain-intrinsic-block-size:\s*auto 390px;/,
+    );
     expect(storePage).toContain('entries.map');
     expect(storeCard).not.toMatch(/client:(?:visible|load|idle|only)/);
     expect(storePage).not.toContain('data-store-render-chunk');

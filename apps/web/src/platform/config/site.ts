@@ -28,7 +28,16 @@ export const siteThemeColor = '#0d0d0d';
 
 /** Canonical and og:url: the configured site origin plus the path, without the query or the serving host. */
 export function createCanonicalUrl(url: URL, site?: URL) {
-  return new URL(url.pathname, site ?? url).toString();
+  const basePath = getProjectBasePath();
+  const path = basePath && url.pathname.startsWith(`${basePath}/`) ? url.pathname.slice(basePath.length) : url.pathname;
+  const isPublicDocument =
+    /^\/(?:about|services|terms|privacy|withdrawal|(?:artists|releases|news)(?:\/[^/.]+)?|store(?:\/(?!checkout(?:\/|$))[^/.]+)?)$/.test(
+      path,
+    );
+  return new URL(
+    isPublicDocument || (basePath && url.pathname === basePath) ? `${url.pathname}/` : url.pathname,
+    site ?? url,
+  ).toString();
 }
 
 function normalizePath(path = '/') {

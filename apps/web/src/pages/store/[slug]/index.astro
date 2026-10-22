@@ -14,7 +14,8 @@ import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
 import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
-import { createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
+import { createAbsoluteSiteUrl, createCanonicalUrl, createProjectRelativeUrl } from '@/platform/config/site';
+import { createMusicPageMetadata } from '@/pages/_metadata';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createReleaseDetailPath, resolveArtistProfileForRelease } from '@/lib/catalog-data';
@@ -100,18 +101,32 @@ const partnerLinks = sourceRelease?.data.partner_links ?? [];
 const singles = sourceRelease?.data.singles ?? [];
 const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 0;
 const productSafety = await getStoreItemProductSafety(storeItem);
-const pageDescription = storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`;
+const metadata = createMusicPageMetadata({
+  title: storeItem.title,
+  artist: storeItem.subtitle,
+  format: primaryAvailability?.optionLabel || distroSource?.data.format,
+  summary: storeItem.summary,
+  intent: 'store',
+});
 const product = {
   name: storeItem.title,
-  description: pageDescription,
+  description: metadata.description,
   image: new URL(storeItem.image.src, Astro.site ?? Astro.url).href,
   url: createCanonicalUrl(Astro.url, Astro.site),
   brand: storeItem.sourceKind === 'release' ? (await getLabelSettings()).label_name : storeItem.subtitle,
-  releaseDate,
 };
 ---
 
-<SiteLayout mainClass="store-item-page" pageTitle={`${storeItem.title} | Store`} pageDescription={pageDescription}>
+<SiteLayout
+  mainClass="store-item-page"
+  pageTitle={metadata.title}
+  pageDescription={metadata.description}
+  breadcrumbs={[
+    { name: 'Home', url: createAbsoluteSiteUrl('/') },
+    { name: 'Store', url: createAbsoluteSiteUrl('/store/') },
+    { name: `${storeItem.subtitle} — ${storeItem.title}`, url: product.url },
+  ]}
+>
   <section class="layout-container pt-6 pb-6">
     <a
       href={createProjectRelativeUrl('/store/')}

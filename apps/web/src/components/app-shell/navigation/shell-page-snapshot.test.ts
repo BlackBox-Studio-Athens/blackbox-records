@@ -228,6 +228,131 @@ function createSnapshotDocument() {
 }
 
 describe('shell page snapshots', () => {
+  function metadataDocument(
+    tags: Array<{ tag: 'meta' | 'script'; attributes: Record<string, string>; text?: string }>,
+  ) {
+    const source = createSnapshotDocument();
+    const createElement = source.createElement.bind(source);
+    type MetadataElement = {
+      localName: string;
+      attributes: Record<string, string>;
+      textContent: string;
+      hasAttribute: (name: string) => boolean;
+      getAttribute: (name: string) => string | null;
+      setAttribute: (name: string, value: string) => void;
+      remove: () => void;
+    };
+    const elements: MetadataElement[] = [];
+    const element = (tag: string, attributes: Record<string, string> = {}, text = ''): MetadataElement => ({
+      localName: tag,
+      attributes: { ...attributes },
+      textContent: text,
+      hasAttribute(name) {
+        return name in this.attributes;
+      },
+      getAttribute(name) {
+        return this.attributes[name] ?? null;
+      },
+      setAttribute(name, value) {
+        this.attributes[name] = value;
+      },
+      remove() {
+        elements.splice(elements.indexOf(this), 1);
+      },
+    });
+    elements.push(...tags.map(({ tag, attributes, text }) => element(tag, attributes, text)));
+    const matches = (node: MetadataElement) =>
+      node.localName === 'script'
+        ? node.attributes.type === 'application/ld+json'
+        : node.attributes.property?.startsWith('og:') ||
+          node.attributes.property?.startsWith('article:') ||
+          node.attributes.name?.startsWith('twitter:') ||
+          node.attributes.name === 'robots';
+    Object.assign(source, {
+      head: {
+        querySelectorAll: (selector: string) => (selector.startsWith('meta[') ? elements.filter(matches) : []),
+        querySelector: () => null,
+        append: (node: MetadataElement) => elements.push(node),
+      },
+      createElement: (tag: string) => (tag === 'template' ? createElement(tag) : element(tag)),
+    });
+    return { document: source, elements };
+  }
+
+  it('replaces product-page social metadata with destination metadata on cached returns', () => {
+    const destinationTags = [
+      { tag: 'meta' as const, attributes: { property: 'og:title', content: 'About the label' } },
+      { tag: 'meta' as const, attributes: { property: 'og:url', content: 'https://example.test/about/' } },
+      { tag: 'meta' as const, attributes: { name: 'twitter:title', content: 'About the label' } },
+      { tag: 'meta' as const, attributes: { name: 'twitter:image', content: 'https://example.test/card.jpg' } },
+      {
+        tag: 'script' as const,
+        attributes: { type: 'application/ld+json', id: 'page-entity' },
+        text: '{"@type":"Organization","name":"BlackBox"}',
+      },
+    ];
+    const destination = metadataDocument(destinationTags);
+    const snapshot = readDocumentShellPageSnapshot(
+      destination.document,
+      'https://example.test/about/',
+      'https://example.test/store/item/',
+    );
+    expect(snapshot).not.toBeNull();
+    const current = metadataDocument([
+      { tag: 'meta', attributes: { property: 'og:title', content: 'Disintegration' } },
+      { tag: 'meta', attributes: { property: 'og:title', content: 'Duplicate stale title' } },
+      { tag: 'meta', attributes: { property: 'article:published_time', content: '2026-10-22' } },
+      { tag: 'meta', attributes: { name: 'robots', content: 'noindex' } },
+      { tag: 'script', attributes: { type: 'application/ld+json' }, text: '{"@type":"MusicAlbum"}' },
+      { tag: 'script', attributes: { type: 'application/json', id: 'purchase-information' }, text: '{"policy":true}' },
+    ]);
+    const purchaseInformation = current.elements.at(-1);
+    for (let visit = 0; visit < 2; visit++) {
+      updateDocumentMetadata(snapshot!, current.document);
+      expect(
+        current.elements
+          .filter((node) => node !== purchaseInformation)
+          .map((node) => ({ tag: node.localName, attributes: node.attributes, text: node.textContent })),
+      ).toEqual(destinationTags.map((tag) => ({ ...tag, text: tag.text ?? '' })));
+      expect(current.elements).toContain(purchaseInformation);
+    }
+    // A later mutation of the source document cannot change the reusable snapshot.
+    destination.elements[0]!.attributes.content = 'Changed after capture';
+    updateDocumentMetadata(snapshot!, current.document);
+    expect(current.elements.find((node) => node.attributes.property === 'og:title')?.attributes.content).toBe(
+      'About the label',
+    );
+  });
+
+  it('captures fetched head metadata before releasing its parsed document and leaves runtime Product in main', () => {
+    const source = metadataDocument([
+      { tag: 'script', attributes: { type: 'application/ld+json' }, text: '{"@type":"BreadcrumbList"}' },
+      { tag: 'meta', attributes: { property: 'og:type', content: 'article' } },
+    ]);
+    const main = source.document.querySelector('main[data-app-shell-main]')!;
+    main.innerHTML = '<script type="application/ld+json">{"@type":"Product"}</script>';
+    Object.assign(source.document, { replaceChildren: vi.fn() });
+    const snapshot = readParsedShellPageSnapshot(
+      source.document,
+      'https://example.test/news/story/',
+      'https://example.test/',
+    );
+    expect(snapshot?.headMetadata).toEqual([
+      { tag: 'script', attributes: [['type', 'application/ld+json']], text: '{"@type":"BreadcrumbList"}' },
+      {
+        tag: 'meta',
+        attributes: [
+          ['property', 'og:type'],
+          ['content', 'article'],
+        ],
+        text: '',
+      },
+    ]);
+    expect(source.document.replaceChildren).toHaveBeenCalledOnce();
+    expect(JSON.stringify(snapshot?.headMetadata)).not.toContain('Product');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('Product');
+  });
+
   it.each([
     ['Pre-order vinyl', false],
     ['Buy vinyl', false],

@@ -11,7 +11,7 @@
 3. **`WebSite` and music entities** (section 3): no rich result, but they help Google name the site and connect releases, artists and the label.
 4. **Owner work** (section 4): off-site signals usually matter more than markup for a new domain.
 
-Breadcrumb markup, `hreflang` (the site is English only), FAQ markup and keyword copy changes are left out. Google barely shows breadcrumbs on phones, and the rest have no clear return here.
+The October 22 extension includes factual Breadcrumb and Article markup without new visible breadcrumbs or copy. `hreflang` (the site is English only), FAQ markup and visible keyword copy changes remain out of scope. Markup eligibility is not a ranking guarantee.
 
 ## Sitemap and exclusions
 
@@ -28,7 +28,7 @@ The Store Item price and availability are read in the browser by `StoreOfferPric
 - `Product`: `name`, `image` (the Store Item image's absolute URL), `description` (the page description), `brand` (`BlackBox Records` for label releases, the distro label otherwise). Optional `sku` is omitted: internal variant IDs are not merchant SKUs, and long IDs triggered Google's length warning. No identifier is shortened, fabricated or changed in commerce data.
 - `Offer`: `price`, `priceCurrency` `EUR`, `url`, and `availability`:
   - `InStock` when buyable
-  - `PreOrder` with `availabilityStarts` set to the release date for pre-orders
+  - `PreOrder`, omitting `availabilityStarts` unless a verified date for availability of that physical offer exists. Album/digital release dates and month-only shipping estimates are not physical availability dates.
 - No script when the page shows no price or the offer read fails, so markup never disagrees with the page. The Worker returns no price for any offer that is not ready (sold out, Coming soon, Repressing, unavailable, catalog drift), and a pay-what-you-want price shows no amount, so these publish nothing. An `OutOfStock` offer would need a price the page does not show.
 
 Search Console offers no shipping and returns settings for the verified property (task 4.1). The Organization fallback (task 3.4) therefore publishes `hasMerchantReturnPolicy` and `hasShippingService`, rather than repeating policies per item. The Greece-only 14-day mail-return policy distinguishes buyer-paid change-of-mind returns from free defect returns and links to the absolute `/terms/` URL for the sealed-recording exception. BOX NOW collection-point shipping uses one `ShippingConditions` per shared `deliveryQuantityBands` band, with item-count bounds and EUR charges. No handling or transit speed is asserted because the published terms provide none. Google's [shipping-policy documentation](https://developers.google.com/search/docs/appearance/structured-data/shipping-policy) supports `FulfillmentTypeCollectionPoint` for customer pickup.
@@ -49,5 +49,19 @@ One helper module in `apps/web` builds these objects, and each page passes its o
 `recordLabel` belongs on `MusicRelease`, not directly on `MusicAlbum` ([Schema.org](https://schema.org/recordLabel)). The nested release preserves the label credit without asserting an unsupported album property. Ratings, reviews, shipping and returns are not invented to silence optional validator warnings.
 
 ## Validation
+
+### October 22 ownership and integration
+
+Use the existing audit evidence to reproduce defects before editing. SOL lane A exclusively owns `platform/config/site.ts`, public-gateway URL handling and their tests, plus non-visual head synchronization in `shell-page-snapshot.ts` and its tests. SOL lane B owns `SiteLayout.astro`, structured-data builders/tests, metadata props on public page templates, factual Article/Breadcrumb entities, and the narrowly scoped published-link correction preparation. Lane B must not edit `site.ts`; put metadata defaults in its owned existing layout/page paths or a focused metadata helper. Neither SOL lane edits CSS, visual JSX, interaction/focus behavior or UI-focused tests. The coordinator alone edits this change's shared planning and validation records.
+
+Claude owns appearance-preserving performance and UI fixes and UI tests, with `claude-handoff.md` as the handoff. Shared files such as SiteLayout/page templates require a coordinator handoff after SOL lane B finishes; no concurrent writers. Graph refresh, global local validation and browser acceptance are serialized by the coordinator. Delegates run only their focused checks and return exact evidence/source identity without commits, pushes, deployments or content publication.
+
+Canonical normalization applies to known public document routes and preserves query strings and the application base path. It must not redirect assets, media, API, overlay fragments, unknown paths or private routes into indexable documents. Existing robots/noindex rules, commerce authority and player continuity are unchanged.
+
+Head synchronization removes/replaces route-owned social/entity tags without cloning stale route data or disrupting runtime Product scripts. Metadata uses only current accepted artist, item, format and location facts; browser/search titles may change, rendered body/H1 text must not. Stable entity IDs are production-canonical, and Article dates/authors or Breadcrumb labels must come from real published content/hierarchy. Related studio profiles are not treated as the same label entity without evidence.
+
+The two old Cloudflare Pages anchors are corrected through their authoritative content owner. Image transform source URLs are deliberately excluded. No mass image fetch or new transformation profile is permitted while the observed 5,000/5,000 monthly limit is exhausted. Off-site identity links, secondary-domain DNS, Google Business Profile eligibility and provider removals are reviewed separately; missing owner facts or access remain explicit gates.
+
+Completion requires focused tests, strict OpenSpec validation, `pnpm validate` under the feedback policy, equivalent rendered appearance/player behavior, and live HTTP/Google checks after separately authorized promotion. Record independent search outcome checks without attributing ranking gains to code alone.
 
 Focused unit tests cover the helper and the `Offer` mapping, including no script on failure or Coming soon. Rich Results Test and Schema Markup Validator checks of one item per availability state, one release and one artist run after promotion (hosted, read-only).

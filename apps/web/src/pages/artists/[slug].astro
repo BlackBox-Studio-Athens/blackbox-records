@@ -2,7 +2,7 @@
 import ArtistDetailContent from '@/components/artists/ArtistDetailContent.astro';
 import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { createCanonicalUrl } from '@/platform/config/site';
+import { createAbsoluteSiteUrl, createCanonicalUrl } from '@/platform/config/site';
 import { createMusicGroupStructuredData } from '@/platform/lib/structured-data';
 import { createArtistDetailStaticPaths, type ArtistProfileEntry } from '@/lib/catalog-data';
 
@@ -26,6 +26,15 @@ const group = createMusicGroupStructuredData({
 });
 ---
 
-<SiteLayout pageTitle={artistName} pageDescription={artist.data.bio} structuredData={group}>
+<SiteLayout
+  pageTitle={artistName}
+  pageDescription={artist.data.bio}
+  structuredData={group}
+  breadcrumbs={[
+    { name: 'Home', url: createAbsoluteSiteUrl('/') },
+    { name: 'Artists', url: createAbsoluteSiteUrl('/artists/') },
+    { name: artistName, url: createCanonicalUrl(Astro.url, Astro.site) },
+  ]}
+>
   <ArtistDetailContent artist={artist} />
 </SiteLayout>

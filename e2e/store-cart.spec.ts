@@ -78,7 +78,7 @@ async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) 
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
-// WebKit has no scroll anchoring: cards above a far Buy leave their 520px placeholder height as they render and push it
+// WebKit has no scroll anchoring: cards above a far Buy leave their estimated placeholder height as they render and push it
 // away, so the jump repeats until two polls (cards render in between) land the button at the same place.
 async function scrollIntoSettledView(locator: Locator) {
   let previousTop = NaN;

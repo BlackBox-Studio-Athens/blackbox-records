@@ -30,7 +30,8 @@ A Store Item page SHALL publish `Product` structured data with an `Offer` only a
 #### Scenario: A pre-order item is viewed
 
 - **WHEN** the offer read returns a pre-order priced at €25.00
-- **THEN** the page contains one `Product` with an `Offer` of `25.00` `EUR`, `PreOrder` availability and the release date as `availabilityStarts`.
+- **THEN** the page contains one `Product` with an `Offer` of `25.00` `EUR` and `PreOrder` availability
+- **AND** `availabilityStarts` is omitted unless a verified date for the availability of that offer exists; an album release date or month-only shipping estimate is not substituted.
 
 #### Scenario: The offer read fails
 
@@ -52,3 +53,38 @@ Home SHALL publish `WebSite` data naming the site. Release pages SHALL publish `
 - **WHEN** a release with an artist and a tracklist is rendered
 - **THEN** its `MusicAlbum` names the release, links the artist's `MusicGroup` page, gives the release date, image and label, and lists the tracks.
 - **AND** the label is represented by `recordLabel` on a nested `albumRelease` of type `MusicRelease`, not directly on `MusicAlbum`.
+
+### Requirement: Public document URL variants consolidate
+
+Known public document paths SHALL use one trailing-slash canonical convention. Alternate slash forms SHALL permanently redirect to that form while preserving queries and supported base paths. Assets, media, API routes, fragments, private routes and unknown paths SHALL preserve their existing response and indexing boundaries.
+
+#### Scenario: A slashless Store or artist document is requested
+
+- **WHEN** a request targets `/store` or `/artists/afterwise`
+- **THEN** it permanently redirects to the respective trailing-slash document
+- **AND** the destination emits the same canonical used by the sitemap.
+
+### Requirement: Search metadata describes the destination accurately
+
+Public metadata SHALL distinguish Store Items using accepted artist/title/format facts and describe each page's purpose without changing visible page copy. Client navigation SHALL synchronize route-owned canonical, social and structured metadata with direct navigation. Organization country codes SHALL use supported country codes; entity identities, Article facts and Breadcrumb hierarchy SHALL be supported by published content.
+
+#### Scenario: Two items share an album title
+
+- **WHEN** items differ by artist or physical format
+- **THEN** their document titles distinguish those known facts while visible headings remain unchanged.
+
+#### Scenario: Product navigation reaches About
+
+- **WHEN** the shell navigates from a Product page to About
+- **THEN** About's title, description, canonical and social metadata match a direct About load
+- **AND** stale Product entities are removed without interrupting the persistent player.
+
+### Requirement: SEO delivery changes preserve the user experience
+
+SEO implementation SHALL preserve the approved appearance, readable content, accessible controls, catalog and commerce rules. Performance changes SHALL be measured against matching source/device conditions and verified for visual and player continuity. New media transformation demand SHALL remain within the Free-tier budget.
+
+#### Scenario: Performance optimization is accepted
+
+- **WHEN** CSS or resource delivery is changed
+- **THEN** equivalent viewport comparisons and relevant interaction checks preserve the current presentation
+- **AND** before/after measurements identify their source release, device and throttling settings without claiming an unmeasured ranking effect.
