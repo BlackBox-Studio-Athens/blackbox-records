@@ -134,11 +134,11 @@ export function createOrderWorkspace(
       }
     },
     /** Returns an error message, or null once the changed order is shown. */
-    async setDispatch(shipped: boolean): Promise<string | null> {
+    async setDispatch(shipped: boolean, sendShippingEmail = true): Promise<string | null> {
       const session = state.session;
       if (state.denied || !session || !api.setDispatch) return 'Reload this order and try again.';
       try {
-        const data = await api.setDispatch(session, { shipped, expectedShipped: !shipped });
+        const data = await api.setDispatch(session, { shipped, expectedShipped: !shipped, sendShippingEmail });
         detailRequest++;
         if (state.session === session)
           publish({ detail: { data, readAt: new Date().toISOString(), loading: false, error: null } });

@@ -301,7 +301,7 @@ describe('internal order routes', () => {
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
       deliveries: [],
-      dispatch: { shippedAt: null, updatedAt: null, updatedBy: null },
+      dispatch: { shippedAt: null, updatedAt: null, updatedBy: null, shippingEmailSuppressed: false },
       fulfillment: { kind: 'unavailable' },
       needsReviewAt: '2026-04-25T11:05:00.000Z',
       needsReviewReason: 'stock_unavailable',
@@ -370,13 +370,16 @@ describe('internal order routes', () => {
 
   describe('dispatch', () => {
     const url = 'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_paid/dispatch';
-    const request = (headers: Record<string, string> = { origin: 'http://127.0.0.1', 'x-blackbox-request': '1' }) =>
+    const request = (
+      headers: Record<string, string> = { origin: 'http://127.0.0.1', 'x-blackbox-request': '1' },
+      sendShippingEmail?: unknown,
+    ) =>
       createHttpApp().request(
         url,
         {
           method: 'PUT',
           headers: { 'content-type': 'application/json', ...headers },
-          body: JSON.stringify({ shipped: true, expectedShipped: false }),
+          body: JSON.stringify({ shipped: true, expectedShipped: false, sendShippingEmail }),
         },
         LOCAL_ENV,
       );
@@ -384,6 +387,7 @@ describe('internal order routes', () => {
     it('records the mark with the operator and returns the order', async () => {
       const dispatch = {
         orderId: 'order',
+        shippingEmailSuppressed: false,
         shippedAt: '2026-10-13T10:00:00.000Z',
         updatedAt: '2026-10-13T10:00:00.000Z',
         updatedBy: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
@@ -421,9 +425,40 @@ describe('internal order routes', () => {
       expect(mockSetDispatch).toHaveBeenCalledWith('cs_test_paid', {
         shipped: true,
         expectedShipped: false,
+        sendShippingEmail: true,
         operatorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
         at: expect.any(Date),
       });
+    });
+
+    it.each([true, false])(
+      'passes an explicit shipping email choice of %s and exposes suppression',
+      async (sendShippingEmail) => {
+        mockSetDispatch.mockResolvedValueOnce({
+          kind: 'updated',
+          read: {
+            order: currentPaidCheckoutOrder(),
+            deliveries: [],
+            awaitingStock: false,
+            dispatch: {
+              orderId: 'order',
+              shippedAt: '2026-10-24T10:00:00.000Z',
+              updatedAt: '2026-10-24T10:00:00.000Z',
+              updatedBy: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+              shippingEmailSuppressed: !sendShippingEmail,
+            },
+          },
+        });
+        const response = await request(undefined, sendShippingEmail);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ dispatch: { shippingEmailSuppressed: !sendShippingEmail } });
+        expect(mockSetDispatch).toHaveBeenCalledWith('cs_test_paid', expect.objectContaining({ sendShippingEmail }));
+      },
+    );
+
+    it.each(['false', 0, null])('rejects an invalid shipping email choice %j', async (value) => {
+      expect((await request(undefined, value)).status).toBe(400);
+      expect(mockSetDispatch).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -441,6 +476,21 @@ describe('internal order routes', () => {
       expect((await request({ origin: 'https://evil.example', 'x-blackbox-request': '1' })).status).toBe(403);
       expect((await request({ origin: 'http://127.0.0.1' })).status).toBe(403);
       expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+    });
+
+    it('refuses a silent hosted mark without Access before constructing services', async () => {
+      const response = await createHttpApp().request(
+        'https://ops.example/api/internal/orders/checkout-sessions/cs_test_paid/dispatch',
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json', origin: 'https://ops.example', 'x-blackbox-request': '1' },
+          body: JSON.stringify({ shipped: true, expectedShipped: false, sendShippingEmail: false }),
+        },
+        HOSTED_ENV,
+      );
+      expect(response.status).toBe(401);
+      expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+      expect(mockSetDispatch).not.toHaveBeenCalled();
     });
 
     it('rejects an unchanged mark', async () => {

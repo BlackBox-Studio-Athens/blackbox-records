@@ -119,6 +119,7 @@ const checkoutOrderSchema = z
     createdAt: z.string().datetime(),
     deliveries: z.array(paidOrderDeliverySchema),
     dispatch: z.object({
+      shippingEmailSuppressed: z.boolean(),
       shippedAt: z.string().datetime().nullable(),
       updatedAt: z.string().datetime().nullable(),
       updatedBy: z.string().nullable(),
@@ -242,7 +243,11 @@ const setOrderDispatchRoute = createRoute({
       content: {
         'application/json': {
           schema: z
-            .object({ shipped: z.boolean(), expectedShipped: z.boolean() })
+            .object({
+              shipped: z.boolean(),
+              expectedShipped: z.boolean(),
+              sendShippingEmail: z.boolean().default(true),
+            })
             .refine((body) => body.shipped !== body.expectedShipped, 'Dispatch must change.')
             .openapi('InternalOrderDispatchChange'),
         },
@@ -390,6 +395,7 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
       updatedAt: delivery.updatedAt.toISOString(),
     })),
     dispatch: {
+      shippingEmailSuppressed: read.dispatch?.shippingEmailSuppressed ?? false,
       shippedAt: read.dispatch?.shippedAt ?? null,
       updatedAt: read.dispatch?.updatedAt ?? null,
       updatedBy: read.dispatch?.updatedBy ?? null,

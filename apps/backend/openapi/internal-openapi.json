@@ -206,6 +206,9 @@
           "dispatch": {
             "type": "object",
             "properties": {
+              "shippingEmailSuppressed": {
+                "type": "boolean"
+              },
               "shippedAt": {
                 "type": [
                   "string",
@@ -228,6 +231,7 @@
               }
             },
             "required": [
+              "shippingEmailSuppressed",
               "shippedAt",
               "updatedAt",
               "updatedBy"
@@ -737,6 +741,10 @@
           },
           "expectedShipped": {
             "type": "boolean"
+          },
+          "sendShippingEmail": {
+            "type": "boolean",
+            "default": true
           }
         },
         "required": [

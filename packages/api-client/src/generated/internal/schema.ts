@@ -615,6 +615,7 @@ export type components = {
             dispatch: {
                 /** Format: date-time */
                 shippedAt: string | null;
+                shippingEmailSuppressed: boolean;
                 /** Format: date-time */
                 updatedAt: string | null;
                 updatedBy: string | null;
@@ -719,6 +720,8 @@ export type components = {
         };
         InternalOrderDispatchChange: {
             expectedShipped: boolean;
+            /** @default true */
+            sendShippingEmail: boolean;
             shipped: boolean;
         };
         /** @enum {string} */

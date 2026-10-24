@@ -53,14 +53,21 @@ export function createInternalOrderServices(bindings: AppBindings) {
     readCheckoutOrder: readCheckoutOrderWithFacts,
     setDispatch: async (
       checkoutSessionId: string,
-      input: { shipped: boolean; expectedShipped: boolean; operatorEmail: string; at: Date },
+      input: {
+        shipped: boolean;
+        expectedShipped: boolean;
+        sendShippingEmail?: boolean;
+        operatorEmail: string;
+        at: Date;
+      },
     ): Promise<SetOrderDispatchResult> => {
       const current = await readCheckoutOrderWithFacts(checkoutSessionId);
       if (!current) return { kind: 'not_found' };
       // Only complete paid orders can be dispatched; undo stays available for the same orders.
       if (readPaidCheckoutFulfillment(current.order).kind !== 'current') return { kind: 'not_ready' };
       if ((await dispatches.set({ ...input, orderId: current.order.id })) === 'conflict') return { kind: 'conflict' };
-      if (input.shipped) {
+      const savedDispatch = (await dispatches.listByOrderIds([current.order.id]))[0];
+      if (input.shipped && !savedDispatch?.shippingEmailSuppressed) {
         const logger = createBindingLogger(bindings);
         try {
           const emailRuntime = createEmailRuntimeServices(bindings);

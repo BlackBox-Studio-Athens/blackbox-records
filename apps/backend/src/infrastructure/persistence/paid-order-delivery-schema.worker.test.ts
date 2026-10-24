@@ -53,7 +53,11 @@ describe('paid order delivery schema', () => {
     await applyD1Migrations(db, env.TEST_MIGRATIONS);
 
     expect((await db.prepare('SELECT * FROM "PaidOrderDelivery" ORDER BY "id"').all()).results).toEqual(before);
-    expect(await db.prepare('SELECT * FROM "OrderDispatch"').first()).toEqual(dispatch);
+    expect(await db.prepare('SELECT * FROM "OrderDispatch"').first()).toEqual({
+      ...dispatch,
+      shippingEmailSuppressed: 0,
+    });
+    await expect(db.prepare('UPDATE "OrderDispatch" SET "shippingEmailSuppressed" = 2').run()).rejects.toThrow();
     await expect(
       db
         .prepare(

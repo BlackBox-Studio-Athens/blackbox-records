@@ -30,7 +30,13 @@ describe('D1 order dispatch persistence', () => {
     ]);
     expect(await repo.set({ ...mark, operatorEmail: 'b@example.com' })).toBe('conflict');
     expect(await repo.listByOrderIds([orderId])).toEqual([
-      { orderId, shippedAt: at.toISOString(), updatedAt: at.toISOString(), updatedBy: 'a@example.com' },
+      {
+        orderId,
+        shippedAt: at.toISOString(),
+        updatedAt: at.toISOString(),
+        updatedBy: 'a@example.com',
+        shippingEmailSuppressed: false,
+      },
     ]);
 
     const undoAt = new Date('2026-10-13T11:00:00.000Z');
@@ -38,7 +44,13 @@ describe('D1 order dispatch persistence', () => {
     expect(await repo.set(undo)).toBe('updated');
     expect(await repo.set(undo)).toBe('conflict');
     expect(await repo.listByOrderIds([orderId])).toEqual([
-      { orderId, shippedAt: null, updatedAt: undoAt.toISOString(), updatedBy: 'b@example.com' },
+      {
+        orderId,
+        shippedAt: null,
+        updatedAt: undoAt.toISOString(),
+        updatedBy: 'b@example.com',
+        shippingEmailSuppressed: false,
+      },
     ]);
     expect(await repo.set(mark)).toBe('updated');
     expect(
@@ -54,6 +66,63 @@ describe('D1 order dispatch persistence', () => {
     expect(
       (await db.prepare('SELECT "kind" FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
     ).toEqual([{ kind: 'shopper_shipping' }]);
+  });
+
+  it('persists an opt-out through stale requests and undo/re-mark with email requested', async () => {
+    const orderId = await order();
+    const mark = { orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at };
+    expect(await repo.set({ ...mark, sendShippingEmail: false })).toBe('updated');
+    expect(await repo.set({ ...mark, sendShippingEmail: true })).toBe('conflict');
+    expect(await repo.set({ ...mark, shipped: false, expectedShipped: true })).toBe('updated');
+    expect(await repo.set({ ...mark, sendShippingEmail: true })).toBe('updated');
+    expect(await repo.listByOrderIds([orderId])).toEqual([
+      {
+        orderId,
+        shippedAt: at.toISOString(),
+        updatedAt: at.toISOString(),
+        updatedBy: 'a@example.com',
+        shippingEmailSuppressed: true,
+      },
+    ]);
+    expect(
+      (await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+    ).toEqual([]);
+  });
+
+  it('preserves an existing email and its history when a later mark asks to skip', async () => {
+    const orderId = await order();
+    const mark = { orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at };
+    await repo.set(mark);
+    const before = (await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all())
+      .results;
+    await repo.set({ ...mark, shipped: false, expectedShipped: true });
+    await repo.set({ ...mark, sendShippingEmail: false });
+    expect((await repo.listByOrderIds([orderId]))[0]?.shippingEmailSuppressed).toBe(false);
+    expect(
+      (await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all()).results,
+    ).toEqual(before);
+  });
+
+  it('retains the winning email choice when operators submit competing choices', async () => {
+    const orderId = await order();
+    const mark = {
+      orderId,
+      shipped: true,
+      expectedShipped: false,
+      operatorEmail: 'skip@example.com',
+      at,
+      sendShippingEmail: false,
+    };
+    const results = await Promise.all([
+      repo.set(mark),
+      repo.set({ ...mark, operatorEmail: 'send@example.com', sendShippingEmail: true }),
+    ]);
+    expect(results.sort()).toEqual(['conflict', 'updated']);
+    const [dispatch] = await repo.listByOrderIds([orderId]);
+    const queued = (await db.prepare('SELECT * FROM "PaidOrderDelivery" WHERE "orderId" = ?').bind(orderId).all())
+      .results;
+    expect(dispatch?.shippingEmailSuppressed).toBe(dispatch?.updatedBy === 'skip@example.com');
+    expect(queued).toHaveLength(dispatch?.shippingEmailSuppressed ? 0 : 1);
   });
 
   it('does not queue from a stale request against a historical shipped mark', async () => {

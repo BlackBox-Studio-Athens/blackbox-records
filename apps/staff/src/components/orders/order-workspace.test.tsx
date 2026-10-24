@@ -396,7 +396,10 @@ describe('Order dispatch', () => {
     const open = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
     expect(open).toContain('Not shipped');
     expect(open).toContain('Mark shipped');
-    expect(open).toContain('Marks this order shipped and emails the customer.');
+    expect(open).toContain('Send shipping email');
+    expect(open).toContain('Uncheck when recording an order that was already shipped.');
+    expect(open).toContain('type="checkbox"');
+    expect(open).toContain('checked=""');
     expect(open).toContain('aria-describedby="dispatch-email-help"');
     expect(open).not.toContain('private dispatch record');
     const shipped = renderToStaticMarkup(
@@ -404,6 +407,7 @@ describe('Order dispatch', () => {
         order={{
           ...exampleOrder,
           dispatch: {
+            ...exampleOrder.dispatch,
             shippedAt: '2026-10-13T10:00:00.000Z',
             updatedAt: '2026-10-13T10:00:00.000Z',
             updatedBy: 'ops@example.com',
@@ -430,6 +434,7 @@ describe('Order dispatch', () => {
       const order: InternalOrder = {
         ...exampleOrder,
         dispatch: {
+          ...exampleOrder.dispatch,
           shippedAt: '2026-10-17T10:00:00.000Z',
           updatedAt: '2026-10-17T10:00:00.000Z',
           updatedBy: 'ops@example.com',
@@ -458,10 +463,49 @@ describe('Order dispatch', () => {
     const workspace = createOrderWorkspace(client);
     await workspace.lookup('cs_test_example');
     await expect(workspace.setDispatch(true)).resolves.toBeNull();
-    expect(client.setDispatch).toHaveBeenCalledWith('cs_test_example', { shipped: true, expectedShipped: false });
+    expect(client.setDispatch).toHaveBeenCalledWith('cs_test_example', {
+      shipped: true,
+      expectedShipped: false,
+      sendShippingEmail: true,
+    });
     expect(workspace.getSnapshot().detail.data).toBe(shipped);
     client.setDispatch.mockRejectedValueOnce(new InternalOrderApiError(409));
     await expect(workspace.setDispatch(false)).resolves.toContain('Another operator changed this order');
     expect(client.detail).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes an explicit opt-out through the workspace', async () => {
+    const saved = { ...exampleOrder, dispatch: { ...exampleOrder.dispatch, shippingEmailSuppressed: true } };
+    const client = { ...api(), setDispatch: vi.fn(async () => saved) };
+    const workspace = createOrderWorkspace(client);
+    await workspace.lookup('cs_test_example');
+    await expect(workspace.setDispatch(true, false)).resolves.toBeNull();
+    expect(client.setDispatch).toHaveBeenCalledWith('cs_test_example', {
+      shipped: true,
+      expectedShipped: false,
+      sendShippingEmail: false,
+    });
+    expect(workspace.getSnapshot().detail.data?.dispatch.shippingEmailSuppressed).toBe(true);
+  });
+
+  it('shows a saved skip after undo without another checkbox or an email failure', () => {
+    const order = { ...exampleOrder, dispatch: { ...exampleOrder.dispatch, shippingEmailSuppressed: true } };
+    const html = renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />);
+    expect(html).toContain('Shipping email skipped');
+    expect(html).toContain('Marking shipped again will not send it.');
+    expect(html).not.toContain('type="checkbox"');
+    expect(notificationStatus(order)).toBe('delivered');
+  });
+
+  it('shows existing shipping email outcomes after undo instead of offering a new choice', () => {
+    const order: InternalOrder = {
+      ...exampleOrder,
+      deliveries: [{ ...exampleOrder.deliveries[0]!, kind: 'shopper_shipping', status: 'pending' }],
+    };
+    const html = renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />);
+    expect(html).toContain('Email pending');
+    expect(html).toContain('Marking shipped again will not create another email.');
+    expect(html).not.toContain('type="checkbox"');
+    expect(html).not.toContain('Shipping email skipped');
   });
 });

@@ -11,12 +11,12 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
     if (!orderIds.length) return [];
     const { results } = await this.db
       .prepare(
-        `SELECT "orderId", "shippedAt", "updatedAt", "updatedBy" FROM "OrderDispatch"
+        `SELECT "orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed" FROM "OrderDispatch"
       WHERE "orderId" IN (${orderIds.map(() => '?').join(',')})`,
       )
       .bind(...orderIds)
-      .all<OrderDispatch>();
-    return results;
+      .all<Omit<OrderDispatch, 'shippingEmailSuppressed'> & { shippingEmailSuppressed: number }>();
+    return results.map((row) => ({ ...row, shippingEmailSuppressed: row.shippingEmailSuppressed === 1 }));
   }
 
   public async set(input: Parameters<OrderDispatchRepository['set']>[0]): Promise<'updated' | 'conflict'> {
@@ -24,10 +24,13 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
     // A missing row counts as not shipped; the same transaction queues only a successful first mark.
     const mark = this.db
       .prepare(
-        `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy")
-      SELECT ?, ?, ?, ? WHERE ? = 0 OR EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ?)
+        `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed")
+      SELECT ?, ?, ?, ?, ? AND NOT EXISTS (
+        SELECT 1 FROM "PaidOrderDelivery" WHERE "orderId" = ? AND "kind" = 'shopper_shipping'
+      ) WHERE ? = 0 OR EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ?)
       ON CONFLICT ("orderId") DO UPDATE SET
-        "shippedAt" = excluded."shippedAt", "updatedAt" = excluded."updatedAt", "updatedBy" = excluded."updatedBy"
+        "shippedAt" = excluded."shippedAt", "updatedAt" = excluded."updatedAt", "updatedBy" = excluded."updatedBy",
+        "shippingEmailSuppressed" = MAX("OrderDispatch"."shippingEmailSuppressed", excluded."shippingEmailSuppressed")
       WHERE ("OrderDispatch"."shippedAt" IS NOT NULL) = ?`,
       )
       .bind(
@@ -35,6 +38,8 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
         input.shipped ? at : null,
         at,
         input.operatorEmail,
+        input.shipped && input.sendShippingEmail === false ? 1 : 0,
+        input.orderId,
         input.expectedShipped ? 1 : 0,
         input.orderId,
         input.expectedShipped ? 1 : 0,
@@ -46,9 +51,10 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
           .prepare(
             `INSERT INTO "PaidOrderDelivery" ("id", "orderId", "kind", "status", "nextAttemptAt", "createdAt", "updatedAt")
            SELECT ?, ?, 'shopper_shipping', 'pending', ?, ?, ? WHERE changes() = 1
+             AND EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ? AND "shippingEmailSuppressed" = 0)
            ON CONFLICT ("orderId", "kind") DO NOTHING`,
           )
-          .bind(createPaidOrderDeliveryId(input.orderId, 'shopper_shipping'), input.orderId, at, at, at),
+          .bind(createPaidOrderDeliveryId(input.orderId, 'shopper_shipping'), input.orderId, at, at, at, input.orderId),
       );
     }
     const [result] = await this.db.batch(statements);

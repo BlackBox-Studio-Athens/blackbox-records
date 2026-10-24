@@ -233,6 +233,9 @@ const state = {
   saveDelay: 0,
   stockRevision: 3,
   orderDenied: false,
+  dispatchFailure: false,
+  dispatchDelay: 0,
+  dispatchWrites: [],
   lastWrite: null,
   publicTitle: artist.title,
   previewRequests: [],
@@ -452,6 +455,36 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname.startsWith('/api/internal/orders/checkout-sessions/')) {
       if (state.orderDenied) return json({ error: 'Unauthorized', code: 'unauthorized' }, 403);
+      if (url.pathname.endsWith('/dispatch') && req.method === 'PUT') {
+        const order = fixtureOrders.find((order) => order.checkoutSessionId === url.pathname.split('/').at(-2));
+        state.dispatchWrites.push(body);
+        await new Promise((resolve) => setTimeout(resolve, state.dispatchDelay));
+        if (state.dispatchFailure) return fail(503);
+        if (!order) return fail(404);
+        if (Boolean(order.dispatch.shippedAt) !== body.expectedShipped) return fail(409);
+        const existing = order.deliveries.some((delivery) => delivery.kind === 'shopper_shipping');
+        const at = new Date().toISOString();
+        order.dispatch = {
+          shippedAt: body.shipped ? at : null,
+          updatedAt: at,
+          updatedBy: 'fixture@example.invalid',
+          shippingEmailSuppressed:
+            order.dispatch.shippingEmailSuppressed || (body.shipped && body.sendShippingEmail === false && !existing),
+        };
+        if (body.shipped && !order.dispatch.shippingEmailSuppressed && !existing) {
+          order.deliveries.push({
+            ...structuredClone(exampleOrder.deliveries[0]),
+            kind: 'shopper_shipping',
+            status: 'pending',
+            attemptCount: 0,
+            createdAt: at,
+            updatedAt: at,
+            nextAttemptAt: at,
+            deliveredAt: null,
+          });
+        }
+        return json(order);
+      }
       return json(fixtureOrders.find((order) => order.checkoutSessionId === url.pathname.split('/').at(-1)));
     }
     if (url.pathname === '/_emdash/api/blackbox/inventory-artwork') {
@@ -902,7 +935,126 @@ await new Promise((resolve) =>
 );
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
-else if (process.argv.includes('--editor-recovery')) {
+else if (process.argv.includes('--orders-shipping')) {
+  const browser = await browserType.launch();
+  const page = await browser.newPage();
+  await page.clock.install();
+  page.setDefaultTimeout(15_000);
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await mkdir(artifacts, { recursive: true });
+  try {
+    for (const [index, width] of [320, 390, 1280].entries()) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${origin}/orders/?checkoutSessionId=cs_test_${index}`, { waitUntil: 'domcontentloaded' });
+      const choice = page.getByRole('checkbox', { name: 'Send shipping email', exact: true });
+      const mark = page.getByRole('button', { name: 'Mark shipped', exact: true });
+      await choice.waitFor();
+      assert.equal(await choice.isChecked(), true, 'A newly opened order defaults to email');
+      const label = await choice.locator('..').boundingBox();
+      assert.ok(
+        label && label.height >= 44 && label.x >= 0 && label.x + label.width <= width,
+        'Reachable checkbox label',
+      );
+      await page
+        .locator('.order-dispatch')
+        .screenshot({ path: resolve(artifacts, `orders-shipping-choice-${width}.png`) });
+      await choice.focus();
+      assert.equal(await choice.evaluate((element) => element === document.activeElement), true);
+      await page.keyboard.press('Space');
+      assert.equal(await choice.isChecked(), false, 'Keyboard can opt out');
+      assert.equal(
+        await choice.evaluate((element) => getComputedStyle(element).outlineStyle !== 'none'),
+        true,
+        'Visible keyboard focus',
+      );
+      const refresh = page.waitForResponse((response) =>
+        response.url().endsWith(`/checkout-sessions/cs_test_${index}`),
+      );
+      await page.clock.fastForward(61_000);
+      await refresh;
+      assert.equal(await choice.isChecked(), false, 'Automatic refresh preserves the choice');
+      state.dispatchFailure = true;
+      await mark.click();
+      await page.getByRole('status').filter({ hasText: 'Orders could not be read.' }).waitFor();
+      assert.equal(await choice.isChecked(), false, 'Submission failure preserves the choice');
+      state.dispatchFailure = false;
+      state.dispatchDelay = 500;
+      await mark.click();
+      assert.equal(await choice.isDisabled(), true);
+      assert.equal(await page.getByRole('button', { name: 'Saving…', exact: true }).isDisabled(), true);
+      await page.getByRole('status').filter({ hasText: 'Marked shipped without queuing a shipping email.' }).waitFor();
+      state.dispatchDelay = 0;
+      assert.equal(state.dispatchWrites.at(-1).sendShippingEmail, false);
+      assert.equal(
+        fixtureOrders[index].deliveries.some((delivery) => delivery.kind === 'shopper_shipping'),
+        false,
+      );
+      await page.getByText('Shipping email skipped', { exact: true }).waitFor();
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByText('Shipping email skipped', { exact: true }).waitFor();
+      const undo = page.getByRole('button', { name: 'Mark not shipped', exact: true });
+      await undo.click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Mark not shipped', exact: true }).click();
+      await mark.waitFor();
+      assert.equal(await choice.count(), 0, 'An undone skip cannot be changed');
+      await mark.click();
+      await undo.waitFor();
+      assert.equal(fixtureOrders[index].dispatch.shippingEmailSuppressed, true);
+      assert.equal(
+        fixtureOrders[index].deliveries.some((delivery) => delivery.kind === 'shopper_shipping'),
+        false,
+      );
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+      await page.screenshot({ path: resolve(artifacts, `orders-shipping-skipped-${width}.png`), fullPage: true });
+    }
+    await page.goto(`${origin}/orders/?checkoutSessionId=cs_test_10`, { waitUntil: 'domcontentloaded' });
+    const choice = page.getByRole('checkbox', { name: 'Send shipping email', exact: true });
+    await choice.waitFor();
+    await choice.uncheck();
+    await page.evaluate(() => {
+      history.pushState({}, '', '/orders/?checkoutSessionId=cs_test_11');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await page.getByText('ORDER-011', { exact: true }).first().waitFor();
+    assert.equal(await choice.isChecked(), true, 'Another order resets to the checked default');
+    const box = await choice.locator('..').boundingBox();
+    assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= 1280, 'Reachable checkbox label');
+    await page.screenshot({ path: resolve(artifacts, 'orders-shipping-choice-1280.png'), fullPage: true });
+    await page.getByRole('button', { name: 'Mark shipped', exact: true }).click();
+    await page.getByText('Email pending', { exact: true }).first().waitFor();
+    assert.equal(state.dispatchWrites.at(-1).sendShippingEmail, true);
+    assert.equal(fixtureOrders[11].deliveries.filter((delivery) => delivery.kind === 'shopper_shipping').length, 1);
+    await page.getByRole('button', { name: 'Mark not shipped', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Mark not shipped', exact: true }).click();
+    await page.getByRole('button', { name: 'Mark shipped', exact: true }).waitFor();
+    assert.equal(await choice.count(), 0, 'An existing email keeps its outcome after undo');
+    await page.getByRole('button', { name: 'Mark shipped', exact: true }).click();
+    await page.getByRole('button', { name: 'Mark not shipped', exact: true }).waitFor();
+    assert.equal(fixtureOrders[11].deliveries.filter((delivery) => delivery.kind === 'shopper_shipping').length, 1);
+    assert.deepEqual(errors, []);
+    await writeFile(
+      resolve(artifacts, 'orders-shipping-summary.json'),
+      JSON.stringify(
+        {
+          status: 'passed',
+          browser: browserType.name(),
+          widths: [320, 390, 1280],
+          realProviderCalls: 0,
+          dispatchWrites: state.dispatchWrites.length,
+        },
+        null,
+        2,
+      ),
+    );
+    console.log(
+      'PASS: shipping-email choice, refresh/failure retention, undo/re-mark, default reset, keyboard and 320/390/1280px layout. Fixture email only.',
+    );
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+} else if (process.argv.includes('--editor-recovery')) {
   const browser = await browserType.launch();
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   page.setDefaultTimeout(15_000);

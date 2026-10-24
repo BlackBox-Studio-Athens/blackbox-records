@@ -141,22 +141,47 @@ function DispatchControl({
   onSetDispatch,
 }: {
   order: InternalOrder;
-  onSetDispatch: (shipped: boolean) => Promise<string | null>;
+  onSetDispatch: (shipped: boolean, sendShippingEmail?: boolean) => Promise<string | null>;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [message, setMessage] = useState('');
+  const [sendShippingEmail, setSendShippingEmail] = useState(true);
   const shipped = Boolean(order.dispatch.shippedAt);
+  const shippingDelivery = order.deliveries.some((delivery) => delivery.kind === 'shopper_shipping');
+  const suppressed = order.dispatch.shippingEmailSuppressed && !shippingDelivery;
+  const canChooseEmail =
+    typeof order.dispatch.shippingEmailSuppressed === 'boolean' && !suppressed && !shippingDelivery;
   async function change(next: boolean) {
     setBusy(true);
     setMessage('');
-    const error = await onSetDispatch(next);
+    const sendEmail = !suppressed && (shippingDelivery || sendShippingEmail);
+    const error = await onSetDispatch(next, sendEmail);
     setBusy(false);
     setConfirmUndo(false);
-    setMessage(error ?? (next ? 'Marked shipped.' : 'Marked not shipped.'));
+    setMessage(
+      error ??
+        (next
+          ? sendEmail
+            ? 'Marked shipped.'
+            : 'Marked shipped without queuing a shipping email.'
+          : 'Marked not shipped.'),
+    );
   }
   return (
     <div className="order-dispatch">
+      {!shipped && canChooseEmail && (
+        <label className="order-dispatch-email">
+          <input
+            type="checkbox"
+            checked={sendShippingEmail}
+            disabled={busy}
+            aria-describedby="dispatch-email-help"
+            onChange={(event) => setSendShippingEmail(event.target.checked)}
+          />
+          Send shipping email
+        </label>
+      )}
       {shipped ? (
         <Button variant="outline" disabled={busy} onClick={() => setConfirmUndo(true)}>
           Mark not shipped
@@ -169,7 +194,13 @@ function DispatchControl({
       )}
       {!shipped && (
         <small id="dispatch-email-help" className="order-muted">
-          Marks this order shipped and emails the customer.
+          {suppressed
+            ? 'Shipping email was skipped. Marking shipped again will not send it.'
+            : shippingDelivery
+              ? 'Shipping email already recorded. Marking shipped again will not create another email.'
+              : canChooseEmail
+                ? 'Uncheck when recording an order that was already shipped.'
+                : 'Marks this order shipped and emails the customer.'}
         </small>
       )}
       <span role="status">{message}</span>
@@ -210,7 +241,7 @@ export default function OrderDetail({
   onSetDispatch,
 }: {
   order: InternalOrder;
-  onSetDispatch?: ((shipped: boolean) => Promise<string | null>) | undefined;
+  onSetDispatch?: ((shipped: boolean, sendShippingEmail?: boolean) => Promise<string | null>) | undefined;
 }) {
   const fulfillment = order.fulfillment;
   const attention = notificationStatus(order);
@@ -259,7 +290,11 @@ export default function OrderDetail({
         </div>
       </div>
       {onSetDispatch && order.status === 'paid' && fulfillment.kind === 'current' && (
-        <DispatchControl order={order} onSetDispatch={onSetDispatch} />
+        <DispatchControl
+          key={order.orderReference ?? order.checkoutSessionId}
+          order={order}
+          onSetDispatch={onSetDispatch}
+        />
       )}
       {(order.status === 'needs_review' || fulfillment.kind === 'incomplete') && (
         <section className="order-review" aria-labelledby="review-heading">
@@ -395,6 +430,10 @@ export default function OrderDetail({
           <p className="order-muted">
             Delivered describes the notification, not parcel dispatch or proof that an email was read.
           </p>
+          {order.dispatch.shippingEmailSuppressed &&
+            !order.deliveries.some((delivery) => delivery.kind === 'shopper_shipping') && (
+              <p className="order-muted">Shipping email skipped</p>
+            )}
           {order.deliveries.length ? (
             <ul className="order-deliveries">
               {order.deliveries.map((delivery, index) => (

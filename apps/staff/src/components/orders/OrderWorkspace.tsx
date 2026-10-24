@@ -335,7 +335,9 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         state.detail.data && (
           <OrderDetail
             order={state.detail.data}
-            onSetDispatch={state.session ? (shipped) => workspace.setDispatch(shipped) : undefined}
+            onSetDispatch={
+              state.session ? (shipped, sendEmail) => workspace.setDispatch(shipped, sendEmail) : undefined
+            }
           />
         )
       ) : (

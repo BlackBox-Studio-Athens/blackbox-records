@@ -74,9 +74,15 @@ export function createInternalOrderApi(baseUrl = '') {
       if (!order || typeof order !== 'object' || !order.fulfillment) throw new InternalOrderApiError(0);
       return order;
     },
-    async setDispatch(checkoutSessionId: string, change: { shipped: boolean; expectedShipped: boolean }) {
+    async setDispatch(
+      checkoutSessionId: string,
+      change: { shipped: boolean; expectedShipped: boolean; sendShippingEmail?: boolean },
+    ) {
       return read(() =>
-        setDispatch({ checkoutSessionId, ...change }, { ...init, headers: { 'X-Blackbox-Request': '1' } }),
+        setDispatch(
+          { checkoutSessionId, ...change, sendShippingEmail: change.sendShippingEmail ?? true },
+          { ...init, headers: { 'X-Blackbox-Request': '1' } },
+        ),
       );
     },
   };

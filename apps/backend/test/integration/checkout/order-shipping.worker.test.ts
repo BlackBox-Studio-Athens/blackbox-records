@@ -37,6 +37,35 @@ const mark = (shipped: boolean) => ({ shipped, expectedShipped: !shipped, operat
 const retryAt = new Date(at.getTime() + 15 * 60 * 1000);
 
 describe('shipping email from the dispatch service', () => {
+  it('never sends or queues after an explicit skip, scheduled recovery, response retry or undo/re-mark', async () => {
+    const { id, checkoutSessionId } = await seedOrder();
+    const before = await env.COMMERCE_DB.prepare('SELECT * FROM "CheckoutOrder" WHERE "id" = ?').bind(id).first();
+    const send = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ id: 'must_not_send' }));
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    const services = createInternalOrderServices(bindings);
+    try {
+      expect(await services.setDispatch(checkoutSessionId, { ...mark(true), sendShippingEmail: false })).toMatchObject({
+        kind: 'updated',
+        read: { dispatch: { shippedAt: at.toISOString(), shippingEmailSuppressed: true }, deliveries: [] },
+      });
+      expect(await services.setDispatch(checkoutSessionId, mark(true))).toEqual({ kind: 'conflict' });
+      await runPaidOrderDeliverySchedule(bindings, retryAt);
+      await services.setDispatch(checkoutSessionId, mark(false));
+      await services.setDispatch(checkoutSessionId, { ...mark(true), sendShippingEmail: true });
+      await runPaidOrderDeliverySchedule(bindings, retryAt);
+      expect(await services.readCheckoutOrder(checkoutSessionId)).toMatchObject({
+        dispatch: { shippedAt: at.toISOString(), shippingEmailSuppressed: true },
+        deliveries: [],
+      });
+      expect(send).not.toHaveBeenCalled();
+      expect(await env.COMMERCE_DB.prepare('SELECT * FROM "CheckoutOrder" WHERE "id" = ?').bind(id).first()).toEqual(
+        before,
+      );
+    } finally {
+      await services.disconnect();
+    }
+  });
+
   it('sends once after a mark, including response retries and undo/re-mark, without changing paid facts', async () => {
     const { id, checkoutSessionId } = await seedOrder();
     const before = await env.COMMERCE_DB.prepare('SELECT * FROM "CheckoutOrder" WHERE "id" = ?').bind(id).first();

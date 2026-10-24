@@ -159,7 +159,7 @@
     "scripts/validate-local.mjs": { "command": "validate" },
     "scripts/test-content-workspace.mjs": {
       "command": "validate:editor",
-      "unless": "(^|\\s)--(serve|selling|artist-journey|editor-recovery)(\\s|$)"
+      "unless": "(^|\\s)--(serve|selling|artist-journey|editor-recovery|orders-shipping)(\\s|$)"
     }
   },
   "deny": [

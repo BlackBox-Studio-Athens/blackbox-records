@@ -107,6 +107,8 @@ test('a guarded leaf script is recognized by its path as typed unless a focused 
   for (const typed of [editor, `./${editor}`, `C:\\repo\\${editor.replace('/', '\\')}`, `../../${editor}`])
     assert.equal(guardedScript(policy, typed, ['--firefox'])?.command, 'validate:editor', typed);
   assert.equal(guardedScript(policy, editor, ['--serve']), undefined);
+  assert.equal(guardedScript(policy, editor, ['--orders-shipping']), undefined);
+  assert.equal(guardedScript(policy, editor, ['--orders-shipping-all'])?.command, 'validate:editor');
   assert.equal(guardedScript(policy, 'scripts/check-agent-guidance.mjs', []), undefined);
   assert.equal(guardedScript(policy, 'test-content-workspace.mjs', []), undefined);
 });

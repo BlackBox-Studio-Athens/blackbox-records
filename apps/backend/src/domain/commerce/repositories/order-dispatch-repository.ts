@@ -1,5 +1,6 @@
 export type OrderDispatch = {
   orderId: string;
+  shippingEmailSuppressed: boolean;
   shippedAt: string | null;
   updatedAt: string;
   updatedBy: string;
@@ -11,6 +12,7 @@ export interface OrderDispatchRepository {
   set(input: {
     orderId: string;
     shipped: boolean;
+    sendShippingEmail?: boolean;
     expectedShipped: boolean;
     operatorEmail: string;
     at: Date;
