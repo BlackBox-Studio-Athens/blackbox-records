@@ -155,7 +155,7 @@ export function connectShellDocumentEventRouting({
 
   function handleDocumentClick(event: MouseEvent): ShellDocumentEventRoutingResult {
     rememberClickTarget(event.target);
-    if (event.defaultPrevented || isModifiedEvent(event)) return 'ignored';
+    if (event.defaultPrevented) return 'ignored';
 
     const clickIntent = resolveClickIntent(event.target, {
       readPlayerProvidersFromElement,
@@ -197,6 +197,10 @@ export function connectShellDocumentEventRouting({
 
     const anchorElement =
       clickIntent.kind === 'anchor' || clickIntent.kind === 'scroll-target' ? clickIntent.anchorElement : null;
+
+    // A modified link click keeps the browser's own new-tab or new-window behaviour. Buttons have none, so the
+    // player, Menu and button scroll targets above and below still act while Shift, Ctrl, Alt or Meta is held.
+    if (anchorElement && isModifiedEvent(event)) return 'ignored';
 
     if (clickIntent.kind === 'scroll-target') {
       if (clickIntent.targetId === 'services-inquiry') {

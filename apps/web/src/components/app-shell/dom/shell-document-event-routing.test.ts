@@ -221,6 +221,50 @@ describe('shell document event routing', () => {
     expect(options.openPlayerModal).toHaveBeenCalledWith(triggerElement, playerElement);
   });
 
+  it('opens player triggers while a modifier key is held', () => {
+    const triggerElement = {} as HTMLElement;
+    const options = createOptions({
+      dependencies: {
+        resolveShellDocumentClickIntent: vi.fn(() => ({
+          kind: 'player-trigger' as const,
+          playerElement: triggerElement,
+          triggerElement,
+        })),
+      },
+    });
+    connectShellDocumentEventRouting(options);
+
+    for (const modifier of ['shiftKey', 'ctrlKey', 'altKey', 'metaKey'] as const) {
+      const event = { ...createMouseEvent(), [modifier]: true } as MouseEvent;
+      options.documentHandlers.click?.(event);
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    }
+    expect(options.openPlayerModal).toHaveBeenCalledTimes(4);
+  });
+
+  it('leaves modified link clicks, including scroll-target links, to the browser', () => {
+    const anchorElement = {} as HTMLAnchorElement;
+    const routeShellAnchorClickNavigation = vi.fn();
+    const intents = [
+      { anchorElement, kind: 'anchor' as const },
+      { anchorElement, kind: 'scroll-target' as const, targetId: 'details', triggerElement: anchorElement },
+    ];
+    for (const intent of intents) {
+      const options = createOptions({
+        dependencies: { resolveShellDocumentClickIntent: vi.fn(() => intent), routeShellAnchorClickNavigation },
+        scrollToTargetId: vi.fn(() => true),
+      });
+      connectShellDocumentEventRouting(options);
+      const event = { ...createMouseEvent(anchorElement as EventTarget), ctrlKey: true } as MouseEvent;
+
+      options.documentHandlers.click?.(event);
+
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(options.scrollToTargetId).not.toHaveBeenCalled();
+    }
+    expect(routeShellAnchorClickNavigation).not.toHaveBeenCalled();
+  });
+
   it('handles scroll target clicks before anchor routing when scrolling succeeds', () => {
     const triggerElement = {} as HTMLAnchorElement;
     const routeShellAnchorClickNavigation = vi.fn();

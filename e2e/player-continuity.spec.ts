@@ -166,6 +166,26 @@ test('Back closes the open player without moving the page beneath; its controls 
   await expect(page.getByRole('heading', { level: 1, name: 'Artists' })).toBeVisible();
 });
 
+test('Listen opens the player while Shift or Ctrl is held', async ({ page }) => {
+  // Only links have a modified-click behaviour of their own; a held key must not swallow a button press.
+  await page.route(providerEmbeds, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  await page.goto('store/');
+  await waitForShell(page);
+  const modal = page.getByRole('dialog', { name: 'Music player' });
+  for (const modifier of ['Shift', 'Control'] as const) {
+    await page
+      .locator('[data-music-streaming-service-embedded-player-trigger]:visible')
+      .first()
+      .click({ modifiers: [modifier] });
+    await expect(modal).toBeVisible();
+    await expect(page.locator('[data-music-streaming-service-embedded-player-iframe]')).toBeAttached();
+    await modal.getByRole('button', { name: 'Close player', exact: true }).click();
+    await expect(modal).toBeHidden();
+  }
+});
+
 test('on phones the floating player leaves the page end and the Menu reachable; landscape fits the embed', async ({
   page,
   hasTouch,
