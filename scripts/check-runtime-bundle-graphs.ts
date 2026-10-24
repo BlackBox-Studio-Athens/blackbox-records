@@ -44,7 +44,9 @@ const homeEagerGraphBudgetBytes = 106 * 1024;
 const storeItemEagerGraphBudgetBytes = 104 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
-  overview: { document: 'index.html', javascriptBudgetBytes: 121 * 1024 },
+  // Raised 5 KiB on 23 October 2026 (owner-approved) for radix-ui 1.8.1 (about 790 Brotli bytes in shared Staff chunks;
+  // openspec/changes/upgrade-dependencies-2026-10).
+  overview: { document: 'index.html', javascriptBudgetBytes: 126 * 1024 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
   // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets. Raised 1 KiB on
   // 7 October 2026 for the zero-stock state control (593 Brotli bytes over; openspec/changes/add-coming-soon-availability).
@@ -52,8 +54,9 @@ const staffRouteDocuments = {
   stock: { document: 'stock/index.html', javascriptBudgetBytes: 160 * 1024 },
   // Raised 1 KiB on 12 October 2026 for the shell's Stats navigation entry (67 Brotli bytes over;
   // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved dispatch controls
-  // (131,497 Brotli bytes; add-order-dispatch-marking).
-  orders: { document: 'orders/index.html', javascriptBudgetBytes: 129 * 1024 },
+  // (131,497 Brotli bytes; add-order-dispatch-marking). Raised 5 KiB on 23 October 2026 (owner-approved) for radix-ui 1.8.1
+  // (openspec/changes/upgrade-dependencies-2026-10).
+  orders: { document: 'orders/index.html', javascriptBudgetBytes: 134 * 1024 },
   // Recharts stays out of this eager graph: StatsCharts (about 88 KiB Brotli) is a dynamic import. The approved
   // readability redesign adds page/source names, brand marks and the summary sentence (about 5.3 KiB Brotli;
   // openspec/changes/add-site-analytics). Raised 2 KiB on 13 October 2026 for the owner-approved Store and Google

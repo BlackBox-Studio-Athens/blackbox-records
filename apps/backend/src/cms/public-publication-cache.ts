@@ -15,7 +15,7 @@ export const publicPublicationTags = (release: string, snapshot: string) => [
 export async function invalidatePublicPublication(
   request: Request,
   invalidate: (pointer: PublicationPointer) => Promise<void>,
-  cache: ExecutionContext['cache'],
+  cache: Pick<NonNullable<ExecutionContext['cache']>, 'purge'> | undefined,
   environment?: PublicationEnvironment,
 ) {
   const reply = (status: number, value: unknown) =>
@@ -50,7 +50,7 @@ export async function invalidatePublicPublication(
 export async function acceptPublicPreorderProjection(
   request: Request,
   apply: (projection: PublishedPreorders, identity: string) => Promise<boolean[]>,
-  cache: ExecutionContext['cache'],
+  cache: Pick<NonNullable<ExecutionContext['cache']>, 'purge'> | undefined,
   environment?: PublicationEnvironment,
 ) {
   const reply = (status: number, value: unknown) =>

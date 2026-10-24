@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, onTestFinished, vi } from 'vitest';
 
 import { apiClientMswBaseUrl, publicCheckoutFixtures } from '@blackbox/api-client/test/msw-handlers';
 import { webMswServer } from '@/test/msw-server';
@@ -32,6 +32,8 @@ describe('resolvePublicCheckoutApiBaseUrl', () => {
 
 describe('createPublicCheckoutApi', () => {
   it('passes delivery cancellation to the underlying no-store request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    onTestFinished(() => fetchSpy.mockRestore());
     let received!: (request: Request) => void;
     let release!: () => void;
     const started = new Promise<Request>((resolve) => {
@@ -56,7 +58,8 @@ describe('createPublicCheckoutApi', () => {
       );
       const failed = expect(result).rejects.toMatchObject({ status: 0 });
       const request = await started;
-      expect(request.cache).toBe('no-store');
+      // MSW 3 reconstructs handler Requests; inspect the caller's fetch options for cache policy.
+      expect(fetchSpy.mock.calls[0]?.[1]?.cache).toBe('no-store');
       controller.abort();
       expect(request.signal.aborted).toBe(true);
       await failed;
@@ -113,12 +116,12 @@ describe('createPublicCheckoutApi', () => {
   it.each([false, true])(
     'shares concurrent offer reads and releases them after settlement (failure=%s)',
     async (failure) => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      onTestFinished(() => fetchSpy.mockRestore());
       let requests = 0;
-      const caches: RequestCache[] = [];
       webMswServer.use(
-        http.get('*/api/store/items/:slug', ({ request }) => {
+        http.get('*/api/store/items/:slug', () => {
           requests++;
-          caches.push(request.cache);
           return failure && requests === 1
             ? HttpResponse.error()
             : HttpResponse.json(publicCheckoutFixtures.storeOffer);
@@ -136,7 +139,7 @@ describe('createPublicCheckoutApi', () => {
       expect(requests).toBe(1);
       await expect(price.readStoreOffer('shared-view')).resolves.toEqual(publicCheckoutFixtures.storeOffer);
       expect(requests).toBe(2);
-      expect(caches).toEqual(['no-store', 'no-store']);
+      expect(fetchSpy.mock.calls.map(([, init]) => init?.cache)).toEqual(['no-store', 'no-store']);
     },
   );
 

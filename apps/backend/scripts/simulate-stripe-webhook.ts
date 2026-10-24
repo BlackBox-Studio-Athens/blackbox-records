@@ -38,7 +38,7 @@ export function createStripeWebhookFixturePayload({
   monetarySource,
 }: StripeWebhookFixtureOptions): string {
   return JSON.stringify({
-    api_version: '2026-08-26.dahlia',
+    api_version: '2026-09-30.endive',
     created,
     data: {
       object: {

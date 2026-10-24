@@ -78,9 +78,9 @@
       "allowedVersions": ">=24.0.0 <25.0.0"
     },
     {
-      "description": "Cloudflare's Worker pool requires Vitest 4.1 peers.",
+      "description": "@cloudflare/vitest-plugin supports Vitest 4.1 and 5 peers.",
       "matchPackageNames": ["vitest"],
-      "allowedVersions": ">=4.1.0 <5.0.0"
+      "allowedVersions": ">=4.1.0 <6.0.0"
     },
     {
       "description": "Keep editor providers aligned with EmDash admin's Lingui 5 and React Query dependency.",
@@ -91,6 +91,11 @@
       "description": "EmDash admin and the staff editor must share one React Query provider instance.",
       "matchPackageNames": ["@tanstack/react-query"],
       "allowedVersions": "5.90.21"
+    },
+    {
+      "description": "Playwright 1.64.x hangs Firefox page.setViewportSize (microsoft/playwright#43028); hold until a fixed release.",
+      "matchPackageNames": ["playwright"],
+      "allowedVersions": "<1.64.0"
     },
     {
       "description": "Group test and browser automation packages.",
@@ -105,7 +110,7 @@
       "matchPackageNames": [
         "wrangler",
         "@cloudflare/workers-types",
-        "@cloudflare/vitest-pool-workers",
+        "@cloudflare/vitest-plugin",
         "@cloudflare/flagship"
       ],
       "groupName": "Cloudflare Worker packages",

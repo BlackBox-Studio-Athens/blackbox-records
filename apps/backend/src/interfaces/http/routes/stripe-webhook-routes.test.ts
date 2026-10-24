@@ -108,7 +108,7 @@ vi.mock('./stripe-webhook-services', () => ({
 }));
 
 const webhookSecret = 'whsec_fixture_secret';
-const stripeApiVersion = '2026-08-26.dahlia';
+const stripeApiVersion = '2026-09-30.endive';
 const legacyStripeApiVersion = '2026-04-25.basil';
 
 const testBindings = {

@@ -22,7 +22,7 @@ import {
 import type { AppBindings } from '../../platform/env';
 import { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 
-const STRIPE_API_VERSION = '2026-08-26.dahlia';
+const STRIPE_API_VERSION = '2026-09-30.endive';
 const DEFAULT_STRIPE_PROTOCOL = 'https';
 type StripeClientOptions = NonNullable<ConstructorParameters<typeof Stripe>[1]>;
 type StripeProtocol = NonNullable<StripeClientOptions['protocol']>;

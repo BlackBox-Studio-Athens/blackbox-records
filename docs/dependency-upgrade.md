@@ -1,5 +1,7 @@
 # Dependency upgrade — 2026-09-26
 
+This is the historical September receipt. The [October upgrade](../openspec/changes/upgrade-dependencies-2026-10/proposal.md) supersedes its current-version guidance, replaces the deprecated Worker pool with `@cloudflare/vitest-plugin`, and moves Stripe to the endive API. Keep the historical versions below as evidence of that earlier change.
+
 LTS runtimes and the newest compatible stable libraries, including major upgrades. Versions were checked against npm, PyPI and official GitHub release metadata. Prereleases are excluded from direct dependencies even when tagged latest. This is a local repository upgrade; hosted rollout, migrations, provider configuration and PRD checkout remain separate.
 
 ## Toolchain and workflow pins
