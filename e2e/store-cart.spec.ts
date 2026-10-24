@@ -7,6 +7,7 @@ import {
   test,
   waitForIsland,
   waitForShell,
+  watchNetworkQuiet,
   watchSurfaceWarmup,
 } from './fixtures';
 import type { CDPSession, Locator } from 'playwright/test';
@@ -298,6 +299,8 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   hasTouch,
   browserName,
 }) => {
+  // Two Store loads and seven drawer round trips take 40-90 s on the local dev server, at the 90 s default.
+  test.setTimeout(180_000);
   const storeItemSlug = 'disintegration-black-vinyl-lp';
   const secondSlug = 'anarchotribal-vinyl';
   const thirdSlug = 'caregivers-vinyl';
@@ -619,11 +622,12 @@ test('mounted checkout follows drawer quantity changes before payment', async ({
 });
 
 test('the header cart control appears only with items or in the store', async ({ page }) => {
+  const homeSettled = watchNetworkQuiet(page);
   await page.goto('.');
   await waitForShell(page);
   await expect(page.locator('[data-store-cart-trigger]')).toHaveCount(0);
   // Leaving while Home still imports its lazy islands makes WebKit log the cancelled import as a React error.
-  await page.waitForLoadState('networkidle');
+  await homeSettled();
 
   await page.goto('store/');
   await waitForShell(page);

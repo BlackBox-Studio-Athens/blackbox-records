@@ -144,13 +144,21 @@ export async function openSurfaceWithinClickTask(page: Page, triggerSelector: st
  * `waitForLoadState('networkidle')` cannot serve here: it resolves at once when the page was already idle earlier.
  */
 export function watchSurfaceWarmup(page: Page, moduleName: string, quietMs = 500) {
+  return watchNetworkQuiet(page, moduleName, quietMs);
+}
+
+/**
+ * Starts watching requests before a navigation; the returned wait resolves once none is in flight and the network
+ * has stayed quiet. Firefox's `waitForLoadState('networkidle')` can miss that state and never resolve on an idle page.
+ */
+export function watchNetworkQuiet(page: Page, moduleName = '', quietMs = 500) {
   const inflight = new Set<unknown>();
-  let requested = false;
+  let requested = moduleName === '';
   let lastChange = Date.now();
   page.on('request', (request) => {
     inflight.add(request);
     lastChange = Date.now();
-    if (request.url().includes(moduleName)) requested = true;
+    if (moduleName && request.url().includes(moduleName)) requested = true;
   });
   const settle = (request: unknown) => {
     inflight.delete(request);
@@ -164,7 +172,7 @@ export function watchSurfaceWarmup(page: Page, moduleName: string, quietMs = 500
     while (!requested || inflight.size > 0 || Date.now() - lastChange < quietMs) {
       if (Date.now() > deadline) {
         throw new Error(
-          `${moduleName} was ${requested ? 'requested but the network never settled' : 'never requested'}`,
+          `${moduleName || 'The page'} was ${requested ? 'requested but the network never settled' : 'never requested'}`,
         );
       }
       await page.waitForTimeout(50);
