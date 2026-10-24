@@ -33,7 +33,7 @@ const releaseStatusSelector = '[data-store-listing-release-status]';
 
 // The label lives in its own span so label writes keep the leading record mark.
 function setStoreCardBuyLabel(button: HTMLButtonElement, label: string) {
-  (button.querySelector?.<HTMLElement>('[data-store-card-buy-label]') ?? button).textContent = label;
+  setText(button.querySelector?.<HTMLElement>('[data-store-card-buy-label]') ?? button, label);
 }
 
 /** Resets the Artists checklist, the phone Filter sheet and the toolbar chips to their server state. */
@@ -74,37 +74,55 @@ export function sanitizeStoreSearchChrome(root: ParentNode) {
   });
 }
 
+// A freshly loaded page already holds this server state, and an unchanged write still replaces text nodes and
+// invalidates style on every card (about 200 ms at 4x CPU on Store), so sanitation writes only what differs.
+function setText(element: { textContent: string | null }, text: string) {
+  if (element.textContent !== text) element.textContent = text;
+}
+
+function setBusy(element: Element, busy: boolean) {
+  if ((element.getAttribute('aria-busy') === 'true') === busy) return;
+  if (busy) element.setAttribute('aria-busy', 'true');
+  else element.removeAttribute('aria-busy');
+}
+
 export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   root.querySelectorAll<HTMLElement>(placeholderSelector).forEach((placeholder) => {
-    placeholder.dataset.storeListingPriceState = 'loading';
-    placeholder.setAttribute('aria-busy', 'true');
-    placeholder.textContent = STORE_LISTING_PRICE_COPY.loading;
+    if (placeholder.dataset.storeListingPriceState !== 'loading')
+      placeholder.dataset.storeListingPriceState = 'loading';
+    setBusy(placeholder, true);
+    setText(placeholder, STORE_LISTING_PRICE_COPY.loading);
   });
   root.querySelectorAll<HTMLElement>(availabilitySelector).forEach((placeholder) => {
-    placeholder.dataset.storeListingAvailabilityState = 'pending';
-    placeholder.setAttribute('aria-busy', 'true');
-    placeholder.hidden = false;
-    placeholder.textContent = STORE_LISTING_PRICE_COPY.availabilityLoading;
+    if (placeholder.dataset.storeListingAvailabilityState !== 'pending') {
+      placeholder.dataset.storeListingAvailabilityState = 'pending';
+    }
+    setBusy(placeholder, true);
+    if (placeholder.hidden) placeholder.hidden = false;
+    setText(placeholder, STORE_LISTING_PRICE_COPY.availabilityLoading);
   });
   root.querySelectorAll<HTMLButtonElement>(buySelector).forEach((button) => {
-    button.hidden = true;
-    button.disabled = true;
-    button.removeAttribute('aria-busy');
-    button.classList.remove('preorder-action');
-    button.classList.remove('purchase-action');
-    button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
+    if (!button.hidden) button.hidden = true;
+    if (!button.disabled) button.disabled = true;
+    setBusy(button, false);
+    for (const action of ['preorder-action', 'purchase-action']) {
+      if (button.classList.contains(action)) button.classList.remove(action);
+    }
+    if (button.dataset.storeCardBuyLabel !== STORE_LISTING_PRICE_COPY.buy) {
+      button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
+    }
     setStoreCardBuyLabel(button, STORE_LISTING_PRICE_COPY.buy);
   });
   root.querySelectorAll<HTMLElement>('[data-store-preorder]').forEach((card) => {
     delete card.dataset.storePreorder;
   });
   root.querySelectorAll<HTMLElement>(preorderSelector).forEach((badge) => {
-    badge.hidden = true;
-    badge.textContent = '';
+    if (!badge.hidden) badge.hidden = true;
+    setText(badge, '');
   });
   root.querySelectorAll<HTMLElement>(releaseStatusSelector).forEach((badge) => {
-    badge.hidden = true;
-    badge.textContent = STORE_LISTING_PRICE_COPY.outNow;
+    if (!badge.hidden) badge.hidden = true;
+    setText(badge, STORE_LISTING_PRICE_COPY.outNow);
   });
 }
 

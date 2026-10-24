@@ -55,6 +55,7 @@ function availabilityPlaceholder(storeItemSlug: string, releaseDate?: string) {
     set hidden(value: boolean) {
       hidden = value;
     },
+    getAttribute: (name: string) => attributes.get(name) ?? null,
     removeAttribute: (name: string) => attributes.delete(name),
     setAttribute: (name: string, value: string) => attributes.set(name, value),
     textContent,
@@ -439,6 +440,49 @@ describe('Store listing-price presentation', () => {
     expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
     expect(buy.textContent).toBe('Buy');
     expect(document.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('writes nothing to a presentation that already holds its server state', () => {
+    const writes: string[] = [];
+    const watch = <T extends object>(target: T, name: string) =>
+      new Proxy(target, {
+        set: (object, key, value) => {
+          writes.push(`${name}.${String(key)}`);
+          return Reflect.set(object, key, value);
+        },
+        deleteProperty: (object, key) => {
+          writes.push(`delete ${name}.${String(key)}`);
+          return Reflect.deleteProperty(object, key);
+        },
+      });
+    const price = placeholder('item');
+    const availability = availabilityPlaceholder('item');
+    availability.dataset.storeListingAvailabilityState = 'pending';
+    availability.setAttribute('aria-busy', 'true');
+    availability.textContent = STORE_LISTING_PRICE_COPY.availabilityLoading;
+    availability.card.preorder = watch(availability.card.preorder, 'preorder');
+    availability.card.releaseStatus = watch(availability.card.releaseStatus, 'releaseStatus');
+    const buy = buyButton('item');
+    Object.assign(buy, { hidden: true, disabled: true });
+    const elements = { price, availability, buy };
+    for (const [name, element] of Object.entries(elements)) {
+      element.dataset = watch(element.dataset, `${name}.dataset`);
+      for (const method of ['setAttribute', 'removeAttribute'] as const) {
+        const original = element[method];
+        Object.assign(element, {
+          [method]: (...args: [string, string]) => (writes.push(`${name}.${method}`), original(...args)),
+        });
+      }
+    }
+    const remove = buy.classList.remove;
+    buy.classList.remove = (...names) => (writes.push('buy.classList.remove'), remove(...names));
+
+    sanitizeStoreListingPricePlaceholders(
+      listingRoot([watch(price, 'price')], [watch(availability, 'availability')], [watch(buy, 'buy')]),
+    );
+
+    expect(writes).toEqual([]);
+    expect(buy.iconPresent).toBe(true);
   });
 
   it('keeps preorder slots empty while pending and ignores a projection after cleanup', async () => {

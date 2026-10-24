@@ -164,6 +164,10 @@ export function getDistroSearchResultState(visibleCount: number) {
 
 export { normalizeStoreArtist };
 
+// Same order as argument-less localeCompare, without resolving locale data on every comparison (about 40 ms per
+// Store load at 4x CPU).
+const artistLabelCollator = new Intl.Collator();
+
 export function getStoreArtistChoices(items: readonly Pick<DistroSearchItem, 'artist'>[]) {
   const choices = new Map<string, { key: string; label: string; count: number }>();
   for (const { artist } of items) {
@@ -173,7 +177,7 @@ export function getStoreArtistChoices(items: readonly Pick<DistroSearchItem, 'ar
     if (existing) existing.count += 1;
     else choices.set(key, { key, label: artist.trim().replace(/\s+/gu, ' '), count: 1 });
   }
-  return [...choices.values()].sort((a, b) => a.label.localeCompare(b.label));
+  return [...choices.values()].sort((a, b) => artistLabelCollator.compare(a.label, b.label));
 }
 
 type StoreArtistChoice = ReturnType<typeof getStoreArtistChoices>[number];

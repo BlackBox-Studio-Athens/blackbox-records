@@ -157,6 +157,7 @@ class FakeElement {
           set textContent(value: string) {
             replaceInnerHtml(/(<span[^>]*data-store-listing-price[^>]*>)[\s\S]*?(<\/span>)/, `$1${value}$2`);
           },
+          getAttribute: () => null,
           setAttribute(name: string, value: string) {
             if (name === 'aria-busy') {
               replaceInnerHtml('<span ', `<span aria-busy="${value}" `);
@@ -179,6 +180,8 @@ class FakeElement {
             `<span${value ? `${attributes} hidden` : attributes.replace(/\s+hidden(?=\s|$)/g, '')}>`,
         );
       };
+      const isAvailabilityHidden = () =>
+        /<span[^>]*data-store-listing-availability[^>]*\shidden(?=[\s>])/.test(this.innerHTML);
       return [
         {
           dataset: {
@@ -189,12 +192,16 @@ class FakeElement {
               );
             },
           },
+          get hidden() {
+            return isAvailabilityHidden();
+          },
           set hidden(value: boolean) {
             setAvailabilityHidden(value);
           },
           set textContent(value: string) {
             replaceInnerHtml(/(<span[^>]*data-store-listing-availability[^>]*>)[\s\S]*?(<\/span>)/, `$1${value}$2`);
           },
+          getAttribute: () => null,
           setAttribute(name: string, value: string) {
             if (name === 'aria-busy') replaceInnerHtml('<span ', `<span aria-busy="${value}" `);
           },

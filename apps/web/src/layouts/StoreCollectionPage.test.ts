@@ -95,6 +95,8 @@ describe('Store collection category surfaces', () => {
     );
     const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
     expect(buyButton).toContain('data-store-card-buy-label="Buy"');
+    // The server state matches sanitized listing state, so activation has nothing to rewrite on 100+ cards.
+    expect(buyButton).toMatch(/\sdisabled\s/);
     expect(buyButton).toMatch(
       /\shidden\s*>\s*<Disc3 className="store-card-buy-icon" size=\{18\} aria-hidden="true" \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
     );
