@@ -15,7 +15,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./OrderWorkspace.tsx", "./internal-order-api.ts"],
+      "exports": ["./OrderWorkspace.tsx", "./internal-order-api.ts", "./order-todos.ts"],
       "namedInterfaces": {},
       "dependsOn": ["staff-ui", "staff-platform"],
       "workspaceInterfaces": {

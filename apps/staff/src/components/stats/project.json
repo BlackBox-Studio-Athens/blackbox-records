@@ -15,7 +15,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./StatsWorkspace.tsx"],
+      "exports": ["./StatsWorkspace.tsx", "./stats-overview.ts"],
       "namedInterfaces": {},
       "dependsOn": ["staff-ui", "staff-platform"],
       "workspaceInterfaces": {}

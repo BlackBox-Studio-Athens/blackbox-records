@@ -56,6 +56,13 @@ test('return targets accept only bounded same-origin staff navigation', () => {
   expect(staffTarget('/orders/?awaitingStock=true&cursor=page-two', origin)).toBe(
     '/orders/?awaitingStock=true&cursor=page-two',
   );
+  // Overview to-do links and the Orders "Not shipped" filter.
+  expect(staffTarget('/orders/?status=paid&dispatch=not_shipped', origin)).toBe(
+    '/orders/?status=paid&dispatch=not_shipped',
+  );
+  expect(staffTarget('/orders/?dispatch=shipped', origin)).toBeNull();
+  expect(staffTarget('/?range=30d', origin)).toBe('/?range=30d');
+  expect(staffTarget('/?range=forever', origin)).toBeNull();
 });
 
 test('an order task retains the awaiting-stock filter and pagination in its return entry', () => {

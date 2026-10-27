@@ -20,12 +20,12 @@ export function staffTarget(value: string, origin: string): string | null {
     const url = new URL(value, origin);
     if (url.origin !== origin || url.username || url.password) return null;
     const keys: Record<string, string[]> = {
-      '/': [],
+      '/': ['range'],
       '/content/': ['collection', 'id', 'new', 'view', 'q', 'area', 'format', 'sort', 'cursor', 'tab', 'history'],
       '/items/': ['variantId', 'tab'],
       '/items/new/': ['kind', 'collection', 'id'],
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
-      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock'],
+      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock', 'dispatch'],
       '/review/': ['q', 'scope', 'cursor'],
       '/stats/': [
         'range',
@@ -69,6 +69,7 @@ export function staffTarget(value: string, origin: string): string | null {
       history: ['1'],
       status: ['paid', 'not_paid', 'needs_review', 'pending_payment'],
       notification: ['pending', 'needs_review'],
+      dispatch: ['not_shipped'],
       range: ['today', 'yesterday', '7d', '30d', '90d', 'month', '12m', 'custom'],
       report: ['visits', 'store', 'search'],
       compare: ['true'],

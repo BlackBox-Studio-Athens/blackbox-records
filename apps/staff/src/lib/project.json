@@ -28,7 +28,8 @@
         "./publication-history-events.ts",
         "./staff-navigation.ts",
         "./staff-query.ts",
-        "./use-draft-autosave.ts"
+        "./use-draft-autosave.ts",
+        "./unpublished-changes.ts"
       ],
       "namedInterfaces": {},
       "dependsOn": ["staff-ui"],

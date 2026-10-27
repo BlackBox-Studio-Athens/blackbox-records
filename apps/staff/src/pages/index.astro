@@ -2,8 +2,9 @@
 import StockOpsLayout from '../layouts/StockOpsLayout.astro';
 import StaffOverview from '../components/StaffOverview';
 import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
+import '../styles/overview.css';
 ---
 
-<StockOpsLayout pageTitle="Overview" pageDescription="Run the label: website, catalog, stock and orders.">
+<StockOpsLayout pageTitle="Overview" pageDescription="How the label is doing, and what needs doing next.">
   <StaffOverview base={getInternalStockApiBaseUrl()} client:load />
 </StockOpsLayout>
