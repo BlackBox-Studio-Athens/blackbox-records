@@ -1,0 +1,17 @@
+diff --git a/lib/node/source-D-QvUWXC.js b/lib/node/source-D-QvUWXC.js
+index a0e47f311321cc10c13e4cd87ffed08673a45b0a..a0aa70c735b9256ea682f87d338a84c9bf1afbaf 100644
+--- a/lib/node/source-D-QvUWXC.js
++++ b/lib/node/source-D-QvUWXC.js
+@@ -2037,9 +2037,10 @@ var NodeHttpRequestSource = class extends Interceptor {
+ 			const onClientRead = (event) => {
+ 				if (event !== "data" && event !== "readable") return;
+ 				rawSocket.removeListener("newListener", onClientRead);
+-				setImmediate(() => {
++				// Patched: undici can write an idle connection's first request well after one tick (mswjs/interceptors#881).
++				setTimeout(() => {
+ 					if (isHttpConnection === void 0 && shouldPassthrough()) socketController.passthrough();
+-				});
++				}, 100);
+ 			};
+ 			rawSocket.on("newListener", onClientRead);
+ 			if (rawSocket.listenerCount("data") + rawSocket.listenerCount("readable") > 0) onClientRead("data");

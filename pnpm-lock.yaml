@@ -164,6 +164,7 @@ settings:
 
 patchedDependencies:
   '@emdash-cms/admin@1.3.1': ee394cb68f066b06497d54a8e2a65d22ee4193c6f61333cfee67fefa20805f23
+  '@mswjs/interceptors@0.45.9': bf0e41e2d24f952381b74c2fc0b6d4aca9c020aef0616ab98bef40f2321ec3c8
   emdash@1.3.1: 441f96e1eff7a460180869a9b19a9480e3a57a195b9eb1bdc4c934624f3f2c4f
 
 importers:
@@ -10716,7 +10717,7 @@ snapshots:
       strict-event-emitter: 0.5.1
     optional: true
 
-  '@mswjs/interceptors@0.45.9(supports-color@10.2.2)':
+  '@mswjs/interceptors@0.45.9(patch_hash=bf0e41e2d24f952381b74c2fc0b6d4aca9c020aef0616ab98bef40f2321ec3c8)(supports-color@10.2.2)':
     dependencies:
       '@open-draft/until': 3.0.1
       '@types/debug': 4.1.13
@@ -15339,7 +15340,7 @@ snapshots:
     dependencies:
       '@inquirer/confirm': 6.3.2(@types/node@24.19.2)
       '@msw/url': 0.1.2
-      '@mswjs/interceptors': 0.45.9(supports-color@10.2.2)
+      '@mswjs/interceptors': 0.45.9(patch_hash=bf0e41e2d24f952381b74c2fc0b6d4aca9c020aef0616ab98bef40f2321ec3c8)(supports-color@10.2.2)
       cookie: 2.0.1
       headers-polyfill: 5.0.1
       is-node-process: 1.2.0

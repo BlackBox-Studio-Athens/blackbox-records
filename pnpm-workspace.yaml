@@ -31,4 +31,5 @@ minimumReleaseAgeExclude:
   - stripe@23.0.1
 patchedDependencies:
   '@emdash-cms/admin@1.3.1': patches/@emdash-cms__admin@1.3.1.patch
+  '@mswjs/interceptors@0.45.9': patches/@mswjs__interceptors@0.45.9.patch
   emdash@1.3.1: patches/emdash@1.3.1.patch
