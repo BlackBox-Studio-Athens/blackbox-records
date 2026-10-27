@@ -50,3 +50,22 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - No `[data-staff-back]` link on any of those nine pages at either width.
 - Header area name visible and untruncated at 360, 390, 640 and 1024 px. At 320 px it first truncated to 44 px; the below-360 px rule fits it at 68 px (checked by injecting the rule, then in the rebuilt stack). Menu and Review stay 44 px.
 - Evidence: `.codex-artifacts/staff-redesign/slice2/`.
+
+## Slice 3: Orders triage, 27 October 2026
+
+### Checks run
+
+- `pnpm exec astro check` (staff): 0 errors.
+- `pnpm test` for `order-workspace.test.tsx` (new default, All view, custom view and filter-count cases) and `staff-navigation.test.ts` (`view=all` allowed on Orders only; Nx re-ran all seven staff modules): all passed.
+- Staff build in the stack restart: bundle budgets passed; Orders eager JavaScript 133,006 Brotli bytes (budget 137,216).
+- ESLint on the changed files: no problems.
+- `pnpm validate` on the final tree: passed, 24 of 24 affected tasks (repository gates only). Summary: `.codex-artifacts/validation/2026-10-27T10-58-59-718Z-31648-b05907/summary.json`.
+
+### Browser (Playwright CLI, headless Chromium, Local data)
+
+- `/orders/` opens To ship: URL `?status=paid&dispatch=not_shipped`, 7 orders, first row "Local Mock Recipient / €26.50".
+- All orders writes `?view=all`, shows 25 orders, and survives reload. Unpaid rows read "No customer yet / Ref f5ddb7f2" instead of a full UUID.
+- Previous/Next render after the list.
+- 390 px: filters collapsed behind "Filters (2)" (`aria-expanded` false, then true); the first order starts at y = 302 (before: about 720). No control under 44 px; no horizontal overflow at 390 or 320 px; no console messages.
+- Filter changes replace the history entry, as before this slice, so Back leaves Orders rather than stepping through filters.
+- Evidence: `.codex-artifacts/staff-redesign/slice3/`.

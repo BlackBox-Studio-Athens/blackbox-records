@@ -8,6 +8,67 @@ import {
 type ReadState<T> = { data: T | null; readAt: string | null; loading: boolean; error: string | null };
 const emptyRead = <T>(): ReadState<T> => ({ data: null, readAt: null, loading: false, error: null });
 
+export type OrderListFilters = {
+  status: OrderStatus | '';
+  query: string;
+  notification: '' | 'pending' | 'needs_review';
+  cursor?: string | undefined;
+  awaitingStock: boolean;
+  notShipped: boolean;
+};
+const orderStatuses: OrderStatus[] = ['paid', 'not_paid', 'needs_review', 'pending_payment'];
+const noFilters: OrderListFilters = {
+  status: '',
+  query: '',
+  notification: '',
+  awaitingStock: false,
+  notShipped: false,
+};
+/** Paid orders that have not left the label yet: the list staff open Orders for. */
+export const toShipFilters: OrderListFilters = { ...noFilters, status: 'paid', notShipped: true };
+
+/** A bare `/orders/` opens the orders to ship; `view=all` keeps an explicit unfiltered list across reloads. */
+export function parseOrderListLocation(search: string): OrderListFilters {
+  const params = new URLSearchParams(search);
+  params.delete('returnTo');
+  if (!params.size) return toShipFilters;
+  const status = params.get('status') as OrderStatus;
+  const notification = params.get('notification');
+  const cursor = params.get('cursor');
+  return {
+    status: orderStatuses.includes(status) ? status : '',
+    query: params.get('q') ?? '',
+    notification: notification === 'pending' || notification === 'needs_review' ? notification : '',
+    ...(cursor ? { cursor } : {}),
+    awaitingStock: params.get('awaitingStock') === 'true',
+    notShipped: params.get('dispatch') === 'not_shipped',
+  };
+}
+
+export function orderListLocation(filters: OrderListFilters): string {
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.query) params.set('q', filters.query);
+  if (filters.notification) params.set('notification', filters.notification);
+  if (filters.awaitingStock) params.set('awaitingStock', 'true');
+  if (filters.notShipped) params.set('dispatch', 'not_shipped');
+  if (filters.cursor) params.set('cursor', filters.cursor);
+  if (!params.size) params.set('view', 'all');
+  return `/orders/?${params}`;
+}
+
+export function orderListView(filters: OrderListFilters): 'to_ship' | 'all' | 'custom' {
+  const active = filters.query || filters.notification || filters.awaitingStock;
+  if (!active && filters.status === 'paid' && filters.notShipped) return 'to_ship';
+  if (!active && !filters.status && !filters.notShipped) return 'all';
+  return 'custom';
+}
+
+/** Number of filters that differ from the unfiltered list, shown on the collapsed phone filter button. */
+export const activeOrderFilters = (filters: OrderListFilters) =>
+  [filters.status, filters.query, filters.notification, filters.awaitingStock, filters.notShipped].filter(Boolean)
+    .length;
+
 export function createOrderWorkspace(
   api: Pick<ReturnType<typeof createInternalOrderApi>, 'list' | 'detail'> &
     Partial<Pick<ReturnType<typeof createInternalOrderApi>, 'search' | 'setDispatch'>>,

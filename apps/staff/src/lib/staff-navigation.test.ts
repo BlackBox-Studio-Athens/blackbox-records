@@ -63,6 +63,8 @@ test('return targets accept only bounded same-origin staff navigation', () => {
   expect(staffTarget('/orders/?dispatch=shipped', origin)).toBeNull();
   expect(staffTarget('/?range=30d', origin)).toBe('/?range=30d');
   expect(staffTarget('/?range=forever', origin)).toBeNull();
+  expect(staffTarget('/orders/?view=all', origin)).toBe('/orders/?view=all');
+  expect(staffTarget('/orders/?view=media', origin)).toBeNull();
 });
 
 test('an order task retains the awaiting-stock filter and pagination in its return entry', () => {

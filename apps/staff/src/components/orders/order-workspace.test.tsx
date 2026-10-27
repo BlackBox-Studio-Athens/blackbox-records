@@ -2,7 +2,14 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InternalOrderApiError, type InternalOrder } from './internal-order-api';
-import { createOrderWorkspace } from './order-workspace';
+import {
+  activeOrderFilters,
+  createOrderWorkspace,
+  orderListLocation,
+  orderListView,
+  parseOrderListLocation,
+  toShipFilters,
+} from './order-workspace';
 import OrderDetail, { money, notificationStatus } from './OrderDetail';
 import { exampleOrder } from './order-fixtures.test-support.ts';
 import OrderWorkspace from './OrderWorkspace';
@@ -507,5 +514,29 @@ describe('Order dispatch', () => {
     expect(html).toContain('Marking shipped again will not create another email.');
     expect(html).not.toContain('type="checkbox"');
     expect(html).not.toContain('Shipping email skipped');
+  });
+});
+
+describe('Orders list defaults', () => {
+  it('opens the orders to ship when the URL has no filters', () => {
+    expect(parseOrderListLocation('')).toEqual(toShipFilters);
+    expect(parseOrderListLocation('?returnTo=%2F')).toEqual(toShipFilters);
+    expect(orderListView(toShipFilters)).toBe('to_ship');
+    expect(orderListLocation(toShipFilters)).toBe('/orders/?status=paid&dispatch=not_shipped');
+  });
+
+  it('keeps an explicit unfiltered list across reloads', () => {
+    const all = parseOrderListLocation('?view=all');
+    expect(all).toMatchObject({ status: '', notShipped: false, awaitingStock: false, query: '' });
+    expect(orderListView(all)).toBe('all');
+    expect(orderListLocation(all)).toBe('/orders/?view=all');
+  });
+
+  it('treats any other filter combination as custom and counts it', () => {
+    const custom = parseOrderListLocation('?status=paid&dispatch=not_shipped&awaitingStock=true&cursor=next');
+    expect(orderListView(custom)).toBe('custom');
+    expect(activeOrderFilters(custom)).toBe(3);
+    expect(orderListLocation(custom)).toBe('/orders/?status=paid&awaitingStock=true&dispatch=not_shipped&cursor=next');
+    expect(parseOrderListLocation('?status=refunded').status).toBe('');
   });
 });

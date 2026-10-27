@@ -17,7 +17,7 @@
 
 ## 3. Orders triage (finding 2)
 
-- [ ] 3.1 Default to orders that need action, show customer name and total, collapse filters on phones, move pagination below the list.
+- [x] 3.1 Default to orders that need action, show customer name and total, collapse filters on phones, move pagination below the list. "Need action" is paid and not shipped (To ship); orders needing payment review stay on Overview's To do and the Payment status filter.
 
 ## 4. Stats detail (finding 3)
 

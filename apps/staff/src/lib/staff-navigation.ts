@@ -25,7 +25,7 @@ export function staffTarget(value: string, origin: string): string | null {
       '/items/': ['variantId', 'tab'],
       '/items/new/': ['kind', 'collection', 'id'],
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
-      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock', 'dispatch'],
+      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock', 'dispatch', 'view'],
       '/review/': ['q', 'scope', 'cursor'],
       '/stats/': [
         'range',
@@ -58,7 +58,12 @@ export function staffTarget(value: string, origin: string): string | null {
     url.searchParams.delete('returnTo');
     const enums: Record<string, readonly string[]> = {
       collection: Object.keys(contentSections),
-      view: url.pathname === '/calendar/' ? ['month', 'agenda'] : ['media', 'footer'],
+      view:
+        url.pathname === '/calendar/'
+          ? ['month', 'agenda']
+          : url.pathname === '/orders/'
+            ? ['all']
+            : ['media', 'footer'],
       area: url.pathname === '/stock/' ? ['all', 'release', 'distro', 'merch'] : ['all', 'distro', 'merch'],
       format: DISTRO_GROUP_VALUES,
       sort: ['title', 'updated'],

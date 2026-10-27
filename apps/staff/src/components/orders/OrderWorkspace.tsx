@@ -3,6 +3,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  ListFilter,
   Inbox,
   LockKeyhole,
   Mail,
@@ -23,7 +24,15 @@ import { Input } from '../ui/input';
 import { createInternalOrderApi, type InternalOrder, type OrderStatus } from './internal-order-api';
 import { useStaffRead } from '../../lib/staff-query';
 import { scrollWithLenis } from '../../lib/lenis-scroll';
-import { createOrderWorkspace } from './order-workspace';
+import {
+  activeOrderFilters,
+  createOrderWorkspace,
+  orderListLocation,
+  orderListView,
+  parseOrderListLocation,
+  toShipFilters,
+  type OrderListFilters,
+} from './order-workspace';
 import OrderDetail, { formatOrderTime, notificationStatus, OrderStatusLabel, paymentLabels } from './OrderDetail';
 
 export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: string }) {
@@ -32,6 +41,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
   const [notification, setNotification] = useState<'' | 'pending' | 'needs_review'>('');
   const [search, setSearch] = useState('');
   const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusPending = useRef(false);
   const restoreListPosition = useRef(false);
@@ -48,20 +58,16 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       }
       workspace.back();
       restoreListPosition.current = true;
-      const requested = params.get('status') as OrderStatus;
-      const status = ['paid', 'not_paid', 'needs_review', 'pending_payment'].includes(requested) ? requested : '';
-      const q = params.get('q') ?? '';
-      const notification = params.get('notification');
-      const filter = notification === 'pending' || notification === 'needs_review' ? notification : '';
-      setSearch(q);
-      setNotification(filter);
+      const filters = parseOrderListLocation(window.location.search);
+      setSearch(filters.query);
+      setNotification(filters.notification);
       void workspace.loadList(
-        status,
-        q,
-        filter,
-        params.get('cursor') ?? undefined,
-        params.get('awaitingStock') === 'true',
-        params.get('dispatch') === 'not_shipped',
+        filters.status,
+        filters.query,
+        filters.notification,
+        filters.cursor,
+        filters.awaitingStock,
+        filters.notShipped,
       );
     };
     followUrl();
@@ -111,14 +117,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
 
   useEffect(() => {
     if (state.selected || state.denied || state.list.loading || !state.list.data) return;
-    const params = new URLSearchParams();
-    if (state.status) params.set('status', state.status);
-    if (state.query) params.set('q', state.query);
-    if (state.notification) params.set('notification', state.notification);
-    if (state.awaitingStock) params.set('awaitingStock', 'true');
-    if (state.notShipped) params.set('dispatch', 'not_shipped');
-    if (state.cursor) params.set('cursor', state.cursor);
-    writeStaffLocation(`/orders/${params.size ? `?${params}` : ''}`, {
+    writeStaffLocation(orderListLocation(state), {
       pages: [...previousCursors.map((cursor) => cursor ?? ''), state.cursor ?? ''],
     });
     if (restoreListPosition.current) {
@@ -138,6 +137,51 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     state.list.loading,
   ]);
   const read = state.selected ? state.detail : state.list;
+  const view = orderListView(state);
+  const filterCount = activeOrderFilters(state);
+  function showFilters(filters: OrderListFilters) {
+    setSearch(filters.query);
+    setNotification(filters.notification);
+    setPreviousCursors([]);
+    void workspace.loadList(
+      filters.status,
+      filters.query,
+      filters.notification,
+      undefined,
+      filters.awaitingStock,
+      filters.notShipped,
+    );
+  }
+  const pagination = (
+    <div className="order-pagination">
+      {!!previousCursors.length && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            const previous = [...previousCursors];
+            const cursor = previous.pop();
+            setPreviousCursors(previous);
+            void workspace.loadList(state.status, search, notification, cursor);
+          }}
+        >
+          <ChevronLeft aria-hidden="true" />
+          Previous
+        </Button>
+      )}
+      {state.nextCursor && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            setPreviousCursors([...previousCursors, state.cursor]);
+            void workspace.loadList(state.status, search, notification, state.nextCursor ?? undefined);
+          }}
+        >
+          Next
+          <ChevronRight aria-hidden="true" />
+        </Button>
+      )}
+    </div>
+  );
   const orders = state.list.data ?? [];
   useStaffRead(
     [
@@ -212,7 +256,35 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         </div>
       </header>
       {!state.selected && (
-        <div className="order-toolbar">
+        <div className="order-views">
+          <div className="order-view-choice" role="group" aria-label="Orders to show">
+            <button type="button" aria-pressed={view === 'to_ship'} onClick={() => showFilters(toShipFilters)}>
+              To ship
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'all'}
+              onClick={() =>
+                showFilters({ status: '', query: '', notification: '', awaitingStock: false, notShipped: false })
+              }
+            >
+              All orders
+            </button>
+          </div>
+          <Button
+            variant="outline"
+            className="order-filters-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="order-filters"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+          >
+            <ListFilter aria-hidden="true" />
+            Filters{filterCount ? ` (${filterCount})` : ''}
+          </Button>
+        </div>
+      )}
+      {!state.selected && (
+        <div className="order-toolbar" id="order-filters" data-open={filtersOpen}>
           <div className="col-span-full flex flex-wrap gap-x-6 gap-y-2">
             <label>
               <span className="flex items-center gap-2">
@@ -342,34 +414,6 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         )
       ) : (
         <section aria-label="Recent orders" aria-busy={state.list.loading}>
-          <div className="my-4 flex gap-2">
-            {!!previousCursors.length && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const previous = [...previousCursors];
-                  const cursor = previous.pop();
-                  setPreviousCursors(previous);
-                  void workspace.loadList(state.status, search, notification, cursor);
-                }}
-              >
-                <ChevronLeft aria-hidden="true" />
-                Previous
-              </Button>
-            )}
-            {state.nextCursor && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setPreviousCursors([...previousCursors, state.cursor]);
-                  void workspace.loadList(state.status, search, notification, state.nextCursor ?? undefined);
-                }}
-              >
-                Next
-                <ChevronRight aria-hidden="true" />
-              </Button>
-            )}
-          </div>
           {!!orders.length && (
             <>
               <div className="order-list-heading" aria-hidden="true">
@@ -389,7 +433,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                         onClick={() => inspect(order)}
                         className="order-row"
                         data-staff-row={order.checkoutSessionId ?? `${order.variantId}:${order.createdAt}`}
-                        aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}${order.status === 'paid' ? (order.dispatch.shippedAt ? ', Shipped' : ', Not shipped') : ''}${order.awaitingStock ? ', Awaiting stock' : ''}`}
+                        aria-label={`Open order: ${order.fulfillment.kind === 'current' ? `${order.fulfillment.recipientName}, ` : ''}${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}${order.status === 'paid' ? (order.dispatch.shippedAt ? ', Shipped' : ', Not shipped') : ''}${order.awaitingStock ? ', Awaiting stock' : ''}`}
                       >
                         <span className="order-row-created">
                           <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time>
@@ -418,7 +462,12 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                               </small>
                             </>
                           ) : (
-                            (order.orderReference ?? 'Payment not complete')
+                            <>
+                              <span className="order-muted">No customer yet</span>
+                              {order.orderReference && (
+                                <small className="block order-muted">Ref {order.orderReference.slice(0, 8)}</small>
+                              )}
+                            </>
                           )}
                         </span>
                         <OrderStatusLabel status={order.status} />
@@ -440,6 +489,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               </ul>
             </>
           )}
+          {(orders.length > 0 || previousCursors.length > 0) && pagination}
           {state.list.data && !orders.length && (
             <div className="order-empty">
               <Inbox size={32} aria-hidden="true" />
