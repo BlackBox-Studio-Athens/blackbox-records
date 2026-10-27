@@ -157,7 +157,7 @@ export function StatsView({
   return (
     <div ref={workspace} className="staff-workspace stats-workspace stats-daily-brief">
       <header className="stats-heading">
-        <h1>{state.report === 'overview' ? 'Your stats' : 'Stats'}</h1>
+        <h1 className="staff-page-title">Stats</h1>
       </header>
       <div className="stats-period-toolbar">
         <button

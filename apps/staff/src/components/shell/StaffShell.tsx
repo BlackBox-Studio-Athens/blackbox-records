@@ -324,9 +324,9 @@ export default function StaffShell({
         <div className="staff-header-context">
           <span className="staff-current-area">
             {url.pathname.startsWith('/review/')
-              ? 'Website changes'
+              ? 'Changes'
               : url.pathname.startsWith('/calendar/')
-                ? 'Publication calendar'
+                ? 'Calendar'
                 : area.label}
           </span>
         </div>
@@ -394,7 +394,7 @@ export default function StaffShell({
             url.pathname !== '/items/new/' &&
             !singletonContentSections.includes(section as ContentSection) && (
               <div className="px-4">
-                <StaffBack />
+                <StaffBack skipOverview />
               </div>
             )}
           <main id="main" data-lenis-scroll-root tabIndex={-1} aria-label={title}>

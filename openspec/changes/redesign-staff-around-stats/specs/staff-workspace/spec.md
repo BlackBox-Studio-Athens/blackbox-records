@@ -27,9 +27,9 @@ Overview SHALL show counted to-do items for paid orders to ship, orders waiting 
 
 ### Requirement: Shared staff page header
 
-Every staff area SHALL use one page-header pattern with the same title size, left edge and placement of subtitle and actions. Top-level areas SHALL NOT repeat a Back to Overview link. Below 1440 px the shell header SHALL name the current area.
+Every staff area title SHALL use one title scale. Below 768 px every title SHALL start at the same content inset. At wider widths, Overview, Stats, Orders and Images MAY centre a reading column; other areas start at the content inset. Top-level areas SHALL NOT show a return link that only leads to Overview. Below 1440 px the shell header SHALL name the current area.
 
 #### Scenario: Member moves between areas
 
 - **WHEN** a member opens Overview, Catalog, Website, Images, Stock, Orders and Stats in turn at 1440 px and at 390 px
-- **THEN** each page title has the same size and left edge, and the phone header names the current area.
+- **THEN** each page title has the same size, at 390 px each title starts at the same inset, no page shows a return that only leads to Overview, and the phone header names the current area.

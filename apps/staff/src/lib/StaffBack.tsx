@@ -3,7 +3,8 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { returnStaffTask, staffReturn } from './staff-navigation';
 
-export default function StaffBack() {
+/** `skipOverview` hides the link when it would only lead to Overview, which the header and logo already open. */
+export default function StaffBack({ skipOverview = false }: { skipOverview?: boolean }) {
   const [target, setTarget] = useState({ url: '/', label: 'Overview' });
   const leaving = useRef(false);
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function StaffBack() {
       window.removeEventListener('popstate', update);
     };
   }, []);
+  if (skipOverview && target.url === '/') return null;
   return (
     <Button variant="ghost" className="min-h-11 justify-start whitespace-normal" asChild>
       <a

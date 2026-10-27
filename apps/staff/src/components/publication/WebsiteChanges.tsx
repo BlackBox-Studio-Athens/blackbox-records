@@ -320,7 +320,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
         <>
           <header className="publication-heading">
             <div>
-              <h1 ref={heading} tabIndex={-1}>
+              <h1 ref={heading} tabIndex={-1} className="staff-page-title">
                 Review website changes
               </h1>
               <p className="text-muted-foreground">

@@ -76,10 +76,19 @@ body[data-workspace='content'] {
   padding: 24px;
 }
 .staff-page h1 {
+  margin-bottom: 24px;
+}
+/* One title scale for every staff area. The extra class outranks the older per-area heading rules. */
+.staff-shell .staff-page-title {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.025em;
-  margin-bottom: 24px;
+  line-height: 1.15;
+}
+@media (max-width: 767px) {
+  .staff-shell .staff-page-title {
+    font-size: 24px;
+  }
 }
 .staff-page h2 {
   font-size: 18px;
@@ -352,13 +361,17 @@ body[data-workspace='content'] {
   display: none;
 }
 .staff-current-area {
+  display: block;
+  overflow: hidden;
   font-size: 0.875rem;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* Below 1440 px the header names the current area beside the logo; the top navigation is in Menu. */
 .staff-header-context {
-  display: grid;
-  gap: 2px;
-  margin-left: auto;
+  flex: 1;
+  min-width: 0;
 }
 .staff-menu-trigger {
   flex-shrink: 0;
@@ -379,18 +392,27 @@ body[data-workspace='content'] {
   }
 }
 @media (max-width: 639px) {
-  .staff-brand img {
-    width: clamp(128px, 40vw, 176px);
+  .staff-shell-header {
+    gap: 6px;
   }
-  .staff-header-context {
-    display: none;
+  .staff-brand img {
+    width: clamp(104px, 32vw, 176px);
   }
   .staff-shell-header > .staff-review-link {
     width: 44px;
     padding-inline: 0;
   }
+}
+/* At 320 px the area name needs a few pixels from the header padding, logo and Menu spacing. */
+@media (max-width: 359px) {
+  .staff-shell-header {
+    padding-inline: 8px;
+  }
+  .staff-brand img {
+    width: 96px;
+  }
   .staff-menu-trigger {
-    margin-left: auto;
+    padding-inline: 4px;
   }
 }
 .staff-area-link {
@@ -545,7 +567,7 @@ body[data-workspace='content'] {
     display: none;
   }
   .staff-header-context {
-    margin-left: 0;
+    flex: 0 0 auto;
   }
   .staff-context-navigation {
     display: flex;
@@ -591,7 +613,7 @@ body[data-workspace='content'] {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 12px 24px;
 }
 .inventory-heading-actions {
   display: flex;
@@ -615,8 +637,6 @@ body[data-workspace='content'] {
   }
 }
 .inventory-heading h1 {
-  font-size: 24px;
-  font-weight: 600;
   min-width: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -627,7 +647,7 @@ body[data-workspace='content'] {
 .inventory-workspace {
   display: grid;
   gap: 24px;
-  padding: 0 20px 24px;
+  padding: 0 24px 24px;
   min-width: 0;
 }
 .inventory-list {
@@ -790,8 +810,11 @@ body[data-workspace='content'] {
   }
 }
 @media (max-width: 600px) {
+  .inventory-heading,
   .inventory-workspace {
-    padding-inline: 12px;
+    padding-inline: 16px;
+  }
+  .inventory-workspace {
     gap: 12px;
   }
   .inventory-columns {
@@ -985,8 +1008,6 @@ body[data-workspace='content'] {
   margin-bottom: 24px;
 }
 .publication-heading h1 {
-  font-size: 1.75rem;
-  font-weight: 650;
   margin-bottom: 8px;
 }
 .publication-steps {

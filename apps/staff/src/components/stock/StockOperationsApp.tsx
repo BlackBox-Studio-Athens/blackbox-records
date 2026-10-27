@@ -775,7 +775,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
     >
       {!embedded && (
         <header className="inventory-heading">
-          <h1>
+          <h1 className="staff-page-title">
             {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
           </h1>
           {selectedVariantId && (

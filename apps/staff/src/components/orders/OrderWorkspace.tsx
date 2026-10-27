@@ -200,7 +200,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         ))}
       <header className="order-heading">
         <div>
-          <h1 ref={heading} tabIndex={-1}>
+          <h1 ref={heading} tabIndex={-1} className="staff-page-title">
             {state.selected ? 'Order detail' : 'Orders'}
           </h1>
           <p className="order-muted">

@@ -13,7 +13,7 @@
 
 ## 2. Shared page header (findings 4, 5, 6, 11)
 
-- [ ] 2.1 One page-header component (the shell header also drops Menu at 195 px, seen during 1.3) for all seven areas; remove Back to Overview from top-level areas; name the current area in the phone header; update the staff-workspace spec to seven areas.
+- [ ] 2.1 One page-header pattern for all seven areas; remove Back to Overview from top-level areas; name the current area in the phone header; update the staff-workspace spec to seven areas. Done: shared title scale, Overview-only Back links removed, phone header names the area down to 320 px. Desktop left edge: owner kept centred reading columns (option A, 27 October 2026). Open: the 195 px Menu overflow; the base spec's six-area wording.
 
 ## 3. Orders triage (finding 2)
 

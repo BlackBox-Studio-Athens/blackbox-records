@@ -1226,9 +1226,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     <div className="cms-surface cms-workspace">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {media && (
-          <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8" data-lenis-scroll-root>
+          <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6" data-lenis-scroll-root>
             <div className="mx-auto max-w-6xl">
-              <h1 className="text-2xl font-semibold">Images</h1>
+              <h1 className="staff-page-title">Images</h1>
               <ContentFeature name="Images">
                 <MediaLibrary base={base} />
               </ContentFeature>
@@ -1253,7 +1253,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           >
             <div className="grid gap-4 border-b border-border p-4">
               <div className="flex items-center justify-between gap-2">
-                <h1 ref={listHeading} tabIndex={-1} className="text-base font-semibold outline-none">
+                <h1 ref={listHeading} tabIndex={-1} className="staff-page-title outline-none">
                   {contentSections[collection]}
                 </h1>
                 {listLoaded && <Badge variant="secondary">{items.length}</Badge>}

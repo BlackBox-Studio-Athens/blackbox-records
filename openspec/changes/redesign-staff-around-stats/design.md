@@ -31,3 +31,7 @@ Selection: **A · Brief, then to-do**, chosen by the owner on 27 October 2026 ("
 - Counts use existing bounded reads, so no backend change was needed: one Orders search for paid, not-shipped orders (limit 50, split by each order's `awaitingStock`), one for orders needing review, and the existing overview read of five unpublished entries per collection. A capped count shows "N+".
 - Figure logic lives in `staff-stats` (new export `stats-overview.ts`), order counts in `staff-orders` (`order-todos.ts`) and the draft count in `staff-platform` (`unpublished-changes.ts`), so each is tested by its owning module. Layering is unchanged.
 - Overview will load the Stats read; its bundle must stay within the existing Overview limit (129,024 Brotli bytes in the current performance check) and the Free-tier rule.
+
+## Desktop left edge decision
+
+Selection: **A · keep centred**, chosen by the owner on 27 October 2026 ("Keep A: centred reading columns on Overview, Stats, Orders and Images; commit slice 2 as it is."). B, one 24 px left edge for every page, was shown as an injected-CSS preview at 1440 px (`.codex-artifacts/staff-redesign/slice2/left_*.png`) and not built. Titles share one scale; phones share one inset.

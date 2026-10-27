@@ -17,7 +17,7 @@ const footerPages = [
 export default function WebsitePages({ footer = false }: { footer?: boolean }) {
   return (
     <section className="staff-page">
-      <h1>{footer ? 'Navigation & footer' : 'Pages'}</h1>
+      <h1 className="staff-page-title">{footer ? 'Navigation & footer' : 'Pages'}</h1>
       <div className="staff-destinations">
         {(footer ? footerPages : websitePages).map(([collection, name, description, Icon]) => (
           <a key={collection} href={`/content/?collection=${collection}`}>

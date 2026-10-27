@@ -2769,8 +2769,9 @@ else if (process.argv.includes('--orders-shipping')) {
         '/orders/',
       ]) {
         await page.goto(origin + path);
-        await page.getByRole('link', { name: 'Back to Overview', exact: true }).waitFor();
-        assert.equal(await page.locator('[data-staff-back]').count(), 1, `One root return: ${path}`);
+        await page.locator('main h1').first().waitFor();
+        // Top-level areas omit a return that only leads to Overview; the header and logo already open it.
+        assert.equal(await page.locator('[data-staff-back]').count(), 0, `No Overview-only return: ${path}`);
       }
       for (const collection of [
         'artists',

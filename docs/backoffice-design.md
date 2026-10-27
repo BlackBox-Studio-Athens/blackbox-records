@@ -32,6 +32,8 @@ At 320, 390 and 430 px, keep Menu and Review changes fully inside the phone head
 
 The focused rendering check is `node --import tsx scripts/test-content-workspace.mjs --selling --mobile-preorders`. It uses disposable Local fixtures and checks control bounds, touch targets, keyboard reachability, month/date previews, validation, stock conflict/recovery, Menu, editor autosave recovery, Stock and Orders. Before/after captures and source-bound results belong in `.codex-artifacts/preorders/followup/staff-mobile/`; document overflow alone does not establish that a control is reachable.
 
+Every area title uses the shared `staff-page-title` scale: 28 px, weight 600, 24 px below 768 px (27 October 2026, `redesign-staff-around-stats` slice 2). List and area pages omit a Back link that would only lead to Overview, which the header and logo already open; task returns (editor to list, order to Orders, or an explicit origin) remain. On desktop, Overview, Stats, Orders and Images keep centred reading columns (owner decision, 27 October 2026); other areas start at the content inset. Below 1440 px the header names the current area beside the logo, using Changes and Calendar for the review and calendar pages; below 360 px the logo shrinks to 96 px so the name fits at 320 px.
+
 Use sans-serif text, 16 px inputs, 44 px targets, restrained headings, blue actions, and semantic states with text. At 1280 px and above, editors start beside a resizable preview; visibility preference is remembered. Smaller widths use Edit/Preview tabs. Public components retain their own design. Images stays flat, with contextual selection, placement-owned alt text, search and grid/list views.
 
 ### Staff navigation and identity, approved 2026-09-17

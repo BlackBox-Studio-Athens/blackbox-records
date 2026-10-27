@@ -32,3 +32,21 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - Screen-reader output beyond the markup (counts use visually hidden text; change direction is in the text).
 - Hosted Visits and Search data, and request cost on UAT or PRD.
 - At 195 px the shell header drops its Menu button. This predates the change and is recorded under task 2.1.
+
+## Slice 2: shared page header, 27 October 2026
+
+### Checks run
+
+- `pnpm exec astro check` (staff): 0 errors.
+- `pnpm test` for `StaffBack.test.tsx` (new; Nx re-ran all seven staff modules), `StaffShell.test.tsx`, `stats-workspace.test.tsx` and `order-workspace.test.tsx`: all passed.
+- Staff build in the stack restart: bundle budgets passed; Overview eager JavaScript 128,821 Brotli bytes (budget 129,024).
+- `scripts/test-content-workspace.mjs` now asserts no Overview-only return on top-level areas. The script itself was not run.
+- `pnpm validate` on the final tree: passed, 24 of 24 affected tasks (repository gates only). Summary: `.codex-artifacts/validation/2026-10-27T10-38-57-927Z-23252-a94944/summary.json`.
+
+### Browser (Playwright CLI, headless Chromium)
+
+- Every area title (Overview, Releases, Pages, Images, Stock, Orders, Stats, Publication calendar, Review website changes) measures 28 px at 1440 px and 24 px at 390 px. Before: 16, 24, 28 and 44 px.
+- At 390 px every title starts at x = 16. At 1440 px left edges still differ (24 to 360 px) because Overview, Stats, Orders and Images centre their columns and Catalog and Website have a sidebar; see the open decision in tasks.md.
+- No `[data-staff-back]` link on any of those nine pages at either width.
+- Header area name visible and untruncated at 360, 390, 640 and 1024 px. At 320 px it first truncated to 44 px; the below-360 px rule fits it at 68 px (checked by injecting the rule, then in the rebuilt stack). Menu and Review stay 44 px.
+- Evidence: `.codex-artifacts/staff-redesign/slice2/`.

@@ -136,7 +136,7 @@ export default function StaffOverview({ base }: { base: string }) {
     <div className="staff-page staff-overview">
       <div className="overview-heading">
         <div>
-          <h1>Overview</h1>
+          <h1 className="staff-page-title">Overview</h1>
           <p className="overview-period">{periodSentence(range)}</p>
         </div>
         <div className="overview-ranges" role="group" aria-label="Period">

@@ -132,7 +132,7 @@ export default function PublicationCalendar({ base }: { base: string }) {
   }
   return (
     <section className="staff-workspace publication-calendar p-4 sm:p-6" aria-label="Publication calendar">
-      <h1 className="text-2xl font-semibold">Publication calendar</h1>
+      <h1 className="staff-page-title">Publication calendar</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Successful website updates in Athens time. Repeated updates and removals are retained.
       </p>
