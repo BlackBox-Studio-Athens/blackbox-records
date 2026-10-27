@@ -105,3 +105,10 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - Catalog, 1440 px: search, area, format, sort, Add distro and Add merch sit on one row at y = 136 (before: three rows). At 390 px they wrap, with every control 44 px high and no horizontal overflow.
 - Console: no messages on Review and Stock. Opening a Catalog item logs the existing `/_emdash/api/auth/me` 404s, already recorded in earlier changes.
 - Evidence: `.codex-artifacts/staff-redesign/slice5/`.
+
+## Hosted UAT, 27 October 2026
+
+- Slices 1 to 5 reached UAT through the main push run for `fc140d0d`. The deploy passed; staff previews failed in Chromium and Firefox because `scripts/test-content-workspace.mjs` still expected the old Overview: an unscoped alert matched the three stats alerts, a link matching "Ouranopithecus" also matched the Saved changes to-do row, and the refresh check waited for the removed Recent drafts texts and one order read.
+- `8f9c2709` scoped the alert and link locators; `97e409f4` rewrote the refresh check for the four Overview reads and the To do texts. Run 40554148759 for `97e409f4`: staff previews passed in Chromium and Firefox, all suites passed, and `deploy-uat` succeeded.
+- That run needed failed-job re-runs: two public e2e legs timed out while installing browsers, and `apps/web/test/commerce/public-checkout-api.request.test.ts` failed twice with a different test each time (newsletter signup, then Services inquiry). Neither is staff code; the second re-run passed.
+- Not established: PRD promotion, provider smoke and a manual pass on the hosted staff site.
