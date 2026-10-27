@@ -1707,7 +1707,7 @@ else if (process.argv.includes('--orders-shipping')) {
 
       state.historyFailure = true;
       await trigger.click();
-      await historyPage.getByRole('alert').waitFor();
+      await historyPage.getByRole('dialog').getByRole('alert').waitFor();
       state.historyFailure = false;
       await historyPage.getByRole('button', { name: 'Retry history', exact: true }).click();
       await historyPage.getByText('No publications recorded.', { exact: true }).waitFor();
@@ -2150,7 +2150,7 @@ else if (process.argv.includes('--orders-shipping')) {
     const delayedPage = await delayedContext.newPage();
     try {
       await delayedPage.goto(`${origin}/`);
-      await delayedPage.getByRole('link', { name: /Ouranopithecus/ }).waitFor({ timeout: 1500 });
+      await delayedPage.getByRole('link', { name: /^Ouranopithecus/ }).waitFor({ timeout: 1500 });
       assert.equal(await delayedPage.getByText('Loading recent work…', { exact: true }).count(), 0);
     } finally {
       await delayedContext.close();
@@ -2162,9 +2162,9 @@ else if (process.argv.includes('--orders-shipping')) {
     const failedPage = await failedContext.newPage();
     try {
       await failedPage.goto(`${origin}/`);
-      await failedPage.getByRole('link', { name: /Ouranopithecus/ }).waitFor();
+      await failedPage.getByRole('link', { name: /^Ouranopithecus/ }).waitFor();
       await failedPage.getByRole('alert').filter({ hasText: 'Orders could not be read.' }).waitFor();
-      assert.equal(await failedPage.getByRole('link', { name: /Ouranopithecus/ }).count(), 1);
+      assert.equal(await failedPage.getByRole('link', { name: /^Ouranopithecus/ }).count(), 1);
     } finally {
       state.overviewOrdersFailure = false;
       await failedContext.close();
@@ -2302,7 +2302,7 @@ else if (process.argv.includes('--orders-shipping')) {
       fail = false;
       empty = false;
       await probe.getByRole('button', { name: 'Retry recent drafts', exact: true }).click();
-      await probe.getByRole('link', { name: /Ouranopithecus/ }).waitFor();
+      await probe.getByRole('link', { name: /^Ouranopithecus/ }).waitFor();
     } finally {
       gate.resolve();
       await context.close();
