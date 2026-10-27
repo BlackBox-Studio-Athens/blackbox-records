@@ -2244,13 +2244,19 @@ else if (process.argv.includes('--orders-shipping')) {
     let fail = false;
     let gate = Promise.withResolvers();
     const paths = [];
-    const started = Promise.withResolvers();
+    const waiters = [];
+    const pathCount = (count) => {
+      const waiter = Promise.withResolvers();
+      waiters.push({ count, resolve: waiter.resolve });
+      return waiter.promise;
+    };
+    const started = pathCount(5);
     const overviewApi =
       /\/(?:_emdash\/api\/blackbox\/(?:workspace|publications)|api\/internal\/orders\/search)(?:\?|$)/;
     await probe.route(overviewApi, async (route) => {
       const url = new URL(route.request().url());
       paths.push({ pathname: url.pathname, search: url.search });
-      if (paths.length === 4) started.resolve();
+      for (const waiter of waiters) if (paths.length === waiter.count) waiter.resolve();
       await gate.promise;
       if (fail)
         await route.fulfill({ status: 503, json: { success: false, error: { message: 'Refresh unavailable' } } });
@@ -2265,11 +2271,11 @@ else if (process.argv.includes('--orders-shipping')) {
       });
     try {
       await probe.goto(`${origin}/`);
-      await started.promise;
+      await started;
       await refresh();
       // Flush queued browser work while Overview and the header check are pending.
       await probe.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      assert.equal(paths.length, 4, 'Refresh triggers must share the three Overview reads and header check');
+      assert.equal(paths.length, 5, 'Refresh triggers must share the four Overview reads and header check');
       assert.equal(
         paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=overview'))
           .length,
@@ -2283,25 +2289,28 @@ else if (process.argv.includes('--orders-shipping')) {
         'Review control checks for saved changes',
       );
       assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/publications')).length, 1);
-      assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/orders/search')).length, 1);
+      // Orders to ship and the needs-review check are separate reads.
+      assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/orders/search')).length, 2);
       empty = true;
       gate.resolve();
-      await probe.getByText('No recent drafts to finish.', { exact: true }).waitFor();
+      await probe.getByText('Nothing waiting.', { exact: true }).waitFor();
       // The outer refresh wrapper deliberately has a 30-second freshness window.
       await probe.clock.install();
       await probe.clock.fastForward(31_000);
       gate = Promise.withResolvers();
+      const rechecked = pathCount(paths.length + 4);
       await refresh();
-      await probe.getByText('Checking recent work…', { exact: true }).waitFor();
-      assert.equal(await probe.getByText('No recent drafts to finish.', { exact: true }).count(), 1);
-      assert.equal(await probe.getByText('Loading recent work…', { exact: true }).count(), 0);
+      await rechecked;
+      // While the recheck is pending, Overview keeps the last answer instead of returning to its loading text.
+      assert.equal(await probe.getByText('Nothing waiting.', { exact: true }).count(), 1);
+      assert.equal(await probe.getByText('Checking orders and changes…', { exact: true }).count(), 0);
       fail = true;
       gate.resolve();
-      await probe.getByRole('button', { name: 'Retry recent drafts', exact: true }).waitFor();
-      assert.equal(await probe.getByText('No recent drafts to finish.', { exact: true }).count(), 1);
+      await probe.getByRole('button', { name: 'Retry saved changes', exact: true }).waitFor();
+      assert.equal(await probe.getByText('Nothing waiting.', { exact: true }).count(), 1);
       fail = false;
       empty = false;
-      await probe.getByRole('button', { name: 'Retry recent drafts', exact: true }).click();
+      await probe.getByRole('button', { name: 'Retry saved changes', exact: true }).click();
       await probe.getByRole('link', { name: /^Ouranopithecus/ }).waitFor();
     } finally {
       gate.resolve();
