@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { InternalAnalyticsApiError, type StaffStatsReport } from '../../lib/backend/internal-analytics-api';
 import { createStatsWorkspace, idleRead, statsQueryKey } from './stats-workspace';
 import { DatePanel, StatsView } from './StatsWorkspace';
+import { briefSentence, sparkLabels, sparkState } from './stats-brief';
 import {
   briefLocation,
   customDateError,
@@ -135,5 +136,97 @@ describe('daily brief controls', () => {
     expect(points[0]?.metrics).toMatchObject({ clicks: 10, impressions: 100, ctr: 10, position: 9.2 });
     expect(points[1]?.available).toBe(false);
     expect(points[1]?.partial).toBe(true);
+  });
+});
+
+describe('Stats brief readability', () => {
+  const day = (date: string, visits: number | null) => ({
+    date,
+    available: visits !== null,
+    metrics: visits === null ? {} : { visits },
+  });
+  const withDays = (daily: ReturnType<typeof day>[]): StaffStatsReport => ({
+    ...report,
+    daily,
+    totals: { visits: daily.reduce((sum, row) => sum + ((row.metrics.visits as number | undefined) ?? 0), 0) },
+  });
+
+  it('compares with the previous period unless a link turns it off', () => {
+    expect(parseBriefLocation('').compare).toBe(true);
+    expect(parseBriefLocation('?compare=true').compare).toBe(true);
+    expect(parseBriefLocation('?compare=false').compare).toBe(false);
+    expect(briefLocation(initialBriefState())).toBe('/stats/');
+    expect(briefLocation({ ...initialBriefState(), compare: false })).toBe('/stats/?compare=false');
+  });
+
+  it('labels every day of a week and the ends and middle of longer periods', () => {
+    const week = groupStatsDays(
+      ['2026-10-21', '2026-10-22', '2026-10-23'].map((date) => day(date, 1)),
+      'Days',
+    );
+    expect(sparkLabels(week, 'Days')).toEqual(['Wed', 'Thu', 'Fri']);
+    const month = groupStatsDays(
+      Array.from({ length: 9 }, (_, index) => day(`2026-10-0${index + 1}`, 1)),
+      'Days',
+    );
+    expect(sparkLabels(month, 'Days')).toEqual(['1 Oct', '', '', '', '5 Oct', '', '', '', '9 Oct']);
+  });
+
+  it('tells a reported zero apart from missing days', () => {
+    expect(sparkState(groupStatsDays([day('2026-10-21', 0), day('2026-10-22', 0)], 'Days'), 'visits')).toBe('zero');
+    expect(sparkState(groupStatsDays([day('2026-10-21', null)], 'Days'), 'visits')).toBe('missing');
+    expect(sparkState(groupStatsDays([day('2026-10-21', null), day('2026-10-22', 3)], 'Days'), 'visits')).toBe(
+      'values',
+    );
+    const zero = renderToStaticMarkup(
+      <StatsView
+        state={initialBriefState()}
+        reads={{
+          visits: { ...idleRead, data: withDays([day('2026-10-21', 0), day('2026-10-22', 0)]) },
+          store: idleRead,
+          search: idleRead,
+        }}
+        onChange={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(zero).toContain('No visits in these dates.');
+    expect(zero).not.toContain('stats-brief-spark');
+    const gaps = renderToStaticMarkup(
+      <StatsView
+        state={initialBriefState()}
+        reads={{
+          visits: { ...idleRead, data: withDays([day('2026-10-21', null), day('2026-10-22', 4)]) },
+          store: idleRead,
+          search: idleRead,
+        }}
+        onChange={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(gaps).toContain('data-state="missing"');
+    expect(gaps).toContain('Hatched days have no figures yet.');
+    expect(gaps).toContain('Highest 4');
+  });
+
+  it('opens with reported figures only, without filler', () => {
+    const store: StaffStatsReport = {
+      ...report,
+      source: 'store',
+      totals: { paidOrders: 4, paidTotalMinor: 9900 },
+    };
+    expect(briefSentence(report, store)).toBe('24 visits and 4 paid orders worth €99.');
+    expect(briefSentence(null, { ...store, totals: { paidOrders: 0, paidTotalMinor: 0 } })).toBe('No paid orders.');
+    expect(briefSentence(null, null)).toBeNull();
+    const html = renderToStaticMarkup(
+      <StatsView
+        state={initialBriefState()}
+        reads={{ visits: idleRead, store: idleRead, search: idleRead }}
+        onChange={vi.fn()}
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(html).not.toContain('at a glance');
+    expect(html).toContain('checked=""');
   });
 });

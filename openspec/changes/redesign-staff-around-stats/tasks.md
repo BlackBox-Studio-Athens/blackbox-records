@@ -21,7 +21,7 @@
 
 ## 4. Stats detail (finding 3)
 
-- [ ] 4.1 Comparison on by default, labelled days and scale, distinct zero and missing states, no filler copy.
+- [x] 4.1 Comparison on by default, labelled days and scale, distinct zero and missing states, no filler copy. Applies to the brief; the Explore detail charts were already labelled and are unchanged apart from the comparison default.
 
 ## 5. Smaller fixes (findings 7, 9, 10)
 

@@ -77,7 +77,7 @@ export function staffTarget(value: string, origin: string): string | null {
       dispatch: ['not_shipped'],
       range: ['today', 'yesterday', '7d', '30d', '90d', 'month', '12m', 'custom'],
       report: ['visits', 'store', 'search'],
-      compare: ['true'],
+      compare: ['true', 'false'],
       grain: ['Days', 'Weeks', 'Months'],
       'visits.metric': ['visits', 'pageViews'],
       'store.metric': ['paidOrders', 'paidTotalMinor', 'itemsSold', 'checkoutsStarted'],

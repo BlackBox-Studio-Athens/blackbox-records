@@ -73,7 +73,7 @@ describe('Overview figures', () => {
 
   it('links each figure to its comparison in Stats and keeps the period in the URL', () => {
     expect(statsLink('store', 'paidTotalMinor', '30d')).toBe(
-      '/stats/?range=30d&report=store&compare=true&store.metric=paidTotalMinor',
+      '/stats/?range=30d&report=store&store.metric=paidTotalMinor',
     );
     expect(parseOverviewRange('?range=30d')).toBe('30d');
     expect(parseOverviewRange('?range=90d')).toBe('7d');

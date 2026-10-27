@@ -69,3 +69,22 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - 390 px: filters collapsed behind "Filters (2)" (`aria-expanded` false, then true); the first order starts at y = 302 (before: about 720). No control under 44 px; no horizontal overflow at 390 or 320 px; no console messages.
 - Filter changes replace the history entry, as before this slice, so Back leaves Orders rather than stepping through filters.
 - Evidence: `.codex-artifacts/staff-redesign/slice3/`.
+
+## Slice 4: Stats detail, 27 October 2026
+
+### Checks run
+
+- `pnpm exec astro check` (staff): 0 errors.
+- `pnpm test` for `stats-workspace.test.tsx` (new cases: comparison default and `compare=false`, axis labels for a week and longer periods, zero versus missing, the zero sentence, hatched days with the scale label, sentence without filler) and `staff-navigation.test.ts` (Nx re-ran all seven staff modules): all passed. `stats-overview.test.ts` updated: Overview links no longer need `compare=true`.
+- `pnpm build:staff`: budgets passed. The first stack build failed with Overview at 129,155 Brotli bytes (budget 129,024) because the new helpers sat in the shared `stats-model.ts`; moving them to `stats-brief.ts`, imported only by Stats, brought Overview to 128,864. Stats is 127,921 of 131,072. The final build with the sentence colour change also passed.
+- ESLint on the changed files: no problems.
+- `pnpm validate` on the final tree: passed, 24 of 24 affected tasks (repository gates only). Summary: `.codex-artifacts/validation/2026-10-27T11-49-11-778Z-18836-d35f80/summary.json`.
+
+### Browser (Playwright CLI, headless Chromium, 390 px)
+
+- Real Local data: opening sentence "No paid orders." with no filler; comparison checked by default; Store says "No paid orders in these dates." instead of seven baseline strokes; Visits and Search keep their not-connected text.
+- Test-browser fixture (labelled sample week, one unreported day): "119 visits and no paid orders."; "Highest 32" above a dashed top rule; axis Wed to Tue; one hatched bar with "Hatched days have no figures yet."; "↑ 6.3% vs 112 previously". `m-stats-fixture.png`.
+- Turning comparison off writes `?compare=false` and removes the comparison.
+- No horizontal overflow at 390 or 320 px; no console messages.
+- The sentence colour change to full contrast was checked by injecting the same rule; it was not rebuilt into the running stack.
+- Evidence: `.codex-artifacts/staff-redesign/slice4/`.

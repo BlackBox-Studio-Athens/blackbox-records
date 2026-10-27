@@ -145,7 +145,7 @@ export default function StaffOverview({ base }: { base: string }) {
               {label}
             </button>
           ))}
-          <a href={`/stats/?range=${range}&compare=true`}>More</a>
+          <a href={`/stats/?range=${range}`}>More</a>
         </div>
       </div>
 

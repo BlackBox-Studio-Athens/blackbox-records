@@ -22,6 +22,7 @@ import {
   type Source,
 } from './stats-model';
 import { formatReadTime } from './stats-format';
+import { briefSentence, sparkLabels, sparkState } from './stats-brief';
 import { Comparison } from './StatsComparison';
 
 const StatsDetail = lazy(() => import('./StatsDetail'));
@@ -152,8 +153,7 @@ export function StatsView({
   };
   const start = state.range === 'custom' ? state.start : periodDates(state.range).start;
   const end = state.range === 'custom' ? state.end : periodDates(state.range).end;
-  const visits = reads.visits.data,
-    store = reads.store.data;
+  const sentence = briefSentence(reads.visits.data, reads.store.data);
   return (
     <div ref={workspace} className="staff-workspace stats-workspace stats-daily-brief">
       <header className="stats-heading">
@@ -205,19 +205,7 @@ export function StatsView({
       </label>
       {state.report === 'overview' ? (
         <>
-          <p className="stats-brief-sentence">
-            {visits?.status === 'ok' && visits.daily.some((day) => day.available) && (
-              <>
-                <strong>{metricValue('visits', visits.totals.visits)} visits.</strong>{' '}
-              </>
-            )}
-            {store?.status === 'ok' && (
-              <>
-                <strong>{metricValue('paidOrders', store.totals.paidOrders)} paid orders.</strong>{' '}
-              </>
-            )}
-            Here's the period at a glance.
-          </p>
+          {sentence && <p className="stats-brief-sentence">{sentence}</p>}
           <div className="stats-brief-reports">
             {sources.map((source) => (
               <BriefReport
@@ -453,6 +441,12 @@ export function SourceStatus({ source, read, onRetry }: { source: Source; read: 
   );
 }
 
+const zeroWords: Record<Source, string> = {
+  visits: 'No visits',
+  store: 'No paid orders',
+  search: 'No search clicks',
+};
+
 function BriefSpark({
   report,
   metric,
@@ -462,20 +456,40 @@ function BriefSpark({
   metric: string;
   grain: BriefState['grain'];
 }) {
-  const points = groupStatsDays(report.daily, grain),
-    maximum = Math.max(1, ...points.map((point) => point.metrics[metric] ?? 0));
+  const points = groupStatsDays(report.daily, grain);
+  // A row of zero-height bars reads like missing data, so an all-zero period is said in words.
+  if (sparkState(points, metric) === 'zero')
+    return <p className="stats-brief-zero">{zeroWords[report.source]} in these dates.</p>;
+  const maximum = Math.max(1, ...points.map((point) => point.metrics[metric] ?? 0)),
+    labels = sparkLabels(points, grain),
+    missing = points.some((point) => !point.available),
+    unit = grain === 'Days' ? 'days' : grain === 'Weeks' ? 'weeks' : 'months';
   return (
-    <div
-      className="stats-brief-spark"
-      role="img"
-      aria-label={`${sourceNames[report.source]} trend over ${periodLabel(report.period.start, report.period.end)}. Missing dates are gaps.`}
-    >
-      {points.map((point) => (
-        <span
-          key={point.date}
-          style={{ height: point.available ? `${Math.max(2, (100 * (point.metrics[metric] ?? 0)) / maximum)}%` : '0%' }}
-        />
-      ))}
-    </div>
+    <figure className="stats-brief-chart">
+      <p className="stats-brief-scale" aria-hidden="true">
+        Highest {metricValue(metric, maximum)}
+      </p>
+      <div
+        className="stats-brief-spark"
+        role="img"
+        aria-label={`${sourceNames[report.source]} by ${unit} over ${periodLabel(report.period.start, report.period.end)}, highest ${metricValue(metric, maximum)}.${missing ? ` Some ${unit} have no figures yet.` : ''}`}
+      >
+        {points.map((point) => (
+          <span
+            key={point.date}
+            data-state={point.available ? 'value' : 'missing'}
+            style={{
+              height: point.available ? `${Math.max(2, (100 * (point.metrics[metric] ?? 0)) / maximum)}%` : '100%',
+            }}
+          />
+        ))}
+      </div>
+      <div className="stats-brief-axis" aria-hidden="true">
+        {labels.map((label, index) => (
+          <span key={points[index]!.date}>{label}</span>
+        ))}
+      </div>
+      {missing && <figcaption className="stats-muted">Hatched {unit} have no figures yet.</figcaption>}
+    </figure>
   );
 }

@@ -73,7 +73,7 @@ export const initialBriefState = (): BriefState => ({
   range: '7d',
   ...periodDates('7d'),
   report: 'overview',
-  compare: false,
+  compare: true,
   grain: 'Days',
   filters: { visits: {}, store: {}, search: {} },
   metrics: { visits: 'visits', store: 'paidOrders', search: 'clicks' },
@@ -91,7 +91,8 @@ export function parseBriefLocation(search: string): BriefState {
   }
   const report = params.get('report');
   if (sources.includes(report as Source)) state.report = report as Source;
-  state.compare = params.get('compare') === 'true';
+  // Comparison is on unless the link turns it off; older links carrying compare=true still parse.
+  state.compare = params.get('compare') !== 'false';
   const grain = params.get('grain');
   if (['Days', 'Weeks', 'Months'].includes(grain ?? '')) state.grain = grain as Grain;
   for (const source of sources) {
@@ -114,7 +115,7 @@ export function briefLocation(state: BriefState): string {
     params.set('end', state.end);
   }
   if (state.report !== 'overview') params.set('report', state.report);
-  if (state.compare) params.set('compare', 'true');
+  if (!state.compare) params.set('compare', 'false');
   if (state.grain !== 'Days') params.set('grain', state.grain);
   for (const source of sources) {
     if (state.metrics[source] !== metricOptions[source][0]![0]) params.set(`${source}.metric`, state.metrics[source]);
