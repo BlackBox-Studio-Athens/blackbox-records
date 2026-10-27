@@ -25,7 +25,7 @@
 
 ## 5. Smaller fixes (findings 7, 9, 10)
 
-- [ ] 5.1 Review selection bar overlap, Stock item names and low-stock signal, Catalog toolbar on one row.
+- [ ] 5.1 Review selection bar overlap, Stock item names and low-stock signal, Catalog toolbar on one row. Done: the Review bar sits flush with the bottom edge and row actions are spaced; Review checkboxes already centre on their titles; Stock rows drop the label name and repeated format and tag 1 to 5 copies online as Low stock; Catalog search, filters and Add share one row. Open: a "sold out but on the website" tag needs the publish state in the inventory read (Codex); Catalog status still sits at the far right of wide rows (a visual choice, not yet shown).
 
 ## 6. Acceptance
 

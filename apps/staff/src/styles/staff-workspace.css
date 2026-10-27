@@ -745,6 +745,13 @@ body[data-workspace='content'] {
   height: 1px;
   overflow: hidden;
 }
+.inventory-low {
+  margin-left: 8px;
+  vertical-align: 2px;
+  border-color: currentColor;
+  /* --warning is defined only inside .cms-surface; Stock uses the same amber as the staff readiness items. */
+  color: var(--warning, oklch(0.84 0.13 85));
+}
 .inventory-pagination {
   position: sticky;
   bottom: 0;
@@ -938,6 +945,10 @@ body[data-workspace='content'] {
   height: 100%;
   max-width: none;
 }
+/* Sticky bottom:0 stops at the scroll container's padding edge; without this, rows scroll through a gap below the bar. */
+:is(.website-changes, .publication-editor):has(.publication-action-bar) {
+  padding-bottom: 0;
+}
 .website-change-list article {
   display: flex;
   align-items: start;
@@ -947,6 +958,9 @@ body[data-workspace='content'] {
 }
 .website-change-list p {
   color: var(--muted-foreground);
+}
+.website-change-list a + button {
+  margin-left: 12px;
 }
 .website-changes a {
   text-decoration: underline;

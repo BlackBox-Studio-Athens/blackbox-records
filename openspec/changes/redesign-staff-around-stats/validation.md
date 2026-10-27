@@ -88,3 +88,20 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - No horizontal overflow at 390 or 320 px; no console messages.
 - The sentence colour change to full contrast was checked by injecting the same rule; it was not rebuilt into the running stack.
 - Evidence: `.codex-artifacts/staff-redesign/slice4/`.
+
+## Slice 5: Review, Stock and Catalog fixes, 27 October 2026
+
+### Checks run
+
+- `pnpm test` for the new `inventory-row.test.ts` (shop name shortening, low-stock range): passed; the staff-stock module ran 5 files, 37 tests, all passed.
+- ESLint on the changed files: no problems.
+- The Local stack rebuilt staff with bundle budgets passing.
+- `pnpm validate` on the final tree: the first run failed the staff typecheck because the test passed `displayName: undefined` under `exactOptionalPropertyTypes`; after widening the helper's type it passed. Summary: `.codex-artifacts/validation/2026-10-27T12-22-34-128Z-39448-1baa77/summary.json`.
+
+### Browser (Playwright CLI, headless Chromium)
+
+- Review, 1440 px: before, the sticky selection bar ended at y = 876 of 900 because sticky `bottom: 0` stops at the scroll container's 24 px padding, and rows scrolled through that gap. After, the bar ends at 900 at 1440 px and at 844 at 390 px. "Finish editing" and "Discard saved changes" now have a 12 px gap. Checkboxes already centred on their titles; no change.
+- Stock, 1440 px: "BlackBox Records - Disintegration - Black Vinyl LP" now reads "Disintegration" above "Black Vinyl LP". The border and inset were already fixed in slice 2. No Local item has 1 to 5 copies online, so a test-browser stub (`stub-low.js`) set 3 and 5: both rows show "Low stock" in amber text with a border, not colour alone. At first the tag was white because `--warning` exists only inside `.cms-surface`; a fallback to the staff amber fixed it (checked by injection; the rule is in the source but not rebuilt into the running stack). No horizontal overflow at 390 px.
+- Catalog, 1440 px: search, area, format, sort, Add distro and Add merch sit on one row at y = 136 (before: three rows). At 390 px they wrap, with every control 44 px high and no horizontal overflow.
+- Console: no messages on Review and Stock. Opening a Catalog item logs the existing `/_emdash/api/auth/me` 404s, already recorded in earlier changes.
+- Evidence: `.codex-artifacts/staff-redesign/slice5/`.

@@ -1258,77 +1258,79 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 </h1>
                 {listLoaded && <Badge variant="secondary">{items.length}</Badge>}
               </div>
-              <form
-                className="grid gap-2"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (!busy) void list();
-                }}
-              >
-                <InputGroup className="h-11">
-                  <InputGroupAddon>
-                    <Search aria-hidden="true" />
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    aria-label={`Search ${contentSections[collection].toLowerCase()}`}
-                    placeholder={`Search ${contentSections[collection].toLowerCase()}…`}
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                  />
-                </InputGroup>
-              </form>
-              {['artists', 'releases', 'distro', 'news'].includes(collection) && (
-                <div className="flex flex-wrap gap-2">
-                  {collection === 'distro' && (
-                    <>
-                      <select
-                        aria-label="Catalog area"
-                        className="min-h-11 border border-border bg-background p-2"
-                        value={catalogArea}
-                        onChange={(event) => setCatalogArea(event.target.value)}
-                      >
-                        <option value="all">All</option>
-                        <option value="distro">Distro</option>
-                        <option value="merch">Merch</option>
-                      </select>
-                      <FormatFilter value={format} onChange={setFormat} />
-                    </>
-                  )}
-                  <select
-                    aria-label="Sort catalog"
-                    className="min-h-11 border border-border bg-background p-2"
-                    value={sort}
-                    onChange={(event) => setSort(event.target.value)}
-                  >
-                    <option value="title">Title A–Z</option>
-                    <option value="updated">Recently edited</option>
-                  </select>
-                </div>
-              )}
-              {['releases', 'distro'].includes(collection) && (
-                <div className="flex gap-2">
-                  <Button asChild>
-                    <a href={`/items/new/?kind=${collection === 'releases' ? 'release' : 'distro'}`}>
-                      <Plus aria-hidden="true" />
-                      Add {collection === 'releases' ? 'release' : 'distro'}
-                    </a>
-                  </Button>
-                  {collection === 'distro' && (
-                    <Button variant="outline" asChild>
-                      <a href="/items/new/?kind=merch">
+              <div className="flex flex-wrap items-center gap-2">
+                <form
+                  className="min-w-[12rem] flex-1"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!busy) void list();
+                  }}
+                >
+                  <InputGroup className="h-11">
+                    <InputGroupAddon>
+                      <Search aria-hidden="true" />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      aria-label={`Search ${contentSections[collection].toLowerCase()}`}
+                      placeholder={`Search ${contentSections[collection].toLowerCase()}…`}
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </InputGroup>
+                </form>
+                {['artists', 'releases', 'distro', 'news'].includes(collection) && (
+                  <div className="flex flex-wrap gap-2">
+                    {collection === 'distro' && (
+                      <>
+                        <select
+                          aria-label="Catalog area"
+                          className="min-h-11 border border-border bg-background p-2"
+                          value={catalogArea}
+                          onChange={(event) => setCatalogArea(event.target.value)}
+                        >
+                          <option value="all">All</option>
+                          <option value="distro">Distro</option>
+                          <option value="merch">Merch</option>
+                        </select>
+                        <FormatFilter value={format} onChange={setFormat} />
+                      </>
+                    )}
+                    <select
+                      aria-label="Sort catalog"
+                      className="min-h-11 border border-border bg-background p-2"
+                      value={sort}
+                      onChange={(event) => setSort(event.target.value)}
+                    >
+                      <option value="title">Title A–Z</option>
+                      <option value="updated">Recently edited</option>
+                    </select>
+                  </div>
+                )}
+                {['releases', 'distro'].includes(collection) && (
+                  <div className="flex gap-2">
+                    <Button asChild>
+                      <a href={`/items/new/?kind=${collection === 'releases' ? 'release' : 'distro'}`}>
                         <Plus aria-hidden="true" />
-                        Add merch
+                        Add {collection === 'releases' ? 'release' : 'distro'}
                       </a>
                     </Button>
-                  )}
-                </div>
-              )}
-              {canCreate && (
-                <Button type="button" disabled={!ready || busy || !!pendingNew} onClick={() => void create()}>
-                  <Plus className="size-4" aria-hidden="true" />
-                  Add {collection === 'news' ? 'news' : collection === 'artists' ? 'artist' : 'social link'}
-                </Button>
-              )}
+                    {collection === 'distro' && (
+                      <Button variant="outline" asChild>
+                        <a href="/items/new/?kind=merch">
+                          <Plus aria-hidden="true" />
+                          Add merch
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {canCreate && (
+                  <Button type="button" disabled={!ready || busy || !!pendingNew} onClick={() => void create()}>
+                    <Plus className="size-4" aria-hidden="true" />
+                    Add {collection === 'news' ? 'news' : collection === 'artists' ? 'artist' : 'social link'}
+                  </Button>
+                )}
+              </div>
               {!mobileEditor && document && (
                 <Button type="button" variant="secondary" className="md:hidden" onClick={() => setMobileEditor(true)}>
                   <ArrowLeft aria-hidden="true" />

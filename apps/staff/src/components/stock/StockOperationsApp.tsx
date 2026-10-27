@@ -43,6 +43,7 @@ import {
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../ui/utils';
 import FormatFilter, { formatLabel } from './FormatFilter';
+import { inventoryName, isLowStock, LOW_STOCK_NOTICE_THRESHOLD } from './inventory-row';
 import type { EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,
@@ -82,7 +83,6 @@ interface StockOperationsAppProps {
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
-const LOW_STOCK_NOTICE_THRESHOLD = 5;
 
 type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'zeroStockState' | 'lowStockNotice' | 'preorder' | null;
 
@@ -907,7 +907,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       src={artwork[variant.variantId]}
                       width="48"
                       height="48"
-                      alt={variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
+                      alt={inventoryName(variant)}
                       loading="lazy"
                       onError={() =>
                         setArtwork((current) => {
@@ -922,7 +922,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                     <Disc3 aria-hidden="true" className="inventory-artwork-placeholder" />
                   )}
                   <span>
-                    <strong>{variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}</strong>
+                    <strong>{inventoryName(variant)}</strong>
                     <small>{formatLabel(variant.itemType ?? 'Format not set')}</small>
                   </span>
                 </span>
@@ -933,6 +933,11 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                 <span className="inventory-quantity">
                   <strong>{variant.onlineQuantity ?? '-'}</strong>
                   <small>allocated online</small>
+                  {isLowStock(variant.onlineQuantity) && (
+                    <Badge variant="outline" className="inventory-low">
+                      Low stock
+                    </Badge>
+                  )}
                 </span>
               </button>
             ))}
