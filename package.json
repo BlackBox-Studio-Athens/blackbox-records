@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@12.6.0",
   "engines": {
-    "node": "24.21.0"
+    "node": "24.22.2"
   },
   "scripts": {
     "dev": "pnpm dev:stack:stripe-mock",
