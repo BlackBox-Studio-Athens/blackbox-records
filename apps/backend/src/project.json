@@ -26,7 +26,13 @@
         "analytics",
         "backend-platform",
         "cms-runtime",
-        "commerce-persistence"
+        "commerce-persistence",
+        "merchant-sync",
+        "google-merchant",
+        "checkout-core",
+        "catalog-sync",
+        "stripe-integration",
+        "commerce-domain"
       ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]

@@ -23,10 +23,11 @@
         "./d1-checkout-stock-hold-repository.ts",
         "./d1-paid-order-delivery-repository.ts",
         "./d1-preorder-estimate-delivery-repository.ts",
+        "./d1-merchant-sync-repository.ts",
         "./prisma/index.ts"
       ],
       "namedInterfaces": {},
-      "dependsOn": ["commerce-domain", "backend-platform", "generated-prisma", "email-application"],
+      "dependsOn": ["commerce-domain", "backend-platform", "generated-prisma", "email-application", "merchant-sync"],
       "workspaceInterfaces": {}
     }
   }

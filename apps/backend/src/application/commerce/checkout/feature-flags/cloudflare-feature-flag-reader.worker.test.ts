@@ -126,4 +126,44 @@ describe('CloudflareFeatureFlagReader', () => {
       safeReason: 'provider_error',
     });
   });
+
+  it('requires successful evaluation details for strict reads, while preserving shopper fallback', async () => {
+    const evaluator = {
+      getBooleanValue: vi.fn(async () => false),
+      getBooleanDetails: vi.fn(async (): Promise<{ flagKey: string; value: boolean; errorCode?: string }> => ({
+        flagKey: NATIVE_CHECKOUT_ENABLED_FLAG,
+        value: false,
+        errorCode: 'GENERAL',
+      })),
+    };
+    const reader = new CloudflareFeatureFlagReader(productEnvironmentProfiles.PRD, evaluator, undefined);
+    await expect(reader.isNativeCheckoutEnabled({ throwOnError: true })).rejects.toThrow('unavailable');
+    expect(evaluator.getBooleanValue).not.toHaveBeenCalled();
+    await expect(reader.isNativeCheckoutEnabled()).resolves.toBe(false);
+    evaluator.getBooleanDetails.mockRejectedValueOnce(new Error('private provider response'));
+    await expect(reader.isNativeCheckoutEnabled({ throwOnError: true })).rejects.toThrow(
+      'Checkout flag evaluation is unavailable.',
+    );
+    evaluator.getBooleanDetails.mockResolvedValue({ flagKey: NATIVE_CHECKOUT_ENABLED_FLAG, value: false });
+    await expect(reader.isNativeCheckoutEnabled({ throwOnError: true })).resolves.toBe(false);
+    evaluator.getBooleanDetails.mockResolvedValue({ flagKey: NATIVE_CHECKOUT_ENABLED_FLAG, value: true });
+    await expect(reader.isNativeCheckoutEnabled({ throwOnError: true })).resolves.toBe(true);
+  });
+
+  it('uses explicit closure and overrides without consulting a failing provider in strict mode', async () => {
+    const evaluator = {
+      getBooleanValue: vi.fn(async () => {
+        throw new Error('unavailable');
+      }),
+    };
+    for (const enabled of [true, false]) {
+      const reader = new CloudflareFeatureFlagReader(productEnvironmentProfiles.PRD, evaluator, String(enabled));
+      await expect(reader.isNativeCheckoutEnabled({ throwOnError: true })).resolves.toBe(enabled);
+    }
+    const closed = new CloudflareFeatureFlagReader(productEnvironmentProfiles.PRD, evaluator, 'true', undefined, false);
+    await expect(closed.isNativeCheckoutEnabled({ throwOnError: true })).resolves.toBe(false);
+    expect(evaluator.getBooleanValue).not.toHaveBeenCalled();
+    const unknown = new CloudflareFeatureFlagReader(productEnvironmentProfiles.PRD, evaluator, undefined);
+    await expect(unknown.isNativeCheckoutEnabled({ throwOnError: true })).rejects.toThrow('unavailable');
+  });
 });

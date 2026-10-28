@@ -1,0 +1,24 @@
+{
+  "name": "merchant-sync",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=merchant-sync --project=merchant-sync:worker",
+      "inputs": ["backendTests", "^default", "backendWorkerTests"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=merchant-sync --project=merchant-sync:worker",
+      "continuous": true,
+      "cache": false
+    }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["commerce-domain", "checkout-core"],
+      "workspaceInterfaces": { "@blackbox/content-model": ["."] }
+    }
+  }
+}

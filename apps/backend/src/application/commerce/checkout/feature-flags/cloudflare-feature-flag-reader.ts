@@ -12,7 +12,9 @@ import type { AppLogger } from '../../../../platform/observability';
 
 export const NATIVE_CHECKOUT_ENABLED_FLAG = 'native_checkout_enabled';
 
-type BooleanFlagEvaluator = Pick<FlagshipBinding, 'getBooleanValue'> | Pick<OpenFeatureClient, 'getBooleanValue'>;
+type BooleanFlagEvaluator =
+  | (Pick<FlagshipBinding, 'getBooleanValue'> & Partial<Pick<FlagshipBinding, 'getBooleanDetails'>>)
+  | (Pick<OpenFeatureClient, 'getBooleanValue'> & Partial<Pick<OpenFeatureClient, 'getBooleanDetails'>>);
 
 export class CloudflareFeatureFlagReader implements FeatureFlagReader {
   public constructor(
@@ -23,7 +25,7 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
     private readonly nativeCheckoutAllowed = true,
   ) {}
 
-  public async isNativeCheckoutEnabled(): Promise<boolean> {
+  public async isNativeCheckoutEnabled(options?: { throwOnError?: boolean }): Promise<boolean> {
     if (!this.nativeCheckoutAllowed) {
       return false;
     }
@@ -40,20 +42,28 @@ export class CloudflareFeatureFlagReader implements FeatureFlagReader {
     }
 
     try {
-      return await this.evaluator.getBooleanValue(NATIVE_CHECKOUT_ENABLED_FLAG, defaultValue, {
+      const context = {
         capability: 'native_checkout',
         productEnvironment: this.productEnvironmentProfile.productEnvironment,
         targetingKey: `blackbox-records-${this.productEnvironmentProfile.productEnvironment}`,
         workerDeploymentTarget: this.productEnvironmentProfile.workerDeploymentTarget,
-      });
+      };
+      if (options?.throwOnError) {
+        if (!this.evaluator.getBooleanDetails) throw new Error('Checkout flag details are unavailable.');
+        const details = await this.evaluator.getBooleanDetails(NATIVE_CHECKOUT_ENABLED_FLAG, defaultValue, context);
+        if (details.errorCode || details.reason === 'ERROR') throw new Error('Checkout flag evaluation failed.');
+        return details.value;
+      }
+      return await this.evaluator.getBooleanValue(NATIVE_CHECKOUT_ENABLED_FLAG, defaultValue, context);
     } catch {
       this.logger?.warn({
         capability: 'native_checkout',
         event: 'feature_gate_evaluation_failed',
-        outcome: 'defaulted',
+        outcome: options?.throwOnError ? 'failed' : 'defaulted',
         safeReason: 'provider_error',
       });
 
+      if (options?.throwOnError) throw new Error('Checkout flag evaluation is unavailable.');
       return defaultValue;
     }
   }

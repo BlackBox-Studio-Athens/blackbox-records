@@ -116,7 +116,9 @@
       "stock",
       "orders",
       "checkout-core",
-      "catalog-sync"
+      "catalog-sync",
+      "merchant-sync",
+      "google-merchant"
     ],
     "tags": [
       "scope:backend"

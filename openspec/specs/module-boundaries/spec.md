@@ -64,6 +64,13 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 
 ### Requirement: Closed module boundaries
 
+#### Scenario: Merchant products are synchronized
+
+- **WHEN** the existing backend schedule synchronizes Merchant products
+- **THEN** `merchant-sync` owns pure accepted-product mapping and bounded reconciliation through its root interface, `google-merchant` owns the provider adapter, and `commerce-persistence` owns the native D1 scan state through `d1-merchant-sync-repository.ts`
+- **AND** `cms-runtime` exposes `published-merchant-catalog.ts` for complete accepted inventory reads; `backend-runtime` composes these interfaces with checkout, catalog, Stripe and commerce-domain public interfaces
+- **AND** checkout and editorial mutations have no Merchant dependency, and no browser module receives provider credentials or persistence access.
+
 The system SHALL treat application modules as closed by default with explicit provided interfaces and named interfaces.
 
 #### Scenario: Code imports another module

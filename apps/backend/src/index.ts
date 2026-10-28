@@ -7,6 +7,8 @@ import { createPrismaClientScope } from './infrastructure/persistence/prisma';
 import { createPublishedStoreItemNameReader } from './cms/published-store-item-names';
 import { productEnvironmentProfileFromBindings } from './platform/env';
 import { archiveVisitStats } from './application/analytics';
+import { runMerchantSchedule } from './merchant-schedule';
+import { createBindingLogger } from './platform/observability';
 
 const app = createHttpApp();
 const preflightApp = createHttpApp({ preflightOnly: true });
@@ -43,6 +45,11 @@ export class CommerceRuntime extends DurableObject<AppBindings> {
     });
     await archiveVisitStats(bindings, new Date(scheduledTime));
   }
+
+  async runMerchantSync(scheduledTime: number, config: CommerceRuntimeConfig) {
+    const media = (this.env as AppBindings & { MEDIA?: R2Bucket }).MEDIA;
+    await runMerchantSchedule(this.requestBindings(config), media, scheduledTime);
+  }
 }
 
 export default {
@@ -56,9 +63,20 @@ export default {
     );
   },
   async scheduled(controller, bindings) {
-    await bindings.COMMERCE_RUNTIME.getByName('store').runPaidOrderDelivery(
-      controller.scheduledTime,
-      commerceRuntimeConfigFromBindings(bindings),
-    );
+    const runtime = bindings.COMMERCE_RUNTIME.getByName('store');
+    const config = commerceRuntimeConfigFromBindings(bindings);
+    try {
+      await runtime.runPaidOrderDelivery(controller.scheduledTime, config);
+    } finally {
+      if (bindings.MERCHANT_SYNC_ENABLED === 'true') {
+        await runtime.runMerchantSync(controller.scheduledTime, config).catch(() => {
+          createBindingLogger(bindings).warn({
+            event: 'merchant_sync_outcome',
+            outcome: 'failed',
+            safeReason: 'runtime_unavailable',
+          });
+        });
+      }
+    }
   },
 } satisfies ExportedHandler<AppBindings & { COMMERCE_RUNTIME: DurableObjectNamespace<CommerceRuntime> }>;

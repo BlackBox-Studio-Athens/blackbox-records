@@ -1,0 +1,24 @@
+{
+  "name": "google-merchant",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=google-merchant --project=google-merchant:worker",
+      "inputs": ["backendTests", "^default", "backendWorkerTests"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=google-merchant --project=google-merchant:worker",
+      "continuous": true,
+      "cache": false
+    }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["merchant-sync"],
+      "workspaceInterfaces": {}
+    }
+  }
+}

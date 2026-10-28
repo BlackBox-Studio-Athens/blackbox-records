@@ -29,6 +29,11 @@ export type RuntimeConfigCategory = {
     | 'CLOUDFLARE_WEB_ANALYTICS_SITE_TAG'
     | 'GOOGLE_SEARCH_CONSOLE_SITE'
     | 'GOOGLE_SEARCH_CONSOLE_CREDENTIALS'
+    | 'MERCHANT_SYNC_ENABLED'
+    | 'MERCHANT_ACCOUNT_ID'
+    | 'MERCHANT_DATA_SOURCE_ID'
+    | 'MERCHANT_SERVICE_ACCOUNT_JSON'
+    | 'PRD_MERCHANT_SYNC_APPROVED'
     | 'COMMERCE_DB'
     | 'FLAGS'
     | 'LOCAL_OPERATOR_EMAIL'
@@ -153,6 +158,7 @@ export function verifyRuntimeConfig(input: {
     ...classifyResendRuntimeConfig(productEnvironmentProfile, environmentBlock, input.secretNames),
     ...classifyAnalyticsRuntimeConfig(environmentBlock, input.secretNames),
     ...classifySearchStatsRuntimeConfig(environmentBlock, input.secretNames),
+    ...classifyMerchantRuntimeConfig(input.environment, environmentBlock, input.secretNames),
     classifyFlagsPresence(environmentBlock),
     classifyPrdLaunchApproval(productEnvironmentProfile),
     classifyPrdCatalogCronPresence(productEnvironmentProfile, environmentBlock),
@@ -304,6 +310,7 @@ function classifySecretPresence(
     RuntimeConfigCategory['name'],
     | 'CLOUDFLARE_ANALYTICS_API_TOKEN'
     | 'GOOGLE_SEARCH_CONSOLE_CREDENTIALS'
+    | 'MERCHANT_SERVICE_ACCOUNT_JSON'
     | 'RESEND_API_KEY'
     | 'STRIPE_SECRET_KEY'
     | 'STRIPE_WEBHOOK_SECRET'
@@ -365,6 +372,48 @@ function classifySearchStatsRuntimeConfig(
           detail: `Optional search ${category.status}; the endpoint returns not_configured until both bindings are set.`,
         },
   );
+}
+
+function classifyMerchantRuntimeConfig(
+  environment: ProductEnvironment,
+  environmentBlock: string,
+  secretNames: readonly string[] | null,
+): RuntimeConfigCategory[] {
+  const enabled = /"MERCHANT_SYNC_ENABLED"\s*:\s*"true"/.test(environmentBlock);
+  const names = [
+    'MERCHANT_ACCOUNT_ID',
+    'MERCHANT_DATA_SOURCE_ID',
+    'MERCHANT_SERVICE_ACCOUNT_JSON',
+    'PRD_MERCHANT_SYNC_APPROVED',
+  ] as const;
+  if (!enabled)
+    return [
+      { name: 'MERCHANT_SYNC_ENABLED', status: 'not_applicable', detail: 'Merchant synchronization is disabled.' },
+    ];
+  if (environment === 'LOCAL')
+    return [
+      {
+        name: 'MERCHANT_SYNC_ENABLED',
+        status: 'missing',
+        detail: 'Local must use provider fakes, not live Merchant synchronization.',
+      },
+    ];
+  return [
+    { name: 'MERCHANT_SYNC_ENABLED', status: 'present' },
+    ...names.map((name): RuntimeConfigCategory => {
+      if (name === 'MERCHANT_SERVICE_ACCOUNT_JSON') return classifySecretPresence(name, secretNames);
+      if (name === 'PRD_MERCHANT_SYNC_APPROVED')
+        return environment === 'PRD'
+          ? classifyExactWorkerConfigPresence(
+              name,
+              environmentBlock,
+              'true',
+              'Production Merchant activation requires its separate approval.',
+            )
+          : { name, status: 'not_applicable' };
+      return classifyWranglerTextPresence(name, environmentBlock, new RegExp(`"${name}"\\s*:\\s*"[1-9][0-9]{0,19}"`));
+    }),
+  ];
 }
 
 function classifyResendRuntimeConfig(

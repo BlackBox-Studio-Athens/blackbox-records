@@ -31,6 +31,42 @@ const wranglerConfigText = `
 const requiredResendSecrets = ['RESEND_API_KEY', 'RESEND_NEWSLETTER_TOPIC_ID'];
 
 describe('runtime config verification', () => {
+  it('keeps Merchant disabled by default and requires identifiers, a secret and separate PRD activation when enabled', () => {
+    const disabled = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText,
+    });
+    expect(disabled.categories).toContainEqual(
+      expect.objectContaining({ name: 'MERCHANT_SYNC_ENABLED', status: 'not_applicable' }),
+    );
+    const enabledText = wranglerConfigText.replace(
+      '"PRODUCT_ENVIRONMENT": "PRD",',
+      '"PRODUCT_ENVIRONMENT": "PRD", "MERCHANT_SYNC_ENABLED": "true", "MERCHANT_ACCOUNT_ID": "123", "MERCHANT_DATA_SOURCE_ID": "456",',
+    );
+    const pending = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText: enabledText,
+    });
+    expect(pending.issues).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('MERCHANT_SERVICE_ACCOUNT_JSON'),
+        expect.stringContaining('PRD_MERCHANT_SYNC_APPROVED'),
+      ]),
+    );
+    const ready = verifyRuntimeConfig({
+      environment: 'PRD',
+      secretNames: [...requiredResendSecrets, 'MERCHANT_SERVICE_ACCOUNT_JSON'],
+      wranglerConfigText: enabledText.replace(
+        '"MERCHANT_SYNC_ENABLED": "true",',
+        '"MERCHANT_SYNC_ENABLED": "true", "PRD_MERCHANT_SYNC_APPROVED": "true",',
+      ),
+    });
+    expect(ready.issues).toEqual([]);
+    expect(formatRuntimeConfigVerificationReport(ready)).not.toMatch(/123|456/);
+  });
+
   it('keeps Search Console optional and reports only binding presence', () => {
     const names = ['GOOGLE_SEARCH_CONSOLE_CREDENTIALS', 'GOOGLE_SEARCH_CONSOLE_SITE'];
     for (const secretNames of [requiredResendSecrets, null]) {

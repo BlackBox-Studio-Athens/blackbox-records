@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { handleRequest, preflight, deliver, scope } = vi.hoisted(() => ({
+const { handleRequest, preflight, deliver, merchant, scope } = vi.hoisted(() => ({
   handleRequest: vi.fn(),
   preflight: vi.fn(),
   deliver: vi.fn(),
+  merchant: vi.fn(),
   scope: vi.fn((env) => ({ ...env })),
 }));
 vi.mock('./interfaces/http/app', () => ({
@@ -15,6 +16,7 @@ vi.mock('./infrastructure/persistence/prisma', () => ({ createPrismaClientScope:
 vi.mock('./application/commerce/orders/run-paid-order-delivery-schedule', () => ({
   runPaidOrderDeliverySchedule: deliver,
 }));
+vi.mock('./merchant-schedule', () => ({ runMerchantSchedule: merchant }));
 vi.mock('cloudflare:workers', () => ({
   DurableObject: class {
     constructor(
@@ -32,6 +34,7 @@ describe('free-tier commerce execution', () => {
     handleRequest.mockReset();
     preflight.mockReset();
     deliver.mockReset();
+    merchant.mockReset();
     scope.mockClear();
   });
 
@@ -52,6 +55,11 @@ describe('free-tier commerce execution', () => {
       CLOUDFLARE_WEB_ANALYTICS_SITE_TAG: 'test-site-A',
       GOOGLE_SEARCH_CONSOLE_SITE: 'sc-domain:test-site-A.example',
       GOOGLE_SEARCH_CONSOLE_CREDENTIALS: 'generated-test-credentials-A',
+      MERCHANT_SYNC_ENABLED: 'true',
+      MERCHANT_ACCOUNT_ID: '123',
+      MERCHANT_DATA_SOURCE_ID: '456',
+      MERCHANT_SERVICE_ACCOUNT_JSON: 'test-merchant-A',
+      PRD_MERCHANT_SYNC_APPROVED: 'true',
     } as const;
     const b = {
       PRODUCT_ENVIRONMENT: 'PRD',
@@ -88,6 +96,11 @@ describe('free-tier commerce execution', () => {
           'GOOGLE_SEARCH_CONSOLE_SITE' in config ? config.GOOGLE_SEARCH_CONSOLE_SITE : undefined,
         GOOGLE_SEARCH_CONSOLE_CREDENTIALS:
           'GOOGLE_SEARCH_CONSOLE_CREDENTIALS' in config ? config.GOOGLE_SEARCH_CONSOLE_CREDENTIALS : undefined,
+        MERCHANT_SYNC_ENABLED: 'MERCHANT_SYNC_ENABLED' in config ? config.MERCHANT_SYNC_ENABLED : undefined,
+        MERCHANT_SERVICE_ACCOUNT_JSON:
+          'MERCHANT_SERVICE_ACCOUNT_JSON' in config ? config.MERCHANT_SERVICE_ACCOUNT_JSON : undefined,
+        PRD_MERCHANT_SYNC_APPROVED:
+          'PRD_MERCHANT_SYNC_APPROVED' in config ? config.PRD_MERCHANT_SYNC_APPROVED : undefined,
       });
       expect(received.COMMERCE_DB).toBe(env.COMMERCE_DB);
       expect(received.FLAGS).toBe(env.FLAGS);
@@ -179,5 +192,36 @@ describe('free-tier commerce execution', () => {
     expect(await worker.fetch(request as Parameters<typeof worker.fetch>[0], bindings)).toBe(response);
     expect(preflight).toHaveBeenCalledExactlyOnceWith(request, bindings);
     expect(getByName).not.toHaveBeenCalled();
+  });
+
+  it('runs Merchant after delivery and preserves a delivery failure if Merchant RPC also fails', async () => {
+    const order: string[] = [];
+    const runtime = {
+      runPaidOrderDelivery: vi.fn(async () => {
+        order.push('delivery');
+        throw new Error('delivery failure');
+      }),
+      runMerchantSync: vi.fn(async () => {
+        order.push('merchant');
+        throw new Error('RPC failure');
+      }),
+    };
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await expect(
+        worker.scheduled(
+          { scheduledTime: 1234 } as ScheduledController,
+          {
+            PRODUCT_ENVIRONMENT: 'UAT',
+            MERCHANT_SYNC_ENABLED: 'true',
+            COMMERCE_RUNTIME: { getByName: () => runtime },
+          } as unknown as Parameters<typeof worker.scheduled>[1],
+        ),
+      ).rejects.toThrow('delivery failure');
+      expect(order).toEqual(['delivery', 'merchant']);
+      expect(warn).toHaveBeenCalledWith(expect.objectContaining({ safeReason: 'runtime_unavailable' }));
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

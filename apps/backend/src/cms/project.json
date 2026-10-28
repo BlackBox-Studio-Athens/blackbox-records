@@ -20,7 +20,8 @@
         "./auth.ts",
         "./media-upload.ts",
         "./published-store-item-names.ts",
-        "./published-store-item-listing.ts"
+        "./published-store-item-listing.ts",
+        "./published-merchant-catalog.ts"
       ],
       "namedInterfaces": {
         "access-auth-provider": "./auth.ts",
