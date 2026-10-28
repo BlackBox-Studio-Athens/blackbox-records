@@ -35,3 +35,13 @@ Selection: **A · Brief, then to-do**, chosen by the owner on 27 October 2026 ("
 ## Desktop left edge decision
 
 Selection: **A · keep centred**, chosen by the owner on 27 October 2026 ("Keep A: centred reading columns on Overview, Stats, Orders and Images; commit slice 2 as it is."). B, one 24 px left edge for every page, was shown as an injected-CSS preview at 1440 px (`.codex-artifacts/staff-redesign/slice2/left_*.png`) and not built. Titles share one scale; phones share one inset.
+
+## Catalog status position decision
+
+On wide Catalog rows the status ("On the website · Vinyl · €28.00 · 99 copies available to buy online") sat at the far right, 553 px from the title at 1440 px. Three injected-CSS previews at 1440 px (`.codex-artifacts/staff-redesign/slice6/catalog-option-{a,b,c}-1440.png`, current state `distro-now-1440.png`): A, status under the title (rows grow from 72 to 100 px); B, rows capped at 960 px; C, a 360 px title column with the status after it.
+
+Selection: **C · title column**, chosen by the owner on 28 October 2026 (answer: "C · Title column"). It applies from 1024 px; narrower rows keep their existing layout.
+
+## Sold-out tag decision
+
+A Stock tag for items that shoppers see as sold out while they are still on the website needs the accepted publication snapshot in the inventory read, so `operator-stock` gains a CMS dependency. The owner chose to build it in this change on 28 October 2026 ("Do it now"), although the boundary files also hold unrelated uncommitted Merchant-sync edits. Only this change's lines are committed.

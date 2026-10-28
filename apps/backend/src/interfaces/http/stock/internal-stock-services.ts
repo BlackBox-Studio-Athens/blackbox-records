@@ -14,6 +14,9 @@ import {
 } from '../../../application/commerce/stock';
 import type { AppBindings } from '../../../platform/env';
 import type { InventoryQuery } from '../../../application/commerce/stock';
+import { readPublishedStoreItemSlugs } from '../../../cms/published-store-item-listing';
+import { productEnvironmentProfileFromBindings } from '../../../platform/env';
+import { presentInventory } from './inventory-presentation';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 import {
@@ -36,7 +39,15 @@ export function createInternalStockServices(bindings: AppBindings) {
   const alerts = new D1AvailabilityAlertRepository(bindings.COMMERCE_DB);
 
   return {
-    readInventory: (query: InventoryQuery) => storeItemOptions.readInventory(query),
+    readInventory: async (query: InventoryQuery) => {
+      const page = await storeItemOptions.readInventory(query);
+      const bucket = (bindings as AppBindings & { MEDIA?: R2Bucket }).MEDIA;
+      const listed = await readPublishedStoreItemSlugs(
+        bucket,
+        productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+      );
+      return presentInventory(page, listed);
+    },
     disconnect: async () => prisma.$disconnect(),
     errors: {
       InvalidStockOperationError,

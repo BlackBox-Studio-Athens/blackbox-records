@@ -15,7 +15,13 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./index.ts", "./auth.ts", "./media-upload.ts", "./published-store-item-names.ts"],
+      "exports": [
+        "./index.ts",
+        "./auth.ts",
+        "./media-upload.ts",
+        "./published-store-item-names.ts",
+        "./published-store-item-listing.ts"
+      ],
       "namedInterfaces": {
         "access-auth-provider": "./auth.ts",
         "lazy-media-upload": "./media-upload.ts",

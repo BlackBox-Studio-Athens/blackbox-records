@@ -2,6 +2,7 @@ import type { InternalApiComponents, InternalApiOperations } from '@blackbox/api
 import { extractSafeProblemDetail } from './problem-details';
 
 export type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];
+export type InventoryRow = InternalApiComponents['schemas']['InventoryPage']['items'][number];
 export type InternalStockDetail = InternalApiComponents['schemas']['InternalStockDetail'];
 export type InternalStockHistoryResponse = InternalApiComponents['schemas']['InternalStockHistoryResponse'];
 export type InternalStockChangeBody = InternalApiComponents['schemas']['InternalStockChangeBody'];

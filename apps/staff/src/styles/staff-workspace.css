@@ -415,6 +415,26 @@ body[data-workspace='content'] {
     padding-inline: 4px;
   }
 }
+/* At 195 px (a 390 px phone at 200% zoom) the area name has no room; Menu keeps its name for assistive tech. */
+@media (max-width: 259px) {
+  .staff-brand img {
+    width: 72px;
+  }
+  .staff-header-context {
+    display: none;
+  }
+  .staff-menu-trigger {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .staff-menu-trigger span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
 .staff-area-link {
   display: flex;
   align-items: center;
@@ -751,6 +771,14 @@ body[data-workspace='content'] {
   border-color: currentColor;
   /* --warning is defined only inside .cms-surface; Stock uses the same amber as the staff readiness items. */
   color: var(--warning, oklch(0.84 0.13 85));
+}
+.inventory-sold-out {
+  margin-left: 8px;
+  vertical-align: 1px;
+  white-space: nowrap;
+  border-color: currentColor;
+  /* A lighter tone of --destructive keeps the small tag text readable on the dark rows. */
+  color: oklch(0.74 0.14 25);
 }
 .inventory-pagination {
   position: sticky;
@@ -1429,6 +1457,16 @@ body[data-workspace='content'] {
   .cms-entry-summary {
     grid-column: 2;
     margin-left: 0;
+    min-width: 0;
+  }
+}
+/* Wide rows: the title takes a fixed column so every status starts at the same x instead of the far edge. */
+@media (min-width: 1024px) {
+  .cms-entry-row > .min-w-0 {
+    flex: 0 0 360px;
+  }
+  .cms-entry-summary {
+    margin-left: 24px;
     min-width: 0;
   }
 }

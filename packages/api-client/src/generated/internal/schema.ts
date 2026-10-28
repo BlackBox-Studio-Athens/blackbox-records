@@ -825,7 +825,11 @@ export type components = {
             actions?: components["schemas"]["ApiAction"][];
             before: string;
             items: (components["schemas"]["InternalVariantSummary"] & {
+                /** @enum {string} */
+                availabilityState: "stocked" | "coming_soon" | "repressing" | "sold_out" | "unavailable";
                 cmsSourceId: string | null;
+                /** @enum {string} */
+                websiteListing: "listed" | "not_listed" | "unknown";
             })[];
             links?: components["schemas"]["ApiLink"][];
             nextCursor?: string;

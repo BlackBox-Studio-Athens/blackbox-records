@@ -85,3 +85,44 @@ it('paginates 250 items with duplicate titles, server filters, missing stock and
     await prisma.$disconnect();
   }
 });
+
+it('joins availability and zero-stock state for an inventory page, including an open preorder', async () => {
+  const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+  const variantId = 'variant_inventory_facts';
+  try {
+    await prisma.storeItemOption.create({
+      data: {
+        sourceKind: 'distro',
+        sourceId: 'inventory-facts',
+        variantId,
+        storeItemSlug: 'inventory-facts',
+      },
+    });
+    await prisma.itemAvailability.create({ data: { variantId, status: 'available', canBuy: true } });
+    await prisma.stock.create({
+      data: {
+        variantId,
+        quantity: 2,
+        onlineQuantity: 2,
+        zeroStockState: 'repressing',
+        preorderStartedAt: '2026-01-01T00:00:00.000Z',
+        preorderShipMonth: '2099-01',
+      },
+    });
+    const page = await new PrismaStoreItemOptionRepository(prisma).readInventory(
+      inventoryQuerySchema.parse({ q: 'inventory-facts' }),
+    );
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0]).toMatchObject({
+      onlineQuantity: 2,
+      zeroStockState: 'repressing',
+      availabilityStatus: 'available',
+    });
+    expect(page.items[0]?.availabilityCanBuy).toBeTruthy();
+  } finally {
+    await prisma.stock.deleteMany({ where: { variantId } });
+    await prisma.itemAvailability.deleteMany({ where: { variantId } });
+    await prisma.storeItemOption.deleteMany({ where: { variantId } });
+    await prisma.$disconnect();
+  }
+});

@@ -3,6 +3,8 @@
   "tags": ["module", "scope:backend"],
   "targets": {
     "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=operator-stock",
+      "inputs": ["backendTests", "^default"],
       "dependsOn": [
         {
           "projects": ["public-commerce-http"],
@@ -11,7 +13,7 @@
       ]
     },
     "test-watch": {
-      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=public-commerce-http*",
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=operator-stock",
       "continuous": true,
       "cache": false
     }
@@ -23,7 +25,7 @@
       "namedInterfaces": {
         "internal-contracts": "./internal-contracts.ts"
       },
-      "dependsOn": ["stock", "orders", "commerce-domain", "commerce-persistence", "backend-platform"],
+      "dependsOn": ["stock", "orders", "commerce-domain", "commerce-persistence", "backend-platform", "cms-runtime"],
       "workspaceInterfaces": {}
     }
   }

@@ -13,7 +13,7 @@
 
 ## 2. Shared page header (findings 4, 5, 6, 11)
 
-- [ ] 2.1 One page-header pattern for all seven areas; remove Back to Overview from top-level areas; name the current area in the phone header; update the staff-workspace spec to seven areas. Done: shared title scale, Overview-only Back links removed, phone header names the area down to 320 px. Desktop left edge: owner kept centred reading columns (option A, 27 October 2026). Open: the 195 px Menu overflow; the base spec's six-area wording.
+- [x] 2.1 One page-header pattern for all seven areas; remove Back to Overview from top-level areas; name the current area in the phone header; update the staff-workspace spec to seven areas. Done: shared title scale, Overview-only Back links removed, phone header names the area down to 320 px. Desktop left edge: owner kept centred reading columns (option A, 27 October 2026). At 195 px Menu becomes a 44 px icon button that keeps its accessible name, and the area name hides. The change adds a seven-area requirement; at archive, replace "six areas" in the base spec's Shared navigation section by hand.
 
 ## 3. Orders triage (finding 2)
 
@@ -25,8 +25,8 @@
 
 ## 5. Smaller fixes (findings 7, 9, 10)
 
-- [ ] 5.1 Review selection bar overlap, Stock item names and low-stock signal, Catalog toolbar on one row. Done: the Review bar sits flush with the bottom edge and row actions are spaced; Review checkboxes already centre on their titles; Stock rows drop the label name and repeated format and tag 1 to 5 copies online as Low stock; Catalog search, filters and Add share one row. Open: a "sold out but on the website" tag needs the publish state in the inventory read (Codex); Catalog status still sits at the far right of wide rows (a visual choice, not yet shown).
+- [x] 5.1 Review selection bar overlap, Stock item names and low-stock signal, Catalog toolbar on one row. Done: the Review bar sits flush with the bottom edge and row actions are spaced; Review checkboxes already centre on their titles; Stock rows drop the label name and repeated format and tag 1 to 5 copies online as Low stock; Catalog search, filters and Add share one row. Catalog status starts after a 360 px title column from 1024 px (option C, 28 October 2026). Stock tags "Sold out on the website" beside the format when the accepted snapshot lists the Store Item and its shopper availability is sold out; the inventory read gained `websiteListing` and `availabilityState` (Codex, 28 October 2026).
 
 ## 6. Acceptance
 
-- [ ] 6.1 Run `pnpm test` for changed staff modules and `pnpm validate` on the final tree; record before/after captures and evidence in validation.md.
+- [x] 6.1 Run `pnpm test` for changed staff modules and `pnpm validate` on the final tree; record before/after captures and evidence in validation.md.

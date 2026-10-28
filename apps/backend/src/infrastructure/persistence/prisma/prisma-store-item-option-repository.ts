@@ -67,8 +67,10 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
     }
     const rows = await this.prisma.$queryRawUnsafe<InventoryItem[]>(
       `SELECT c.variantId, c.storeItemSlug, c.sourceId, c.sourceKind, c.cmsSourceId, c.itemType,
-      ${title} AS displayName, s.quantity, s.onlineQuantity FROM StoreItemOption c
-      LEFT JOIN Stock s ON s.variantId = c.variantId WHERE ${filters.join(' AND ')}
+      ${title} AS displayName, s.quantity, s.onlineQuantity, s.zeroStockState,
+      a.status AS availabilityStatus, a.canBuy AS availabilityCanBuy FROM StoreItemOption c
+      LEFT JOIN Stock s ON s.variantId = c.variantId
+      LEFT JOIN ItemAvailability a ON a.variantId = c.variantId WHERE ${filters.join(' AND ')}
       ORDER BY ${format}, lower(${title}), c.variantId LIMIT ?`,
       ...values,
       query.limit + 1,

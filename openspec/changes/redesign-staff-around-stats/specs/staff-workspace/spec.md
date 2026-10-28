@@ -1,5 +1,14 @@
 ## ADDED Requirements
 
+### Requirement: Seven staff areas
+
+The staff shell SHALL offer seven equally prominent areas: Overview, Catalog, Website, Images, Stock, Orders and Stats. This replaces the six areas named in the Shared navigation and language section; the other rules of that section stay unchanged.
+
+#### Scenario: Member opens the navigation
+
+- **WHEN** a member opens the top navigation at 1440 px or the Menu drawer at 390 px
+- **THEN** the seven areas are listed with the same prominence, and Stats opens the Stats area.
+
 ### Requirement: Stats-led Overview
 
 Overview SHALL open with headline figures for Visits, Paid orders, Paid total and Google clicks for the selected period. Each figure SHALL state its signed change against the previous period in text and link to its Stats source. Overview SHALL show the read time and each source's day and delay rules.

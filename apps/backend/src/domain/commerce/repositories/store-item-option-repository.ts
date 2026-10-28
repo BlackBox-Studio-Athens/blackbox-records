@@ -1,4 +1,6 @@
 import type { StoreItemSlug, VariantId } from '../ids';
+import type { ZeroStockState } from '../zero-stock-state';
+import type { ItemAvailabilityStatus } from './item-availability-repository';
 
 export type StoreItemSourceKind = 'release' | 'distro';
 
@@ -52,5 +54,8 @@ export type InventoryItem = {
   itemType: string | null;
   quantity: number | null;
   onlineQuantity: number | null;
+  zeroStockState: ZeroStockState | null;
+  availabilityStatus: ItemAvailabilityStatus | null;
+  availabilityCanBuy: boolean | number | null;
 };
 export type InventoryPage = { items: InventoryItem[]; nextCursor?: string; before: string };

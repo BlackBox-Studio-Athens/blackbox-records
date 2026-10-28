@@ -260,7 +260,13 @@ const inventoryRoute = createRoute({
         'application/json': {
           schema: z
             .object({
-              items: z.array(variantSummarySchema.extend({ cmsSourceId: z.string().nullable() })),
+              items: z.array(
+                variantSummarySchema.extend({
+                  cmsSourceId: z.string().nullable(),
+                  websiteListing: z.enum(['listed', 'not_listed', 'unknown']),
+                  availabilityState: z.enum(['stocked', 'coming_soon', 'repressing', 'sold_out', 'unavailable']),
+                }),
+              ),
               nextCursor: z.string().optional(),
               before: z.string(),
               ...hypermediaMetadataShape,

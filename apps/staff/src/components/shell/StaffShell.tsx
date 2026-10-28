@@ -338,7 +338,7 @@ export default function StaffShell({
           <SheetTrigger asChild>
             <Button variant="ghost" className="staff-menu-trigger">
               <Menu aria-hidden="true" />
-              Menu
+              <span>Menu</span>
             </Button>
           </SheetTrigger>
           <SheetContent

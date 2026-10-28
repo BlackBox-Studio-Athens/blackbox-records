@@ -36,14 +36,14 @@ import {
   InternalStockApiError,
   type InternalStockDetail,
   type InternalStockHistoryResponse,
-  type InternalVariantSummary,
+  type InventoryRow,
   type SetStockPreorderBody,
   type SetZeroStockStateBody,
 } from '../../lib/backend/internal-stock-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../ui/utils';
 import FormatFilter, { formatLabel } from './FormatFilter';
-import { inventoryName, isLowStock, LOW_STOCK_NOTICE_THRESHOLD } from './inventory-row';
+import { inventoryName, isLowStock, isSoldOutOnWebsite, LOW_STOCK_NOTICE_THRESHOLD } from './inventory-row';
 import type { EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,
@@ -107,7 +107,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const [countUnconfirmed, setCountUnconfirmed] = useState(false);
   const focusedVariant = useRef('');
   const inventoryRef = useRef<HTMLElement>(null);
-  const [variants, setVariants] = useState<InternalVariantSummary[]>([]);
+  const [variants, setVariants] = useState<InventoryRow[]>([]);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [stockDetail, setStockDetail] = useState<InternalStockDetail | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -923,7 +923,14 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                   )}
                   <span>
                     <strong>{inventoryName(variant)}</strong>
-                    <small>{formatLabel(variant.itemType ?? 'Format not set')}</small>
+                    <small>
+                      {formatLabel(variant.itemType ?? 'Format not set')}
+                      {isSoldOutOnWebsite(variant) && (
+                        <Badge variant="outline" className="inventory-sold-out">
+                          Sold out on the website
+                        </Badge>
+                      )}
+                    </small>
                   </span>
                 </span>
                 <span className="inventory-quantity">

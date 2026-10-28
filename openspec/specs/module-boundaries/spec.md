@@ -288,6 +288,11 @@ Pre-order status rules SHALL be owned by `commerce-domain` and reach other backe
 - **AND** `operator-stock` declares its `commerce-domain` dependency for the staff pre-order projection
 - **AND** the pre-order estimate notice repository is a provided `commerce-persistence` entrypoint consumed by `orders`.
 
+#### Scenario: Stock reads website listing state
+
+- **WHEN** `operator-stock` reads accepted Store Item listing identities for an inventory page
+- **THEN** it uses the purpose-specific `cms-runtime` public entrypoint and reads at most one snapshot per page.
+
 #### Scenario: Checkout return and order emails share the canonical order reference
 
 - **WHEN** the paid checkout return, payment confirmation or estimate-change delivery needs an order reference

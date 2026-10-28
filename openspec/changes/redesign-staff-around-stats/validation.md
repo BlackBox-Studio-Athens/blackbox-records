@@ -112,3 +112,28 @@ Local only. Evidence files are ignored under `.codex-artifacts/staff-redesign/` 
 - `8f9c2709` scoped the alert and link locators; `97e409f4` rewrote the refresh check for the four Overview reads and the To do texts. Run 40554148759 for `97e409f4`: staff previews passed in Chromium and Firefox, all suites passed, and `deploy-uat` succeeded.
 - That run needed failed-job re-runs: two public e2e legs timed out while installing browsers, and `apps/web/test/commerce/public-checkout-api.request.test.ts` failed twice with a different test each time (newsletter signup, then Services inquiry). Neither is staff code; the second re-run passed.
 - Not established: PRD promotion, provider smoke and a manual pass on the hosted staff site.
+
+## Slice 6: header, spec, Catalog status and sold-out tag, 28 October 2026
+
+### Checks run
+
+- `pnpm test` equivalents run directly with Vitest (Nx plugin workers failed to start under stack load): `StaffShell.test.tsx` 4 of 4; staff-stock module 5 files, 38 tests, including the new sold-out cases (listed, not listed, unknown, coming soon, repressing, local stock added).
+- Codex, for the inventory read: `pnpm openspec:guard`, API generation, operator-stock, commerce-domain, commerce-persistence, CMS (passed on retry after two 30-second public-runtime timeouts) and api-client checks, and the inventory integration test passed. Its `pnpm validate` stopped on a sandbox `EPERM` before any phase.
+- ESLint and Prettier on the changed staff files: no problems.
+- `pnpm openspec -- validate redesign-staff-around-stats --strict`: valid.
+
+### Browser (Playwright CLI, headless Chromium, Local stack rebuilt)
+
+- Header at 195 px (390 px at 200% zoom): before, Menu ended at x = 244 (49 px clipped). After, Menu is a 44 px icon button at 136 to 180 with the accessible name "Menu", the logo is 72 px, the area name hides, header overflow 0. 320 and 390 px unchanged. `m195-header-built.png`.
+- Catalog at 1440 px: every status starts at x = 720 (before: 988, 553 px from the title). From 1024 to 1920 px one status x per width, rows 72 px, no overflow; 768 and 390 px unchanged. `catalog-built-1440.png`.
+- Stock, real Local data: the inventory read returns `websiteListing` and `availabilityState`; 45 of 50 rows are listed and 43 of those are sold out (Local distro stock is 0), so most Local rows carry the tag. Tag text contrast 7.97:1 on the row background (`--destructive` would be 3.70:1). The first build put the tag in the online column, where it wrapped to two lines (`stock-soldout-1440.png`); it moved beside the format, one line, rows 73 px at 1440, 128 at 390, 147 at 320, no overflow (checked by moving the built tags in the page; `stock-soldout-title-{1440,390,320}.png`).
+- Console: no errors or warnings.
+- Evidence: `.codex-artifacts/staff-redesign/slice6/`.
+
+### Final validation
+
+- `pnpm validate` on the final tree failed three times before passing: an unowned unit test (`operator-stock` gained its own test command), two inline `import()` types (`consistent-type-imports`), and a plain number passed where `StockQuantity` is required (now `createStockQuantity`). All three were in the Codex backend change and fixed by Codex. The fourth run passed: `.codex-artifacts/validation/2026-10-28T00-59-22-519Z-57092-9ee2c3/summary.json`. That tree also held unrelated uncommitted Merchant-sync work; CI checks the committed subset.
+
+### Not established
+
+- The final tag placement in a rebuilt stack (checked by injection), hosted UAT behaviour of the listing read, and 768/1280 px for Stock.

@@ -1388,10 +1388,30 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "websiteListing": {
+                      "type": "string",
+                      "enum": [
+                        "listed",
+                        "not_listed",
+                        "unknown"
+                      ]
+                    },
+                    "availabilityState": {
+                      "type": "string",
+                      "enum": [
+                        "stocked",
+                        "coming_soon",
+                        "repressing",
+                        "sold_out",
+                        "unavailable"
+                      ]
                     }
                   },
                   "required": [
-                    "cmsSourceId"
+                    "cmsSourceId",
+                    "websiteListing",
+                    "availabilityState"
                   ]
                 }
               ]

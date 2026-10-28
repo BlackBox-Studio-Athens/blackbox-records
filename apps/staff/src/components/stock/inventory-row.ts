@@ -15,3 +15,13 @@ export function inventoryName({ displayName, storeItemSlug, itemType }: Inventor
 
 export const isLowStock = (onlineQuantity: number | null | undefined) =>
   typeof onlineQuantity === 'number' && onlineQuantity > 0 && onlineQuantity <= LOW_STOCK_NOTICE_THRESHOLD;
+
+type WebsiteStateSource = {
+  websiteListing?: string | undefined;
+  availabilityState?: string | undefined;
+  onlineQuantity?: number | null | undefined;
+};
+
+/** Shoppers see this item as sold out while it is still listed. A local stock change hides the tag until the next inventory read. */
+export const isSoldOutOnWebsite = ({ websiteListing, availabilityState, onlineQuantity }: WebsiteStateSource) =>
+  websiteListing === 'listed' && availabilityState === 'sold_out' && !onlineQuantity;
