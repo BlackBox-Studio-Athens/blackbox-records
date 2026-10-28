@@ -143,3 +143,12 @@ The validator also formatted `openspec/changes/apply-ux-laws-review-fixes/releas
 - [Vitest 5 migration guide](https://vitest.dev/guide/migration/): mocks, async assertions, inline projects, config discovery and artifact paths.
 - [MSW 3 release notes](https://github.com/mswjs/msw/releases/tag/v3.0.0): ESM, unhandled-frame option, cookies and fake timers.
 - Installed package source and registry metadata were used for exact dependencies and the shared-cache diagnosis. Context7 was unavailable because its monthly quota was exhausted.
+
+## Release (24 October 2026)
+
+- Candidate `508fa091c6044fbb60776fb570413bcb02d7dc27` was pushed to `main` and built in push run [40044419674](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/40044419674) (release #630).
+- First attempt: every job passed except E2E shard 4. That shard failed in "Install public end-to-end browsers" when `apt-get install libavcodec60` hung past the step timeout on the runner, before any test ran. The failed job was rerun on the same run and passed. The run concluded success: checks, 4 E2E shards, WebKit, staff previews (Chromium, Firefox) and `deploy-uat`.
+- UAT: `deploy-uat` passed runtime and Stripe configuration verification, migrations, Workers, Pages, deployed-release verification, the UAT static smoke and "Require UAT to still serve this run".
+- PRD: `promote-prd.yml` run [40045782594](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/40045782594) resolved the release UAT serves, rebuilt from it, applied migrations, deployed the Workers and Pages, and verified the deployed release.
+- Independent read-only check: `https://blackboxrecordsathens.com/release.json` and `https://blackbox-records-web.pages.dev/release.json` report sha `508fa091…`, run `40044419674`, run number 630. `/`, `/store/`, `/store/distro/` and `/releases/` return 200, and the live Store renders all 99 Buy buttons `disabled hidden` (this release's markup).
+- Stripe webhook endpoint API version: not required for this release. The webhook route never reads an event's `api_version` and is tested with an older-version payload (`2026-04-25.basil`). Signature verification passes `tolerance: undefined`, which keeps Stripe 23's default window. Checkout creation uses `payment_method_configuration`, not the `payment_method_types` parameter that `2026-09-30.endive` removed. No hosted Stripe configuration was changed.

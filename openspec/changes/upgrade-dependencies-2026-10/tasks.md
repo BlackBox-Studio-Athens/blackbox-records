@@ -36,7 +36,7 @@
 
 ## Workflow follow-up
 
-- OPEN: hosted UAT and PRD Stripe webhook endpoint API version, using pnpm stripe:webhooks:verify under separate authorization.
-- OPEN: UAT release and release acceptance under separate authorization.
+- [x] Hosted Stripe webhook endpoint API version: not required; the handler is version-agnostic (see validation.md, Release).
+- [x] UAT and PRD release: release #630 (`508fa091`), push run 40044419674 and promotion run 40045782594 (see validation.md, Release).
 - [x] 6.6 Fix the Firefox Home networkidle flake. Root cause: Playwright's Firefox `networkidle` lifecycle can miss an idle Home page and never fire. Diagnostics with request, frame and history logging found no open request, child frame or reload in timed-out runs. Playwright's own trace recorded all 150 resources finished; the second navigation was the shell's replaceState. Astro 7.4 dev timing made the miss more frequent (HEAD 0/20, HEAD+astro 7.4.2 1/20, upgraded 3/20). CI is unaffected because it runs `astro preview`. The test now waits through the existing client-side quiet-network tracking (`watchNetworkQuiet`, shared with `watchSurfaceWarmup`): 90/90 passed across firefox-desktop, webkit-mobile and chromium-desktop (30 each). Other `networkidle` waits (home-preorders, email-preferences, performance-acceptance) are unchanged.
 - [x] 6.7 Fix the `store-cart.spec.ts:297` flake. The test exceeded the 90 s default on the local dev server; it now sets 180 s, following the suite precedent. The rare WebKit Listen tap that opened no player is fixed in `fix-modified-button-clicks`.
