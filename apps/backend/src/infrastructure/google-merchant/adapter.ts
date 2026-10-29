@@ -58,7 +58,7 @@ export class GoogleMerchantAdapter {
     if (!parsed.success || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 10000)
       throw new GoogleMerchantError('invalid-source');
     this.config = parsed.data;
-    this.fetcher = options.fetch ?? fetch;
+    this.fetcher = options.fetch ?? ((input, init) => fetch(input, init));
     this.timeoutMs = timeoutMs;
   }
 

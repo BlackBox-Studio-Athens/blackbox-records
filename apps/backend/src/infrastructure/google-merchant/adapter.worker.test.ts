@@ -65,6 +65,26 @@ function fixture() {
   return { fetcher, adapter: new GoogleMerchantAdapter(config, { fetch: fetcher }) };
 }
 
+it('preserves the native workerd fetch receiver on the default transport', async () => {
+  const nativeFetch = globalThis.fetch;
+  const checkReceiver = async (receiver: unknown) => {
+    const response = await Reflect.apply(nativeFetch, receiver, ['data:text/plain,receiver-check']);
+    await response.body?.cancel();
+  };
+  await expect(checkReceiver({})).rejects.toThrow('Illegal invocation');
+  const { fetcher } = fixture();
+  const transport = vi.spyOn(globalThis, 'fetch').mockImplementation(async function (this: unknown, url, init) {
+    await checkReceiver(this);
+    return fetcher(url, init);
+  });
+  try {
+    await new GoogleMerchantAdapter(config).verifySource();
+    expect(transport).toHaveBeenCalledTimes(3);
+  } finally {
+    transport.mockRestore();
+  }
+});
+
 it('signs the content-scope assertion and reuses its token only inside the adapter instance', async () => {
   const { adapter, fetcher } = fixture();
   const started = Math.floor(Date.now() / 1000);
