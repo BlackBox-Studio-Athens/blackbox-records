@@ -72,6 +72,25 @@ The system MUST keep stable Merchant offer identity separate from GTIN, MPN and 
 - **WHEN** current stock establishes buyability but does not establish product condition
 - **THEN** the mapper does not infer NEW from stock, and condition requirements must be verified before accepting the product into the pilot.
 
+### Requirement: Physical condition is captured before selected publication
+
+The system SHALL require explicit New or Used condition when publishing a selected Distro record or a selected Release with a physical format or an existing physical StoreItem binding. It SHALL preserve optional condition storage for incomplete drafts, unbound digital-only/editorial Releases and historical accepted snapshots. It SHALL NOT infer condition from stock or query stock or prices to validate CMS publication.
+
+#### Scenario: A physical draft has no condition
+
+- **WHEN** an operator reviews, accepts or executes publication of a selected physical record without New or Used
+- **THEN** publication is blocked before its native publication transition, including acceptance without a reviewed baseline.
+
+#### Scenario: An existing physical Release clears its formats
+
+- **WHEN** a selected Release still has a physical StoreItem binding but its draft has empty or digital-only formats
+- **THEN** the explicit condition requirement still applies.
+
+#### Scenario: An unrelated legacy record lacks condition
+
+- **WHEN** another record is selected for publication while an unchanged accepted record or private draft lacks condition
+- **THEN** that historical record remains readable and is not published or changed by the selection.
+
 ### Requirement: Reconciliation uses a bounded rotating scan
 
 The system SHALL process at most five candidate identities per fifteen-minute UTC clock slot using the existing schedule, including previously managed identities needed for removal. It SHALL send changed verified inputs and refresh unchanged eligible inputs after seven days since successful submission. It SHALL NOT add event hooks, a change detector or automatic provider-status polling.

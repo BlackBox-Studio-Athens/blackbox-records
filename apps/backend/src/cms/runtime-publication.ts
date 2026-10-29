@@ -5,6 +5,8 @@ import {
   contentMediaIds,
   isCmsCollection,
   validateCmsRevisionContent,
+  getPublicationProductConditionIssues,
+  requiresProductCondition,
   replacePublishedRecord,
   removePublishedDistro,
   type ContentSnapshot,
@@ -138,6 +140,7 @@ export async function acceptSelectedPublication(
     }
   }
   const records = [];
+  let publicationCatalog: Awaited<ReturnType<typeof readPublicationCatalog>> | undefined;
   for (const record of selected.records) {
     const current = successful(await deps.runtime.handleContentGet(record.collection, record.recordId));
     if (current._rev !== record.expectedRevision)
@@ -145,10 +148,24 @@ export async function acceptSelectedPublication(
     const revisionId = current.item.draftRevisionId ?? current.item.liveRevisionId;
     if (!revisionId) throw new InvalidPublication('Save content before publishing.');
     const revision = successful(await deps.runtime.handleRevisionGet(revisionId)).item;
-    const { _slug: _slug, ...content } = await readRevisionContent(deps.runtime, revision);
+    const { _slug, ...content } = await readRevisionContent(deps.runtime, revision);
+    let hasPhysicalStoreBinding = false;
+    if (
+      selected.action !== 'withdraw' &&
+      record.collection === 'releases' &&
+      !['new', 'used'].includes(String(content.product_condition ?? '')) &&
+      !requiresProductCondition(record.collection, content)
+    ) {
+      publicationCatalog ??= await readPublicationCatalog(deps.commerce);
+      hasPhysicalStoreBinding = publicationCatalog.some(
+        (item) => item.sourceKind === 'release' && item.sourceId === String(_slug ?? current.item.slug),
+      );
+    }
     if (
       !isCmsCollection(record.collection) ||
-      (selected.action !== 'withdraw' && validateCmsRevisionContent(record.collection, content).length)
+      (selected.action !== 'withdraw' &&
+        (validateCmsRevisionContent(record.collection, content).length ||
+          getPublicationProductConditionIssues(record.collection, content, hasPhysicalStoreBinding).length))
     )
       throw new InvalidPublication('Complete the highlighted fields before publishing.');
     records.push({
@@ -262,10 +279,12 @@ export async function processRuntimePublication(deps: Dependencies) {
       );
       // Check the whole batch before any native transition. Public activation remains atomic.
       const preparedRevisions = new Map<string, string>();
+      const preparedSlugs = new Map<string, string>();
       for (const intent of selections) {
         const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
         if (!record._rev) throw new InvalidPublication('The saved version is unavailable. Reload the entry.');
         preparedRevisions.set(intent.recordId, record._rev);
+        if (record.item.slug) preparedSlugs.set(intent.recordId, record.item.slug);
         if (withdrawing) {
           if (record._rev === (intent.withdrawnRevision ?? intent.expectedRevision)) continue;
           // A native response can be lost before its receipt is journalled. Exactly one version
@@ -347,7 +366,24 @@ export async function processRuntimePublication(deps: Dependencies) {
         const revision = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
         if (!isCmsCollection(revision.collection)) throw new InvalidPublication('Unsupported collection.');
         const { _slug: _validationSlug, ...publicationData } = await readRevisionContent(deps.runtime, revision);
-        if (validateCmsRevisionContent(revision.collection, publicationData).length)
+        if (['releases', 'distro'].includes(revision.collection))
+          publicationCatalog ??= await readPublicationCatalog(deps.commerce);
+        const selectedSlug =
+          revision.collection === 'releases'
+            ? String(
+                _validationSlug ??
+                  preparedSlugs.get(revision.entryId) ??
+                  successful(await deps.runtime.handleContentGet(revision.collection, revision.entryId)).item.slug,
+              )
+            : '';
+        if (
+          validateCmsRevisionContent(revision.collection, publicationData).length ||
+          getPublicationProductConditionIssues(
+            revision.collection,
+            publicationData,
+            publicationCatalog?.some((item) => item.sourceKind === 'release' && item.sourceId === selectedSlug),
+          ).length
+        )
           throw new InvalidPublication('Incomplete drafts cannot be published.');
         if ('collection' in intent) {
           const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));

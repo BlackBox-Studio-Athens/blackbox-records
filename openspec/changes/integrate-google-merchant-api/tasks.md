@@ -1,6 +1,6 @@
 # Tasks
 
-Final design and local implementation were approved on 2026-10-27. On 2026-10-28, the owner authorized task 3.2's isolated Google test-account pilot, including required account and credential setup. The disabled implementation has deployed to UAT. Conversion tracking and production activation remain out of scope; task 3.3's production checks require separate authorization.
+Final design and local implementation were approved on 2026-10-27. On 2026-10-28, the owner authorized task 3.2's isolated Google test-account pilot and required setup. The later production and completion authorizations below supersede that historical boundary; paid ads and conversion tracking remain excluded.
 
 On 2026-10-29, after the recorded synthetic and real PRD-source test-account pilots, the owner instructed: **Skip further testing, move on with the real implementation.** Focused static inspection confirmed that the implementation tasks below are already complete. Further tests and provider pilots are deferred under that instruction; unchecked acceptance tasks 3.2 and 3.3 remain open, not passed. The next operational step is separately authorized PRD Merchant account/source/credential configuration and gated activation. This instruction does not enable the hosted job or authorize production product mutations.
 
@@ -15,11 +15,12 @@ The owner later superseded the testing deferral: **I want to switch it on fully,
 
 - [x] 2.1 Implement and test the persistent rotating scan, complete accepted-inventory checks, partial-read safety, removal/reinsertion, safe replay and seven-day refresh without affecting checkout or paid-order delivery.
 - [x] 2.2 Integrate disabled-by-default controls and at most five candidates per fifteen minutes on the existing schedule; test overlap protection, fair rotation, isolation and operation limits. Document measured Free-tier budget, delayed convergence, Merchant Center diagnostics and operator recovery; add no event hooks, change detector or automatic status polling.
+- [x] 2.3 Complete physical condition authoring: explicit New/Used controls in existing Staff editors and Add to catalog, preserved through autosave/recovery, plus selected-publication validation. Keep drafts and historical accepted records readable without condition; block only selected physical publication until the owner supplies it. Claude owns UI implementation/tests; Codex owns the shared predicate and backend guards. See [Claude handoff](claude-condition-ui-handoff.md). Do not publish unrelated private edits. Combined local validation passed; browser/release/provider acceptance remains separately recorded below.
 
 ## 3. Acceptance
 
 - [x] 3.0 Resolve final-review findings with regression tests: claim once per fifteen-minute clock slot despite delivery jitter, retain real-time leases and quota cooldowns, and preserve managed listings when checkout flag evaluation fails while keeping shopper fallback unchanged.
 
 - [x] 3.1 Run focused tests, strict OpenSpec validation, graph update and final `pnpm validate`; record source-bound evidence and unverified behaviors.
-- [ ] 3.2 In an isolated Google test account, verify product submission/processing, price and stock changes, removal/reinsertion and pre-order exclusion, including elapsed exact-date state and explicit clearing. Document the existing authenticated API recovery when Copies arrived is hidden. Record bounded provider evidence without treating default test-account approval as proof of real eligibility or displayed shipping.
+- [ ] 3.2 In an isolated Google test account, verify product submission/processing, price and stock changes, removal/reinsertion and pre-order exclusion, including elapsed exact-date state and explicit clearing. Document the existing authenticated API recovery when Copies arrived is hidden. Inspect actual processing and issue statuses; do not assume test-account approval or treat provider acceptance as proof of real eligibility or displayed shipping.
 - [ ] 3.3 Verify pilot product condition and available identifiers, then after the separate deployment and activation gates verify actual production identifier diagnostics, listing eligibility and accurate shipping/returns. Resolve affected product data through its existing owner; record evidence without exposing credentials.

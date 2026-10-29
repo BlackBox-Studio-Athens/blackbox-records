@@ -2,7 +2,7 @@ import TracklistFields from './TracklistFields';
 import BandcampField from './BandcampField';
 import CountryPicker from './CountryPicker';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
-import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
+import { requiresProductCondition, tracklistFormat, type Tracklist } from '@blackbox/content-model';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   ABOUT_STAT_KEYS,
@@ -53,6 +53,10 @@ import { type ContentData, type ContentSection } from '../../lib/content-section
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 
 type ChoiceOption = string | { value: string; label: string };
+const conditionOptions = [
+  { value: 'new', label: 'New' },
+  { value: 'used', label: 'Used' },
+];
 const pageOptions = SITE_PAGES.map(({ path, label }) => ({ value: path, label: `${label} (${path})` }));
 const statLabels: Record<AboutStatKey, string> = {
   artists: 'Number of artists',
@@ -297,13 +301,22 @@ export default function ContentFields({
       </Field>
     );
   }
-  function choice(path: string, label: string, placeholder: string, options: readonly ChoiceOption[]) {
+  /** `clearToNull` stores an explicit blank choice as null, so saving clears the stored enum value. */
+  function choice(
+    path: string,
+    label: string,
+    placeholder: string,
+    options: readonly ChoiceOption[],
+    { required = true, clearToNull = false }: { required?: boolean; clearToNull?: boolean } = {},
+  ) {
     const fieldErrors = errors(path);
     const id = `content-${path}`;
     const errorId = `${id}-error`;
+    const descriptionId = `${id}-description`;
+    const describedBy = [required ? '' : descriptionId, fieldErrors.length ? errorId : ''].filter(Boolean).join(' ');
     return (
       <Field data-invalid={fieldErrors.length > 0} key={path}>
-        <FieldLabel htmlFor={id} required icon={Tag}>
+        <FieldLabel htmlFor={id} required={required} icon={Tag}>
           {label}
         </FieldLabel>
         <NativeSelect
@@ -311,12 +324,12 @@ export default function ContentFields({
           data-content-path={path}
           className={fieldClass}
           value={String(value(path) ?? '')}
-          required
+          required={required}
           disabled={disabled}
           aria-invalid={fieldErrors.length > 0 || undefined}
-          aria-describedby={fieldErrors.length ? errorId : undefined}
+          aria-describedby={describedBy || undefined}
           onBlur={() => touch(path)}
-          onChange={(event) => set(path, event.target.value)}
+          onChange={(event) => set(path, event.target.value || (clearToNull ? null : ''))}
         >
           <option value="">{placeholder}</option>
           {options.map((option) =>
@@ -329,9 +342,16 @@ export default function ContentFields({
             ),
           )}
         </NativeSelect>
+        {!required && <FieldDescription id={descriptionId}>Optional</FieldDescription>}
         <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
       </Field>
     );
+  }
+  function condition() {
+    return choice('product_condition', 'Physical condition', 'Choose condition', conditionOptions, {
+      required: requiresProductCondition(collection, data),
+      clearToNull: true,
+    });
   }
   function image(path: string, alt: string, label: string) {
     const reference = value(path) as { id?: string } | undefined;
@@ -754,6 +774,7 @@ export default function ContentFields({
             'Formats & credits',
             <>
               {rows('formats', 'Formats', '', (path) => field(path, 'Format'))}
+              {condition()}
               {rows('credits', 'Credits', { role: '', name: '' }, (path) => (
                 <>
                   {field(`${path}.role`, 'Role')}
@@ -796,6 +817,7 @@ export default function ContentFields({
         {field('title', 'Item title')}
         {field('artist_or_label', 'Artist or label')}
         {choice('group', 'Physical format', 'Choose a physical format', DISTRO_GROUP_VALUES)}
+        {condition()}
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
         {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>

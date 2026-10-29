@@ -1,5 +1,11 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
-import { releaseDetails, setupCommand } from './ItemSetupApp';
+import ItemSetupApp, {
+  productConditionData,
+  releaseDetails,
+  setupCommand,
+  storedProductCondition,
+} from './ItemSetupApp';
 
 const input = {
   identity: 'acbf5c48-f098-4056-af92-d9d46eb3db82',
@@ -19,6 +25,7 @@ const input = {
   maximum: '',
   custom: false,
   quantity: '10',
+  productCondition: 'new' as const,
 };
 
 it('creates one release or distro source with an explicit EUR price and opening stock', () => {
@@ -104,4 +111,47 @@ it('never creates a release without one canonical catalog number', () => {
   expect(() => setupCommand({ ...input, catalogNumber: '' })).toThrow('BBR#001');
   // Distro and Merch sources never carry a label catalog number.
   expect(JSON.stringify(setupCommand({ ...input, kind: 'distro' }))).not.toContain('catalog_number');
+});
+
+it('requires an explicit condition when Add to catalog creates a physical source', () => {
+  for (const kind of ['release', 'distro', 'merch'] as const) {
+    const format = kind === 'merch' ? ('Clothes' as const) : input.format;
+    for (const productCondition of ['', null, undefined] as const)
+      expect(() => setupCommand({ ...input, kind, format, productCondition })).toThrow('Choose New or Used');
+    expect(setupCommand({ ...input, kind, format, productCondition: 'used' }).source).toMatchObject({
+      mode: 'create',
+      data: { product_condition: 'used' },
+    });
+  }
+  // An existing source keeps its own stored condition; setup neither requires nor copies one.
+  const existing = { id: 'source-existing', slug: 'existing-cd', data: { title: 'Existing CD', group: 'CDs' } };
+  expect(setupCommand({ ...input, kind: 'distro', existing, productCondition: '' }).source).toEqual({
+    mode: 'existing',
+    sourceKind: 'distro',
+    id: 'source-existing',
+  });
+});
+
+it('autosaves and restores only an explicit condition, never a default', () => {
+  expect(productConditionData('')).toEqual({});
+  expect(productConditionData(undefined)).toEqual({});
+  expect(productConditionData('used')).toEqual({ product_condition: 'used' });
+  // An explicit clear is sent as null instead of omitting the field.
+  expect(JSON.parse(JSON.stringify(productConditionData(null)))).toEqual({ product_condition: null });
+  expect(storedProductCondition({ product_condition: 'new' })).toBe('new');
+  expect(storedProductCondition({ product_condition: 'used', formats: ['Cassette'] })).toBe('used');
+  expect(storedProductCondition({ product_condition: null })).toBeNull();
+  for (const product_condition of [undefined, '', 'NEW', 'refurbished'])
+    expect(storedProductCondition({ product_condition })).toBe('');
+  // The editorial-only release route still builds a draft without a condition.
+  expect(releaseDetails(input)).not.toHaveProperty('product_condition');
+});
+
+it('shows a blank Physical condition choice in the Add to catalog details', () => {
+  const markup = renderToStaticMarkup(<ItemSetupApp backendBaseUrl="" />);
+  expect(markup).toContain('Physical condition');
+  expect(markup).toMatch(/<select[^>]*id="setup-product-condition"[^>]*required=""/);
+  expect(markup).toMatch(/<option value="" selected="">Choose condition<\/option>/);
+  expect(markup).toContain('<option value="new">New</option><option value="used">Used</option>');
+  expect(markup).not.toContain('setup-product-condition-error"');
 });

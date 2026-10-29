@@ -22,6 +22,7 @@ import {
   parseContentSnapshot,
   publicationReviewSchema,
   changedPublicationFields,
+  requiresProductCondition,
 } from '@blackbox/content-model';
 import { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
 import { selectPreviewContent, previewDestination } from './preview-selection';
@@ -813,6 +814,227 @@ test('rejects an incomplete selected draft before publication or native transiti
   expect(await readPublication(deps.db, 'local', input.id)).toBeNull();
 });
 
+const physicalPublicationData = {
+  title: 'Physical record',
+  artist_or_label: 'Artist',
+  format: 'Vinyl',
+  group: 'Vinyl 12-inch',
+  image: { id: 'image' },
+  image_alt: 'Cover',
+  summary: 'Public copy',
+  order: 1,
+};
+
+test.each([undefined, 'new', 'used'])(
+  'selected physical publication requires an explicit condition (%s), including acceptance without a baseline',
+  async (condition) => {
+    const { deps, runtime, input } = await setup();
+    const revision = (await runtime.handleRevisionGet()).data.item;
+    runtime.handleRevisionGet.mockResolvedValue({
+      success: true,
+      data: {
+        item: {
+          ...revision,
+          collection: 'distro',
+          data: { ...physicalPublicationData, ...(condition ? { product_condition: condition } : {}) },
+        },
+      },
+    });
+    const selected = { ...input, collection: 'distro' };
+    const { id: _id, ...record } = selected;
+    const { review } = await reviewPublication({ records: [record] }, deps);
+    if (!condition) {
+      expect(review.entries[0]!.issues).toContain(
+        'product_condition: Choose New or Used for this physical product before publishing.',
+      );
+      await expect(acceptSelectedPublication(selected, 'editor@example.com', deps)).rejects.toThrow('Complete');
+      expect(await readPublication(deps.db, 'local', input.id)).toBeNull();
+    } else {
+      expect(review.entries[0]!.issues).toEqual([]);
+      await acceptSelectedPublication(selected, 'editor@example.com', deps);
+    }
+    expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  },
+);
+
+test('retained publication revalidates physical condition before native publication', async () => {
+  const { deps, runtime, input, pointer } = await setup();
+  const revision = (await runtime.handleRevisionGet()).data.item;
+  const physical = {
+    ...revision,
+    collection: 'distro',
+    data: { ...physicalPublicationData, product_condition: 'new' },
+  };
+  runtime.handleRevisionGet.mockResolvedValue({ success: true, data: { item: physical } });
+  await acceptSelectedPublication({ ...input, collection: 'distro' }, 'editor@example.com', deps);
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
+    data: { item: { ...physical, data: physicalPublicationData } },
+  });
+  await processRuntimePublication(deps);
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(pointer);
+});
+
+test.each([
+  ['Vinyl', false],
+  ['Digital', true],
+])('selected Release publication applies condition only to physical formats (%s)', async (format, allowed) => {
+  const { deps, runtime, input } = await setup();
+  const readContent = runtime.handleContentGet.getMockImplementation()!;
+  runtime.handleContentGet.mockImplementation(async (...args: unknown[]) =>
+    args[0] === 'artists'
+      ? {
+          success: true,
+          data: {
+            _rev: 'artist-v1',
+            item: {
+              id: 'artist',
+              slug: 'artist',
+              status: 'draft',
+              draftRevisionId: 'artist-draft',
+              liveRevisionId: '',
+              data: { title: 'Artist' },
+            },
+          },
+        }
+      : readContent(),
+  );
+  const revision = (await runtime.handleRevisionGet()).data.item;
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
+    data: {
+      item: {
+        ...revision,
+        collection: 'releases',
+        data: {
+          title: 'Release',
+          artist: 'artist',
+          catalog_number: 'BBR#001',
+          release_stage: 'upcoming',
+          cover_image: { id: 'image' },
+          cover_image_alt: 'Cover',
+          formats: [format],
+        },
+      },
+    },
+  });
+  const selected = { ...input, collection: 'releases' };
+  const { id: _id, ...record } = selected;
+  const { review } = await reviewPublication({ records: [record] }, deps);
+  expect(review.entries[0]!.issues.some((issue) => issue.startsWith('product_condition:'))).toBe(!allowed);
+  if (allowed) await acceptSelectedPublication(selected, 'editor@example.com', deps);
+  else await expect(acceptSelectedPublication(selected, 'editor@example.com', deps)).rejects.toThrow('Complete');
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+});
+
+test.each([
+  [[], false],
+  [['Digital'], false],
+  [[' ', ' dIgItAl '], false],
+  [['Digital', 'Vinyl'], true],
+])('Release physical condition follows its formats (%j)', (formats, required) => {
+  expect(requiresProductCondition('releases', { formats })).toBe(required);
+  expect(requiresProductCondition('news', { formats: ['Vinyl'] })).toBe(false);
+});
+
+test('a bound Release cannot bypass condition by clearing physical formats at any publication boundary', async () => {
+  const { deps, runtime, input, pointer } = await setup();
+  const readContent = runtime.handleContentGet.getMockImplementation()!;
+  runtime.handleContentGet.mockImplementation(async (...args: unknown[]) =>
+    args[0] === 'artists'
+      ? {
+          success: true,
+          data: {
+            _rev: 'artist-v1',
+            item: {
+              id: 'artist',
+              slug: 'artist',
+              status: 'draft',
+              draftRevisionId: 'artist-draft',
+              liveRevisionId: '',
+              data: { title: 'Artist' },
+            },
+          },
+        }
+      : readContent(),
+  );
+  const db = createPrismaClient(env);
+  const variantId = 'variant_condition_release';
+  await db.storeItemOption.deleteMany({ where: { variantId } });
+  await db.storeItemOption.create({
+    data: {
+      variantId,
+      sourceKind: 'release',
+      sourceId: 'news',
+      cmsSourceId: 'news',
+      storeItemSlug: 'condition-release',
+      catalogRevision: 0,
+      catalogAvailability: 'published',
+    },
+  });
+  try {
+    const revision = (await runtime.handleRevisionGet()).data.item;
+    const data = {
+      title: 'Bound Release',
+      artist: 'artist',
+      catalog_number: 'BBR#001',
+      release_stage: 'upcoming',
+      cover_image: { id: 'image' },
+      cover_image_alt: 'Cover',
+      formats: [],
+    };
+    const item = { ...revision, collection: 'releases', data };
+    runtime.handleRevisionGet.mockResolvedValue({ success: true, data: { item } });
+    const selected = { ...input, collection: 'releases' };
+    const { id: _id, ...record } = selected;
+    const { review } = await reviewPublication({ records: [record] }, deps);
+    expect(review.entries[0]!.issues.some((issue) => issue.startsWith('product_condition:'))).toBe(true);
+    await expect(acceptSelectedPublication(selected, 'editor@example.com', deps)).rejects.toThrow('Complete');
+    runtime.handleRevisionGet.mockResolvedValue({
+      success: true,
+      data: { item: { ...item, data: { ...data, product_condition: 'new' } } },
+    });
+    await acceptSelectedPublication(selected, 'editor@example.com', deps);
+    runtime.handleRevisionGet.mockResolvedValue({ success: true, data: { item } });
+    await processRuntimePublication(deps);
+    expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+    expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(pointer);
+  } finally {
+    await db.storeItemOption.deleteMany({ where: { variantId } });
+  }
+});
+
+test('an unrelated selected publication preserves legacy physical records without condition', async () => {
+  const { deps, input, pointer } = await setup();
+  const before = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+  const legacy = {
+    collection: 'distro',
+    id: 'legacy',
+    slug: 'legacy',
+    revisionId: 'legacy-live',
+    data: physicalPublicationData,
+  };
+  const stored = await completeSnapshot(
+    deps.bucket,
+    'local',
+    JSON.stringify({
+      ...before,
+      records: [...before.records, legacy],
+    }),
+  );
+  await deps.bucket.delete(currentPublicationKey('local'));
+  await activatePublication(deps.bucket, 'local', { ...pointer, snapshotSha256: stored.sha256 });
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  const current = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+  const after = await readPublishedSnapshot(deps.bucket, 'local', current.snapshotSha256);
+  expect(after.records.find((record) => record.id === 'legacy')).toEqual(legacy);
+});
+
 test('rejects a reviewed selection whose publishable values match the accepted website', async () => {
   const { deps, runtime, input, pointer } = await setup();
   const { id, ...record } = input;
@@ -875,6 +1097,7 @@ test('publishes selling-linked editorial details without changing price, stock o
         entryId: 'news',
         data: {
           title: 'Reviewed distro title',
+          product_condition: 'new',
           artist_or_label: 'Other label',
           group: 'CDs',
           image: { id: 'image' },
@@ -1114,6 +1337,7 @@ test.each(['artist-first', 'release-first'])(
       },
       releases: {
         title: 'New release',
+        product_condition: 'new',
         artist: 'new-artist',
         release_date: '2026-09-19',
         cover_image: { id: 'image' },

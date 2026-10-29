@@ -9,6 +9,7 @@ import {
   parseCatalogNumber,
   proseBlocks,
   proseText,
+  requiresProductCondition,
   resolveProse,
   type Prose,
   type RichText,
@@ -25,10 +26,12 @@ import {
   FileText,
   Package,
   RefreshCw,
+  Tag,
   Type,
   Users,
 } from 'lucide-react';
-import { FieldLegend } from '../ui/field';
+import { Field, FieldError, FieldLabel, FieldLegend } from '../ui/field';
+import { NativeSelect } from '../ui/native-select';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -53,6 +56,19 @@ const maxOpeningStock = 2_147_483_647; // Matches the item setup API bound.
 function descriptionFields(summary: Prose) {
   return Array.isArray(summary) ? { summary_rich: summary } : { summary: summary.trim() };
 }
+
+/** '' means never chosen; null means the user explicitly cleared the choice. */
+export type ProductCondition = '' | 'new' | 'used' | null;
+/** Drafts may omit the condition; it is never inferred. An explicit clear is sent as null. */
+export function productConditionData(condition: ProductCondition | undefined) {
+  return condition === '' || condition === undefined ? {} : { product_condition: condition };
+}
+export function storedProductCondition(data: Record<string, unknown>): ProductCondition {
+  return data.product_condition === 'new' || data.product_condition === 'used' || data.product_condition === null
+    ? data.product_condition
+    : '';
+}
+const conditionMessage = 'Choose New or Used for this physical product.';
 
 export function releaseDetails(input: {
   title: string;
@@ -101,8 +117,10 @@ export function setupCommand(input: {
   zeroStockState?: ZeroStockState;
   expectedMonth?: string;
   productSafety?: Record<string, unknown> | undefined;
+  productCondition?: ProductCondition | undefined;
 }): CatalogSetupCommand {
   const safetyData = input.productSafety ? { product_safety: input.productSafety } : {};
+  const conditionData = productConditionData(input.productCondition);
   const openingQuantity = Number(input.quantity);
   if (!/^\d+$/.test(input.quantity) || !Number.isSafeInteger(openingQuantity) || openingQuantity > maxOpeningStock)
     throw new Error('Enter a whole number of copies, starting from zero.');
@@ -132,6 +150,7 @@ export function setupCommand(input: {
   if (!input.existing && (!input.image || !input.alt.trim())) throw new Error('Choose artwork and describe the image.');
   if (!input.existing && sourceKind === 'release' && (!input.artist || !input.date))
     throw new Error('Choose an artist and release date.');
+  if (!input.existing && !input.productCondition) throw new Error(conditionMessage);
   return {
     operationId: input.identity,
     storeItemSlug: editorialSlug(`${title}-${itemType}`, input.identity),
@@ -143,7 +162,7 @@ export function setupCommand(input: {
           slug: editorialSlug(title, input.identity),
           data:
             sourceKind === 'release'
-              ? { ...releaseDetails(input), ...safetyData }
+              ? { ...releaseDetails(input), ...conditionData, ...safetyData }
               : {
                   title,
                   artist_or_label: input.artistOrLabel.trim(),
@@ -153,6 +172,7 @@ export function setupCommand(input: {
                   group: itemType,
                   format: itemType,
                   order: 0,
+                  ...conditionData,
                   ...safetyData,
                 },
         },
@@ -193,6 +213,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [zeroStockState, setZeroStockState] = useState<ZeroStockState>('sold_out');
   const [expectedMonth, setExpectedMonth] = useState('');
   const [productSafety, setProductSafety] = useState<Record<string, unknown>>();
+  const [condition, setCondition] = useState<ProductCondition>('');
+  const [conditionChecked, setConditionChecked] = useState(false);
+  const conditionData = productConditionData(condition);
   const safetyData = productSafety ? { product_safety: productSafety } : {};
   const [pending, setPending] = useState<CatalogSetupCommand | null>(null);
   const [busy, setBusy] = useState(false);
@@ -209,6 +232,12 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const draftKey = `blackbox-release-draft:${backendBaseUrl}`;
   const sell = kind !== 'release' || mode === 'existing' || sellRelease;
   const locked = !ready || busy || !!pending || !!draftPending || needsReview || !!completed || !!draftSaved;
+  // The editorial-only release route stays usable without a condition; selling a physical item needs one.
+  const conditionRequired =
+    mode === 'new' &&
+    sell &&
+    requiresProductCondition(kind === 'release' ? 'releases' : 'distro', { formats: [format] });
+  const conditionError = conditionChecked && conditionRequired && !condition ? conditionMessage : '';
   const setupReadiness = [
     {
       label: 'Details',
@@ -217,7 +246,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           ? !!existing
           : !!title.trim() &&
             !!proseText(summary).trim() &&
-            (kind !== 'release' || (!!artist && !!parseCatalogNumber(catalogNumber) && !!date)),
+            (kind !== 'release' || (!!artist && !!parseCatalogNumber(catalogNumber) && !!date)) &&
+            (!conditionRequired || !!condition),
     },
     { label: 'Artwork', ready: mode === 'existing' || (!!image && !!alt.trim()) },
     {
@@ -238,6 +268,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           cover_image: image ? { id: image } : null,
           cover_image_alt: alt,
           formats: [format],
+          ...conditionData,
           ...safetyData,
         }
       : {
@@ -249,6 +280,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           group: format,
           format,
           order: 0,
+          ...conditionData,
           ...safetyData,
         };
   const editorialJson = JSON.stringify(editorialData);
@@ -410,6 +442,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
                 const restoredFormat = Array.isArray(data.formats) ? data.formats[0] : data.group;
                 setFormat((current) => DISTRO_GROUP_VALUES.find((group) => group === restoredFormat) ?? current);
+                setCondition(storedProductCondition(data));
                 if (data.product_safety && typeof data.product_safety === 'object')
                   setProductSafety(data.product_safety as Record<string, unknown>);
                 setMessage('Your private draft has been restored.');
@@ -455,7 +488,12 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     if (busy || needsReview || completed || draftSaved) return;
     if (!pending && !draftPending && step < 2) {
       if (step === 0 && !setupReadiness.slice(0, 2).every((item) => item.ready)) {
-        setMessage('Complete the title, description, artist, catalog number, date and artwork before continuing.');
+        setConditionChecked(true);
+        setMessage(
+          conditionRequired
+            ? 'Complete the title, description, artist, catalog number, date, artwork and condition before continuing.'
+            : 'Complete the title, description, artist, catalog number, date and artwork before continuing.',
+        );
         return;
       }
       if (mode === 'new' && !(await autosave.flush())) return;
@@ -480,6 +518,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           slug: editorialSlug(title, crypto.randomUUID()),
           data: {
             ...releaseDetails({ title, artist, catalogNumber, date, summary, image, alt, format }),
+            ...conditionData,
             ...safetyData,
           },
         };
@@ -517,6 +556,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           zeroStockState,
           expectedMonth,
           productSafety,
+          productCondition: condition,
         });
       if (mode === 'existing' && !existing && !pending) throw new Error('Choose an existing title.');
       sessionStorage.setItem(storageKey, JSON.stringify(command));
@@ -702,6 +742,28 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </label>
           )}
           {existing && kind !== 'release' && <p>Format: {String(existing.data.group)}</p>}
+          {mode === 'new' && (
+            <Field data-invalid={!!conditionError}>
+              <FieldLabel htmlFor="setup-product-condition" required={conditionRequired} icon={Tag}>
+                Physical condition
+              </FieldLabel>
+              <NativeSelect
+                id="setup-product-condition"
+                className="min-h-11 w-full min-w-0"
+                value={condition ?? ''}
+                required={conditionRequired}
+                aria-invalid={!!conditionError || undefined}
+                aria-describedby={conditionError ? 'setup-product-condition-error' : undefined}
+                onBlur={() => setConditionChecked(true)}
+                onChange={(event) => setCondition((event.target.value || null) as ProductCondition)}
+              >
+                <option value="">Choose condition</option>
+                <option value="new">New</option>
+                <option value="used">Used</option>
+              </NativeSelect>
+              <FieldError id="setup-product-condition-error">{conditionError}</FieldError>
+            </Field>
+          )}
           {kind === 'release' && mode === 'new' && (
             <label className="flex min-h-11 items-center gap-3">
               <input

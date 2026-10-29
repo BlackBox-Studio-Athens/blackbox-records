@@ -6,6 +6,7 @@ import {
   removePublishedDistro,
   isCmsCollection,
   validateCmsRevisionContent,
+  getPublicationProductConditionIssues,
   publicationReviewSchema,
   type PublicationReview,
   type PublicationReviewInput,
@@ -96,6 +97,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       candidate = removePublishedDistro(candidate, item.id);
       continue;
     }
+    if (['releases', 'distro'].includes(record.collection)) catalog ??= await readPublicationCatalog(deps.commerce);
     review.entries.push({
       collection: record.collection,
       recordId: item.id,
@@ -104,7 +106,14 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       title: String(after.title ?? after.label_name ?? slug),
       before: before ? { ...before.data, slug: before.slug } : null,
       after: { ...after, slug },
-      issues: validateCmsRevisionContent(record.collection, after),
+      issues: [
+        ...validateCmsRevisionContent(record.collection, after),
+        ...getPublicationProductConditionIssues(
+          record.collection,
+          after,
+          catalog?.some((item) => item.sourceKind === 'release' && item.sourceId === slug),
+        ),
+      ],
     });
     candidate.records = candidate.records.filter((r) => r.collection !== record.collection || r.id !== item.id);
     candidate.records.push({

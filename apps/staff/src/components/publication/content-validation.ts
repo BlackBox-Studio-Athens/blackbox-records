@@ -1,6 +1,7 @@
 import {
   BandcampRecording,
   getCmsContentIssues,
+  getPublicationProductConditionIssues,
   type CmsCollection,
   type CmsContentIssue,
 } from '@blackbox/content-model';
@@ -18,10 +19,17 @@ function contentPath(path: string | Array<string | number>): string {
 }
 
 export function getContentValidation(collection: CmsCollection, data: Record<string, unknown>): ContentValidation {
-  const issues = getCmsContentIssues(collection, editorialWriteData(data)).map((issue) => ({
-    ...issue,
-    path: issue.path.map((part) => (typeof part === 'string' ? part.replace(/_rich$/, '') : part)),
-  }));
+  const issues = [
+    ...getCmsContentIssues(collection, editorialWriteData(data)).map((issue) => ({
+      ...issue,
+      path: issue.path.map((part) => (typeof part === 'string' ? part.replace(/_rich$/, '') : part)),
+    })),
+    // The shared rule reports "path: message"; publication needs it, drafts do not.
+    ...getPublicationProductConditionIssues(collection, data).map((issue) => {
+      const separator = issue.indexOf(': ');
+      return { path: [issue.slice(0, separator)], message: issue.slice(separator + 2) };
+    }),
+  ];
   const byPath: Record<string, string[]> = {};
   for (const issue of issues) {
     const key = contentPath(issue.path);

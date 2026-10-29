@@ -4,12 +4,24 @@ import ContentFields from './ContentFields';
 import type { ComponentProps } from 'react';
 import type * as InputModule from '../ui/input';
 import type * as ButtonModule from '../ui/button';
+import type * as NativeSelectModule from '../ui/native-select';
 import { getContentValidation } from '../publication/content-validation';
 
 const controls = vi.hoisted(() => ({
   inputs: [] as Array<ComponentProps<'input'> & { 'data-content-path'?: string }>,
   buttons: [] as Array<ComponentProps<'button'>>,
+  selects: [] as Array<ComponentProps<(typeof NativeSelectModule)['NativeSelect']> & { 'data-content-path'?: string }>,
 }));
+vi.mock('../ui/native-select', async (importOriginal) => {
+  const actual = await importOriginal<typeof NativeSelectModule>();
+  return {
+    ...actual,
+    NativeSelect: (props: ComponentProps<typeof actual.NativeSelect>) => {
+      controls.selects.push(props);
+      return <actual.NativeSelect {...props} />;
+    },
+  };
+});
 vi.mock('../ui/input', async (importOriginal) => {
   const actual = await importOriginal<typeof InputModule>();
   return {
@@ -417,3 +429,81 @@ test('editing verified product details resets review and empty inputs remove the
   expect((data().product_safety as typeof safetyComplete).manufacturer).not.toHaveProperty('name');
   expect(data().title).toBe('Record');
 });
+
+function renderCondition(collection: 'releases' | 'distro', initial: Record<string, unknown>, validationAttempt = 0) {
+  let data = initial;
+  const render = () => {
+    controls.selects = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection={collection}
+        data={data}
+        base=""
+        validation={getContentValidation(collection, data)}
+        validationAttempt={validationAttempt}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  const markup = render();
+  const select = () => controls.selects.find((props) => props['data-content-path'] === 'product_condition')!;
+  const choose = (value: string) =>
+    select().onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'select'>['onChange']>>[0]);
+  return { markup, data: () => data, select, choose, render };
+}
+const conditionError = 'Choose New or Used for this physical product before publishing.';
+
+test.each([
+  ['releases', { title: 'Record', formats: ['Vinyl 12-inch'] }],
+  ['distro', { title: 'Tape', group: 'Tapes' }],
+] as const)('%s physical condition starts blank, required and never defaults to New', (collection, record) => {
+  const { markup, data, select } = renderCondition(collection, record);
+  expect(markup).toContain('Physical condition');
+  expect(markup).toMatch(/<option value="" selected="">Choose condition<\/option>/);
+  expect(select()).toMatchObject({ required: true, value: '' });
+  expect(markup).not.toContain('content-product_condition-description');
+  expect(data()).toEqual(record);
+  // The publication error appears only after a publish attempt, on the condition control.
+  expect(markup).not.toContain(conditionError);
+  const attempted = renderCondition(collection, record, 1);
+  expect(attempted.markup).toContain(conditionError);
+  expect(attempted.select()).toMatchObject({
+    'aria-invalid': true,
+    'aria-describedby': 'content-product_condition-error',
+  });
+});
+
+test.each(['new', 'used'] as const)('existing %s condition stays selected and publishable', (condition) => {
+  for (const collection of ['releases', 'distro'] as const) {
+    const record = { title: 'Record', formats: ['Cassette'], group: 'Tapes', product_condition: condition };
+    const { markup, data, select } = renderCondition(collection, record, 1);
+    expect(select().value).toBe(condition);
+    expect(markup).not.toContain(conditionError);
+    expect(data()).toEqual(record);
+  }
+});
+
+test('explicit condition choices change only product_condition and an explicit clear sends null', () => {
+  const record = { title: 'Tape', group: 'Tapes', summary: 'Kept' };
+  const view = renderCondition('distro', record);
+  view.choose('used');
+  expect(view.data()).toEqual({ ...record, product_condition: 'used' });
+  view.render();
+  view.choose('');
+  // The cleared field stays in the saved JSON as null, so saving clears the stored condition.
+  expect(JSON.parse(JSON.stringify(view.data()))).toEqual({ ...record, product_condition: null });
+  view.render();
+  expect(view.select().value).toBe('');
+});
+
+test.each([[[]], [['Digital']], [[' digital ', '']]])(
+  'digital-only or editorial releases keep condition optional (%j)',
+  (formats) => {
+    const { markup, select } = renderCondition('releases', { title: 'Record', formats }, 1);
+    expect(select()).toMatchObject({ required: false, 'aria-describedby': 'content-product_condition-description' });
+    expect(markup).toContain('Optional');
+    expect(markup).not.toContain(conditionError);
+  },
+);
