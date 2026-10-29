@@ -130,7 +130,7 @@ describe('D1 Merchant synchronization ledger', () => {
     ).toBe(0);
   });
 
-  it('measures the D1 operation budget for five first submissions', async () => {
+  it('measures the D1 ledger budget for two first submissions', async () => {
     const usage = { statements: 0, rowsRead: 0, rowsWritten: 0 };
     const track = (statement: D1PreparedStatement): D1PreparedStatement =>
       new Proxy(statement, {
@@ -172,15 +172,16 @@ describe('D1 Merchant synchronization ledger', () => {
           link: 'https://example.com/record',
           imageLink: 'https://example.com/image.jpg',
           availability: 'IN_STOCK',
+          condition: 'NEW',
           price: { amountMicros: '10000000', currencyCode: 'EUR' },
         },
       }),
       provider: { upsert: async () => {}, remove: async () => {} },
     });
-    expect(outcome).toMatchObject({ checked: 5, upserted: 5 });
-    expect(usage.statements).toBe(23);
+    expect(outcome).toMatchObject({ checked: 2, upserted: 2 });
+    expect(usage.statements).toBe(11);
     expect(usage.rowsRead).toBeGreaterThan(0);
     expect(usage.rowsWritten).toBeGreaterThan(0);
-    console.info('Merchant local D1 five-submission budget', usage);
+    console.info('Merchant local D1 two-submission ledger budget', usage);
   });
 });

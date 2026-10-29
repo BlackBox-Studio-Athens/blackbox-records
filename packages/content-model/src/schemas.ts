@@ -78,6 +78,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
 ) {
   return z.object({
     catalog_number: catalogNumberSchema,
+    product_condition: z.enum(['new', 'used']).optional(),
     title: requiredText,
     artist: references.artist,
     release_stage: z.enum(['upcoming', 'released']).optional(),
@@ -144,6 +145,7 @@ export function createNewsContentSchema<TImage extends z.ZodType, TReference ext
 export function createDistroContentSchema<TImageSchema extends z.ZodType>(image: () => TImageSchema) {
   return z.object({
     title: requiredText,
+    product_condition: z.enum(['new', 'used']).optional(),
     group: z.enum(DISTRO_GROUP_VALUES),
     artist_or_label: requiredText,
     image: image(),

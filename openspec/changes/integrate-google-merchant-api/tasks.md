@@ -1,8 +1,12 @@
 # Tasks
 
-Final design and local implementation were approved on 2026-10-27. Credentials, account changes, deployment and live activation remain out of scope; tasks 3.2 and 3.3 require separate authorization.
+Final design and local implementation were approved on 2026-10-27. On 2026-10-28, the owner authorized task 3.2's isolated Google test-account pilot, including required account and credential setup. The disabled implementation has deployed to UAT. Conversion tracking and production activation remain out of scope; task 3.3's production checks require separate authorization.
+
+On 2026-10-29, after the recorded synthetic and real PRD-source test-account pilots, the owner instructed: **Skip further testing, move on with the real implementation.** Focused static inspection confirmed that the implementation tasks below are already complete. Further tests and provider pilots are deferred under that instruction; unchecked acceptance tasks 3.2 and 3.3 remain open, not passed. The next operational step is separately authorized PRD Merchant account/source/credential configuration and gated activation. This instruction does not enable the hosted job or authorize production product mutations.
 
 ## 1. Product mapping and provider access
+
+The owner later superseded the testing deferral: **I want to switch it on fully, and you make sure it works, automatically updates, and there are no errors and inconsistencies.** Production setup, required verification, scoped release and activation are now authorized. The owner also approved the combined Staff/Merchant release after its scope was presented. Paid ads and conversion tracking remain excluded. Readiness review found two required fixes: explicit accepted physical condition and a two-candidate implementation cap to fit D1 Free's invocation limit. The owner confirmed only the three published Distro tapes are used; the remaining current catalog is new. Publication must preserve unrelated private drafts. Acceptance tasks remain open until their actual evidence exists.
 
 - [x] 1.1 Implement and test conversion of accepted public catalog and authoritative in-stock offers to Google inputs, including price, checkout holds, stable offer identity and Greece-only targeting. Exclude any uncleared raw stock pre-order, including elapsed exact dates. Test omission of unknown identifiers and identifierExists, no catalog-number/artist substitutions, and verified condition handling.
 - [x] 1.2 Implement and test environment-isolated Merchant API authentication and bounded upsert/removal requests, with job-specific timeouts and no immediate provider retries; never log credentials.

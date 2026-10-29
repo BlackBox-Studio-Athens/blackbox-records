@@ -78,7 +78,8 @@ export async function runMerchantSynchronization(deps: Dependencies): Promise<Me
     const identities = [...new Set([...accepted.keys(), ...managed.keys()])].sort();
     const after = cursor === null ? 0 : identities.findIndex((id) => id > cursor!);
     const start = after < 0 ? 0 : after;
-    const candidates = [...identities.slice(start), ...identities.slice(0, start)].slice(0, 5);
+    // Two complete offers, including freshness and lease checks, fit D1 Free's 50-query invocation limit.
+    const candidates = [...identities.slice(start), ...identities.slice(0, start)].slice(0, 2);
     for (const variantId of candidates) {
       cursor = variantId;
       result.checked++;

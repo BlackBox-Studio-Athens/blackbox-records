@@ -71,6 +71,15 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
     }
   }
   for (const collection of ['releases', 'distro']) {
+    const condition = await registry.getField(collection, 'product_condition');
+    if (!condition)
+      await registry.createField(collection, {
+        slug: 'product_condition',
+        label: 'Product condition',
+        type: 'string',
+        required: false,
+      });
+    else if (condition.type !== 'string') throw new Error(`Unexpected field type: ${collection}.product_condition`);
     const safety = await registry.getField(collection, 'product_safety');
     if (!safety)
       await registry.createField(collection, {

@@ -13,6 +13,7 @@ export type MerchantProductInput = {
     link: string;
     imageLink: string;
     availability: 'IN_STOCK';
+    condition: 'NEW' | 'USED';
     price: { amountMicros: string; currencyCode: 'EUR' };
   };
 };
@@ -66,6 +67,8 @@ export function createMerchantProductInput(
   const data = record && projectProseFields(collection, record.data);
   if (!data || typeof data.title !== 'string' || !data.title.trim())
     throw new Error('Accepted Merchant product content is unavailable.');
+  if (data.product_condition !== 'new' && data.product_condition !== 'used')
+    throw new Error('Accepted Merchant product condition is unavailable.');
   const image = data[item.sourceKind === 'release' ? 'cover_image' : 'image'];
   const imageId = image && typeof image === 'object' && !Array.isArray(image) && 'id' in image ? image.id : undefined;
   const media = snapshot.media.find((entry) => entry.id === imageId);
@@ -87,6 +90,7 @@ export function createMerchantProductInput(
       link: new URL(`store/${encodeURIComponent(item.storeItemSlug)}/`, origin).href,
       imageLink: new URL(`media/content/${media.sha256}`, origin).href,
       availability: 'IN_STOCK',
+      condition: data.product_condition === 'used' ? 'USED' : 'NEW',
       price: { amountMicros: (BigInt(offer.price.amountMinor) * 10000n).toString(), currencyCode: 'EUR' },
     },
   };

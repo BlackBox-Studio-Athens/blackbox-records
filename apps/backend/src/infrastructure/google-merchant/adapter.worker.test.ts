@@ -14,6 +14,7 @@ const input: MerchantProductInput = {
     link: 'https://shop.example/record/',
     imageLink: 'https://shop.example/record.jpg',
     availability: 'IN_STOCK',
+    condition: 'NEW',
     price: { amountMicros: '25000000', currencyCode: 'EUR' },
   },
 };

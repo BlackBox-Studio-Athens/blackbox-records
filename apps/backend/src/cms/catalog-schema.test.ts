@@ -52,6 +52,13 @@ test('catalog preparation adds optional Artist activity and News reference field
   const created = create.mock.calls.length;
   for (const collection of ['releases', 'distro'])
     expect(create).toHaveBeenCalledWith(collection, {
+      slug: 'product_condition',
+      label: 'Product condition',
+      type: 'string',
+      required: false,
+    });
+  for (const collection of ['releases', 'distro'])
+    expect(create).toHaveBeenCalledWith(collection, {
       slug: 'product_safety',
       label: 'Product safety',
       type: 'json',
@@ -84,6 +91,14 @@ test('catalog preparation adds optional Artist activity and News reference field
   await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: releases.releases_priority');
   fields.set('releases/releases_priority', { ...fields.get('releases/releases_priority')!, type: 'number' });
   for (const collection of ['releases', 'distro']) {
+    fields.set(`${collection}/product_condition`, { ...fields.get(`${collection}/product_condition`)!, type: 'json' });
+    await expect(prepareCatalogSchema(runtime)).rejects.toThrow(
+      `Unexpected field type: ${collection}.product_condition`,
+    );
+    fields.set(`${collection}/product_condition`, {
+      ...fields.get(`${collection}/product_condition`)!,
+      type: 'string',
+    });
     fields.set(`${collection}/product_safety`, { ...fields.get(`${collection}/product_safety`)!, type: 'string' });
     await expect(prepareCatalogSchema(runtime)).rejects.toThrow(`Unexpected field type: ${collection}.product_safety`);
     fields.set(`${collection}/product_safety`, { ...fields.get(`${collection}/product_safety`)!, type: 'json' });

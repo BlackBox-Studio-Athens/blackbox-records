@@ -60,7 +60,7 @@ The conservative emitted-profile ceiling is 53 transformations per distinct medi
 
 ## Merchant synchronization budget
 
-The disabled-by-default backend Merchant job reuses the existing commerce schedule, D1 and accepted-publication R2 storage, with no new cron, queue, KV or paid service. Its [operational runbook](merchant-product-sync.md#free-tier-budget-and-pilot-evidence) records the five-candidate/15-minute scan, seven-day refresh, ledger and provider-call estimates, outage behavior and bounded pilot gate. Those source estimates do not establish billed D1 rows, Worker CPU or hosted provider usage. Measure these against current account-wide allowance with at least half reserved for ordinary service before activation; stop affected work on quota exhaustion and recheck usage before resuming.
+The disabled-by-default backend Merchant job reuses the existing commerce schedule, D1 and accepted-publication R2 storage, with no new cron, queue, KV or paid service. Its [operational runbook](merchant-product-sync.md#free-tier-budget-and-pilot-evidence) records the two-candidate/15-minute scan, seven-day refresh, ledger and provider-call estimates, outage behavior and bounded pilot gate. Those source estimates do not establish billed D1 rows, Worker CPU or hosted provider usage. Measure these against current account-wide allowance with at least half reserved for ordinary service before activation; stop affected work on quota exhaustion and recheck usage before resuming.
 
 ## Incidents
 

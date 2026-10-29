@@ -25,6 +25,7 @@ function fixture() {
         slug: item.sourceId,
         data: {
           title: 'Public album',
+          product_condition: 'new',
           summary: 'Accepted description',
           image: { id: 'cover' },
           artist_or_label: 'Artist is not a brand',
@@ -75,10 +76,11 @@ it('maps only accepted editorial fields, fixed EUR price and stable variant iden
       link: 'https://public.example/store/public-vinyl/',
       imageLink: `https://public.example/media/content/${sha}`,
       availability: 'IN_STOCK',
+      condition: 'NEW',
       price: { amountMicros: '19990000', currencyCode: 'EUR' },
     },
   });
-  expect(JSON.stringify(product)).not.toMatch(/identifierExists|condition|gtin|mpn|brand|NOT-A|NOT-AN/);
+  expect(JSON.stringify(product)).not.toMatch(/identifierExists|gtin|mpn|brand|NOT-A|NOT-AN/);
 });
 
 it('uses accepted rich summary text, release cover and trusted origin base path', () => {
@@ -88,6 +90,7 @@ it('uses accepted rich summary text, release cover and trusted origin base path'
   snapshot.records[0]!.collection = 'releases';
   snapshot.records[0]!.data = {
     title: 'Accepted release',
+    product_condition: 'new',
     cover_image: { id: 'cover' },
     summary: 'Old plain text',
     summary_rich: [{ _type: 'block', _key: 'p', children: [{ _type: 'span', _key: 's', text: 'Accepted rich text' }] }],
@@ -96,6 +99,17 @@ it('uses accepted rich summary text, release cover and trusted origin base path'
   expect(product?.productAttributes.description).toBe('Accepted rich text');
   expect(product?.productAttributes.link).toBe('https://uat.example/base/store/public-vinyl/');
   expect(product?.productAttributes.imageLink).toBe(`https://uat.example/base/media/content/${sha}`);
+});
+
+it('requires explicit accepted physical condition and maps used copies without inferring from stock', () => {
+  const { snapshot, offer, stock } = fixture();
+  snapshot.records[0]!.data.product_condition = 'used';
+  expect(createMerchantProductInput(snapshot, item, offer, stock, origin)?.productAttributes.condition).toBe('USED');
+  for (const value of [undefined, null, 'unknown']) {
+    if (value === undefined) delete snapshot.records[0]!.data.product_condition;
+    else snapshot.records[0]!.data.product_condition = value;
+    expect(() => createMerchantProductInput(snapshot, item, offer, stock, origin)).toThrow('condition is unavailable');
+  }
 });
 
 it('excludes uncleared raw pre-orders even when the shopper exact date has elapsed', () => {

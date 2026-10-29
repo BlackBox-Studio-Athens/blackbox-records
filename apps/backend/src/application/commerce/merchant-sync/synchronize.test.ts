@@ -21,6 +21,7 @@ const input = (id: string): MerchantProductInput => ({
     link: 'https://example.com/store/record/',
     imageLink: 'https://example.com/record.jpg',
     availability: 'IN_STOCK',
+    condition: 'NEW',
     price: { amountMicros: '20000000', currencyCode: 'EUR' },
   },
 });
@@ -69,18 +70,20 @@ function fixture(ids = ['a']) {
 }
 
 describe('bounded Merchant reconciliation', () => {
-  it('rotates across accepted and managed identities, advances failures and checks at most five', async () => {
+  it('rotates across accepted and managed identities, advances failures and checks at most two', async () => {
     const { deps, managed } = fixture(['a', 'b', 'c', 'd', 'e', 'f']);
     managed.set('g', { ...item('g'), inputHash: null, submittedAt: null });
     deps.readInput.mockImplementation(async (value) => {
       if (value.variantId === 'a') throw new Error('Unknown price');
       return input(value.variantId);
     });
-    expect(await runMerchantSynchronization(deps)).toMatchObject({ checked: 5, upserted: 4, failed: 1 });
-    expect(deps.readInput.mock.calls.map(([value]) => value.variantId)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(await runMerchantSynchronization(deps)).toMatchObject({ checked: 2, upserted: 1, failed: 1 });
+    expect(deps.readInput.mock.calls.map(([value]) => value.variantId)).toEqual(['a', 'b']);
     deps.readInput.mockClear();
     await runMerchantSynchronization(deps);
-    expect(deps.readInput.mock.calls.map(([value]) => value.variantId)).toEqual(['f', 'a', 'b', 'c']);
+    expect(deps.readInput.mock.calls.map(([value]) => value.variantId)).toEqual(['c', 'd']);
+    await runMerchantSynchronization(deps);
+    await runMerchantSynchronization(deps);
     expect(deps.provider.remove).toHaveBeenCalledWith('g');
   });
 
