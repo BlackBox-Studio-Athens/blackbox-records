@@ -44,7 +44,8 @@ test('phone item page keeps PRE-ORDER reachable until the shopper reaches it @ph
   await expect(bar(page)).toHaveAttribute('data-shown', 'true');
   // Fixed to the viewport's bottom edge, with no transformed ancestor in the way.
   const edge = await bar(page).evaluate((element) => Math.round(innerHeight - element.getBoundingClientRect().bottom));
-  expect(edge).toBe(0);
+  // A sub-pixel overhang rounds to -0, which toBe (Object.is) rejects; any whole-pixel gap still fails.
+  expect(Math.abs(edge)).toBe(0);
   await expect(bar(page)).toContainText('€28.00');
   await expect(bar(page).locator('.store-buy-bar__status--preorder')).toHaveText(/^Pre-order · ships/);
   const barAction = bar(page).getByRole('button', { name: 'Pre-order' });

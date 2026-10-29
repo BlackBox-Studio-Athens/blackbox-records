@@ -99,6 +99,8 @@ const data = {
     cover_image: { id: media[1].id },
     cover_image_alt: 'Barren Point sleeve',
     formats: ['Vinyl'],
+    // Physical happy-path fixtures state their condition; publication never infers one.
+    product_condition: 'new',
     credits: [],
     body: artist.body,
   },
@@ -114,6 +116,7 @@ const data = {
     title: 'Barren Point LP',
     artist_or_label: 'Mass Culture',
     group: 'Vinyl',
+    product_condition: 'new',
     image: { id: media[1].id },
     image_alt: 'Album sleeve',
     summary: 'A record from our distro shelf.',
@@ -1846,12 +1849,15 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.getByRole('button', { name: 'Choose artwork', exact: true }).click();
       await page.getByRole('button', { name: media[0].filename, exact: true }).click();
       await page.getByLabel(/^Describe the artwork/).fill('Black and white cover');
+      // Used proves the explicit choice is kept rather than replaced by a New default.
+      await page.getByLabel('Physical condition', { exact: true }).selectOption('used');
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
       await page.getByLabel('Price (EUR)', { exact: true }).fill('15');
       await page.getByLabel(/^How many copies do you have/).fill('3');
       await page.reload();
       await page.getByRole('status').filter({ hasText: 'Changes saved privately' }).waitFor();
       assert.equal(await page.getByLabel('Title', { exact: true }).inputValue(), 'New draft for sale');
+      assert.equal(await page.getByLabel('Physical condition', { exact: true }).inputValue(), 'used');
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
       assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '15');
       assert.equal(await page.getByLabel(/^How many copies do you have/).inputValue(), '3');
@@ -1866,10 +1872,9 @@ else if (process.argv.includes('--orders-shipping')) {
         ['setup', 'publish'],
       );
       assert.equal(commands[1].confirmLivePublication, true);
-      assert.equal(
-        commands[1].cmsRevision,
-        records.distro.find((item) => item.data.title === 'New draft for sale')._rev,
-      );
+      const created = records.distro.find((item) => item.data.title === 'New draft for sale');
+      assert.equal(commands[1].cmsRevision, created._rev);
+      assert.equal(created.data.product_condition, 'used', 'The created source carries the chosen condition');
     } finally {
       await context.close();
       records.distro = original;
