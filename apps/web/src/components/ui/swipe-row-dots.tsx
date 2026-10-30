@@ -4,7 +4,7 @@ import { cn } from '@/components/ui/utils';
 
 // Dot indicator for a native scroll-snap row. Look and timing follow ReUI c-carousel-11 (https://reui.io,
 // MIT License, Copyright (c) 2025 Keenthemes Inc); each dot sits in a 44px button (openspec/changes/mobile-layout-rhythm).
-// The row scrolls natively; the dots only read its scroll position, so swiping never waits for this island.
+// The row scrolls natively; the dots read its position once each swipe settles, so swiping never waits for this island.
 
 export function currentRowIndex({
   count,
@@ -60,13 +60,16 @@ export function SwipeRowDots({ className, count, label, rowId }: SwipeRowDotsPro
       if (!frame) frame = requestAnimationFrame(sync);
     };
 
+    // A per-frame scroll listener made every swipe frame wait for the main thread (partial and dropped frames in
+    // Chrome traces); scrollend fires once per settled swipe. Browsers without it keep the frame-coalesced listener.
+    const positionEvent = 'onscrollend' in window ? 'scrollend' : 'scroll';
     // Resizing (rotation, or crossing into the grid layout) changes card widths without a scroll event.
     const resizeObserver = new ResizeObserver(queueSync);
-    row.addEventListener('scroll', queueSync, { passive: true });
+    row.addEventListener(positionEvent, queueSync, { passive: true });
     resizeObserver.observe(row);
     sync();
     return () => {
-      row.removeEventListener('scroll', queueSync);
+      row.removeEventListener(positionEvent, queueSync);
       resizeObserver.disconnect();
       cancelAnimationFrame(frame);
     };
@@ -92,10 +95,11 @@ export function SwipeRowDots({ className, count, label, rowId }: SwipeRowDotsPro
           onClick={() => showCard(index)}
           className={cn(
             'grid size-11 cursor-pointer place-items-center outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-foreground',
-            'after:block after:h-2 after:rounded-full after:transition-all after:duration-500 after:ease-in-out motion-reduce:after:transition-none',
+            // Fixed-width pill morphed by scale and opacity only: both run on the compositor, unlike a width transition.
+            'after:block after:h-2 after:w-4 after:rounded-full after:transition-[scale,opacity] after:duration-500 after:ease-in-out motion-reduce:after:transition-none',
             index === current
-              ? 'after:w-4 after:bg-amber-500'
-              : 'after:w-2 after:bg-muted-foreground after:opacity-30 hover:after:opacity-50',
+              ? 'after:bg-amber-500'
+              : 'after:scale-x-50 after:bg-muted-foreground after:opacity-30 hover:after:opacity-50',
           )}
         />
       ))}

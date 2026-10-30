@@ -1080,7 +1080,8 @@ export default function AppShellRoot({
           >
             <div className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center">
               <div role="status">
-                <Spinner className="mx-auto size-5" />
+                {/* A hidden infinite SVG spin still ran a main-thread frame every vsync on every page. */}
+                {isPlayerLoading && <Spinner className="mx-auto size-5" />}
                 <p>Loading player</p>
                 <p>Preparing the embedded player. Playback starts after you interact with the provider frame.</p>
               </div>
