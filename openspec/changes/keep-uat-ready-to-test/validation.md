@@ -6,10 +6,16 @@
 - Release run for `81f6c9e0` passed every job, including `deploy-uat` and the e2e shards. The new step printed its summary: releases checked 5, distro checked 103; catalog numbers staged for `disintegration`, `caregivers` and `anarchotribal`; condition New staged for four releases and the distro items that lacked one; one stale acceptance release (`uat-label-release-acceptance-...`) was skipped and reported because it has no number and no known legacy assignment, and the deploy did not fail.
 - The first run took about 7 minutes in the migration step (one draft write per missing value). Later runs only read.
 
+## Publication queue (UAT)
+
+- Root cause: the UAT public origin redirects anonymous requests to Cloudflare Access, so the confirmation fetch never got the identity JSON; a 15 Oct publication waited in Confirming and blocked the serialized queue, so nothing completed after 9 Oct.
+- After the release of `12a06e9e` the history showed all three stuck rows Published at 3 Nov 20:45 Athens time (Website update for Disintegration, LOTUS, and the 15 Oct "site" entry), and the editor read "Everything is live".
+- The deploy run's `e2e-webkit` job hit the job time limit (an infrastructure timeout, no failing test); the failed job was rerun.
+
 ## Not yet recorded
 
 - A second deploy staging nothing (the next UAT release log).
-- Staff publishing Afterwise with Show on Home on, with the Home chapter checked on UAT (task 2.2 here, task 4.3 of keep-released-items-on-home).
+- A second deploy staging nothing is expected but not yet read from a log.
 
 ## Notes
 
