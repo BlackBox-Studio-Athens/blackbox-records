@@ -9,6 +9,7 @@ import {
   readPublicationPointer,
   readPublishedSnapshot,
   PublicSnapshotSelection,
+  type PublicationEnvironment,
 } from './published-storage';
 import { invalidatePublicPublication, publicInvalidationPath } from './public-publication-cache';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
@@ -362,15 +363,16 @@ test('News review requires its unpublished Artist instead of exposing an unrelat
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 beforeEach(async () => {
   await env.TEST_CMS_DB.prepare('DELETE FROM _blackbox_publications').run();
-  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  for (const environment of ['local', 'uat', 'prd'] as const)
+    await env.TEST_SNAPSHOTS.delete(currentPublicationKey(environment));
 });
 
-async function setup() {
+async function setup(environment: PublicationEnvironment = 'local') {
   const bytes = Uint8Array.from(
     atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII='),
     (c) => c.charCodeAt(0),
   );
-  const stored = await storeSnapshotMedia(env.TEST_SNAPSHOTS, 'local', bytes);
+  const stored = await storeSnapshotMedia(env.TEST_SNAPSHOTS, environment, bytes);
   const data = {
     title: 'Published title',
     date: '2026-09-14',
@@ -381,14 +383,18 @@ async function setup() {
   const old = { collection: 'news', id: 'news', slug: 'news', revisionId: 'old', data };
   const snapshot = {
     schemaVersion: 1,
-    environment: 'local',
+    environment,
     records: [old, { ...old, id: 'other', slug: 'other', revisionId: 'other-old' }],
     media: [{ id: 'image', ...stored, filename: 'cover.png', mimeType: 'image/png', width: 1, height: 1 }],
   };
   const { key: _key, ...media } = snapshot.media[0];
-  const baseline = await completeSnapshot(env.TEST_SNAPSHOTS, 'local', JSON.stringify({ ...snapshot, media: [media] }));
+  const baseline = await completeSnapshot(
+    env.TEST_SNAPSHOTS,
+    environment,
+    JSON.stringify({ ...snapshot, media: [media] }),
+  );
   const pointer = { id: crypto.randomUUID(), snapshotSha256: baseline.sha256, generation: 0 };
-  await activatePublication(env.TEST_SNAPSHOTS, 'local', pointer);
+  await activatePublication(env.TEST_SNAPSHOTS, environment, pointer);
   let live = 'old';
   const runtime = {
     handleContentGet: vi.fn(async () => ({
@@ -424,14 +430,14 @@ async function setup() {
           sha: 'c'.repeat(40),
           snapshotSha256: ((await request.json()) as typeof pointer).snapshotSha256,
         });
-      const current = (await readPublicationPointer(env.TEST_SNAPSHOTS, 'local'))!.pointer;
+      const current = (await readPublicationPointer(env.TEST_SNAPSHOTS, environment))!.pointer;
       return Response.json({
         sha: 'c'.repeat(40),
         content: { publicationId: current.id, snapshotSha256: current.snapshotSha256 },
       });
     }),
   };
-  const selection = new PublicSnapshotSelection(env.TEST_SNAPSHOTS, 'local', null);
+  const selection = new PublicSnapshotSelection(env.TEST_SNAPSHOTS, environment, null);
   await selection.selected();
   const cache = { purge: vi.fn(async () => ({ success: true, errors: [] })) };
   const deps = {
@@ -439,7 +445,7 @@ async function setup() {
     commerce: env.COMMERCE_DB,
     readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
-    environment: 'local' as const,
+    environment,
     runtime: runtime as unknown as EmDashRuntime,
     renderer: renderer as unknown as Fetcher,
     publicOrigin: 'http://localhost',
@@ -452,6 +458,47 @@ async function setup() {
   };
   return { deps, runtime, renderer, input, pointer, selection, cache };
 }
+
+test.each(['uat', 'prd'] as const)(
+  'confirms %s through the expected transport without Access credentials',
+  async (environment) => {
+    const { deps, input, renderer, runtime, cache } = await setup(environment);
+    const publicFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      if (environment === 'uat')
+        return new Response('<html>Cloudflare Access login</html>', {
+          status: 302,
+          headers: {
+            Location: 'https://blackboxrecords.cloudflareaccess.com/cdn-cgi/access/login/example',
+            'Www-Authenticate': 'Cloudflare-Access',
+            'Content-Type': 'text/html',
+          },
+        });
+      const current = (await readPublicationPointer(deps.bucket, environment))!.pointer;
+      return Response.json({
+        sha: 'c'.repeat(40),
+        content: { publicationId: current.id, snapshotSha256: current.snapshotSha256 },
+      });
+    });
+    await acceptSelectedPublication(input, 'editor@example.com', deps);
+    cache.purge.mockResolvedValueOnce({ success: false, errors: [] });
+    expect(await processRuntimePublication(deps)).toBeGreaterThan(0);
+    await deps.db
+      .prepare("UPDATE _blackbox_publications SET attempts = 100 WHERE id = ? AND stage = 'confirming'")
+      .bind(input.id)
+      .run();
+    expect(await processRuntimePublication(deps)).toBe(true);
+    expect(await readPublication(deps.db, environment, input.id)).toMatchObject({
+      status: 'live',
+      completedAt: expect.any(Number),
+    });
+    if (environment === 'uat') expect(publicFetch).not.toHaveBeenCalled();
+    else expect(publicFetch).toHaveBeenCalledExactlyOnceWith(expect.any(Request));
+    expect(renderer.fetch.mock.calls.filter(([request]) => request.method === 'GET')).toHaveLength(
+      environment === 'uat' ? 1 : 0,
+    );
+    expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  },
+);
 
 test.each([false, true])(
   'catalog backfill compares stored fields, not rendering defaults (explicit=%s)',
@@ -679,8 +726,8 @@ test.each(['rejected', 'lost response', 'unavailable API'])(
     if (failure === 'rejected') cache.purge.mockResolvedValue({ success: false, errors: [] });
     else cache.purge.mockRejectedValue(new Error(failure));
     await acceptSelectedPublication(input, 'editor@example.com', deps);
-    // An accepted pointer stays confirming even past the pre-activation retry limit.
-    for (let i = 0; i < 7; i++) {
+    // A transient confirmation failure remains recoverable inside the bounded retry window.
+    for (let i = 0; i < 4; i++) {
       expect(await processRuntimePublication(deps)).toBeGreaterThan(0);
       expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).toBe(input.id);
       expect(await readPublication(deps.db, 'local', input.id)).toMatchObject({
@@ -736,6 +783,107 @@ test('retries a lost successful private purge receipt idempotently before public
   expect(cache.purge).toHaveBeenCalledTimes(2);
   expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
   expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(active);
+});
+
+test('closes an October 15 confirming head after exhausted retries and processes the later queue without rollback', async () => {
+  const { deps, input, renderer, runtime, pointer } = await setup();
+  const headId = crypto.randomUUID();
+  await deps.db
+    .prepare(
+      `INSERT INTO _blackbox_publications
+      (id, environment, actor_email, requested_revision, requested_at, status, stage, attempts, snapshot_sha256, ci_run_id)
+      VALUES (?, 'local', 'blackboxrecordsathens@gmail.com', 'site-revision', ?, 'pending', 'confirming', 100, ?, 'runtime')`,
+    )
+    .bind(headId, Date.parse('2026-10-15T10:49:00Z'), pointer.snapshotSha256)
+    .run();
+  const head = {
+    ...pointer,
+    id: headId,
+    generation: (await deps.db
+      .prepare('SELECT rowid AS generation FROM _blackbox_publications WHERE id = ?')
+      .bind(headId)
+      .first<{ generation: number }>())!.generation,
+  };
+  const original = (await readPublicationPointer(deps.bucket, 'local'))!;
+  await activatePublication(deps.bucket, 'local', head, original.etag);
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  const tailId = crypto.randomUUID();
+  await deps.db
+    .prepare(
+      `INSERT INTO _blackbox_publications
+      (id, environment, actor_email, requested_revision, requested_at, request_json, status, stage, ci_run_id)
+      VALUES (?, 'local', 'editor@example.com', 'lotus-revision', ?, ?, 'pending', 'queued', 'runtime')`,
+    )
+    .bind(
+      tailId,
+      Date.parse('2026-11-03T17:55:00Z'),
+      JSON.stringify({
+        id: tailId,
+        baseline: head.snapshotSha256,
+        records: [
+          {
+            collection: 'releases',
+            recordId: 'lotus',
+            revisionId: 'lotus-revision',
+            expectedRevision: 'lotus-version',
+            title: 'LOTUS',
+          },
+        ],
+      }),
+    )
+    .run();
+  const send = renderer.fetch.getMockImplementation()!;
+  renderer.fetch.mockImplementation(async (request) => {
+    if (request.method === 'GET' && (await readPublicationPointer(deps.bucket, 'local'))!.pointer.id === headId)
+      return Response.json({
+        sha: 'c'.repeat(40),
+        content: { publicationId: pointer.id, snapshotSha256: pointer.snapshotSha256 },
+      });
+    return send(request);
+  });
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect(await readPublication(deps.db, 'local', headId)).toMatchObject({
+    status: 'failed',
+    stage: 'failed',
+    completedAt: expect.any(Number),
+    failureReason: expect.stringContaining('Content was accepted'),
+  });
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(head);
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect(await readPublication(deps.db, 'local', input.id)).toMatchObject({ status: 'live' });
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  const accepted = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect(await readPublication(deps.db, 'local', tailId)).toMatchObject({
+    status: 'failed',
+    failureReason: expect.stringContaining('website changed'),
+  });
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(accepted);
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  expect(await processRuntimePublication(deps)).toBe(false);
+});
+
+test('bounds a persistently failing active confirmation at six attempts while preserving accepted content', async () => {
+  const { deps, input, renderer, runtime } = await setup();
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  const send = renderer.fetch.getMockImplementation()!;
+  renderer.fetch.mockImplementation(async (request) =>
+    request.method === 'GET'
+      ? Response.json({
+          sha: 'c'.repeat(40),
+          content: { publicationId: crypto.randomUUID(), snapshotSha256: 'f'.repeat(64) },
+        })
+      : send(request),
+  );
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const result = await processRuntimePublication(deps);
+    expect(typeof result).toBe(attempt === 5 ? 'boolean' : 'number');
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe(attempt === 5 ? 'failed' : 'pending');
+    expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).toBe(input.id);
+  }
+  expect(await processRuntimePublication(deps)).toBe(false);
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
 });
 
 test('does not mark an older publication live if a newer pointer wins during public confirmation', async () => {

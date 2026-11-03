@@ -455,6 +455,7 @@ export async function processRuntimePublication(deps: Dependencies) {
           method: 'POST',
           body: JSON.stringify({ ...pointer, records: changedRecords }),
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(30000),
         }),
       );
       if (!validation.ok) {
@@ -523,7 +524,8 @@ export async function processRuntimePublication(deps: Dependencies) {
       cache: 'no-store',
       signal: AbortSignal.timeout(10000),
     });
-    const response = await (deps.environment === 'local' ? deps.renderer.fetch(confirmation) : fetch(confirmation));
+    // UAT's public origin is behind Access; only PRD confirms through anonymous public HTTP.
+    const response = await (deps.environment === 'prd' ? fetch(confirmation) : deps.renderer.fetch(confirmation));
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error('Public confirmation unavailable.');
@@ -550,21 +552,23 @@ export async function processRuntimePublication(deps: Dependencies) {
   } catch (error) {
     const current = await readPublicationPointer(deps.bucket, deps.environment).catch(() => undefined);
     const activated = current?.pointer.id === job.id;
-    // An activated publication must be reconciled, never reported as a pre-activation failure.
+    // Bound confirmation too: a bad public identity must not hold every later publication indefinitely.
     const failed =
-      current !== undefined &&
-      !activated &&
-      (error instanceof InvalidPublication || error instanceof z.ZodError || job.attempts >= 5);
+      job.attempts >= 5 ||
+      (current !== undefined && !activated && (error instanceof InvalidPublication || error instanceof z.ZodError));
     await deps.db
       .prepare(
-        `UPDATE _blackbox_publications SET attempts = attempts + 1, status = ?, stage = ?, failure_code = ? WHERE id = ? AND environment = ? AND status = 'pending'`,
+        `UPDATE _blackbox_publications SET attempts = attempts + 1, status = ?, stage = ?, failure_code = ?, completed_at = COALESCE(completed_at, ?) WHERE id = ? AND environment = ? AND status = 'pending'`,
       )
       .bind(
         failed ? 'failed' : 'pending',
         failed ? 'failed' : activated ? 'confirming' : 'retrying',
-        error instanceof InvalidPublication
-          ? error.message
-          : 'Publication could not finish. Retry or ask an administrator to check service availability.',
+        failed && activated
+          ? 'Content was accepted, but public confirmation could not finish. The accepted website has been kept. Review the current website before publishing again.'
+          : error instanceof InvalidPublication
+            ? error.message
+            : 'Publication could not finish. Retry or ask an administrator to check service availability.',
+        failed ? Date.now() : null,
         job.id,
         deps.environment,
       )

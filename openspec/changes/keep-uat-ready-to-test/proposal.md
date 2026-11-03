@@ -7,6 +7,7 @@ A release or distro item cannot be published until it has a canonical catalog nu
 - The UAT release stages, as private drafts, the publish-required details that are missing: the legacy catalog number for known releases, and the physical condition New for physical releases and distro items that have none. It never replaces an existing value, never publishes and never runs on PRD.
 - An unknown release slug or an invalid existing number is skipped and reported, so a new unfinished release never blocks a UAT deploy.
 - The step is idempotent: a second run stages nothing.
+- UAT publications are confirmed through the renderer, because the UAT public origin is behind Cloudflare Access and answers the confirmation request with a login redirect. Since about 15 Oct no UAT publication could go live, and the serialized queue was blocked behind one that could never confirm. An activated publication that still cannot be confirmed now ends as failed after a bounded number of attempts instead of retrying forever.
 
 ## Capabilities
 
@@ -17,9 +18,11 @@ None.
 ### Modified Capabilities
 
 - `catalog-promotion-automation`: a UAT release may stage missing publish-required details as private drafts.
+- `content-publishing`: publication confirmation works behind a protected public origin and never blocks the queue.
 
 ## Impact
 
 - `apps/backend/src/cms` (new `uat-publish-readiness.ts`, a small extension of the catalog-number backfill), `apps/backend/scripts/prepare-cms-catalog-schema.mjs` (new UAT-only flag), `.github/workflows/pages.yml` (one command in the UAT migration step).
 - `apps/backend/cms-migrations/README.md` and `docs/catalog-promotion.md` (one sentence each).
+- `apps/backend/src/cms/runtime-publication.ts` and its worker test (confirmation path and retry bound).
 - Out of scope: product safety, release dates, images, stock, prices, checkout state and the UAT smoke test.
