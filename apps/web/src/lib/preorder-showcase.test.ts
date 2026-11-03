@@ -52,6 +52,7 @@ describe('pre-order showcase candidates', () => {
         artist: 'Artist',
         artistPath: '/blackbox-records/artists/artist/',
         option: 'Black Vinyl LP',
+        format: 'vinyl',
         storePath: '/blackbox-records/store/canonical-edition/',
         releaseDate: '2026-10-16',
         coverUrl: '/_astro/cover.webp',

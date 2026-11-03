@@ -1,7 +1,7 @@
 import type { ReleaseCatalogEntry, StoreItem } from './catalog-data';
 import type { HomeOffer, OpenPreorder } from './open-preorders';
 import type { ShipEstimate } from '@/platform/lib/preorder-estimate';
-import { tracklistGroups } from '@blackbox/content-model';
+import { tracklistFormat, tracklistGroups } from '@blackbox/content-model';
 
 /** What a Home chapter sells: an open pre-order, or a kept release in stock or sold out (price null when none is listed). */
 export type ChapterOffer =
@@ -101,6 +101,7 @@ export function buildPreorderShowcaseCandidates(
         artist: item.subtitle,
         artistPath: item.artistPath ?? null,
         option,
+        format: tracklistFormat(option),
         storePath: item.storePath,
         releaseDate: item.releaseDate?.toISOString().slice(0, 10) ?? null,
         coverUrl: media.coverUrl,

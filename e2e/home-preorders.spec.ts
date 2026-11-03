@@ -94,6 +94,7 @@ async function mountChapter(
               title: layout.title ?? 'Playback fixture',
               artist: 'Local band',
               option: 'Vinyl',
+              format: 'vinyl',
               coverUrl,
               storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
               offer: layout.offer ?? 'preorder',

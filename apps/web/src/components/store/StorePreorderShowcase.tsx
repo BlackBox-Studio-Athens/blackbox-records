@@ -1,8 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { DIGITAL_RELEASE_BADGE, tracklistFormat } from '@blackbox/content-model';
-import { Disc3 } from 'lucide-react';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
-import StoreBuyIcon from './StoreBuyIcon';
 import { buttonVariants } from '@/components/ui/button';
 import { cn, publicTitleClass } from '@/components/ui/utils';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
@@ -20,6 +18,8 @@ export type StorePreorderShowcaseCandidate = {
   artist: string;
   artistPath?: string | null | undefined;
   option: string;
+  /** The edition's format, read on the server so the island ships no format parsing. */
+  format?: 'vinyl' | 'cd' | 'cassette' | null | undefined;
   storePath: string;
   releaseDate: string | null;
   coverUrl: string;
@@ -45,18 +45,29 @@ export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & Chapter
 type ShowcaseItem = StorePreorderShowcaseItem;
 
 const buyLabels = { vinyl: 'Buy vinyl', cd: 'Buy CD', cassette: 'Buy cassette' } as const;
-const buyIconGroups = { vinyl: 'Vinyl 12-inch', cd: 'CDs', cassette: 'Tapes' } as const;
-
-/** The ordinary Buy action of a stocked chapter, named and marked by the edition's format. */
-function HomeBuyAction({ href, option }: { href: string; option: string }) {
-  const format = tracklistFormat(option);
+/** The ordinary Buy action of a stocked chapter, named by the edition's format and marked with a disc for vinyl. */
+function HomeBuyAction({ href, format }: { href: string; format: StorePreorderShowcaseCandidate['format'] }) {
   return (
     <a href={href} data-astro-prefetch className={buttonVariants({ className: 'purchase-action' })}>
-      {format === 'vinyl' ? (
-        <Disc3 className="release-vinyl-icon" size={18} aria-hidden="true" />
-      ) : format ? (
-        <StoreBuyIcon formatGroup={buyIconGroups[format]} />
-      ) : null}
+      {format === 'vinyl' && (
+        // Inline disc mark: the island stays free of an icon library and the Buy icon assets.
+        <svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M6 12c0-1.7.7-3.2 1.8-4.2" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M18 12c0 1.7-.7 3.2-1.8 4.2" />
+        </svg>
+      )}
       <span>{format ? buyLabels[format] : 'Buy'}</span>
     </a>
   );
@@ -455,7 +466,7 @@ function PreorderChapter({
         ) : soldOut ? (
           <span className="home-preorders__sold-out">Sold out</span>
         ) : (
-          <HomeBuyAction href={item.storePath} option={item.option} />
+          <HomeBuyAction href={item.storePath} format={item.format} />
         )}
         {listen}
       </div>

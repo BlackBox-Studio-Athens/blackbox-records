@@ -364,7 +364,9 @@ const stocked = { offer: 'stocked', displayPrice: '€28.00' } as const;
 
 describe('StorePreorderShowcase released chapters', () => {
   it('shows an in-stock chapter with an ordinary Buy action and no pre-order wording', () => {
-    const html = renderToStaticMarkup(render([released({ ...clip, option: 'Orange Vinyl LP' }, stocked)]));
+    const html = renderToStaticMarkup(
+      render([released({ ...clip, option: 'Orange Vinyl LP', format: 'vinyl' }, stocked)]),
+    );
     expect(html).toContain('<span>Buy vinyl</span>');
     expect(html).toContain('purchase-action');
     expect(html).toContain('href="/blackbox-records/store/clip-vinyl/"');
@@ -378,11 +380,11 @@ describe('StorePreorderShowcase released chapters', () => {
   });
 
   it.each([
-    ['CD', 'Buy CD'],
-    ['Cassette Tape', 'Buy cassette'],
-    ['Box set', 'Buy'],
-  ])('labels a %s edition %s', (option, label) => {
-    expect(renderToStaticMarkup(render([released({ ...photo, option }, stocked)]))).toContain(`<span>${label}</span>`);
+    ['cd', 'Buy CD'],
+    ['cassette', 'Buy cassette'],
+    [null, 'Buy'],
+  ] as const)('labels a %s edition %s', (format, label) => {
+    expect(renderToStaticMarkup(render([released({ ...photo, format }, stocked)]))).toContain(`<span>${label}</span>`);
   });
 
   it('shows a sold-out chapter with the static status instead of an action, and no price when none is listed', () => {
@@ -395,7 +397,7 @@ describe('StorePreorderShowcase released chapters', () => {
   });
 
   it('keeps the pre-order link while any chapter is a pre-order, and names the section for what it holds', () => {
-    const mixed = renderToStaticMarkup(render([item(clip), released(photo, stocked)]));
+    const mixed = renderToStaticMarkup(render([item(clip), released({ ...photo, format: 'vinyl' }, stocked)]));
     expect(mixed).toContain('All pre-orders');
     expect(mixed).toContain('preorder-action');
     expect(mixed).toContain('Buy vinyl');
