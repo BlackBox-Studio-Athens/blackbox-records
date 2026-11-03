@@ -189,12 +189,18 @@ export function isCmsCollection(value: string): value is CmsCollection {
   return Object.hasOwn(cmsContentSchemas, value);
 }
 
+const nativeBooleanFields: Partial<Record<CmsCollection, readonly string[]>> = {
+  artists: ['is_active'],
+  releases: ['show_on_home'],
+  navigation: ['show_in_header', 'show_in_footer'],
+};
+
 // EmDash stores booleans as INTEGER and returns 0/1; its own field schema accepts both forms.
 function nativeBooleans(collection: CmsCollection, data: Record<string, unknown>): Record<string, unknown> {
-  if (collection !== 'navigation' && collection !== 'artists') return data;
+  const fields = nativeBooleanFields[collection];
+  if (!fields) return data;
   const result = { ...data };
-  for (const key of collection === 'artists' ? ['is_active'] : ['show_in_header', 'show_in_footer'])
-    if (result[key] === 0 || result[key] === 1) result[key] = result[key] === 1;
+  for (const key of fields) if (result[key] === 0 || result[key] === 1) result[key] = result[key] === 1;
   return result;
 }
 

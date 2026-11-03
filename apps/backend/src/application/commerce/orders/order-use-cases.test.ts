@@ -146,6 +146,7 @@ describe('order lifecycle use cases', () => {
           priceActive: true,
           productActive: true,
           storeItemSlug: storeItemSlug('anarchotribal-vinyl'),
+          sourceKind: 'release' as const,
           availability: { status: 'available' as const, canBuy: true },
           stock,
         },

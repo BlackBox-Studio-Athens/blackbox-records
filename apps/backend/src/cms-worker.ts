@@ -515,6 +515,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
 
   private async fetchRequest(request: Request, config: CommerceRuntimeConfig): Promise<Response> {
     const bindings = { ...this.env, ...commerceRuntimeConfigFromBindings(config) };
+    const readOpenPreorders = async () => {
+      const { readPreorderProjection } = await import('./interfaces/http/routes/preorder-projection-push');
+      return (await readPreorderProjection(bindings, 'preorders')).projection.items;
+    };
     const url = new URL(request.url);
     if (isPreviewHost(request, bindings)) {
       const response = await this.previewRead(request, bindings);
@@ -591,6 +595,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
             snapshotCache: this.staffSnapshotCache,
+            readOpenPreorders,
             readPriceDrafts: () => readPriceDrafts(runtime, url.origin),
           }),
         );
@@ -819,6 +824,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
             snapshotCache: this.staffSnapshotCache,
+            readOpenPreorders,
           }),
         );
         if (!response.ok) return response;

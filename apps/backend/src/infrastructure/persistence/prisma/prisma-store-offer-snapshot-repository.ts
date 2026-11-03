@@ -71,6 +71,7 @@ export class PrismaStoreOfferSnapshotRepository
         priceActive: number;
         productActive: number;
         storeItemSlug: string;
+        sourceKind: 'release' | 'distro';
         availabilityStatus: 'available' | 'sold_out' | null;
         canBuy: number | null;
         effectiveQuantity: number | null;
@@ -84,7 +85,7 @@ export class PrismaStoreOfferSnapshotRepository
       }[]
     >`
       SELECT snapshot."amountMinor", snapshot."currencyCode", snapshot."freshUntil",
-        snapshot."priceActive", snapshot."productActive", snapshot."storeItemSlug",
+        snapshot."priceActive", snapshot."productActive", snapshot."storeItemSlug", item."sourceKind",
         availability."status" AS "availabilityStatus", availability."canBuy",
         CASE WHEN stock."variantId" IS NULL THEN NULL
           ELSE MAX(0, MIN(stock."quantity", stock."onlineQuantity") - COALESCE(holds."quantity", 0))
@@ -113,6 +114,7 @@ export class PrismaStoreOfferSnapshotRepository
       priceActive: Boolean(record.priceActive),
       productActive: Boolean(record.productActive),
       storeItemSlug: parseStoreItemSlug(record.storeItemSlug),
+      sourceKind: record.sourceKind,
       availability:
         record.availabilityStatus === null
           ? null

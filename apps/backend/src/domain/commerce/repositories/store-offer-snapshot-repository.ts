@@ -1,6 +1,7 @@
 import type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
 import type { ItemAvailabilityRecord } from './item-availability-repository';
 import type { StockRecord } from './stock-repository';
+import type { StoreItemSourceKind } from './store-item-option-repository';
 
 export type StoreOfferSnapshotRecord = {
   amountMinor: number | null;
@@ -21,6 +22,7 @@ export type StoreOfferListingPriceSnapshotRecord = Pick<
   StoreOfferSnapshotRecord,
   'amountMinor' | 'currencyCode' | 'freshUntil' | 'priceActive' | 'productActive' | 'storeItemSlug'
 > & {
+  sourceKind: StoreItemSourceKind;
   availability: Pick<ItemAvailabilityRecord, 'status' | 'canBuy'> | null;
   stock: Pick<StockRecord, 'onlineQuantity' | 'zeroStockState' | 'expectedMonth' | 'showLowStock' | 'preorder'> | null;
 };

@@ -29,6 +29,7 @@ async function mountFilms(page: Page, variant: 'video' | 'photo' | 'missing' = '
         coverUrl,
         artistPhotoUrl: posterUrl,
         storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+        offer: 'preorder',
         displayPrice: '€28.00',
         shipEstimate: null,
         releaseDate: null,

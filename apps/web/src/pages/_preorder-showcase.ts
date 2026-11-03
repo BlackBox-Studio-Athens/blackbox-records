@@ -1,8 +1,8 @@
 import { getImage } from 'astro:assets';
 import { listArtistProfiles, listReleaseCatalog, listStoreItems } from '@/lib/catalog-data';
-import { buildPreorderShowcaseCandidates } from '@/lib/preorder-showcase';
+import { buildPreorderShowcaseCandidates, selectShowcaseChapters } from '@/lib/preorder-showcase';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
-import type { OpenPreorder } from '@/lib/open-preorders';
+import type { HomeOffer, OpenPreorder } from '@/lib/open-preorders';
 import type { StorePreorderShowcaseItem } from '@/components/store/StorePreorderShowcase';
 import sidusVideoPoster from './_assets/video-posters/sidus-embrace-the-void.jpg';
 import sidusBackgroundVideoUrl from './_assets/video-posters/sidus-embrace-the-void-loop.mp4?url';
@@ -36,17 +36,24 @@ const preparedClips = new Map([
   ],
 ]);
 
-/** Home's pre-order chapters: accepted release Store Items the open pre-order projection lists, with its price. */
-export async function preorderShowcaseItems(preorders: readonly OpenPreorder[]): Promise<StorePreorderShowcaseItem[]> {
-  if (preorders.length === 0) return [];
-  const bySlug = new Map(preorders.map((preorder) => [preorder.storeItemSlug, preorder]));
-  const [storeItems, releases, artists] = await Promise.all([
-    listStoreItems(),
-    listReleaseCatalog(),
-    listArtistProfiles(),
-  ]);
-  // Images are prepared only for projected items, so an empty projection costs Home nothing.
-  const items = storeItems.filter((item) => item.sourceKind === 'release' && bySlug.has(item.slug));
+/**
+ * Home's chapters: accepted release Store Items the projection lists as open pre-orders, then releases staff keep on
+ * Home that the projection lists with a stocked or sold-out offer, each with its projected price.
+ */
+export async function preorderShowcaseItems(
+  preorders: readonly OpenPreorder[],
+  homeOffers: readonly HomeOffer[],
+): Promise<StorePreorderShowcaseItem[]> {
+  // The projection lists every stocked release, so Home reads the rest of the catalog only when a pre-order is open or
+  // staff keep a release on Home.
+  const releases = await listReleaseCatalog();
+  if (preorders.length === 0 && !(homeOffers.length > 0 && releases.some((release) => release.data.show_on_home)))
+    return [];
+  const [storeItems, artists] = await Promise.all([listStoreItems(), listArtistProfiles()]);
+  const chapters = selectShowcaseChapters(storeItems, releases, preorders, homeOffers);
+  const chapterBySlug = new Map(chapters.map(({ item, chapter }) => [item.slug, chapter]));
+  // Images are prepared only for chapters, so an empty projection costs Home nothing.
+  const items = chapters.map(({ item }) => item);
   const releasesById = new Map(releases.map((release) => [release.id, release]));
   const artistsById = new Map(artists.map((artist) => [artist.id, artist]));
   const images = new Map(
@@ -97,8 +104,8 @@ export async function preorderShowcaseItems(preorders: readonly OpenPreorder[]):
       }),
     ),
   );
-  return buildPreorderShowcaseCandidates(items, releases, images).map((candidate) => {
-    const { displayPrice, shipEstimate } = bySlug.get(candidate.slug)!;
-    return { ...candidate, displayPrice, shipEstimate };
-  });
+  return buildPreorderShowcaseCandidates(items, releases, images).map((candidate) => ({
+    ...candidate,
+    ...chapterBySlug.get(candidate.slug)!,
+  }));
 }

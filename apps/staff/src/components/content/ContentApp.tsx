@@ -1727,6 +1727,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   onAddUpcomingRelease={addUpcomingRelease}
                                   editorIdentity={`${collection}:${document.item.slug}`}
                                   recordId={document.item.id}
+                                  openPreorder={document.item.selling?.preorderOpen === true}
                                   onUploadPendingChange={registerUploadPending}
                                   onBandcampPendingChange={registerBandcampPending}
                                   onAppendGalleryImages={(request) => {

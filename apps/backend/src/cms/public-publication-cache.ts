@@ -1,7 +1,10 @@
 import { publicationPointerSchema, type PublicationEnvironment, type PublicationPointer } from './published-storage';
 import { readBoundedText } from './preview-content';
-import { publicPreorderIdentity, publicPreorderProjectionSchema } from './public-preorder-projection';
-import type { PublishedPreorders } from './published-reader';
+import {
+  publicPreorderIdentity,
+  publicPreorderProjectionSchema,
+  type PublishedPreorders,
+} from './public-preorder-projection';
 
 export const publicInvalidationPath = '/__publication/invalidate';
 const publicationTag = 'blackbox-publication';

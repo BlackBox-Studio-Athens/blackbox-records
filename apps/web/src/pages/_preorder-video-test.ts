@@ -15,6 +15,7 @@ export function preorderVideoTestItems(): StorePreorderShowcaseItem[] {
   return [
     {
       slug: 'uat-video-lotus',
+      offer: 'preorder',
       title: 'LOTUS',
       artist: 'Sidus',
       artistPhotoUrl: null,
@@ -44,6 +45,7 @@ export function preorderVideoTestItems(): StorePreorderShowcaseItem[] {
     },
     {
       slug: 'uat-video-disintegration',
+      offer: 'preorder',
       title: 'Disintegration',
       artist: 'Afterwise',
       artistPhotoUrl: null,

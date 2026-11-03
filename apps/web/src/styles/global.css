@@ -6617,6 +6617,26 @@ body.is-app-shell-overlay-open {
   font: 400 0.8125rem/1.5 var(--font-sans);
 }
 
+/* A released chapter (stocked or sold out): a quiet Out now and the static Flint Sold out status in the action slot. Its
+   Buy action is the shared .purchase-action; the Sea pre-order treatment never applies. */
+.home-preorders__out-now {
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.25rem var(--font-sans);
+}
+
+.home-preorders__sold-out {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  border: 1px solid var(--flint-700);
+  padding: 0.5rem 1rem;
+  color: var(--flint-300);
+  font: 400 1rem/1.2 var(--font-display-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .home-preorders__hero-sleeve {
   width: 13.75rem;
   margin: 1.375rem auto 0;

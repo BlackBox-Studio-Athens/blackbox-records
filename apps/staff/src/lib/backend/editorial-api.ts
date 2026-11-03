@@ -50,6 +50,7 @@ export type EditorialRecord = {
         itemType: string | null;
         quantity: number | null;
         onlineQuantity: number | null;
+        preorderOpen: boolean;
         amountMinor: number | null;
         currencyCode: string | null;
         catalogAvailability: string;

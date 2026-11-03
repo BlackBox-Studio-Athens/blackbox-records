@@ -75,6 +75,16 @@ const linkNameInput = (input: string) =>
     .replace(/-{2,}/g, '-')
     .replace(/^-/, '');
 
+// The track and knob drawn after a visually hidden role="switch" checkbox (peer).
+function SwitchTrack() {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50 motion-reduce:transition-none motion-reduce:after:transition-none"
+    />
+  );
+}
+
 export default function ContentFields({
   collection,
   data,
@@ -82,6 +92,7 @@ export default function ContentFields({
   base,
   editorIdentity,
   recordId,
+  openPreorder = false,
   onAppendGalleryImages,
   onUploadPendingChange,
   onBandcampPendingChange,
@@ -97,6 +108,8 @@ export default function ContentFields({
   editorIdentity?: string;
   /** The saved record being edited, so its own catalog number reads as current rather than taken. */
   recordId?: string;
+  /** The release's Store Item is an open pre-order, so Home shows it whatever Show on Home says. */
+  openPreorder?: boolean;
   onAppendGalleryImages?: (request: {
     editorIdentity: string;
     collection: 'releases' | 'distro';
@@ -591,10 +604,7 @@ export default function ContentFields({
               onBlur={() => touch('is_active')}
               onChange={(event) => set('is_active', event.currentTarget.checked)}
             />
-            <span
-              aria-hidden="true"
-              className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50 motion-reduce:transition-none motion-reduce:after:transition-none"
-            />
+            <SwitchTrack />
           </label>
           <FieldDescription id="content-is_active-description">
             Inactive artists appear last on the website after you publish changes.
@@ -727,6 +737,31 @@ export default function ContentFields({
           Optional. Lower numbers lead on Releases when the physical edition is available to buy. Leave empty for
           automatic order. Publish changes to apply this choice; stock and pre-order remain in Selling.
         </FieldDescription>
+        <label className="col-span-full flex min-h-11 cursor-pointer items-center justify-between gap-4">
+          <span className="grid min-w-0 gap-1">
+            <span id="content-show_on_home-label" className="font-medium">
+              Show on Home
+            </span>
+            <span id="content-show_on_home-description" className="text-sm text-muted-foreground">
+              {openPreorder
+                ? 'This release is on an open pre-order, so Home shows it automatically. This switch takes over when the pre-order closes.'
+                : 'Keeps this release as a full-width chapter on Home, with its video when one is prepared. A chapter shows only while the item is in stock or sold out. Publish changes to apply this choice.'}
+            </span>
+          </span>
+          <input
+            id="content-show_on_home"
+            data-content-path="show_on_home"
+            type="checkbox"
+            role="switch"
+            checked={openPreorder || data.show_on_home === true}
+            disabled={disabled || openPreorder}
+            aria-labelledby="content-show_on_home-label"
+            aria-describedby="content-show_on_home-description"
+            className="peer sr-only"
+            onChange={(event) => set('show_on_home', event.currentTarget.checked)}
+          />
+          <SwitchTrack />
+        </label>
         {image('cover_image', 'cover_image_alt', 'Cover image')}
         {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
           image(`${path}.image`, `${path}.image_alt`, 'Photo'),

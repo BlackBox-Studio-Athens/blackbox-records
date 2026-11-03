@@ -507,3 +507,33 @@ test.each([[[]], [['Digital']], [[' digital ', '']]])(
     expect(markup).not.toContain(conditionError);
   },
 );
+
+test('a release offers a named Show on Home switch that is off until staff turn it on', () => {
+  const switchOf = (record: Record<string, unknown>) =>
+    /<input[^>]*data-content-path="show_on_home"[^>]*>/.exec(renderCondition('releases', record).markup)?.[0];
+  const off = switchOf({ title: 'Record' });
+  expect(off).toContain('role="switch"');
+  expect(off).toContain('aria-labelledby="content-show_on_home-label"');
+  expect(off).not.toContain('checked');
+  expect(switchOf({ title: 'Record', show_on_home: true })).toContain('checked');
+  expect(renderCondition('distro', { title: 'Tape', group: 'Tapes' }).markup).not.toContain('Show on Home');
+});
+
+test('an open pre-order shows the Show on Home switch on and locked, with the explanation', () => {
+  const data = { title: 'Record' };
+  const markup = renderToStaticMarkup(
+    <ContentFields
+      collection="releases"
+      data={data}
+      base=""
+      openPreorder
+      validation={getContentValidation('releases', data)}
+      validationAttempt={0}
+      onChange={() => {}}
+    />,
+  );
+  const control = /<input[^>]*data-content-path="show_on_home"[^>]*>/.exec(markup)?.[0];
+  expect(control).toContain('checked');
+  expect(control).toContain('disabled');
+  expect(markup).toContain('so Home shows it automatically');
+});

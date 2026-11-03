@@ -58,6 +58,7 @@ export async function readStaffWorkspace(
     bucket: R2Bucket;
     environment: PublicationEnvironment;
     snapshotCache?: StaffSnapshotCache;
+    readOpenPreorders: () => Promise<readonly { storeItemSlug: string }[]>;
     readPriceDrafts?: () => Promise<PriceDraftRecord[]>;
   },
 ) {
@@ -367,6 +368,9 @@ export async function readStaffWorkspace(
           .bind(JSON.stringify(identities), JSON.stringify(identities))
           .all()
       : { results: [] };
+  const openPreorders = new Set(
+    catalog.results.length ? (await deps.readOpenPreorders()).map((item) => item.storeItemSlug) : [],
+  );
   const items = pages.flatMap((page) =>
     page.items.map((item) => {
       const accepted = snapshot?.records.find((entry) => entry.collection === page.section && entry.id === item.id);
@@ -388,6 +392,9 @@ export async function readStaffWorkspace(
             ? 'published'
             : 'changes';
       const kind = page.section === 'releases' ? 'release' : page.section === 'distro' ? 'distro' : '';
+      const selling = catalog.results.find(
+        (entry) => entry.sourceKind === kind && (entry.cmsSourceId === item.id || entry.sourceId === item.slug),
+      );
       return {
         ...item,
         collection: page.section,
@@ -395,10 +402,7 @@ export async function readStaffWorkspace(
         publicationState,
         acceptedRevisionId: accepted?.revisionId ?? null,
         ...(id ? { acceptedData: accepted ? { ...accepted.data, slug: accepted.slug } : null } : {}),
-        selling:
-          catalog.results.find(
-            (entry) => entry.sourceKind === kind && (entry.cmsSourceId === item.id || entry.sourceId === item.slug),
-          ) ?? null,
+        selling: selling ? { ...selling, preorderOpen: openPreorders.has(String(selling.storeItemSlug)) } : null,
         ...(priceDraftsUnavailable ? {} : { priceDraft: priceDrafts.get(`${page.section}:${item.id}`) ?? null }),
       };
     }),

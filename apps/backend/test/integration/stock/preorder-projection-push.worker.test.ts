@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createPrismaClient } from '../../../src/infrastructure/persistence/prisma';
 import { createHttpApp } from '../../../src/interfaces/http/app';
 import { pushPreorderProjection } from '../../../src/interfaces/http/routes/preorder-projection-push';
+import { openPreorderIdentity, type OpenPreorderProjection } from '../../../src/application/commerce/checkout/readers';
+import { publicPreorderIdentity, publicPreorderProjectionSchema } from '../../../src/cms/public-preorder-projection';
 
 const date = new Date('2020-01-01T00:00:00Z');
 
@@ -55,6 +57,75 @@ async function seedStockedPreorder(suffix: string) {
 afterEach(() => vi.restoreAllMocks());
 
 describe('open pre-order projection push', () => {
+  it('pushes a closed pre-order into Home offers, then the last copy selling into sold out', async () => {
+    const seeded = await seedStockedPreorder(crypto.randomUUID());
+    const projections: OpenPreorderProjection[] = [];
+    const fetch = vi.fn(async (request: Request) => {
+      projections.push((await request.json()) as OpenPreorderProjection);
+      return Response.json({ changed: true });
+    });
+    const background: Promise<unknown>[] = [];
+    const executionContext = {
+      waitUntil: (work: Promise<unknown>) => background.push(work),
+      passThroughOnException() {},
+      props: {},
+    } as unknown as ExecutionContext;
+    const bindings = {
+      ...env,
+      PRODUCT_ENVIRONMENT: 'LOCAL' as const,
+      LOCAL_OPERATOR_EMAIL: 'operator@example.com',
+      PUBLIC_SITE: { fetch } as unknown as Fetcher,
+    };
+    try {
+      await pushPreorderProjection(bindings);
+      expect(projections[0]!.items.map((item) => item.storeItemSlug)).toContain(seeded.storeItemSlug);
+      const close = await createHttpApp().request(
+        `http://127.0.0.1/api/internal/variants/${seeded.variantId}/stock/preorder`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expectedRevision: 0, shipEstimate: null }),
+        },
+        bindings,
+        executionContext,
+      );
+      expect(close.status).toBe(200);
+      await Promise.all(background);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(projections[1]!.items.map((item) => item.storeItemSlug)).not.toContain(seeded.storeItemSlug);
+      expect(projections[1]!.homeOffers).toContainEqual({
+        storeItemSlug: seeded.storeItemSlug,
+        availability: 'stocked',
+        displayPrice: '€28.00',
+      });
+      const sale = await createHttpApp().request(
+        `http://127.0.0.1/api/internal/variants/${seeded.variantId}/stock/changes`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta: -2, reason: 'show_sale' }),
+        },
+        bindings,
+        executionContext,
+      );
+      expect(sale.status).toBe(200);
+      await Promise.all(background);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(projections[2]!.homeOffers).toContainEqual({
+        storeItemSlug: seeded.storeItemSlug,
+        availability: 'sold_out',
+        displayPrice: '€28.00',
+      });
+      for (const projection of projections) {
+        const parsed = publicPreorderProjectionSchema.parse(projection);
+        expect(parsed).toEqual(projection);
+        expect(await publicPreorderIdentity(parsed)).toBe(await openPreorderIdentity(projection));
+      }
+    } finally {
+      await seeded.cleanup();
+    }
+  });
+
   it('posts the buyable pre-orders to the private renderer path', async () => {
     const seeded = await seedStockedPreorder(crypto.randomUUID());
     const fetch = vi.fn(async (_request: Request) => Response.json({ changed: true }));

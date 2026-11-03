@@ -52,6 +52,15 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
       required: false,
     });
   else if (releaseStage.type !== 'string') throw new Error('Unexpected field type: releases.release_stage');
+  const showOnHome = await registry.getField('releases', 'show_on_home');
+  if (!showOnHome)
+    await registry.createField('releases', {
+      slug: 'show_on_home',
+      label: 'Show on Home',
+      type: 'boolean',
+      required: false,
+    });
+  else if (showOnHome.type !== 'boolean') throw new Error('Unexpected field type: releases.show_on_home');
   const releasePriority = await registry.getField('releases', 'releases_priority');
   if (!releasePriority)
     await registry.createField('releases', {

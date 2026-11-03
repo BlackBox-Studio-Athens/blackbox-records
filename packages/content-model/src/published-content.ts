@@ -110,6 +110,8 @@ export function publishedCollection(
         if (!artist) throw new Error('Published Artist is unavailable.');
         data.artist = { collection: 'artists', id: artist.slug };
       }
+      if (record.collection === 'releases' && (data.show_on_home === 0 || data.show_on_home === 1))
+        data.show_on_home = data.show_on_home === 1;
       for (const key of ['date', 'release_date']) {
         if (data[key] === '') delete data[key];
         else if (typeof data[key] === 'string') data[key] = new Date(data[key]);

@@ -5,6 +5,7 @@ import StorePreorderShowcase, {
   type StorePreorderShowcaseCandidate,
   type StorePreorderShowcaseItem,
 } from './StorePreorderShowcase';
+import type { ChapterOffer } from '@/lib/preorder-showcase';
 
 vi.mock('astro:config/client', () => ({ base: '/blackbox-records/', site: undefined }));
 
@@ -47,10 +48,11 @@ const storeUrl = '/blackbox-records/store/';
 // Home passes server-built items: accepted candidates the open pre-order projection lists, with its price and estimate.
 function item(
   candidate: StorePreorderShowcaseCandidate,
-  overrides: Partial<Pick<StorePreorderShowcaseItem, 'displayPrice' | 'shipEstimate'>> = {},
+  overrides: Partial<Extract<ChapterOffer, { offer: 'preorder' }>> = {},
 ): StorePreorderShowcaseItem {
   return {
     ...candidate,
+    offer: 'preorder',
     displayPrice: '€28.00',
     shipEstimate: { kind: 'month', month: '2026-10', part: null },
     ...overrides,
@@ -351,5 +353,53 @@ describe('StorePreorderShowcase phone film strip', () => {
   it('gives a photo chapter its ship estimate beside the purchase for phones, as the facts do on wider screens', () => {
     const html = renderToStaticMarkup(render([item({ ...photo, releaseDate: '2026-10-16' })]));
     expect(html).toContain('<p class="home-preorders__shipping">Vinyl ships around October 2026</p>');
+  });
+});
+
+// A release staff keep on Home reads its offer: stocked gets the ordinary Buy action, sold out a static status.
+function released(candidate: StorePreorderShowcaseCandidate, chapter: Exclude<ChapterOffer, { offer: 'preorder' }>) {
+  return { ...candidate, ...chapter };
+}
+const stocked = { offer: 'stocked', displayPrice: '€28.00' } as const;
+
+describe('StorePreorderShowcase released chapters', () => {
+  it('shows an in-stock chapter with an ordinary Buy action and no pre-order wording', () => {
+    const html = renderToStaticMarkup(render([released({ ...clip, option: 'Orange Vinyl LP' }, stocked)]));
+    expect(html).toContain('<span>Buy vinyl</span>');
+    expect(html).toContain('purchase-action');
+    expect(html).toContain('href="/blackbox-records/store/clip-vinyl/"');
+    expect(html).toContain('Out now');
+    expect(html).toContain('Delivery information');
+    expect(html).toContain('€28.00');
+    expect(html).toContain('Watch full video');
+    expect(html).toContain('Visit the Store');
+    for (const phrase of ['preorder-action', 'Pre-order', 'ships', 'All pre-orders'])
+      expect(html).not.toContain(phrase);
+  });
+
+  it.each([
+    ['CD', 'Buy CD'],
+    ['Cassette Tape', 'Buy cassette'],
+    ['Box set', 'Buy'],
+  ])('labels a %s edition %s', (option, label) => {
+    expect(renderToStaticMarkup(render([released({ ...photo, option }, stocked)]))).toContain(`<span>${label}</span>`);
+  });
+
+  it('shows a sold-out chapter with the static status instead of an action, and no price when none is listed', () => {
+    const html = renderToStaticMarkup(render([released(clip, { offer: 'sold_out', displayPrice: null })]));
+    expect(html).toContain('home-preorders__sold-out');
+    expect(html).not.toContain('purchase-action');
+    expect(html).not.toContain('class="home-preorders__price"');
+    expect(html).toContain('Watch full video');
+    expect(html).not.toContain('Vinyl ships');
+  });
+
+  it('keeps the pre-order link while any chapter is a pre-order, and names the section for what it holds', () => {
+    const mixed = renderToStaticMarkup(render([item(clip), released(photo, stocked)]));
+    expect(mixed).toContain('All pre-orders');
+    expect(mixed).toContain('preorder-action');
+    expect(mixed).toContain('Buy vinyl');
+    expect(mixed).toContain('>Featured releases</h2>');
+    expect(renderToStaticMarkup(render([item(clip)]))).toContain('>Pre-orders</h2>');
   });
 });

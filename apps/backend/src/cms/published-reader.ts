@@ -1,14 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { publishedCollection, type PublicContent } from '@blackbox/content-model';
-
-export type PublishedPreorders = {
-  items: {
-    storeItemSlug: string;
-    displayPrice: string;
-    shipEstimate:
-      { kind: 'month'; month: string; part: 'early' | 'mid' | 'late' | null } | { kind: 'date'; date: string } | null;
-  }[];
-};
+import type { PublishedPreorders } from './public-preorder-projection';
 
 export const publishedContext = new AsyncLocalStorage<{
   snapshot: PublicContent;

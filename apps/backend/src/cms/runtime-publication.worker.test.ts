@@ -437,6 +437,7 @@ async function setup() {
   const deps = {
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local' as const,
     runtime: runtime as unknown as EmDashRuntime,
@@ -586,6 +587,90 @@ test('activation refreshes warm public selection then purges through the private
   expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
   expect(await processRuntimePublication(deps)).toBe(false);
 });
+
+test.each([true, 0])(
+  'Show on Home (%s) stays private until the selected release revision is published',
+  async (showOnHome) => {
+    const { deps, runtime, pointer } = await setup();
+    const previous = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+    const data = {
+      title: 'Afterwise',
+      catalog_number: 'BBR#001',
+      artist: 'artist',
+      release_stage: 'released',
+      release_date: '2026-09-01',
+      cover_image: { id: 'image' },
+      cover_image_alt: 'Cover',
+    };
+    const baseline = await completeSnapshot(
+      deps.bucket,
+      'local',
+      JSON.stringify({
+        ...previous,
+        records: [
+          {
+            collection: 'artists',
+            id: 'artist',
+            slug: 'artist',
+            revisionId: 'artist-live',
+            data: { title: 'Artist', genre: 'Rock', bio: 'Bio', image: { id: 'image' }, image_alt: 'Portrait' },
+          },
+          { collection: 'releases', id: 'release', slug: 'afterwise', revisionId: 'old', data },
+        ],
+      }),
+    );
+    await deps.bucket.delete(currentPublicationKey('local'));
+    await activatePublication(deps.bucket, 'local', { ...pointer, snapshotSha256: baseline.sha256 });
+    let liveRevisionId = 'old';
+    runtime.handleContentPublish.mockImplementation(async () => {
+      liveRevisionId = 'selected';
+      return { success: true, data: {} };
+    });
+    runtime.handleContentGet.mockImplementation(async () => ({
+      success: true,
+      data: {
+        _rev: 'version-1',
+        item: {
+          id: 'release',
+          slug: 'afterwise',
+          status: 'published',
+          draftRevisionId: 'selected',
+          liveRevisionId,
+        },
+      },
+    }));
+    runtime.handleRevisionGet.mockResolvedValue({
+      success: true,
+      data: {
+        item: {
+          id: 'selected',
+          collection: 'releases',
+          entryId: 'release',
+          data: { ...data, show_on_home: showOnHome },
+        },
+      },
+    });
+    const publicRelease = async () => {
+      const active = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+      const snapshot = await readPublishedSnapshot(deps.bucket, 'local', active.snapshotSha256);
+      return publishedCollection(snapshot, 'releases', '/media')[0]!;
+    };
+    expect((await publicRelease()).data).not.toHaveProperty('show_on_home');
+    const input = {
+      id: crypto.randomUUID(),
+      collection: 'releases' as const,
+      recordId: 'release',
+      expectedRevision: 'version-1',
+    };
+    await acceptSelectedPublication(input, 'editor@example.com', deps);
+    expect((await publicRelease()).data).not.toHaveProperty('show_on_home');
+    expect(await processRuntimePublication(deps)).toBe(true);
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+    expect((await publicRelease()).data.show_on_home).toBe(Boolean(showOnHome));
+    const old = await readPublishedSnapshot(deps.bucket, 'local', baseline.sha256);
+    expect(publishedCollection(old, 'releases', '/media')[0]!.data).not.toHaveProperty('show_on_home');
+  },
+);
 
 test.each(['rejected', 'lost response', 'unavailable API'])(
   'recovers %s purge after activation without replaying native content',

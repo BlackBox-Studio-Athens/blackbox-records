@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildPreorderShowcaseCandidates } from './preorder-showcase';
+import { buildPreorderShowcaseCandidates, selectShowcaseChapters } from './preorder-showcase';
 
 type Item = Parameters<typeof buildPreorderShowcaseCandidates>[0][number];
 const item = (overrides: Partial<Item> = {}): Item => ({
@@ -156,5 +156,67 @@ describe('pre-order showcase candidates', () => {
     );
     expect(home).toContain("from '@/lib/open-preorders'");
     expect(existsSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url))).toBe(false);
+  });
+});
+
+describe('Home chapter selection', () => {
+  const entry = (slug: string, date: string | undefined, sourceId = slug) => ({
+    sourceKind: 'release' as const,
+    sourceId,
+    slug,
+    releaseDate: date ? new Date(date + 'T00:00:00Z') : undefined,
+  });
+  const releases = ['open', 'old', 'new', 'tie-a', 'tie-b', 'off', 'sold'].map((id) => ({
+    id,
+    data: { show_on_home: id !== 'off' },
+  }));
+  const storeItems = [
+    entry('old', '2026-01-01'),
+    entry('open', '2026-05-01'),
+    entry('new', '2026-09-01'),
+    entry('tie-b', '2026-03-01'),
+    entry('tie-a', '2026-03-01'),
+    entry('off', '2026-08-01'),
+    entry('sold', undefined),
+    entry('unflagged-distro', '2026-08-01'),
+    { ...entry('merch', '2026-08-01'), sourceKind: 'distro' as const },
+  ];
+  const preorders = [{ storeItemSlug: 'open', displayPrice: '€28.00', shipEstimate: null }];
+  const homeOffers = [
+    { storeItemSlug: 'open', availability: 'stocked' as const, displayPrice: '€1.00' },
+    { storeItemSlug: 'old', availability: 'stocked' as const, displayPrice: '€25.00' },
+    { storeItemSlug: 'new', availability: 'stocked' as const, displayPrice: '€30.00' },
+    { storeItemSlug: 'tie-a', availability: 'stocked' as const, displayPrice: null },
+    { storeItemSlug: 'tie-b', availability: 'stocked' as const, displayPrice: null },
+    { storeItemSlug: 'off', availability: 'stocked' as const, displayPrice: '€20.00' },
+    { storeItemSlug: 'sold', availability: 'sold_out' as const, displayPrice: null },
+    { storeItemSlug: 'merch', availability: 'stocked' as const, displayPrice: '€5.00' },
+  ];
+
+  it('lists open pre-orders first, then switched-on releases newest first with a slug tie-break', () => {
+    const chapters = selectShowcaseChapters(storeItems, releases, preorders, homeOffers);
+    expect(chapters.map(({ item, chapter }) => [item.slug, chapter.offer])).toEqual([
+      ['open', 'preorder'],
+      ['new', 'stocked'],
+      ['tie-a', 'stocked'],
+      ['tie-b', 'stocked'],
+      ['old', 'stocked'],
+      ['sold', 'sold_out'],
+    ]);
+  });
+
+  it('shows a release on an open pre-order once, as a pre-order with its projected price', () => {
+    const chapters = selectShowcaseChapters(storeItems, releases, preorders, homeOffers);
+    expect(chapters.filter(({ item }) => item.slug === 'open')).toEqual([
+      { item: storeItems[1], chapter: { offer: 'preorder', displayPrice: '€28.00', shipEstimate: null } },
+    ]);
+  });
+
+  it('leaves out releases that are switched off, have no Home offer, or are not releases', () => {
+    const slugs = selectShowcaseChapters(storeItems, releases, [], homeOffers).map(({ item }) => item.slug);
+    expect(slugs).not.toContain('off');
+    expect(slugs).not.toContain('unflagged-distro');
+    expect(slugs).not.toContain('merch');
+    expect(selectShowcaseChapters(storeItems, releases, [], [])).toEqual([]);
   });
 });

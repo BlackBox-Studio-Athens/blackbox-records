@@ -3,7 +3,7 @@ import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { isCmsCollection, type ContentSnapshot } from '@blackbox/content-model';
 import { z } from 'zod';
-import { publishedContext, type PublishedPreorders } from './published-reader';
+import { publishedContext } from './published-reader';
 import { readBoundedText } from './preview-content';
 import { previewRenderContent, previewRenderSchema } from './preview-render-contract';
 import {
@@ -20,7 +20,11 @@ import {
   publicInvalidationPath,
   publicPublicationTags,
 } from './public-publication-cache';
-import { PublicPreorderStore, publicPreorderProjectionPath } from './public-preorder-projection';
+import {
+  PublicPreorderStore,
+  publicPreorderProjectionPath,
+  type PublishedPreorders,
+} from './public-preorder-projection';
 import {
   PublicRenderCache,
   publicPageEtag,

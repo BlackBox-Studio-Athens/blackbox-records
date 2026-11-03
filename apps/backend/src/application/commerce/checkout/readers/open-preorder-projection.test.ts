@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { deriveOpenPreorderProjection, readStoreListingPrices } from './';
+import { deriveOpenPreorderProjection } from './';
 import type { StoreOfferListingPriceSnapshotRecord } from '../../../../domain/commerce/repositories/spi';
 import { createStockQuantity, type PreorderShipEstimate } from '../../../../domain/commerce';
 import { storeItemSlug } from '../../../../../test/support/commerce-value-objects';
@@ -17,6 +17,7 @@ function snapshot(
   } = {} as Partial<StoreOfferListingPriceSnapshotRecord> & { quantity?: number; shipEstimate?: PreorderShipEstimate },
 ): StoreOfferListingPriceSnapshotRecord {
   return {
+    sourceKind: 'release',
     availability: { status: 'available', canBuy: true },
     stock: {
       onlineQuantity: createStockQuantity(quantity),
@@ -36,9 +37,12 @@ function snapshot(
 }
 
 const project = async (snapshots: StoreOfferListingPriceSnapshotRecord[]) =>
-  deriveOpenPreorderProjection(
-    await readStoreListingPrices({ listForListingPricePresentation: async () => snapshots }, 'preorders', now),
-  );
+  deriveOpenPreorderProjection(snapshots, now);
+
+function released(slug: string, quantity = 3, overrides: Partial<StoreOfferListingPriceSnapshotRecord> = {}) {
+  const record = snapshot(slug, { quantity, ...overrides });
+  return { ...record, stock: { ...record.stock!, preorder: null } };
+}
 
 describe('open pre-order projection', () => {
   it('lists ready stocked pre-orders by slug with price and estimate, and withholds a passed month', async () => {
@@ -48,6 +52,7 @@ describe('open pre-order projection', () => {
     ]);
 
     expect(projection).toEqual({
+      homeOffers: [],
       items: [
         { storeItemSlug: 'afterwise-vinyl', displayPrice: '€31.50', shipEstimate: null },
         { storeItemSlug: 'sidus-vinyl', displayPrice: '€28.00', shipEstimate: { kind: 'date', date: '2026-12-04' } },
@@ -77,7 +82,61 @@ describe('open pre-order projection', () => {
     // The canonical form is part of the renderer contract; changing it re-renders every published page.
     expect(JSON.stringify(first.projection)).toBe(
       '{"items":[{"storeItemSlug":"a-vinyl","displayPrice":"€28.00","shipEstimate":{"kind":"month","month":"2026-11","part":"early"}},' +
-        '{"storeItemSlug":"b-vinyl","displayPrice":"€28.00","shipEstimate":{"kind":"month","month":"2026-11","part":"early"}}]}',
+        '{"storeItemSlug":"b-vinyl","displayPrice":"€28.00","shipEstimate":{"kind":"month","month":"2026-11","part":"early"}}],"homeOffers":[]}',
+    );
+  });
+
+  it('lists only released label offers with Store listing prices, in slug order', async () => {
+    const { projection } = await project([
+      released('z-stocked'),
+      released('b-sold-out', 0),
+      released('a-flexible', 2, { amountMinor: null }),
+      released('distro', 2, { sourceKind: 'distro' }),
+      snapshot('open-preorder'),
+    ]);
+    expect(projection.homeOffers).toEqual([
+      { storeItemSlug: 'a-flexible', availability: 'stocked', displayPrice: 'Pay what you want' },
+      { storeItemSlug: 'b-sold-out', availability: 'sold_out', displayPrice: '€28.00' },
+      { storeItemSlug: 'z-stocked', availability: 'stocked', displayPrice: '€28.00' },
+    ]);
+    expect(projection.items.map((item) => item.storeItemSlug)).toEqual(['open-preorder']);
+  });
+
+  it('presents a staff-open pre-order with no copies as a sold-out Home offer', async () => {
+    const { projection } = await project([snapshot('depleted-preorder', { quantity: 0 })]);
+    expect(projection.items).toEqual([]);
+    expect(projection.homeOffers).toEqual([
+      { storeItemSlug: 'depleted-preorder', availability: 'sold_out', displayPrice: '€28.00' },
+    ]);
+  });
+
+  it.each([
+    ['paused', { availability: { status: 'available', canBuy: false } }],
+    ['missing availability', { availability: null }],
+    ['not ready', { priceActive: false }],
+    ['inactive product', { productActive: false }],
+    ['Coming Soon', { stock: { ...released('unused', 0).stock, zeroStockState: 'coming_soon' } }],
+    ['Repressing', { stock: { ...released('unused', 0).stock, zeroStockState: 'repressing' } }],
+  ] as const)('omits a Home offer that is %s', async (_case, overrides) => {
+    expect(
+      (await project([released('excluded', 0, overrides as Partial<StoreOfferListingPriceSnapshotRecord>)])).projection
+        .homeOffers,
+    ).toEqual([]);
+  });
+
+  it('moves a closed pre-order to Home offers and changes identity only for projected facts', async () => {
+    const open = await project([snapshot('afterwise')]);
+    const closed = await project([released('afterwise')]);
+    expect(closed.projection.items).toEqual([]);
+    expect(closed.projection.homeOffers).toEqual([
+      { storeItemSlug: 'afterwise', availability: 'stocked', displayPrice: '€28.00' },
+    ]);
+    expect(closed.identity).not.toBe(open.identity);
+    expect((await project([released('afterwise', 2)])).identity).toBe(closed.identity);
+    expect((await project([released('afterwise', 0)])).identity).not.toBe(closed.identity);
+    expect((await project([released('afterwise', 3, { amountMinor: 3000 })])).identity).not.toBe(closed.identity);
+    expect((await project([released('b'), released('a')])).identity).toBe(
+      (await project([released('a'), released('b')])).identity,
     );
   });
 });

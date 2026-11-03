@@ -65,6 +65,12 @@ test('catalog preparation adds optional Artist activity and News reference field
       required: false,
     });
   expect(create).toHaveBeenCalledWith('releases', {
+    slug: 'show_on_home',
+    label: 'Show on Home',
+    type: 'boolean',
+    required: false,
+  });
+  expect(create).toHaveBeenCalledWith('releases', {
     slug: 'releases_priority',
     label: 'Releases order',
     type: 'number',
@@ -72,6 +78,9 @@ test('catalog preparation adds optional Artist activity and News reference field
   });
   expect((await prepareCatalogSchema(runtime)).status).toBe(200);
   expect(create).toHaveBeenCalledTimes(created);
+  fields.set('releases/show_on_home', { ...fields.get('releases/show_on_home')!, type: 'string' });
+  await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: releases.show_on_home');
+  fields.set('releases/show_on_home', { ...fields.get('releases/show_on_home')!, type: 'boolean' });
   fields.set('releases/catalog_number', { ...fields.get('releases/catalog_number')!, type: 'number' });
   await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: releases.catalog_number');
   fields.set('releases/catalog_number', { ...fields.get('releases/catalog_number')!, type: 'string' });

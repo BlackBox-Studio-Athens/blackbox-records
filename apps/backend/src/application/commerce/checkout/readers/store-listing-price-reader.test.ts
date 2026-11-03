@@ -7,6 +7,7 @@ import { storeItemSlug } from '../../../../../test/support/commerce-value-object
 
 function snapshot(overrides: Partial<StoreOfferListingPriceSnapshotRecord> = {}): StoreOfferListingPriceSnapshotRecord {
   return {
+    sourceKind: 'release',
     availability: { status: 'available', canBuy: true },
     stock: {
       onlineQuantity: createStockQuantity(3),

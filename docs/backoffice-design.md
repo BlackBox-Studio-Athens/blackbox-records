@@ -219,6 +219,8 @@ Acceptance includes 250+ entries, real Local EmDash reads and Chromium/Firefox c
 
 Local read-cost evidence: the real D1 integration test with 250 inventory items measured one SQL statement and 375 rows read for a filtered 25-item page. The browser regression observes one inventory request plus one batched artwork request per settled page; image-file requests are separate. This excludes authentication/session costs and is not a hosted quota measurement. Measure the complete UAT request path under the Free-tier preflight before rollout.
 
+Show on Home is a release content switch, off by default, beside Releases order in the release's Details. It keeps the release as a Home chapter after its pre-order closes; open pre-orders appear on Home automatically, and while one is open the switch shows on and locked. A chapter shows only while the item is in stock or sold out. Like other content it is private until published.
+
 ## Website changes review (September 2026 refinement)
 
 Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Review changes shortcut finishes autosave and opens an individual review without replacing grouped selection. One selected entry uses Publish change; several use Publish N changes.

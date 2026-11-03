@@ -10,6 +10,7 @@ const catalog = vi.hoisted(() => ({
   clips: [] as { title: string; youtube_video_id: string }[],
   artistSlug: 'sidus',
   hasArtist: true,
+  showOnHome: false,
   cover: { src: '/accepted-cover.webp', width: 1200, height: 1200, format: 'webp' },
   photo: { src: '/accepted-artist.webp', width: 2048, height: 1536, format: 'webp' },
 }));
@@ -49,7 +50,12 @@ vi.mock('@/lib/catalog-data', () => ({
   listReleaseCatalog: async () => [
     {
       id: 'lotus',
-      data: { artist: { id: 'sidus' }, cover_image: catalog.cover, clips: catalog.clips },
+      data: {
+        artist: { id: 'sidus' },
+        cover_image: catalog.cover,
+        clips: catalog.clips,
+        show_on_home: catalog.showOnHome,
+      },
     },
   ],
   listArtistProfiles: async () =>
@@ -61,13 +67,14 @@ import { preorderShowcaseItems } from './_preorder-showcase';
 const projected = [
   { storeItemSlug: 'lotus-vinyl', displayPrice: '€28.00', shipEstimate: { kind: 'date' as const, date: '2026-12-04' } },
 ];
-const items = () => preorderShowcaseItems(projected);
+const items = () => preorderShowcaseItems(projected, []);
 
 describe('Home pre-order showcase items', () => {
   beforeEach(() => {
     catalog.clips = [];
     catalog.artistSlug = 'sidus';
     catalog.hasArtist = true;
+    catalog.showOnHome = false;
     catalog.cover.width = catalog.cover.height = 1200;
     catalog.photo.width = 2048;
     catalog.photo.height = 1536;
@@ -75,16 +82,34 @@ describe('Home pre-order showcase items', () => {
   });
 
   it('lists only projected release items, with the projected price and estimate, and prepares nothing without one', async () => {
-    expect(await preorderShowcaseItems([])).toEqual([]);
-    expect(await preorderShowcaseItems([{ ...projected[0]!, storeItemSlug: 'other-vinyl' }])).toEqual([]);
+    expect(await preorderShowcaseItems([], [])).toEqual([]);
+    expect(await preorderShowcaseItems([{ ...projected[0]!, storeItemSlug: 'other-vinyl' }], [])).toEqual([]);
     expect(getImage).not.toHaveBeenCalled();
     expect(await items()).toEqual([
       expect.objectContaining({
         slug: 'lotus-vinyl',
         displayPrice: '€28.00',
+        offer: 'preorder',
         shipEstimate: { kind: 'date', date: '2026-12-04' },
       }),
     ]);
+  });
+
+  it('keeps a switched-on release as a stocked chapter with its prepared clip, and reads nothing more for a switched-off one', async () => {
+    const offers = [{ storeItemSlug: 'lotus-vinyl', availability: 'stocked' as const, displayPrice: '€28.00' }];
+    catalog.clips = [{ title: 'Embrace The Void', youtube_video_id: 'MOA5YZDOR6A' }];
+    expect(await preorderShowcaseItems([], offers)).toEqual([]);
+    expect(getImage).not.toHaveBeenCalled();
+    catalog.showOnHome = true;
+    const [chapter] = await preorderShowcaseItems([], offers);
+    expect(chapter).toMatchObject({
+      slug: 'lotus-vinyl',
+      offer: 'stocked',
+      displayPrice: '€28.00',
+      firstClipId: 'MOA5YZDOR6A',
+    });
+    expect(chapter).not.toHaveProperty('shipEstimate');
+    expect(chapter!.clips![0]!.backgroundVideoUrl).toBe(sidusBackgroundVideoUrl);
   });
 
   it('reflects clip additions, replacements and removal from the accepted snapshot', async () => {

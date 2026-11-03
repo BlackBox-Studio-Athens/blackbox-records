@@ -52,7 +52,13 @@ test('Home defaults to sample films only with the UAT build marker @phone', asyn
 async function mountChapter(
   page: Page,
   source?: string,
-  layout: { variant?: 'video' | 'photo' | 'cover'; listen?: boolean; title?: string; metadata?: boolean } = {},
+  layout: {
+    variant?: 'video' | 'photo' | 'cover';
+    listen?: boolean;
+    title?: string;
+    metadata?: boolean;
+    offer?: 'preorder' | 'stocked' | 'sold_out';
+  } = {},
 ) {
   await waitForIsland(page, 'StorePreorderShowcase');
   // A discrete event completes React's pending hydration before the fixture unmounts this root.
@@ -90,6 +96,7 @@ async function mountChapter(
               option: 'Vinyl',
               coverUrl,
               storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
+              offer: layout.offer ?? 'preorder',
               displayPrice: '€28.00',
               shipEstimate: null,
               artistPhotoUrl: variant === 'photo' ? posterUrl : null,
@@ -1122,3 +1129,34 @@ test('Home photo chapter on a phone is a clean photo band with the identity and 
   await expect(release.getByRole('link', { name: 'Pre-order & delivery information' })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
+
+// Component tests own the wording; this checks the shipped island in a real browser: no pre-order styling, a 44px Buy
+// action or the static status, and no overflow.
+// Desktop projects run the untagged title, phone projects the @phone one.
+for (const [offer, tag] of [
+  ['stocked', ''],
+  ['sold_out', ''],
+  ['stocked', ' @phone'],
+  ['sold_out', ' @phone'],
+] as const) {
+  test(`Home keeps a ${offer.replace('_', ' ')} release chapter without pre-order treatment${tag}`, async ({
+    page,
+  }) => {
+    await page.goto('./');
+    await waitForShell(page);
+    await mountChapter(page, undefined, { variant: 'photo', listen: true, offer });
+    const release = page.locator('#preorder-playback-fixture');
+    await expect(release.getByRole('button', { name: 'Listen', exact: true })).toBeVisible();
+    await expect(release.locator('.preorder-action, .preorder-badge')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Visit the Store', exact: true })).toBeVisible();
+    const buy = release.getByRole('link', { name: 'Buy vinyl', exact: true });
+    if (offer === 'stocked') {
+      await expect(buy).toHaveAttribute('href', storePath);
+      expect((await buy.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    } else {
+      await expect(buy).toHaveCount(0);
+      await expect(release.getByText('Sold out', { exact: true })).toBeVisible();
+    }
+    await expectNoHorizontalOverflow(page);
+  });
+}

@@ -53,6 +53,7 @@ test.each(['', '&q=SIDUS'])(
       runtime,
       db: env.TEST_CMS_DB,
       commerce: env.COMMERCE_DB,
+      readOpenPreorders: async () => [],
       bucket: env.TEST_SNAPSHOTS,
       environment: 'local',
     });
@@ -83,6 +84,7 @@ test('published navigation lists its saved draft order', async () => {
     runtime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local',
   });
@@ -103,6 +105,7 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
     runtime: { handleContentList: list } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local' as const,
   };
@@ -173,6 +176,7 @@ test('distro band search preserves native continuation through empty pages and t
     runtime: { handleContentList: list } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local' as const,
   };
@@ -218,6 +222,7 @@ test('Overview keeps bounded recent publication truth without list enrichment or
     runtime: { db: {}, handleContentList: list } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local' as const,
     snapshotCache: {} as StaffSnapshotCache,
@@ -336,6 +341,7 @@ test('Overview starts native pages and pending lookup while the accepted pointer
     runtime: { db: {} } as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local',
   });
@@ -401,6 +407,7 @@ test('bounded review continues past 250 published entries without losing later d
       runtime,
       db: env.TEST_CMS_DB,
       commerce: env.COMMERCE_DB,
+      readOpenPreorders: async () => [],
       bucket: env.TEST_SNAPSHOTS,
       environment: 'local',
       snapshotCache,
@@ -440,6 +447,7 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
     runtime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local' as const,
     snapshotCache,
@@ -588,6 +596,7 @@ test('review discovery compares saved revisions rather than published list value
     } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local',
   });
@@ -646,6 +655,7 @@ test('review discovery keeps published catalog entries whose only change is a pr
     } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local',
     readPriceDrafts: async () => [draft],
@@ -666,6 +676,7 @@ test('an unavailable price-draft store degrades discovery instead of failing the
     } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
+    readOpenPreorders: async () => [],
     bucket: env.TEST_SNAPSHOTS,
     environment: 'local',
     readPriceDrafts: async () => {

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { PublishedPreorders } from './published-reader';
 
 export const publicPreorderProjectionPath = '/__publication/preorders';
 
@@ -26,7 +25,23 @@ export const publicPreorderProjectionSchema = z.object({
       }),
     )
     .max(500),
+  homeOffers: z
+    .array(
+      z.object({
+        storeItemSlug: z
+          .string()
+          .max(256)
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+        availability: z.enum(['stocked', 'sold_out']),
+        displayPrice: z.string().min(1).max(64).nullable(),
+      }),
+    )
+    .max(150)
+    .optional(),
 });
+
+export type PublishedPreorders = z.infer<typeof publicPreorderProjectionSchema>;
+export type HomeOffer = NonNullable<PublishedPreorders['homeOffers']>[number];
 
 export async function publicPreorderIdentity(projection: PublishedPreorders) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(projection)));

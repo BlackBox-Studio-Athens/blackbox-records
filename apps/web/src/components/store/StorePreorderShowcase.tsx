@@ -1,16 +1,19 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
+import { DIGITAL_RELEASE_BADGE, tracklistFormat } from '@blackbox/content-model';
+import { Disc3 } from 'lucide-react';
 
+import StoreBuyIcon from './StoreBuyIcon';
 import { buttonVariants } from '@/components/ui/button';
 import { cn, publicTitleClass } from '@/components/ui/utils';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
+import type { ChapterOffer } from '@/lib/preorder-showcase';
 import { createProjectRelativeUrl } from '@/platform/config/site';
-import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
+import { preorderBadges, shipEstimateText } from '@/platform/lib/preorder-estimate';
 import { connectSurfaceHistory, readHistoryEntryMarker } from '@/platform/lib/surface-history';
 
 const InternationalOrderNotice = lazy(() => import('./cart/InternationalOrderNotice'));
 
-// Home builds these at render from the accepted snapshot; only Store Items the open pre-order projection lists appear.
+// Home builds these at render from the accepted snapshot; only Store Items the rendered projection lists appear.
 export type StorePreorderShowcaseCandidate = {
   slug: string;
   title: string;
@@ -38,11 +41,26 @@ export type StorePreorderShowcaseCandidate = {
   recording?: string | null | undefined;
   listen?: { releaseId: string; bandcampEmbedUrl: string | null; tidalEmbedUrl: string | null } | null | undefined;
 };
-export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & {
-  displayPrice: string;
-  shipEstimate: ShipEstimate | null;
-};
+export type StorePreorderShowcaseItem = StorePreorderShowcaseCandidate & ChapterOffer;
 type ShowcaseItem = StorePreorderShowcaseItem;
+
+const buyLabels = { vinyl: 'Buy vinyl', cd: 'Buy CD', cassette: 'Buy cassette' } as const;
+const buyIconGroups = { vinyl: 'Vinyl 12-inch', cd: 'CDs', cassette: 'Tapes' } as const;
+
+/** The ordinary Buy action of a stocked chapter, named and marked by the edition's format. */
+function HomeBuyAction({ href, option }: { href: string; option: string }) {
+  const format = tracklistFormat(option);
+  return (
+    <a href={href} data-astro-prefetch className={buttonVariants({ className: 'purchase-action' })}>
+      {format === 'vinyl' ? (
+        <Disc3 className="release-vinyl-icon" size={18} aria-hidden="true" />
+      ) : format ? (
+        <StoreBuyIcon formatGroup={buyIconGroups[format]} />
+      ) : null}
+      <span>{format ? buyLabels[format] : 'Buy'}</span>
+    </a>
+  );
+}
 
 // The section is in the server HTML or absent; hydration adds media, viewing and decorative press behavior.
 export default function StorePreorderShowcase({ items, storeUrl }: { items: ShowcaseItem[]; storeUrl: string }) {
@@ -128,11 +146,12 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
 
   const ambientAllowed = automaticMotion && documentVisible && !playerSession && watching === null;
   if (items.length === 0) return null;
+  const onlyPreorders = items.every((item) => item.offer === 'preorder');
   return (
     <section ref={section} id="preorders" className="home-preorders" aria-labelledby="home-preorders-title">
-      {/* Each chapter's Pre-order action says what these are; the title stays for assistive technology. */}
+      {/* Each chapter's action says what these are; the title stays for assistive technology. */}
       <h2 id="home-preorders-title" className="sr-only">
-        Pre-orders
+        {onlyPreorders ? 'Pre-orders' : 'Featured releases'}
       </h2>
       {items.map((item, index) => (
         <PreorderChapter
@@ -147,9 +166,15 @@ export default function StorePreorderShowcase({ items, storeUrl }: { items: Show
           automaticMotion={automaticMotion}
         />
       ))}
-      <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
-        All pre-orders
-      </a>
+      {items.some((item) => item.offer === 'preorder') ? (
+        <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
+          All pre-orders
+        </a>
+      ) : (
+        <a href={storeUrl.split('#')[0]} data-astro-prefetch className="home-preorders__all">
+          Visit the Store
+        </a>
+      )}
     </section>
   );
 }
@@ -278,9 +303,15 @@ function PreorderChapter({
   const background = (desktopVideo && clip?.backgroundVideoDesktopUrl) || clip?.backgroundVideoUrl;
   const manuallyPaused = Boolean(clip && pausedClips.includes(clip.id));
   const shouldPlay = Boolean(background && active && !failed && !autoplayBlocked && !manuallyPaused);
-  const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
+  const isPreorder = item.offer === 'preorder';
+  const soldOut = item.offer === 'sold_out';
+  const estimate = item.offer === 'preorder' && item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
   const shipping = estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed';
-  const badges = preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() });
+  // A stocked or sold-out chapter is a released item: no pre-order badges, only a quiet Out now.
+  const badges =
+    item.offer === 'preorder'
+      ? preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() })
+      : [];
   const chapterId = 'preorder-' + item.slug;
   const watchId = chapterId + '-video';
   const sessionNoteId = chapterId + '-player-note';
@@ -375,14 +406,18 @@ function PreorderChapter({
   );
   const badgeList = (
     <div className="home-preorders__badges">
-      {badges.map((badge) => (
-        <span
-          key={badge}
-          className={badge === DIGITAL_RELEASE_BADGE ? 'store-item-card__release-status' : 'preorder-badge'}
-        >
-          {badge}
-        </span>
-      ))}
+      {isPreorder ? (
+        badges.map((badge) => (
+          <span
+            key={badge}
+            className={badge === DIGITAL_RELEASE_BADGE ? 'store-item-card__release-status' : 'preorder-badge'}
+          >
+            {badge}
+          </span>
+        ))
+      ) : (
+        <span className="home-preorders__out-now">Out now</span>
+      )}
     </div>
   );
   // The shell owns this trigger's session state, label and disabled flag and may set them before hydration.
@@ -412,18 +447,24 @@ function PreorderChapter({
     <div className="home-preorders__purchase">
       <div className="home-preorders__price-block">
         <span className="home-preorders__option">{item.option}</span>
-        <span className="home-preorders__price">{item.displayPrice}</span>
+        {item.displayPrice && <span className="home-preorders__price">{item.displayPrice}</span>}
       </div>
       <div className="home-preorders__actions">
-        <HomePreorderAction href={item.storePath} />
+        {isPreorder ? (
+          <HomePreorderAction href={item.storePath} />
+        ) : soldOut ? (
+          <span className="home-preorders__sold-out">Sold out</span>
+        ) : (
+          <HomeBuyAction href={item.storePath} option={item.option} />
+        )}
         {listen}
       </div>
-      {!badges.some((badge) => estimate && badge.includes(estimate)) && (
+      {isPreorder && !badges.some((badge) => estimate && badge.includes(estimate)) && (
         <p className="home-preorders__shipping">
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
       )}
-      {hydrated && (
+      {hydrated && !soldOut && (
         <Suspense fallback={null}>
           <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
         </Suspense>
@@ -432,7 +473,7 @@ function PreorderChapter({
   );
   const terms = (
     <a href={createProjectRelativeUrl('/terms/')} data-astro-prefetch className="home-preorders__terms">
-      Pre-order &amp; delivery information
+      {isPreorder ? 'Pre-order & delivery information' : 'Delivery information'}
     </a>
   );
 
@@ -643,10 +684,12 @@ function PreorderChapter({
                 <dt>Recorded and mixed</dt>
                 <dd>{item.recording ?? 'To be confirmed'}</dd>
               </div>
-              <div>
-                <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
-                <dd>{shipping}</dd>
-              </div>
+              {isPreorder && (
+                <div>
+                  <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
+                  <dd>{shipping}</dd>
+                </div>
+              )}
             </dl>
             {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
             {terms}

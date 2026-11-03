@@ -10,7 +10,7 @@ import { SwipeRowDots } from '@/components/ui/swipe-row-dots';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent, getLabelSettings } from '@/lib/site-data';
-import { readOpenPreorders } from '@/lib/open-preorders';
+import { readHomeOffers, readOpenPreorders } from '@/lib/open-preorders';
 import { preorderShowcaseItems } from './_preorder-showcase';
 import heroFilmLandscapeUrl from './_assets/home-hero/home-hero-intro-landscape.mp4?url';
 import heroFilmPortraitUrl from './_assets/home-hero/home-hero-intro-portrait.mp4?url';
@@ -27,7 +27,7 @@ const homeArtists = homeContent.artists;
 const videoTest = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 const preorderItems = videoTest
   ? (await import('./_preorder-video-test')).preorderVideoTestItems()
-  : await preorderShowcaseItems(readOpenPreorders());
+  : await preorderShowcaseItems(readOpenPreorders(), readHomeOffers());
 ---
 
 <SiteLayout

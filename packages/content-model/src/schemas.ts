@@ -82,6 +82,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     title: requiredText,
     artist: references.artist,
     release_stage: z.enum(['upcoming', 'released']).optional(),
+    show_on_home: z.boolean().optional(),
     releases_priority: z.preprocess(
       (value) => (value === '' || value === null ? undefined : value),
       z.number().int().positive('Use a whole number starting at 1.').optional(),

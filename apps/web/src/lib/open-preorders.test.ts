@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readOpenPreorders } from './open-preorders';
+import { readHomeOffers, readOpenPreorders } from './open-preorders';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -10,6 +10,7 @@ describe('open pre-order reader outside the hosted renderer', () => {
   it('claims no open pre-orders without a fixture', () => {
     vi.stubEnv('BLACKBOX_PREORDER_PROJECTION', '');
     expect(readOpenPreorders()).toEqual([]);
+    expect(readHomeOffers()).toEqual([]);
   });
 
   it('reads the fixture projection named by BLACKBOX_PREORDER_PROJECTION', () => {
@@ -19,6 +20,14 @@ describe('open pre-order reader outside the hosted renderer', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'preorders-')), 'projection.json');
     writeFileSync(file, JSON.stringify({ items }));
     vi.stubEnv('BLACKBOX_PREORDER_PROJECTION', file);
+    expect(readOpenPreorders()).toEqual(items);
+    expect(readHomeOffers()).toEqual([]);
+    const homeOffers = [
+      { storeItemSlug: 'afterwise-vinyl', availability: 'stocked', displayPrice: '€28.00' },
+      { storeItemSlug: 'sold-out-vinyl', availability: 'sold_out', displayPrice: null },
+    ];
+    writeFileSync(file, JSON.stringify({ items, homeOffers }));
+    expect(readHomeOffers()).toEqual(homeOffers);
     expect(readOpenPreorders()).toEqual(items);
   });
 });
