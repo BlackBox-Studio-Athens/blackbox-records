@@ -1,22 +1,8 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { ContentRepository, RevisionRepository } from 'emdash';
 import { backfillReleaseCatalogNumbers } from './catalog-number-backfill';
+import { catalogNumberBackfillFixture as fixture } from './catalog-number-backfill.test-support';
 
 afterEach(() => vi.restoreAllMocks());
-
-function fixture(slugs = ['caregivers', 'anarchotribal', 'disintegration', 'lotus']) {
-  const items = slugs.map((slug) => ({ id: `cms-${slug}`, slug, draftRevisionId: `draft-${slug}`, data: {} }));
-  const saved = new Map(
-    items.map((item) => [
-      item.draftRevisionId,
-      { collection: 'releases', entryId: item.id, data: { title: `Private ${item.slug}` } },
-    ]),
-  );
-  const find = vi.spyOn(ContentRepository.prototype, 'findMany').mockResolvedValue({ items } as never);
-  vi.spyOn(RevisionRepository.prototype, 'findById').mockImplementation(async (id) => saved.get(id) as never);
-  const update = vi.spyOn(ContentRepository.prototype, 'updateDraftAware').mockResolvedValue({} as never);
-  return { items, saved, find, update };
-}
 
 test('backfill checks the whole inventory by default and stages only missing fields through native draft-aware writes', async () => {
   const { update, saved } = fixture();

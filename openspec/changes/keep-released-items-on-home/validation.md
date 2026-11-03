@@ -15,4 +15,6 @@ Evidence from the local working tree on `main`, 2026-11-03. Local validation doe
 
 ## UAT
 
-Recorded after the push to `main` deploys UAT (task 4.3).
+- Candidate `90a98e49` on `main`: the Release BlackBox run passed every job (typecheck, lint, tests, build, e2e 1-4, e2e-webkit, staff previews, deploy-uat with hosted verification and static smoke). UAT serves this candidate.
+- First UAT attempt (staff): publishing Afterwise failed. The review listed missing details, which matches the existing publish rule (physical condition New or Used, and a catalog number, are required before a release can publish). It is not caused by this change: Local reproduction with real EmDash published Show on Home on and off, with a stocked release and with an open pre-order, once those fields were set. The Local run also showed the chapter appear and leave on public Home.
+- Not yet recorded (task 4.3): Afterwise switched on and then off in the UAT staff editor, with the Home chapter and its Buy vinyl action checked in both states. This needs a staff action and a content publication on UAT.

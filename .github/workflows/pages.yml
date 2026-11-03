@@ -233,6 +233,7 @@ jobs:
           pnpm --filter @blackbox/backend cms:application-migrations --env uat --apply
           node apps/backend/scripts/migrate-cms.mjs --env uat --wrangler-config ../../.codex-artifacts/release/uat/cms/server/wrangler.json --manifest ../../.codex-artifacts/release/uat/cms/migrations.json --apply
           pnpm --filter @blackbox/backend cms:catalog-schema --env uat
+          pnpm --filter @blackbox/backend cms:catalog-schema --env uat --stage-publish-required --apply
       - name: Deploy UAT Workers
         env: *cloudflare
         run: |

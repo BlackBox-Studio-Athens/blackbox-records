@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { getPlatformProxy } from 'wrangler';
 import { prepareCatalogSchema } from '../src/cms/catalog-schema.ts';
 import { backfillReleaseCatalogNumbers } from '../src/cms/catalog-number-backfill.ts';
+import { stageUatPublishRequiredDetails } from '../src/cms/uat-publish-readiness.ts';
 
 // Release step: runs the same idempotent native field setup as the admin-only
 // catalog-schema route, so hosted CMS fields follow deployed code without a
@@ -16,13 +17,17 @@ const { values } = parseArgs({
     'persist-to': { type: 'string' },
     'confirm-live-cms-changes': { type: 'boolean', default: false },
     'backfill-catalog-numbers': { type: 'boolean', default: false },
+    'stage-publish-required': { type: 'boolean', default: false },
     apply: { type: 'boolean', default: false },
   },
 });
 if (!['local', 'uat', 'prd'].includes(values.env)) throw new Error('Select local, uat or prd.');
 const local = values.env === 'local';
-if (values.apply && !values['backfill-catalog-numbers'])
-  throw new Error('--apply requires --backfill-catalog-numbers.');
+if (values['stage-publish-required'] && values.env !== 'uat') throw new Error('--stage-publish-required is UAT-only.');
+if (values['stage-publish-required'] && values['backfill-catalog-numbers'])
+  throw new Error('Select either --stage-publish-required or --backfill-catalog-numbers.');
+if (values.apply && !values['backfill-catalog-numbers'] && !values['stage-publish-required'])
+  throw new Error('--apply requires --backfill-catalog-numbers or --stage-publish-required.');
 if (!local && values['persist-to']) throw new Error('--persist-to is Local-only.');
 if (values.env === 'prd' && !values['confirm-live-cms-changes'])
   throw new Error('PRD catalog schema preparation requires one-run --confirm-live-cms-changes.');
@@ -65,6 +70,10 @@ try {
   if (values['backfill-catalog-numbers']) {
     console.log(
       JSON.stringify({ environment: values.env, ...(await backfillReleaseCatalogNumbers(db, values.apply)) }),
+    );
+  } else if (values['stage-publish-required']) {
+    console.log(
+      JSON.stringify({ environment: values.env, ...(await stageUatPublishRequiredDetails(db, values.apply)) }),
     );
   } else {
     const fieldsBefore = await fieldCount();
