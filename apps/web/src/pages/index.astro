@@ -25,9 +25,12 @@ const homeNews = homeContent.news;
 const homeArtists = homeContent.artists;
 // Pre-orders are in this HTML or absent; nothing is inserted after paint.
 const videoTest = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
-const preorderItems = videoTest
+const showcaseItems = await preorderShowcaseItems(readOpenPreorders(), readHomeOffers());
+// UAT shows its real chapters; the sample films only fill in while it has none, so its scroll tooling has footage.
+const sampleChapters = videoTest && showcaseItems.length === 0;
+const preorderItems = sampleChapters
   ? (await import('./_preorder-video-test')).preorderVideoTestItems()
-  : await preorderShowcaseItems(readOpenPreorders(), readHomeOffers());
+  : showcaseItems;
 ---
 
 <SiteLayout
@@ -279,7 +282,7 @@ const preorderItems = videoTest
     film={{ portraitUrl: heroFilmPortraitUrl, landscapeUrl: heroFilmLandscapeUrl }}
   />
 
-  {videoTest && (
+  {sampleChapters && (
     <p class="layout-container mt-6 text-sm" role="status">
       Video playback test. Sample pre-order details; purchase links open the UAT Store.
       <strong class="block" data-home-scroll-check-note hidden></strong>

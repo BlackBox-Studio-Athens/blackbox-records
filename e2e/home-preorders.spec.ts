@@ -16,36 +16,12 @@ import {
 const storePath = /\/store\/disintegration-black-vinyl-lp\/$/;
 const acceptedImage = /\/_image\?|\/_astro\/|\/media\/content\/[a-f\d]{64}$/;
 
-test('Home defaults to sample films only with the UAT build marker @phone', async ({ page }) => {
-  await page.route('https://images.blackboxrecordsathens.com/**', (route) =>
-    route.fulfill({
-      contentType: 'image/svg+xml',
-      body: '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720"><rect width="720" height="720" fill="#141414"/></svg>',
-    }),
-  );
+test('Home shows its real chapters, never the sample films, while the projection has any @phone', async ({ page }) => {
   await page.goto('./');
   await waitForShell(page);
-  const note = page.getByText('Video playback test. Sample pre-order details; purchase links open the UAT Store.');
-  if (process.env.SHOW_REVIEW_SITE_MARKER !== 'true') {
-    await expect(note).toHaveCount(0);
-    await expect(page.locator('#preorder-uat-video-lotus')).toHaveCount(0);
-    return;
-  }
-  await expect(note).toBeVisible();
-  await expect(page.locator('#preorders video')).toHaveCount(2);
-  await waitForIsland(page, 'StorePreorderShowcase');
-  for (const slug of ['lotus', 'disintegration']) {
-    const video = page.locator(`#preorder-uat-video-${slug} video`);
-    await video.scrollIntoViewIfNeeded();
-    await expect(video).toHaveAttribute('data-playing', 'true');
-    const time = await video.evaluate((media: HTMLVideoElement) => media.currentTime);
-    await expect.poll(() => video.evaluate((media: HTMLVideoElement) => media.currentTime)).not.toBe(time);
-  }
-  await page.reload();
-  await waitForIsland(page, 'StorePreorderShowcase');
-  const video = page.locator('#preorder-uat-video-disintegration video');
-  await video.scrollIntoViewIfNeeded();
-  await expect(video).toHaveAttribute('data-playing', 'true');
+  await expect(page.getByText('Video playback test. Sample pre-order details')).toHaveCount(0);
+  await expect(page.locator('#preorder-uat-video-lotus')).toHaveCount(0);
+  await expect(page.locator('#preorder-disintegration-black-vinyl-lp')).toBeVisible();
 });
 
 // Exercise the shipped component and real media without changing accepted Local catalog content.
