@@ -753,7 +753,8 @@ export default function ContentFields({
             data-content-path="show_on_home"
             type="checkbox"
             role="switch"
-            checked={openPreorder || data.show_on_home === true}
+            // EmDash returns its native boolean as 1 once saved.
+            checked={openPreorder || data.show_on_home === true || data.show_on_home === 1}
             disabled={disabled || openPreorder}
             aria-labelledby="content-show_on_home-label"
             aria-describedby="content-show_on_home-description"

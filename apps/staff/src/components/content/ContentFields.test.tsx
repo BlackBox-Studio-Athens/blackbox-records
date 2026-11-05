@@ -516,6 +516,8 @@ test('a release offers a named Show on Home switch that is off until staff turn 
   expect(off).toContain('aria-labelledby="content-show_on_home-label"');
   expect(off).not.toContain('checked');
   expect(switchOf({ title: 'Record', show_on_home: true })).toContain('checked');
+  expect(switchOf({ title: 'Record', show_on_home: 1 })).toContain('checked');
+  expect(switchOf({ title: 'Record', show_on_home: 0 })).not.toContain('checked');
   expect(renderCondition('distro', { title: 'Tape', group: 'Tapes' }).markup).not.toContain('Show on Home');
 });
 
