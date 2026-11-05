@@ -22,7 +22,7 @@
 
 - [x] 4.1 Update `DESIGN.md` (and `docs/backoffice-design.md` for the staff switch) where they describe Home chapters as pre-order only. Verify with `pnpm agent:check`.
 - [ ] 4.2 Measure the projection payload and the Home render on the current catalog against `docs/cloudflare-free-tier.md`. Verify by recording the payload size and the unchanged push, purge and storage-write counts for a stock-count-only change in `validation.md`.
-- [ ] 4.3 Run `pnpm validate` on the final tree and verify on UAT with Afterwise switched on and then off, recording the exact candidate and results in `validation.md`. Do not claim production or hosted acceptance from local validation alone.
+- [x] 4.3 Run `pnpm validate` on the final tree and verify on UAT with Afterwise switched on and then off, recording the exact candidate and results in `validation.md`. Do not claim production or hosted acceptance from local validation alone.
 
 ## Workflow follow-up
 
