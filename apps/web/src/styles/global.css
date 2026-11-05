@@ -6894,34 +6894,25 @@ body.is-app-shell-overlay-open {
   margin: 0 0 2.25rem;
 }
 
-/* Wide screens: facts across, then the summary beside the purchase column and its terms link. */
+/* The offer, its Listen pair and the terms link sit in the hero identity; below it come the facts and the summary. */
 .home-preorders__buy {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 17.5rem;
-  align-items: start;
-  column-gap: 4rem;
+  grid-template-columns: minmax(0, 1fr);
   max-width: 81.25rem;
   margin-inline: auto;
   padding: 0 var(--home-preorders-gutter) 2.5rem;
 }
 
 @media (min-width: 50.0625rem) {
-  .home-preorders__buy > .home-preorders__facts {
-    grid-column: 1 / -1;
+  .home-preorders__identity .home-preorders__price-block {
+    justify-content: flex-start;
+    gap: 1.125rem;
+    margin: 1rem 0 0.875rem;
   }
 
-  .home-preorders__buy > .home-preorders__purchase {
-    grid-row: 2;
-    grid-column: 2;
-  }
-
-  .home-preorders__buy > .home-preorders__summary {
-    grid-row: 2 / span 2;
-    grid-column: 1;
-  }
-
-  .home-preorders__buy > .home-preorders__terms {
-    grid-column: 2;
+  .home-preorders__identity .home-preorders__actions {
+    width: 22rem;
+    max-width: 100%;
   }
 }
 
@@ -7108,8 +7099,11 @@ body.is-app-shell-overlay-open {
     text-align: left;
   }
 
+  .home-preorders__identity > :is(.home-preorders__purchase, .home-preorders__terms) {
+    grid-column: 1 / -1;
+  }
+
   .home-preorders__buy {
-    grid-template-columns: minmax(0, 1fr);
     padding: 1.25rem 0 2rem;
   }
 
@@ -7163,7 +7157,7 @@ body.is-app-shell-overlay-open {
    sleeve. Each chapter is one grid: its wrappers use display: contents, so film and photo chapters share it. The facts
    and summary stay on the Store Item page. */
 @media (width >= 48rem) {
-  .home-preorders__buy .home-preorders__shipping {
+  .home-preorders__identity .home-preorders__shipping {
     display: none;
   }
 }
@@ -7384,15 +7378,12 @@ body.is-app-shell-overlay-open {
     border-color: var(--flint-400);
   }
 
-  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
-    .home-preorders__actions {
+  .home-preorders__chapter--video .home-preorders__actions {
     width: 10.5rem;
     max-width: 100%;
   }
 
-  .home-preorders__chapter:is(.home-preorders__chapter--video, .home-preorders__chapter--photo)
-    .home-preorders__actions
-    > .home-preorders__listen {
+  .home-preorders__chapter--video .home-preorders__actions > .home-preorders__listen {
     display: none;
   }
 
@@ -7433,27 +7424,6 @@ body.is-app-shell-overlay-open {
   .home-preorders__chapter--photo .home-preorders__band-photo {
     object-fit: contain;
     object-position: center;
-  }
-
-  /* Media and grid placement share the >800px boundary, including fractional viewport widths. */
-  .home-preorders__chapter--photo .home-preorders__facts--still {
-    grid-row: 1;
-    grid-column: 1 / -1;
-  }
-
-  .home-preorders__chapter--photo .home-preorders__purchase {
-    grid-row: 2;
-    grid-column: 2;
-  }
-
-  .home-preorders__chapter--photo .home-preorders__summary {
-    grid-row: 2 / span 2;
-    grid-column: 1;
-  }
-
-  .home-preorders__chapter--photo .home-preorders__buy > .home-preorders__terms {
-    grid-row: 3;
-    grid-column: 2;
   }
 }
 

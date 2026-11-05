@@ -280,7 +280,8 @@ describe('StorePreorderShowcase presentation', () => {
           }),
         ]),
       );
-      const placements = candidate === cover ? 1 : 2;
+      // Only the film chapter keeps a second Listen in its film tools; the others pair it with the offer action.
+      const placements = candidate === clip ? 2 : 1;
       expect(html.match(/data-music-listen-source-id="same-source"/g)).toHaveLength(placements);
       expect(
         html.match(

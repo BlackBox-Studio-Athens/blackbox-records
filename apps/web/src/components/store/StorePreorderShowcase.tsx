@@ -453,7 +453,7 @@ function PreorderChapter({
       </span>
     </button>
   );
-  // Preserve the mobile pair; desktop film/photo chapters expose Listen in their media composition.
+  // Listen pairs with the offer action; the desktop film chapter moves it into its film tools.
   const purchase = (
     <div className="home-preorders__purchase">
       <div className="home-preorders__price-block">
@@ -676,12 +676,12 @@ function PreorderChapter({
                   {item.title}
                 </h3>
                 {badgeList}
-                {item.artistPhotoUrl && listen && <div className="home-preorders__desktop-listen">{listen}</div>}
+                {purchase}
+                {terms}
               </div>
             </div>
           </div>
           <div className="home-preorders__buy">
-            {purchase}
             <dl className="home-preorders__facts home-preorders__facts--still">
               <div>
                 <dt>Format</dt>
@@ -703,7 +703,6 @@ function PreorderChapter({
               )}
             </dl>
             {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
-            {terms}
           </div>
         </>
       )}

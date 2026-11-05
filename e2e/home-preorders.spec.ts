@@ -387,7 +387,10 @@ for (const variant of ['video', 'photo', 'cover'] as const) {
       if (wide) {
         expect(box.x).toBeCloseTo(0, 0);
         expect(box.width).toBeCloseTo(width, 0);
-        await expect(release.locator('.home-preorders__actions .home-preorders__listen')).toBeHidden();
+        // The film chapter moves Listen into its film tools; the photo chapter keeps it beside the offer action.
+        const pairedListen = release.locator('.home-preorders__actions .home-preorders__listen');
+        if (variant === 'video') await expect(pairedListen).toBeHidden();
+        else await expect(pairedListen).toBeVisible();
         for (const action of [preorder, listen]) {
           expect((await action.boundingBox())!.width).toBeCloseTo(168, 0);
           expect((await action.boundingBox())!.height).toBeCloseTo(44, 0);
@@ -402,8 +405,9 @@ for (const variant of ['video', 'photo', 'cover'] as const) {
             .locator('.home-preorders__still-scene')
             .evaluate((scene) => getComputedStyle(scene, '::before').backgroundImage);
           expect(fill).toContain(await photo.getAttribute('src'));
-          // Read related positions together so resize scroll anchoring cannot change their coordinate origin.
-          const { facts, summary, purchase } = await release.evaluate((chapter) => {
+          // The offer sits in the hero beside the cover, above the facts and the summary. Read the positions together
+          // so resize scroll anchoring cannot change their coordinate origin.
+          const { facts, summary, purchase, cover } = await release.evaluate((chapter) => {
             const rect = (selector: string) => {
               const box = chapter.querySelector(selector)!.getBoundingClientRect();
               return { x: box.x, y: box.y, height: box.height };
@@ -411,12 +415,13 @@ for (const variant of ['video', 'photo', 'cover'] as const) {
             return {
               facts: rect('dl'),
               summary: rect('.home-preorders__summary'),
-              purchase: rect('.home-preorders__purchase'),
+              purchase: rect('.home-preorders__identity .home-preorders__purchase'),
+              cover: rect('.home-preorders__still-art'),
             };
           });
           expect(summary.y).toBeGreaterThanOrEqual(facts.y + facts.height);
-          expect(purchase.y).toBeGreaterThanOrEqual(facts.y + facts.height);
-          expect(summary.x).toBeLessThan(purchase.x);
+          expect(purchase.y + purchase.height).toBeLessThanOrEqual(facts.y);
+          expect(purchase.x).toBeGreaterThan(cover.x);
         } else {
           expect((await release.locator('.home-preorders__film-scene').boundingBox())!.height).toBeGreaterThanOrEqual(
             920,
@@ -447,9 +452,7 @@ for (const variant of ['video', 'photo', 'cover'] as const) {
         const next =
           variant === 'video'
             ? release.getByRole('button', { name: 'Watch full video' })
-            : variant === 'photo'
-              ? preorder
-              : release.getByRole('link', { name: 'Pre-order & delivery information' });
+            : release.getByRole('link', { name: 'Pre-order & delivery information' });
         await expect(next).toBeFocused();
         await page.addStyleTag({ content: 'html { font-size: 32px !important; }' });
         await expectNoHorizontalOverflow(page);
@@ -828,10 +831,7 @@ test('Home Soft edge stays readable at required widths and enlarged text', async
       expect(controls).toHaveLength(2);
       if (width <= 800) expect(controls[0]!.width).toBeCloseTo(controls[1]!.width, 0);
       else {
-        await expect(pair.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0);
-        await expect(
-          chapter(page).locator('.home-preorders__identity').getByRole('button', { name: 'Listen', exact: true }),
-        ).toBeVisible();
+        await expect(pair.getByRole('button', { name: 'Listen', exact: true })).toBeVisible();
       }
       for (const control of controls) {
         expect(control.height).toBeGreaterThanOrEqual(44);
