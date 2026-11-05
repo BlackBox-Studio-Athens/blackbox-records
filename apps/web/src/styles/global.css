@@ -6910,7 +6910,10 @@ body.is-app-shell-overlay-open {
     margin: 1rem 0 0.875rem;
   }
 
+  /* The pair stacks when enlarged text leaves the hero column too narrow for two 10.5rem buttons. */
   .home-preorders__identity .home-preorders__actions {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
     width: 22rem;
     max-width: 100%;
   }
