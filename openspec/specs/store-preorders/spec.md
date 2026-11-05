@@ -326,13 +326,44 @@ When staff change the Ship Estimate of an open pre-order, each Awaiting Stock or
 
 ### Requirement: The home page presents current pre-orders
 
-The home page SHALL show a Pre-orders section after its existing introduction and above News only while the rendered open pre-order projection lists a label-release pre-order. The section SHALL be in the page's HTML response, never inserted after paint. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent.
+The home page SHALL show a release chapters section after its existing introduction and above News only while the rendered projection lists a label-release pre-order, or lists a Home offer for a release that staff switched on for Home. The section keeps its Pre-orders anchor and its hidden heading names it for assistive technology. The section SHALL be in the page's HTML response, never inserted after paint. It SHALL present the approved cinematic video and artist-photo release chapters with sharp complete artwork, truthful price/status and real Store links. Open pre-orders come first, then switched-on releases, newest release date first. It SHALL add no content when none exists and SHALL NOT contact a video provider before explicit viewing intent.
 
 #### Scenario: Pre-orders exist
 
-- **WHEN** the projection lists at least one release-sourced Store Item
+- **WHEN** the projection lists at least one release-sourced Store Item on an open pre-order
 - **THEN** the Home HTML contains the section, presenting current releases as successive chapters with badges and price, links to each Store Item page and to the Store with the Pre-orders filter on
 - **AND** the existing Home introduction remains unchanged, the feature precedes News, and a single release has no dead next-release link.
+
+#### Scenario: A switched-on release has no open pre-order
+
+- **WHEN** staff switched on Show on Home for a release whose Store Item has a Home offer and no open pre-order
+- **THEN** the Home HTML contains its chapter after any pre-order chapters, with the same video or photo composition, artist, title, Listen and Watch full video as when it was a pre-order
+- **AND** a release that is switched on but has no Home offer, or is not switched on and has no open pre-order, has no chapter
+
+#### Scenario: An in-stock chapter shows an ordinary Buy action
+
+- **WHEN** a chapter's Home offer is stocked
+- **THEN** its action is a format-aware Buy action (Buy vinyl, Buy CD, Buy cassette, otherwise Buy) in the Buy colour, with the disc icon for vinyl, linking to the Store Item page
+- **AND** it shows a muted Out now status with no pre-order badge and no stock count, no shipping estimate line, and a Delivery information terms link to the same terms page
+- **AND** the Sea Pre-order colour and wording never appear on it
+
+#### Scenario: A sold-out chapter has no action
+
+- **WHEN** a chapter's Home offer is sold out
+- **THEN** the purchase slot shows the static Sold out status with the Flint edge and no action, with the muted Out now status and the Delivery information link
+- **AND** Listen and Watch full video remain, and the chapter shows the Store listing's price text only when the listing shows one
+
+#### Scenario: A chapter changes state
+
+- **WHEN** a chapter's pre-order closes, or its copies sell out, in a later projection
+- **THEN** the next render shows the matching state without moving the chapter's media, title or Listen
+- **AND** the live offer read on the Store Item page remains the authority for what a shopper can buy
+
+#### Scenario: The section link follows the chapters
+
+- **WHEN** at least one chapter is a pre-order
+- **THEN** the closing link reads All pre-orders and opens the Store with the Pre-orders filter on
+- **AND** otherwise it reads Visit the Store and opens the Store without a pre-order filter
 
 #### Scenario: Home is painted
 
@@ -408,7 +439,7 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 
 #### Scenario: No pre-orders or a failed read
 
-- **WHEN** the projection lists no release-sourced pre-order, or the renderer holds no projection
+- **WHEN** the projection lists no release-sourced pre-order and no Home offer for a switched-on release, or the renderer holds no projection
 - **THEN** the Home HTML has no section and News follows the hero as today
 - **AND** cached artwork never establishes price, stock or buying eligibility; pressing a pre-order link still reaches the Store Item page and its authoritative offer read.
 
