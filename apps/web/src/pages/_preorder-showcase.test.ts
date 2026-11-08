@@ -252,13 +252,21 @@ describe('Home pre-order showcase items', () => {
   });
 
   it('keeps each compiled native backdrop below the 900 kB delivery budget', () => {
-    for (const filename of ['sidus-embrace-the-void-loop.mp4', 'afterwise-equilibrium-loop.mp4']) {
+    for (const filename of [
+      'sidus-embrace-the-void-loop.mp4',
+      'afterwise-equilibrium-loop.mp4',
+      'ouranopithecus-montagu-loop.mp4',
+    ]) {
       const asset = new URL('./_assets/video-posters/' + filename, import.meta.url);
       expect(statSync(asset).size).toBeLessThan(900_000);
     }
   });
   it('bounds the separately selected desktop backdrops to 4 MiB each', () => {
-    for (const filename of ['sidus-embrace-the-void-loop-desktop.mp4', 'afterwise-equilibrium-loop-desktop.mp4']) {
+    for (const filename of [
+      'sidus-embrace-the-void-loop-desktop.mp4',
+      'afterwise-equilibrium-loop-desktop.mp4',
+      'ouranopithecus-montagu-loop-desktop.mp4',
+    ]) {
       expect(statSync(new URL('./_assets/video-posters/' + filename, import.meta.url)).size).toBeLessThan(
         4 * 1024 * 1024,
       );

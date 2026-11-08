@@ -10,6 +10,9 @@ import sidusBackgroundVideoDesktopUrl from './_assets/video-posters/sidus-embrac
 import afterwiseVideoPoster from './_assets/video-posters/afterwise-equilibrium.jpg';
 import afterwiseBackgroundVideoUrl from './_assets/video-posters/afterwise-equilibrium-loop.mp4?url';
 import afterwiseBackgroundVideoDesktopUrl from './_assets/video-posters/afterwise-equilibrium-loop-desktop.mp4?url';
+import ouranopithecusVideoPoster from './_assets/video-posters/ouranopithecus-montagu.jpg';
+import ouranopithecusBackgroundVideoUrl from './_assets/video-posters/ouranopithecus-montagu-loop.mp4?url';
+import ouranopithecusBackgroundVideoDesktopUrl from './_assets/video-posters/ouranopithecus-montagu-loop-desktop.mp4?url';
 
 // Covers fill at most a 21.25rem slot and share the Store card widths (one cached transform per cover); band photos
 // span the viewport.
@@ -32,6 +35,14 @@ const preparedClips = new Map([
       poster: afterwiseVideoPoster,
       backgroundVideoUrl: afterwiseBackgroundVideoUrl,
       backgroundVideoDesktopUrl: afterwiseBackgroundVideoDesktopUrl,
+    },
+  ],
+  [
+    'T_Bsh__tQXU',
+    {
+      poster: ouranopithecusVideoPoster,
+      backgroundVideoUrl: ouranopithecusBackgroundVideoUrl,
+      backgroundVideoDesktopUrl: ouranopithecusBackgroundVideoDesktopUrl,
     },
   ],
 ]);
