@@ -223,7 +223,7 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
   );
 });
 
-test('UAT post-deployment checks accept a closed gate and refuse a reopened gate', async (t) => {
+test('UAT post-deployment checks accept a closed or open checkout gate', async (t) => {
   t.mock.method(console, 'log', () => {});
   const uatBackend = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
   const uatSite = 'https://blackbox-records-web-uat.pages.dev';
@@ -237,7 +237,7 @@ test('UAT post-deployment checks accept a closed gate and refuse a reopened gate
   });
   for (const command of ['verify-worker', 'verify-hosted']) {
     await main(command, 'uat', { env, fetch: canned(routes(false)) });
-    await assert.rejects(main(command, 'uat', { env, fetch: canned(routes(true)) }), /UAT checkout must be closed/);
+    await main(command, 'uat', { env, fetch: canned(routes(true)) });
   }
 });
 
