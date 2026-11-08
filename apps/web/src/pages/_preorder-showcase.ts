@@ -19,7 +19,7 @@ import ouranopithecusBackgroundVideoDesktopUrl from './_assets/video-posters/our
 const coverWidths = [360, 720];
 const photoWidths = [800, 1200, 1800];
 
-// ponytail: reviewed exact-ID backdrops; prepare a small loop and poster before adding another.
+// ponytail: reviewed exact-ID backdrops (Sidus, Afterwise, Ouranopithecus); prepare a small loop and poster before adding another.
 const preparedClips = new Map([
   [
     'MOA5YZDOR6A',
