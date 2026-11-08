@@ -7,11 +7,11 @@
 - Loop restart: output starts 0.75s into the montage and dissolves its final 0.75s into the opening 0.75s (Sidus wrap method). Duration 13.5s.
 - Desktop: 1920x1080 H.264 CRF20, 24fps, 2000k maxrate/4000k buffer, yuv420p, no audio, +faststart. Mobile: 1280x720 CRF25, 500k maxrate/1000k buffer, otherwise the same. Poster: opening frame at 1280x720.
 
-| File | Bytes | SHA-256 |
-| --- | --- | --- |
+| File                                    | Bytes   | SHA-256                                                            |
+| --------------------------------------- | ------- | ------------------------------------------------------------------ |
 | ouranopithecus-montagu-loop-desktop.mp4 | 3550860 | `424f9c616b5be04e72565fa5408558979d3aab50d81bb67dc8a78cdff350765c` |
-| ouranopithecus-montagu-loop.mp4 | 890459 | `1a5c5278abb952818045fde1c856ed10b40163083ea71f5099728f5b929cd87e` |
-| ouranopithecus-montagu.jpg | 21682 | `c33b9192f9076ac016dd1787025589848dfd1d3299f195e371f1f1debd61e1ac` |
+| ouranopithecus-montagu-loop.mp4         | 890459  | `1a5c5278abb952818045fde1c856ed10b40163083ea71f5099728f5b929cd87e` |
+| ouranopithecus-montagu.jpg              | 21682   | `c33b9192f9076ac016dd1787025589848dfd1d3299f195e371f1f1debd61e1ac` |
 
 ## Checks
 
