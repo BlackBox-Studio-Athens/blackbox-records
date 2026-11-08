@@ -1,5 +1,11 @@
 import { test, expect, type Page } from 'playwright/test';
-import { expectNoHorizontalOverflow, localRepresentativePaths, waitForIsland } from './fixtures';
+import {
+  expectNoHorizontalOverflow,
+  localRepresentativePaths,
+  rememberLocker,
+  useRememberedLocker,
+  waitForIsland,
+} from './fixtures';
 
 const line = {
   availabilityLabel: 'In stock',
@@ -29,6 +35,7 @@ async function seedCart(page: Page, lines: (typeof line)[]) {
   await page.addInitScript((savedLines) => {
     localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines: savedLines }));
   }, lines);
+  await rememberLocker(page);
 }
 
 async function holdHydration(page: Page) {
@@ -134,6 +141,7 @@ for (const mobile of [false, true]) {
     }
     await waitForIsland(page, 'CheckoutOfferStatus');
     await waitForIsland(page, 'CheckoutOrderSummary');
+    await useRememberedLocker(page);
     await expect(summary.getByRole('heading', { name: line.title, exact: true })).toBeVisible();
     const pay = review.locator('[data-checkout-pay-state]');
     await expect(pay).toBeDisabled();
@@ -225,6 +233,7 @@ for (const mobile of [false, true]) {
     for (const summary of await summaries.all())
       await expect(summary.locator('.checkout-summary__identity')).toContainText(line.title);
     const review = page.locator('[data-checkout-offer-status]');
+    await useRememberedLocker(page);
     await expect(review.locator('[data-checkout-pay-state]')).toBeEnabled();
     await expect(review.locator('[data-delivery-summary]')).toContainText('€23.00');
     expect(

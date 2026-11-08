@@ -101,6 +101,24 @@ export async function expectNoHorizontalOverflow(page: Page, message = 'horizont
   expect(overflow, message).toBeLessThanOrEqual(0);
 }
 
+/**
+ * Checkout needs a BOX NOW locker before payment. Tests about other checkout behavior start as a returning shopper
+ * whose device remembers one, so no BOX NOW map loads; call before navigating, then `useRememberedLocker` on checkout.
+ * Locker choice itself is covered by checkout-locker.spec.ts.
+ */
+export async function rememberLocker(page: Page): Promise<void> {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'blackbox-boxnow-last-locker',
+      JSON.stringify({ lockerId: '7721', name: 'BOX NOW Test Locker', postalCode: '10672', countryCode: 'GR' }),
+    ),
+  );
+}
+
+export async function useRememberedLocker(page: Page): Promise<void> {
+  await page.locator('[data-checkout-locker-panel]').getByRole('button', { name: 'Use this locker' }).click();
+}
+
 /** Taps in touch contexts so touch pointer paths run; clicks with the mouse elsewhere. */
 export async function press(locator: Locator, touch: boolean): Promise<void> {
   await (touch ? locator.tap() : locator.click());

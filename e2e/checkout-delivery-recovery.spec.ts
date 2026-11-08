@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright/test';
-import { expectNoHorizontalOverflow, waitForIsland } from './fixtures';
+import { expectNoHorizontalOverflow, rememberLocker, useRememberedLocker, waitForIsland } from './fixtures';
 
 const cart = {
   lines: [
@@ -30,6 +30,7 @@ const quote = {
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript((value) => localStorage.setItem('blackbox.storeCart.v2', JSON.stringify(value)), cart);
+  await rememberLocker(page);
   await page.route('https://fonts.googleapis.com/**', (route) => route.fulfill({ contentType: 'text/css', body: '' }));
   await page.route('https://www.glancelytics.com/**', (route) =>
     route.fulfill({ contentType: 'text/javascript', body: '' }),
@@ -73,6 +74,7 @@ for (const mobile of [false, true]) {
     });
     await page.goto('store/checkout/');
     await waitForIsland(page, 'CheckoutOfferStatus');
+    await useRememberedLocker(page);
     const panel = page.locator('[data-checkout-offer-status]');
     const pay = panel.locator('[data-checkout-pay-state]');
     const retry = panel.getByRole('button', { name: 'Try delivery again', exact: true });

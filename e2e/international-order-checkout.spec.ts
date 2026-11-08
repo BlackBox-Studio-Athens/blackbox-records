@@ -1,6 +1,14 @@
 import type { Locator, Page } from 'playwright/test';
 
-import { expect, expectNoHorizontalOverflow, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  expectNoHorizontalOverflow,
+  rememberLocker,
+  test,
+  useRememberedLocker,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 
 const checkoutLines = [
   {
@@ -76,10 +84,12 @@ async function prepareCheckout(page: Page, lines = checkoutLines) {
   });
 }
 
-async function openCheckout(page: Page) {
+async function openCheckout(page: Page, { locker = true } = {}) {
+  await rememberLocker(page);
   await page.goto('store/checkout/');
   await waitForShell(page);
   await waitForIsland(page, 'CheckoutOfferStatus');
+  if (locker) await useRememberedLocker(page);
   return page.locator('[data-checkout-offer-status]');
 }
 
@@ -189,6 +199,7 @@ for (const width of [1280, 390]) {
     expect(request.postDataJSON()).toEqual({
       lines: [{ quantity: 1, storeItemSlug: 'barren-point-vinyl', variantId: 'barren-point-vinyl_standard' }],
       newsletterOptIn: true,
+      shippingLocker: { lockerId: '7721', name: 'BOX NOW Test Locker', postalCode: '10672', countryCode: 'GR' },
       storeItemSlug: 'barren-point-vinyl',
       variantId: 'barren-point-vinyl_standard',
     });
@@ -299,7 +310,7 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
 test('empty checkout does not mount the international card or allow payment', async ({ page }) => {
   await prepareCheckout(page, []);
   await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
-  const review = await openCheckout(page);
+  const review = await openCheckout(page, { locker: false });
   await expect(review).toContainText('Add a priced item to the cart before checkout.');
   await expect(review.getByRole('complementary', { name: 'Ordering from outside Greece' })).toHaveCount(0);
   await expect(review.getByRole('button', { name: 'Continue to Payment', exact: true })).toHaveCount(0);

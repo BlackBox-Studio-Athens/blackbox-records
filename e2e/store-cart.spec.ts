@@ -4,7 +4,9 @@ import {
   localRepresentativePaths,
   openSurfaceWithinClickTask,
   press,
+  rememberLocker,
   test,
+  useRememberedLocker,
   waitForIsland,
   waitForShell,
   watchNetworkQuiet,
@@ -584,8 +586,10 @@ test('mounted checkout follows drawer quantity changes before payment', async ({
     });
   });
   await page.route('**/api/checkout/sessions', (route) => route.fulfill({ json: { checkoutUrl: '' } }));
+  await rememberLocker(page);
   await page.goto('store/checkout/');
   await waitForShell(page);
+  await useRememberedLocker(page);
   const pay = page.locator('[data-checkout-pay-state]');
   await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
   await expect(pay).toContainText('€30.50');
@@ -882,7 +886,10 @@ test('paid pre-order return fixture keeps its rail and keyboard action usable at
     ),
   ).toBeVisible();
   await expect(
-    rail.getByText('BOX NOW details will follow once the shipment is arranged.', { exact: true }),
+    rail.getByText(
+      'When we ship, we email the parcel number and tracking link. BOX NOW texts you a pickup code. If the locker is full, BOX NOW uses the nearest one and tells you.',
+      { exact: true },
+    ),
   ).toBeVisible();
   expect(await page.evaluate(() => window.innerWidth)).toBe(390);
   await expectNoHorizontalOverflow(page);

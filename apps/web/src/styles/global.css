@@ -8174,6 +8174,12 @@ body.is-app-shell-overlay-open {
   background: var(--card);
 }
 
+/* Enlarged text wraps the locker actions instead of widening the page. */
+:is(.checkout-locker__content, .locker-finder) .site-button {
+  white-space: normal;
+  text-align: left;
+}
+
 .boxnow-map {
   display: flex;
   min-width: 0;
