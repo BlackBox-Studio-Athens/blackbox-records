@@ -23,3 +23,4 @@
 
 - [x] 5.1 Run `pnpm validate` and strict OpenSpec validation on the implemented tree; record matching source fingerprints, summaries, browser observations and any remaining provider/client acceptance limits.
 - [ ] 5.2 Once separately authorized, verify one UAT sink email from the real Staff dispatch flow and prove repeated clicks and undo/re-mark do not create another provider send; record source and safe receipt evidence before requesting any PRD rollout.
+  - 2026-11-08: archived with this task open at the owner's request. The shipping email went to PRD with `add-boxnow-locker-choice`; its UAT acceptance (task 8.2 there) is owner-reported. No agent-read UAT provider evidence of the no-resend behavior exists; worker tests cover repeated clicks and undo/re-mark.

@@ -40,6 +40,7 @@
 - [x] 7.1 (Claude) Add the browse-only Find a locker near you panel to Delivery & returns, reusing the panel's map loader, with its unavailable state; verify with a test that a selection there changes nothing in checkout and a capture against draft 3.
 - [x] 7.2 (Codex) Replace runbook step 2 in `docs/commerce-operations.md` with the Send parcel steps (copy from Staff, pay, drop at any locker, paste the 10-digit number, change Locker used if needed, Mark shipped) and add the no-locker fallback case; verify with `pnpm agent:check`.
 - [ ] 7.3 Prepare the new Staff-owned delivery terms wording (you choose the locker at checkout, BOX NOW's full-locker redirection, the pickup code) for owner publication through the normal content workflow; verify the draft is saved and listed in Review, not published.
+  - 2026-11-08: archived with this task open at the owner's request. PRD runs release 2270a409 with the locker panel; the owner publishes the delivery summary and first paragraph from `design.md` in Staff PRD (Buying & delivery). Until then hosted checkout shows the old "We arrange your locker" note.
 
 ## 8. Integration
 
