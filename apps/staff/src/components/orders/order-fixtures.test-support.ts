@@ -19,7 +19,14 @@ export const exampleOrder: InternalOrder = {
   acceptedDeliveryAmountMinor: null,
   acceptedParcelTier: null,
   shippingLocker: null,
-  dispatch: { shippedAt: null, updatedAt: null, updatedBy: null, shippingEmailSuppressed: false },
+  dispatch: {
+    shippedAt: null,
+    updatedAt: null,
+    updatedBy: null,
+    shippingEmailSuppressed: false,
+    lockerUsed: null,
+    parcelNumbers: [],
+  },
   deliveries: [
     {
       kind: 'ops_fulfillment',
@@ -44,6 +51,13 @@ export const exampleOrder: InternalOrder = {
     paidAt: '2026-09-11T12:05:00.000Z',
     recipientName: 'Example recipient',
     shopperContact: { email: 'example@example.invalid', phone: null },
+    shippingLocker: {
+      lockerId: '7721',
+      name: 'BOX NOW STORE - Ακαδημίας 86 (Αθήνα)',
+      addressLine: 'Ακαδημίας 86, Αθήνα',
+      postalCode: '10672',
+      countryCode: 'GR',
+    },
     shippingAddress: {
       line1: 'Example street',
       line2: null,

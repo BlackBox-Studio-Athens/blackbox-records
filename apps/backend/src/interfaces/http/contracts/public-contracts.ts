@@ -185,9 +185,11 @@ const storeListingPriceSchema = z
 
 const checkoutStateShippingLockerSchema = z
   .object({
+    address_line: z.string().nullable(),
     country_code: z.enum(['GR']),
     locker_id: z.string().trim().min(1),
     locker_name_or_label: z.string().trim().min(1),
+    postal_code: z.string().nullable(),
   })
   .openapi('CheckoutStateShippingLocker');
 
@@ -204,10 +206,26 @@ const startCheckoutBodySchema = z
   .object({
     lines: z.array(startCheckoutLineSchema).min(1).optional(),
     newsletterOptIn: z.boolean().optional(),
+    shippingLocker: z
+      .object({
+        lockerId: z.string().trim().min(1).max(32),
+        name: z.string().trim().min(1).max(200),
+        addressLine: z.string().trim().max(200).optional(),
+        postalCode: z.string().trim().max(16).optional(),
+        countryCode: z
+          .string()
+          .trim()
+          .pipe(z.literal('GR'))
+          .openapi({ type: 'string', enum: ['GR'] }),
+      })
+      .strict()
+      .optional(),
+    lockerFallback: z.literal(true).optional(),
     storeItemSlug: z.string().trim().min(1).optional(),
     variantId: z.string().trim().min(1).optional(),
   })
   .strict()
+  .refine((body) => !(body.shippingLocker && body.lockerFallback), { path: ['shippingLocker'] })
   .openapi('StartCheckoutBody');
 
 export const postDeliveryQuoteRoute = createRoute({

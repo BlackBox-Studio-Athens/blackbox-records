@@ -88,6 +88,11 @@ for (const width of [320, 390, 768, 1440]) {
           })),
         }),
       );
+      // A remembered locker lets the review reach payment without opening BOX NOW's map.
+      localStorage.setItem(
+        'blackbox-boxnow-last-locker',
+        JSON.stringify({ lockerId: '7721', name: 'BOX NOW STORE - Ακαδημίας 86 (Αθήνα)', countryCode: 'GR' }),
+      );
     }, titles);
     await page.route('**/api/store/capabilities', (route) =>
       route.fulfill({
@@ -136,19 +141,24 @@ for (const width of [320, 390, 768, 1440]) {
     await expect(payment).toHaveCount(1);
     await expect(summary.getByRole('heading', { name: titles[0], exact: true })).toBeVisible();
     await expect(summary.getByRole('heading', { name: titles[1], exact: true })).toBeVisible();
+    await expect(pay).toBeDisabled();
+    await page.locator('[data-checkout-locker-panel]').getByRole('button', { name: 'Use this locker' }).click();
     await expect(pay).toBeEnabled();
     await expect(payment.locator('.checkout-review__total')).toContainText('€58.50');
     const stripe = payment.locator('[data-checkout-stripe-badge]');
     await expect(stripe).toHaveAccessibleName('Powered by Stripe');
     await expect(stripe).toBeVisible();
-    expect(await stripe.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true);
+    // The badge mounts once a locker is chosen, so its image may still be loading.
+    await expect
+      .poll(() => stripe.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0))
+      .toBe(true);
     const buttonBox = (await pay.boundingBox())!;
     const stripeBox = (await stripe.boundingBox())!;
     expect(stripeBox.y).toBeGreaterThanOrEqual(buttonBox.y + buttonBox.height);
     expect(Math.abs(stripeBox.x + stripeBox.width / 2 - (buttonBox.x + buttonBox.width / 2))).toBeLessThan(1);
     const support = payment.getByRole('link', { name: 'Purchase help', exact: true });
     expect((await support.boundingBox())!.y).toBeGreaterThan(stripeBox.y + stripeBox.height);
-    await expect(payment).toContainText('A street address collected at payment does not mean home delivery.');
+    await expect(payment).toContainText('Stripe also asks for a street address; it is not used for delivery.');
     await expect(payment).not.toContainText('Payment is taken on the Stripe page');
     await expect(payment.getByRole('checkbox')).not.toBeChecked();
     await expect(page.getByRole('link', { name: 'Withdraw from an order', exact: true })).toHaveCount(1);
@@ -160,8 +170,10 @@ for (const width of [320, 390, 768, 1440]) {
     expect(cartBox.width).toBeGreaterThanOrEqual(44);
     expect(cartBox.height).toBeGreaterThanOrEqual(44);
     if (width === 1440) {
+      // The spec keeps the total and the payment action in the first 1440x900 view. With the BOX NOW locker panel
+      // above Review and pay, the Stripe badge under the button may sit just below the fold.
+      await expect(payment.locator('.checkout-review__total')).toBeInViewport({ ratio: 1 });
       await expect(pay).toBeInViewport({ ratio: 1 });
-      await expect(stripe).toBeInViewport({ ratio: 1 });
     }
     expect(
       await page.locator('.checkout-review__columns').evaluate((columns) => {
@@ -171,7 +183,8 @@ for (const width of [320, 390, 768, 1440]) {
       }),
     ).toBe(true);
     const reviewBox = (await summary.boundingBox())!;
-    const payBox = (await payment.boundingBox())!;
+    // The payment column now opens with the locker panel; compare the column, not the Review and pay card.
+    const payBox = (await page.locator('.checkout-review__payment').boundingBox())!;
     if (width < 768) {
       expect(reviewBox.y + reviewBox.height).toBeLessThanOrEqual(payBox.y);
     } else {

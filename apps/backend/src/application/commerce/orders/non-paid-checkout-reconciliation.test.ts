@@ -93,9 +93,11 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 describe('non-paid checkout reconciliation', () => {
   const appliedAt = new Date('2026-04-25T11:00:00.000Z');
   const shippingLocker = {
+    address_line: null,
     country_code: 'GR' as const,
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    postal_code: null,
   };
   const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
   let orders: InMemoryOrderStateRepository;

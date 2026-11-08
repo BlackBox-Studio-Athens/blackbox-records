@@ -613,6 +613,11 @@ export type components = {
                 updatedAt: string;
             }[];
             dispatch: {
+                lockerUsed: {
+                    lockerId: string;
+                    name: string;
+                } | null;
+                parcelNumbers: string[];
                 /** Format: date-time */
                 shippedAt: string | null;
                 shippingEmailSuppressed: boolean;
@@ -685,6 +690,14 @@ export type components = {
                     postalCode: string;
                     state: string | null;
                 };
+                shippingLocker: {
+                    addressLine: string | null;
+                    /** @enum {string} */
+                    countryCode: "GR";
+                    lockerId: string;
+                    name: string;
+                    postalCode: string | null;
+                } | null;
                 shopperContact: {
                     /** Format: email */
                     email: string;
@@ -702,10 +715,12 @@ export type components = {
             /** Format: date-time */
             paidAt: string | null;
             shippingLocker: {
+                address_line: string | null;
                 /** @enum {string} */
                 country_code: "GR";
                 locker_id: string;
                 locker_name_or_label: string;
+                postal_code: string | null;
             } | null;
             status: components["schemas"]["InternalOrderStatus"];
             /** Format: date-time */
@@ -720,6 +735,11 @@ export type components = {
         };
         InternalOrderDispatchChange: {
             expectedShipped: boolean;
+            lockerUsed?: {
+                lockerId: string;
+                name: string;
+            };
+            parcelNumbers?: string[];
             /** @default true */
             sendShippingEmail: boolean;
             shipped: boolean;

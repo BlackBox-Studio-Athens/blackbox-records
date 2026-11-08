@@ -19,13 +19,16 @@ import {
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,
   readCheckoutSessionIdFromSearch,
+  CHECKOUT_RETURN_DELIVERY_COPY,
 } from './checkout-return-status-state';
 import type { CheckoutState, PublicCheckoutApi } from './public-checkout-api';
 
 const shippingLocker = {
+  address_line: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125',
   country_code: 'GR' as const,
   locker_id: '4',
   locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  postal_code: '15234',
 };
 
 const checkoutState = {
@@ -138,7 +141,7 @@ describe('CheckoutReturnStatus', () => {
     expect(html).toContain('Vinyl');
     expect(html).toContain('× 2');
     expect(html.includes('In stock, sent with the pre-order')).toBe(ordinary);
-    expect(html).toContain('One BOX NOW locker parcel. We contact you to arrange the locker before dispatch.');
+    expect(html).toContain('One BOX NOW parcel. We email you to agree a locker before we ship.');
     expect(html).toContain('Released &lt;Single&gt;');
     expect(html).toContain('href="https://example.test/single"');
     expect(html).not.toContain('Unsafe link');
@@ -215,7 +218,7 @@ describe('CheckoutReturnStatus', () => {
         kind: 'ready',
       }).shippingLocker,
     ).toEqual({
-      detail: 'Locker ID 4 · Greece-only BOX NOW',
+      detail: '15234 · Locker 4',
       kind: 'selected',
       label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
     });
@@ -254,11 +257,13 @@ describe('CheckoutReturnStatus', () => {
     expect(html).toContain('Receipt');
     expect(html).toContain('Check the email used at checkout for the Stripe payment receipt.');
     expect(html).toContain('Fulfillment');
-    expect(html).toContain('BlackBox will prepare the shipment manually.');
+    expect(html).toContain(CHECKOUT_RETURN_DELIVERY_COPY.fulfillment);
     expect(html).toContain('Delivery');
-    expect(html).toContain('BOX NOW details will follow once the shipment is arranged.');
+    expect(html).toContain(CHECKOUT_RETURN_DELIVERY_COPY.withoutLocker);
+    expect(html).toContain(CHECKOUT_RETURN_DELIVERY_COPY.lockerNotChosen);
     expect(html.match(/Continue Shopping/g)).toHaveLength(1);
-    expect(html.match(/BOX NOW/g)).toHaveLength(1);
+    // The locker fact, the drop-off step and the email-agreement step each name BOX NOW once.
+    expect(html.match(/BOX NOW/g)).toHaveLength(3);
     expect(html).not.toContain('Reference');
     expect(html).not.toContain('cs_mock');
     expect(html).not.toContain('cs_test');
@@ -329,7 +334,7 @@ describe('CheckoutReturnStatus', () => {
           value: 'Check the email used at checkout for the Stripe payment receipt.',
         },
         { icon: 'fulfillment', label: 'Fulfillment', value: fulfillment },
-        { icon: 'delivery', label: 'Delivery', value: 'BOX NOW details will follow once the shipment is arranged.' },
+        { icon: 'delivery', label: 'Delivery', value: CHECKOUT_RETURN_DELIVERY_COPY.withLocker },
       ],
     });
 
@@ -340,7 +345,9 @@ describe('CheckoutReturnStatus', () => {
     expect(html).toContain('preorder-edge');
     expect(html.match(/Continue Shopping/g)).toHaveLength(1);
     expect(html).not.toContain('Thanks for the order');
-    expect(html).not.toContain('BlackBox will prepare the shipment manually.');
+    expect(html).not.toContain(CHECKOUT_RETURN_DELIVERY_COPY.fulfillment);
+    expect(html).toContain(shippingLocker.locker_name_or_label);
+    expect(html).toContain('15234 · Locker 4');
     expect(html).not.toContain('cs_mock');
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
   });

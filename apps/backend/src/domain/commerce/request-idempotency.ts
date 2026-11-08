@@ -10,6 +10,8 @@ export function createCheckoutRequestFingerprint(input: {
   cancelUrl: string;
   lines: readonly CheckoutFingerprintLine[];
   newsletterOptIn?: boolean;
+  shippingLocker?: unknown;
+  lockerFallback?: boolean;
   successUrl: string;
 }): string {
   const mergedLines = new Map<string, CheckoutFingerprintLine>();
@@ -28,6 +30,8 @@ export function createCheckoutRequestFingerprint(input: {
     cancelUrl: input.cancelUrl,
     lines: [...mergedLines.values()].sort(compareCheckoutLines),
     newsletterOptIn: input.newsletterOptIn === true,
+    ...(input.shippingLocker ? { shippingLocker: input.shippingLocker } : {}),
+    ...(input.lockerFallback ? { lockerFallback: true } : {}),
     successUrl: input.successUrl,
     version: 1,
   });

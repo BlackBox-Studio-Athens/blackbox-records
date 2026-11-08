@@ -175,9 +175,11 @@ describe('order lifecycle use cases', () => {
     expect(listRecent).toHaveBeenCalledWith(query);
   });
   const shippingLocker = {
+    address_line: null,
     country_code: 'GR' as const,
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    postal_code: null,
   };
   const primaryCheckoutSessionId = checkoutSessionId('cs_test_123');
   const primaryStoreItemSlug = storeItemSlug('disintegration-black-vinyl-lp');

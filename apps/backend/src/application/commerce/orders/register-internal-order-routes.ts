@@ -95,6 +95,15 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
     ]),
     paidAt: z.string().datetime(),
     recipientName: z.string().min(1),
+    shippingLocker: z
+      .object({
+        lockerId: z.string(),
+        name: z.string(),
+        addressLine: z.string().nullable(),
+        postalCode: z.string().nullable(),
+        countryCode: z.literal('GR'),
+      })
+      .nullable(),
     shippingAddress: z.object({
       city: z.string().min(1),
       country: z.literal('GR'),
@@ -119,6 +128,8 @@ const checkoutOrderSchema = z
     createdAt: z.string().datetime(),
     deliveries: z.array(paidOrderDeliverySchema),
     dispatch: z.object({
+      lockerUsed: z.object({ lockerId: z.string(), name: z.string() }).nullable(),
+      parcelNumbers: z.array(z.string()),
       shippingEmailSuppressed: z.boolean(),
       shippedAt: z.string().datetime().nullable(),
       updatedAt: z.string().datetime().nullable(),
@@ -135,9 +146,11 @@ const checkoutOrderSchema = z
     paidAt: z.string().datetime().nullable(),
     shippingLocker: z
       .object({
+        address_line: z.string().nullable(),
         country_code: z.literal('GR'),
         locker_id: z.string(),
         locker_name_or_label: z.string(),
+        postal_code: z.string().nullable(),
       })
       .nullable(),
     status: orderStatusSchema,
@@ -247,6 +260,15 @@ const setOrderDispatchRoute = createRoute({
               shipped: z.boolean(),
               expectedShipped: z.boolean(),
               sendShippingEmail: z.boolean().default(true),
+              lockerUsed: z
+                .object({ lockerId: z.string().trim().min(1).max(32), name: z.string().trim().min(1).max(200) })
+                .strict()
+                .optional(),
+              parcelNumbers: z
+                .array(z.string().regex(/^\d{10}$/))
+                .max(5)
+                .refine((numbers) => new Set(numbers).size === numbers.length)
+                .optional(),
             })
             .refine((body) => body.shipped !== body.expectedShipped, 'Dispatch must change.')
             .openapi('InternalOrderDispatchChange'),
@@ -395,6 +417,8 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
       updatedAt: delivery.updatedAt.toISOString(),
     })),
     dispatch: {
+      lockerUsed: read.dispatch?.lockerUsed ?? null,
+      parcelNumbers: read.dispatch?.parcelNumbers ?? [],
       shippingEmailSuppressed: read.dispatch?.shippingEmailSuppressed ?? false,
       shippedAt: read.dispatch?.shippedAt ?? null,
       updatedAt: read.dispatch?.updatedAt ?? null,
@@ -460,6 +484,15 @@ function toCurrentPaidFulfillmentResponse(order: CurrentPaidCheckoutOrder) {
       : { optedIn: false as const },
     paidAt: order.paidAt.toISOString(),
     recipientName: order.recipientName,
+    shippingLocker: order.shippingLocker
+      ? {
+          lockerId: order.shippingLocker.locker_id,
+          name: order.shippingLocker.locker_name_or_label,
+          addressLine: order.shippingLocker.address_line,
+          postalCode: order.shippingLocker.postal_code,
+          countryCode: order.shippingLocker.country_code,
+        }
+      : null,
     shippingAddress: {
       city: order.shippingAddressCity,
       country: order.shippingAddressCountryCode,

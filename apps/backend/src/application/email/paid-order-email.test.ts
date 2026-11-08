@@ -40,6 +40,47 @@ const productionConfig = readEmailRuntimeConfig({
 });
 
 describe('paid-order email notifications', () => {
+  it('renders locker and parcel facts consistently and excludes unsafe tracking values', () => {
+    const brand = { homeUrl: sandboxConfig.emailBrandHomeUrl, logoUrl: sandboxConfig.emailBrandLogoUrl };
+    const order = { ...paidOrder(), shippingLocker: { lockerId: '4', name: '<Athens>', postalCode: '12345' } };
+    const confirmation = buildPaidOrderShopperEmail({
+      brand,
+      order,
+      recipient: { intendedRecipient: 'buyer@example.com', isSinkRouted: false },
+      replyToEmail: sandboxConfig.replyToEmail,
+    });
+    expect(confirmation.html).toContain('&lt;Athens&gt;');
+    expect(confirmation.text).toContain('Locker: <Athens> · 12345 · Locker 4');
+    expect(confirmation.text.indexOf('Locker:')).toBeLessThan(confirmation.text.indexOf('Total paid:'));
+    const fallback = buildPaidOrderShopperEmail({
+      brand,
+      order: { ...order, shippingLocker: null },
+      recipient: { intendedRecipient: 'buyer@example.com', isSinkRouted: false },
+      replyToEmail: sandboxConfig.replyToEmail,
+    });
+    expect(fallback.text).toContain('We will email you to agree a BOX NOW locker before we ship.');
+    expect(fallback.text).not.toContain('Locker:');
+    for (const numbers of [[], ['1234567890'], ['1234567890', '0987654321']]) {
+      const shipping = buildPaidOrderShippingEmail({
+        brand,
+        order: { ...order, lockerUsed: { lockerId: '5', name: '<Other>' }, parcelNumbers: [...numbers, 'bad<script>'] },
+        replyToEmail: sandboxConfig.replyToEmail,
+      });
+      expect(shipping.html).toContain('&lt;Other&gt;');
+      expect(shipping.text).toContain('Locker: <Other> · Locker 5');
+      expect(shipping.html).not.toContain('bad&lt;script&gt;');
+      expect(shipping.text).not.toContain('bad<script>');
+      expect(shipping.text).toContain('If the locker is full, BOX NOW uses the nearest one and tells you.');
+      expect(shipping.text.includes('https://boxnow.gr/en?track=')).toBe(numbers.length > 0);
+      if (numbers.length === 1) expect(shipping.text).toContain('add 24 more on the tracking page.');
+      if (numbers.length === 2) expect(shipping.text).toContain('a pickup code for each parcel');
+    }
+    const shipTo = (lockerUsed: { lockerId: string; name: string } | null) =>
+      buildPaidOrderShippingEmail({ brand, order: { ...order, lockerUsed }, replyToEmail: sandboxConfig.replyToEmail })
+        .text;
+    expect(shipTo({ lockerId: '4', name: '<Athens>' })).toContain('Locker: <Athens> · 12345 · Locker 4');
+    expect(shipTo(null)).not.toContain('Locker:');
+  });
   it.each([
     [sandboxConfig, 'uat-sink@ambkime.resend.app', 'uat'],
     [productionConfig, 'buyer@example.com', 'prd'],
@@ -63,7 +104,7 @@ describe('paid-order email notifications', () => {
       );
       const message = sentMessage(sendEmail, 0);
       for (const body of [message.html, message.text]) {
-        expect(body).toContain('Your order is on its way with BOX NOW.');
+        expect(body).toContain('BOX NOW texts you a 6-digit pickup code when the parcel arrives.');
         expect(body).toContain(
           'Thank you for supporting BlackBox Records. If you need anything, just reply to this email.',
         );
@@ -286,6 +327,8 @@ describe('paid-order email notifications', () => {
     expect(previews.map((preview) => preview.name)).toEqual([
       'shopper-long-content',
       'shopper-shipped',
+      'shopper-shipped-one',
+      'shopper-shipped-no-number',
       'ops-ready',
       'shopper-preorder',
       'ops-preorder',

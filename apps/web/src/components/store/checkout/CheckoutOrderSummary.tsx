@@ -18,6 +18,7 @@ import {
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
 import { preorderChipText } from '@/platform/lib/preorder-estimate';
 import ProductSafetyDisclosure, { type ProductSafetyInformation } from '@/platform/components/ProductSafetyDisclosure';
+import { BOXNOW_LOCKER_CHOSEN_EVENT, type BoxNowLocker } from './boxnow-locker';
 
 export type CheckoutOrderSummaryInput = {
   availabilityLabel: string;
@@ -41,6 +42,7 @@ export const CHECKOUT_ORDER_SUMMARY_COPY = { title: 'Order Summary', editQuantit
 
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   const [cartLines, setCartLines] = useState<CartLine[]>();
+  const [deliveryLocker, setDeliveryLocker] = useState<BoxNowLocker | null>(null);
   const isCartLoading = cartLines === undefined;
   const fallbackLine: CartLine | null =
     typeof props.priceAmountMinor === 'number' && props.priceCurrencyCode
@@ -68,6 +70,13 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
     syncCart();
     window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCart);
     return () => window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCart);
+  }, []);
+
+  // The locker panel is a separate island; it announces each choice so the summary can name the destination.
+  useEffect(() => {
+    const syncLocker = (event: Event) => setDeliveryLocker((event as CustomEvent<BoxNowLocker | null>).detail);
+    window.addEventListener(BOXNOW_LOCKER_CHOSEN_EVENT, syncLocker);
+    return () => window.removeEventListener(BOXNOW_LOCKER_CHOSEN_EVENT, syncLocker);
   }, []);
 
   function updateCartLineQuantity(variantId: string, direction: 'decrement' | 'increment') {
@@ -200,6 +209,12 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
             </article>
           ))}
         </div>
+        {deliveryLocker && lines.length > 0 && (
+          <p className="checkout-summary__delivery-to" data-checkout-delivery-to>
+            <span>Delivery to</span>
+            <span>{deliveryLocker.name}</span>
+          </p>
+        )}
       </CardContent>
     </Card>
   );

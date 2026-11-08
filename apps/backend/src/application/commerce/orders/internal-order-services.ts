@@ -57,6 +57,8 @@ export function createInternalOrderServices(bindings: AppBindings) {
         shipped: boolean;
         expectedShipped: boolean;
         sendShippingEmail?: boolean;
+        lockerUsed?: { lockerId: string; name: string };
+        parcelNumbers?: string[];
         operatorEmail: string;
         at: Date;
       },

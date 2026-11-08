@@ -271,6 +271,8 @@ export const CheckoutOrderScalarFieldEnum = {
   shippingLockerId: 'shippingLockerId',
   shippingLockerCountryCode: 'shippingLockerCountryCode',
   shippingLockerNameOrLabel: 'shippingLockerNameOrLabel',
+  shippingLockerAddressLine: 'shippingLockerAddressLine',
+  shippingLockerPostalCode: 'shippingLockerPostalCode',
   status: 'status',
   statusUpdatedAt: 'statusUpdatedAt',
   paidAt: 'paidAt',

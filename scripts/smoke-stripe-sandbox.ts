@@ -194,9 +194,11 @@ export type PublicCheckoutStateResponse = {
   orderStatus: LocalCheckoutOrderRow['status'] | null;
   paymentStatus: 'no_payment_required' | 'paid' | 'unpaid';
   shippingLocker: {
+    address_line: string | null;
     country_code: string | null;
     locker_id: string | null;
     locker_name_or_label: string | null;
+    postal_code: string | null;
   } | null;
   state: 'expired' | 'open' | 'paid' | 'processing' | 'unknown';
   status: 'complete' | 'expired' | 'open' | null;

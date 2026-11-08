@@ -170,7 +170,11 @@ export function DeliverySummary({
               : 'Tax details are shown before payment.'}
         </p>
       )}
-      {isDrawer ? <p>BOX NOW locker delivery within Greece.</p> : <PurchaseInformation presentation="checkout" />}
+      {isDrawer ? (
+        <p>BOX NOW locker delivery within Greece. You choose the locker at checkout.</p>
+      ) : (
+        <PurchaseInformation presentation="checkout" />
+      )}
     </div>
   );
 }

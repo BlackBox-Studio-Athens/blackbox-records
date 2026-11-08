@@ -1,7 +1,7 @@
 import type { CheckoutSessionId, StoreItemSlug, StripePriceId, VariantId } from '../ids';
 import type { CartQuantity, StockQuantity } from '../quantities';
 import type { AcceptedMonetaryPolicy } from '../monetary';
-import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from './order-state-repository';
+import type { CheckoutOrderLineRecord, CheckoutOrderRecord, ShippingLockerSnapshot } from './order-state-repository';
 import type { RequestIdentity } from './request-identity';
 import type { OrderStatus } from './order-state-repository';
 
@@ -60,6 +60,7 @@ export type CreateCheckoutStockHoldInput = {
   newsletterOptIn?: boolean;
   orderId: string;
   requestIdentity?: RequestIdentity | null;
+  shippingLocker?: ShippingLockerSnapshot | null;
 };
 
 export type CreateCheckoutStockHoldResult =

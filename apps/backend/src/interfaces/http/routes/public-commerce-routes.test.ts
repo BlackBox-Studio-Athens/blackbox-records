@@ -85,9 +85,11 @@ const testBindings = {
 };
 
 const shippingLocker = {
+  address_line: '125 Pentelis Avenue',
   country_code: 'GR',
   locker_id: '4',
   locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+  postal_code: '15234',
 };
 
 function expectNoStoreCacheControl(response: Response): void {
@@ -293,6 +295,52 @@ describe('public commerce routes', () => {
       expect(schema.safeParse({ ...comingSoon, availability: { ...comingSoon.availability, state } }).success).toBe(
         false,
       );
+  });
+
+  it('trims and forwards a chosen locker, and rejects a conflicting fallback', async () => {
+    const shippingLocker = {
+      lockerId: ' 4 ',
+      name: ' Athens ',
+      addressLine: ' Street ',
+      postalCode: ' 12345 ',
+      countryCode: ' GR ',
+    };
+    const request = (body: object) =>
+      createHttpApp().request(
+        'http://backend.test/api/checkout/sessions',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            origin: 'https://blackbox.example',
+            referer: 'https://blackbox.example/store/checkout/',
+          },
+          body: JSON.stringify({
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            variantId: 'variant_disintegration-black-vinyl-lp_standard',
+            ...body,
+          }),
+        },
+        testBindings,
+      );
+    expect((await request({ shippingLocker, lockerFallback: true })).status).toBe(409);
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+    mockStartCheckout.mockResolvedValueOnce({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+    expect((await request({ shippingLocker })).status).toBe(200);
+    expect(mockStartCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shippingLocker: {
+          lockerId: '4',
+          name: 'Athens',
+          addressLine: 'Street',
+          postalCode: '12345',
+          countryCode: 'GR',
+        },
+      }),
+    );
   });
 
   it('records Notify me only for Coming Soon or Repressing items, with one answer for repeats', async () => {
@@ -680,6 +728,24 @@ describe('public commerce routes', () => {
       error: 'Store item not found.',
       requestId: expect.any(String),
     });
+  });
+
+  it.each([
+    { lockerId: '', name: 'Athens', countryCode: 'GR' },
+    { lockerId: '4', name: 'Athens', countryCode: 'US' },
+  ])('refuses invalid locker data before checkout', async (shippingLocker) => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ storeItemSlug: 'item', variantId: 'variant', shippingLocker }),
+      },
+      testBindings,
+    );
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: 'checkout_unavailable' });
+    expect(mockStartCheckout).not.toHaveBeenCalled();
   });
 
   it('starts hosted Checkout with app identity only for manual BOX NOW fulfillment', async () => {

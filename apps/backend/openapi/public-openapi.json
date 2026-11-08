@@ -879,6 +879,47 @@
           "newsletterOptIn": {
             "type": "boolean"
           },
+          "shippingLocker": {
+            "type": "object",
+            "properties": {
+              "lockerId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "addressLine": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "postalCode": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "countryCode": {
+                "type": "string",
+                "enum": [
+                  "GR"
+                ]
+              }
+            },
+            "required": [
+              "lockerId",
+              "name",
+              "countryCode"
+            ],
+            "additionalProperties": false
+          },
+          "lockerFallback": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
           "storeItemSlug": {
             "type": "string",
             "minLength": 1
@@ -1015,6 +1056,12 @@
       "CheckoutStateShippingLocker": {
         "type": "object",
         "properties": {
+          "address_line": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "country_code": {
             "type": "string",
             "enum": [
@@ -1028,12 +1075,20 @@
           "locker_name_or_label": {
             "type": "string",
             "minLength": 1
+          },
+          "postal_code": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
+          "address_line",
           "country_code",
           "locker_id",
-          "locker_name_or_label"
+          "locker_name_or_label",
+          "postal_code"
         ]
       },
       "NewsletterRegistrationResponse": {

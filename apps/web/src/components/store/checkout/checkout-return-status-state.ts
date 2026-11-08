@@ -144,7 +144,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
       ...(checkoutState.orderSnapshot ? { orderSnapshot: checkoutState.orderSnapshot } : {}),
       kicker: 'Order Complete',
       nextStep: '',
-      nextSteps: createCheckoutReturnNextStepsView(preorder),
+      nextSteps: createCheckoutReturnNextStepsView(preorder, shippingLocker.kind === 'selected'),
       shippingLocker,
       title: preorder ? 'Pre-order confirmed' : 'Thanks for the order',
       tone: 'success',
@@ -228,7 +228,19 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   };
 }
 
-function createCheckoutReturnNextStepsView(preorder: CheckoutState['preorder']): CheckoutReturnNextStepsView {
+export const CHECKOUT_RETURN_DELIVERY_COPY = {
+  fulfillment: 'We pack the order by hand and drop it at a BOX NOW locker.',
+  withLocker:
+    'When we ship, we email the parcel number and tracking link. BOX NOW texts you a pickup code. If the locker is full, BOX NOW uses the nearest one and tells you.',
+  withoutLocker:
+    'We email you to agree a BOX NOW locker. When we ship, we email the parcel number and a tracking link.',
+  lockerNotChosen: 'Not chosen yet. We email you to agree one before we ship.',
+} as const;
+
+function createCheckoutReturnNextStepsView(
+  preorder: CheckoutState['preorder'],
+  hasLocker: boolean,
+): CheckoutReturnNextStepsView {
   const estimate = preorder?.shipEstimate;
   return {
     heading: 'What happens next',
@@ -243,12 +255,12 @@ function createCheckoutReturnNextStepsView(preorder: CheckoutState['preorder']):
         label: 'Fulfillment',
         value: preorder
           ? `Your whole order is sent together when the pre-order arrives${estimate ? `, expected ${shipEstimateText(estimate)}` : ''}. We email you if that changes.`
-          : 'BlackBox will prepare the shipment manually.',
+          : CHECKOUT_RETURN_DELIVERY_COPY.fulfillment,
       },
       {
         icon: 'delivery',
         label: 'Delivery',
-        value: 'BOX NOW details will follow once the shipment is arranged.',
+        value: hasLocker ? CHECKOUT_RETURN_DELIVERY_COPY.withLocker : CHECKOUT_RETURN_DELIVERY_COPY.withoutLocker,
       },
     ],
   };
@@ -266,7 +278,7 @@ function createCheckoutReturnShippingLockerView(state: CheckoutReturnLoadState):
   }
 
   return {
-    detail: `Locker ID ${locker.locker_id} · Greece-only BOX NOW`,
+    detail: [locker.postal_code, `Locker ${locker.locker_id}`].filter(Boolean).join(' · '),
     kind: 'selected',
     label: locker.locker_name_or_label,
   };

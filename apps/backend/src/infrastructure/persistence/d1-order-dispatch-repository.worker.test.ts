@@ -20,6 +20,32 @@ async function order() {
 }
 
 describe('D1 order dispatch persistence', () => {
+  it('saves parcel facts atomically, preserves them on undo and replaces them on re-mark', async () => {
+    const orderId = await order();
+    const mark = {
+      orderId,
+      shipped: true,
+      expectedShipped: false,
+      operatorEmail: 'a@example.com',
+      at,
+      lockerUsed: { lockerId: '4', name: 'Athens' },
+      parcelNumbers: ['1234567890', '0987654321'],
+    };
+    expect(await repo.set(mark)).toBe('updated');
+    expect(await repo.set({ ...mark, lockerUsed: { lockerId: '5', name: 'Other' } })).toBe('conflict');
+    expect(await repo.set({ ...mark, shipped: false, expectedShipped: true })).toBe('updated');
+    expect((await repo.listByOrderIds([orderId]))[0]).toMatchObject({
+      lockerUsed: mark.lockerUsed,
+      parcelNumbers: mark.parcelNumbers,
+    });
+    expect(
+      await repo.set({ ...mark, lockerUsed: { lockerId: '5', name: 'Other' }, parcelNumbers: ['1111111111'] }),
+    ).toBe('updated');
+    expect((await repo.listByOrderIds([orderId]))[0]).toMatchObject({
+      lockerUsed: { lockerId: '5', name: 'Other' },
+      parcelNumbers: ['1111111111'],
+    });
+  });
   it('marks once, refuses a stale second mark, and undoes with the operator recorded', async () => {
     const orderId = await order();
     const mark = { orderId, shipped: true, expectedShipped: false, operatorEmail: 'a@example.com', at };
@@ -32,6 +58,8 @@ describe('D1 order dispatch persistence', () => {
     expect(await repo.listByOrderIds([orderId])).toEqual([
       {
         orderId,
+        lockerUsed: null,
+        parcelNumbers: [],
         shippedAt: at.toISOString(),
         updatedAt: at.toISOString(),
         updatedBy: 'a@example.com',
@@ -46,6 +74,8 @@ describe('D1 order dispatch persistence', () => {
     expect(await repo.listByOrderIds([orderId])).toEqual([
       {
         orderId,
+        lockerUsed: null,
+        parcelNumbers: [],
         shippedAt: null,
         updatedAt: undoAt.toISOString(),
         updatedBy: 'b@example.com',
@@ -78,6 +108,8 @@ describe('D1 order dispatch persistence', () => {
     expect(await repo.listByOrderIds([orderId])).toEqual([
       {
         orderId,
+        lockerUsed: null,
+        parcelNumbers: [],
         shippedAt: at.toISOString(),
         updatedAt: at.toISOString(),
         updatedBy: 'a@example.com',

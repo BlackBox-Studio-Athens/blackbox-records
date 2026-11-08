@@ -63,6 +63,8 @@ function mapCheckoutOrder(record: {
   shippingLockerCountryCode: string | null;
   shippingLockerId: string | null;
   shippingLockerNameOrLabel: string | null;
+  shippingLockerAddressLine: string | null;
+  shippingLockerPostalCode: string | null;
   status: OrderStatus;
   statusUpdatedAt: Date;
   storeItemSlug: string;
@@ -117,9 +119,11 @@ function mapCheckoutOrder(record: {
     shippingLocker:
       record.shippingLockerId && record.shippingLockerCountryCode === 'GR' && record.shippingLockerNameOrLabel
         ? {
+            address_line: record.shippingLockerAddressLine,
             country_code: record.shippingLockerCountryCode,
             locker_id: record.shippingLockerId,
             locker_name_or_label: record.shippingLockerNameOrLabel,
+            postal_code: record.shippingLockerPostalCode,
           }
         : null,
     status: record.status,
@@ -235,6 +239,8 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
         shippingLockerCountryCode: input.shippingLocker?.country_code ?? null,
         shippingLockerId: input.shippingLocker?.locker_id ?? null,
         shippingLockerNameOrLabel: input.shippingLocker?.locker_name_or_label ?? null,
+        shippingLockerAddressLine: input.shippingLocker?.address_line ?? null,
+        shippingLockerPostalCode: input.shippingLocker?.postal_code ?? null,
         status: 'pending_payment',
         statusUpdatedAt: createdAt,
         storeItemSlug: input.storeItemSlug,

@@ -32,7 +32,7 @@ export default function PurchaseInformation({
   const termsHref = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`;
   const deliverySummary =
     information?.terms.delivery.summary ??
-    'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.';
+    'Delivery is to the locker above. Stripe also asks for a street address; it is not used for delivery.';
   if (presentation === 'checkout-support') {
     return (
       <div className="checkout-review__information" data-purchase-information>
@@ -60,7 +60,7 @@ export default function PurchaseInformation({
         <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
       )}
       <p>{priceDisclosure}</p>
-      <p>BOX NOW locker delivery within Greece.</p>
+      <p>BOX NOW locker delivery within Greece. You choose the locker at checkout.</p>
       <a className={linkClass} href={termsHref}>
         Delivery &amp; returns
       </a>

@@ -83,6 +83,8 @@ export type CheckoutOrderMinAggregateOutputType = {
   shippingLockerId: string | null
   shippingLockerCountryCode: string | null
   shippingLockerNameOrLabel: string | null
+  shippingLockerAddressLine: string | null
+  shippingLockerPostalCode: string | null
   status: $Enums.OrderStatus | null
   statusUpdatedAt: Date | null
   paidAt: Date | null
@@ -132,6 +134,8 @@ export type CheckoutOrderMaxAggregateOutputType = {
   shippingLockerId: string | null
   shippingLockerCountryCode: string | null
   shippingLockerNameOrLabel: string | null
+  shippingLockerAddressLine: string | null
+  shippingLockerPostalCode: string | null
   status: $Enums.OrderStatus | null
   statusUpdatedAt: Date | null
   paidAt: Date | null
@@ -181,6 +185,8 @@ export type CheckoutOrderCountAggregateOutputType = {
   shippingLockerId: number
   shippingLockerCountryCode: number
   shippingLockerNameOrLabel: number
+  shippingLockerAddressLine: number
+  shippingLockerPostalCode: number
   status: number
   statusUpdatedAt: number
   paidAt: number
@@ -250,6 +256,8 @@ export type CheckoutOrderMinAggregateInputType = {
   shippingLockerId?: true
   shippingLockerCountryCode?: true
   shippingLockerNameOrLabel?: true
+  shippingLockerAddressLine?: true
+  shippingLockerPostalCode?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -299,6 +307,8 @@ export type CheckoutOrderMaxAggregateInputType = {
   shippingLockerId?: true
   shippingLockerCountryCode?: true
   shippingLockerNameOrLabel?: true
+  shippingLockerAddressLine?: true
+  shippingLockerPostalCode?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -348,6 +358,8 @@ export type CheckoutOrderCountAggregateInputType = {
   shippingLockerId?: true
   shippingLockerCountryCode?: true
   shippingLockerNameOrLabel?: true
+  shippingLockerAddressLine?: true
+  shippingLockerPostalCode?: true
   status?: true
   statusUpdatedAt?: true
   paidAt?: true
@@ -484,6 +496,8 @@ export type CheckoutOrderGroupByOutputType = {
   shippingLockerId: string | null
   shippingLockerCountryCode: string | null
   shippingLockerNameOrLabel: string | null
+  shippingLockerAddressLine: string | null
+  shippingLockerPostalCode: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date
   paidAt: Date | null
@@ -556,6 +570,8 @@ export type CheckoutOrderWhereInput = {
   shippingLockerId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shippingLockerCountryCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shippingLockerNameOrLabel?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerAddressLine?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerPostalCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
@@ -608,6 +624,8 @@ export type CheckoutOrderOrderByWithRelationInput = {
   shippingLockerId?: Prisma.SortOrderInput | Prisma.SortOrder
   shippingLockerCountryCode?: Prisma.SortOrderInput | Prisma.SortOrder
   shippingLockerNameOrLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerAddressLine?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerPostalCode?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -663,6 +681,8 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   shippingLockerId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shippingLockerCountryCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   shippingLockerNameOrLabel?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerAddressLine?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  shippingLockerPostalCode?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableFilter<"CheckoutOrder"> | Date | string | null
@@ -715,6 +735,8 @@ export type CheckoutOrderOrderByWithAggregationInput = {
   shippingLockerId?: Prisma.SortOrderInput | Prisma.SortOrder
   shippingLockerCountryCode?: Prisma.SortOrderInput | Prisma.SortOrder
   shippingLockerNameOrLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerAddressLine?: Prisma.SortOrderInput | Prisma.SortOrder
+  shippingLockerPostalCode?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -772,6 +794,8 @@ export type CheckoutOrderScalarWhereWithAggregatesInput = {
   shippingLockerId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   shippingLockerCountryCode?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   shippingLockerNameOrLabel?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  shippingLockerAddressLine?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  shippingLockerPostalCode?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"CheckoutOrder"> | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
   paidAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CheckoutOrder"> | Date | string | null
@@ -821,6 +845,8 @@ export type CheckoutOrderCreateInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -873,6 +899,8 @@ export type CheckoutOrderUncheckedCreateInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -925,6 +953,8 @@ export type CheckoutOrderUpdateInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -977,6 +1007,8 @@ export type CheckoutOrderUncheckedUpdateInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1029,6 +1061,8 @@ export type CheckoutOrderCreateManyInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1078,6 +1112,8 @@ export type CheckoutOrderUpdateManyMutationInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1127,6 +1163,8 @@ export type CheckoutOrderUncheckedUpdateManyInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1176,6 +1214,8 @@ export type CheckoutOrderCountOrderByAggregateInput = {
   shippingLockerId?: Prisma.SortOrder
   shippingLockerCountryCode?: Prisma.SortOrder
   shippingLockerNameOrLabel?: Prisma.SortOrder
+  shippingLockerAddressLine?: Prisma.SortOrder
+  shippingLockerPostalCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -1234,6 +1274,8 @@ export type CheckoutOrderMaxOrderByAggregateInput = {
   shippingLockerId?: Prisma.SortOrder
   shippingLockerCountryCode?: Prisma.SortOrder
   shippingLockerNameOrLabel?: Prisma.SortOrder
+  shippingLockerAddressLine?: Prisma.SortOrder
+  shippingLockerPostalCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -1283,6 +1325,8 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   shippingLockerId?: Prisma.SortOrder
   shippingLockerCountryCode?: Prisma.SortOrder
   shippingLockerNameOrLabel?: Prisma.SortOrder
+  shippingLockerAddressLine?: Prisma.SortOrder
+  shippingLockerPostalCode?: Prisma.SortOrder
   status?: Prisma.SortOrder
   statusUpdatedAt?: Prisma.SortOrder
   paidAt?: Prisma.SortOrder
@@ -1396,6 +1440,8 @@ export type CheckoutOrderCreateWithoutLinesInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1447,6 +1493,8 @@ export type CheckoutOrderUncheckedCreateWithoutLinesInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1514,6 +1562,8 @@ export type CheckoutOrderUpdateWithoutLinesInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1565,6 +1615,8 @@ export type CheckoutOrderUncheckedUpdateWithoutLinesInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1616,6 +1668,8 @@ export type CheckoutOrderCreateWithoutDeliveriesInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1667,6 +1721,8 @@ export type CheckoutOrderUncheckedCreateWithoutDeliveriesInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1734,6 +1790,8 @@ export type CheckoutOrderUpdateWithoutDeliveriesInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1785,6 +1843,8 @@ export type CheckoutOrderUncheckedUpdateWithoutDeliveriesInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1836,6 +1896,8 @@ export type CheckoutOrderCreateWithoutPreorderEstimateDeliveriesInput = {
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1887,6 +1949,8 @@ export type CheckoutOrderUncheckedCreateWithoutPreorderEstimateDeliveriesInput =
   shippingLockerId?: string | null
   shippingLockerCountryCode?: string | null
   shippingLockerNameOrLabel?: string | null
+  shippingLockerAddressLine?: string | null
+  shippingLockerPostalCode?: string | null
   status: $Enums.OrderStatus
   statusUpdatedAt: Date | string
   paidAt?: Date | string | null
@@ -1954,6 +2018,8 @@ export type CheckoutOrderUpdateWithoutPreorderEstimateDeliveriesInput = {
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2005,6 +2071,8 @@ export type CheckoutOrderUncheckedUpdateWithoutPreorderEstimateDeliveriesInput =
   shippingLockerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerCountryCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   shippingLockerNameOrLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerAddressLine?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  shippingLockerPostalCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   statusUpdatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2105,6 +2173,8 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   shippingLockerId?: boolean
   shippingLockerCountryCode?: boolean
   shippingLockerNameOrLabel?: boolean
+  shippingLockerAddressLine?: boolean
+  shippingLockerPostalCode?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -2158,6 +2228,8 @@ export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   shippingLockerId?: boolean
   shippingLockerCountryCode?: boolean
   shippingLockerNameOrLabel?: boolean
+  shippingLockerAddressLine?: boolean
+  shippingLockerPostalCode?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -2207,6 +2279,8 @@ export type CheckoutOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   shippingLockerId?: boolean
   shippingLockerCountryCode?: boolean
   shippingLockerNameOrLabel?: boolean
+  shippingLockerAddressLine?: boolean
+  shippingLockerPostalCode?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -2256,6 +2330,8 @@ export type CheckoutOrderSelectScalar = {
   shippingLockerId?: boolean
   shippingLockerCountryCode?: boolean
   shippingLockerNameOrLabel?: boolean
+  shippingLockerAddressLine?: boolean
+  shippingLockerPostalCode?: boolean
   status?: boolean
   statusUpdatedAt?: boolean
   paidAt?: boolean
@@ -2266,7 +2342,7 @@ export type CheckoutOrderSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutUrl" | "checkoutCancelUrl" | "checkoutSuccessUrl" | "idempotencyKeyDigest" | "idempotencyFingerprint" | "idempotencyEnvironment" | "checkoutProviderClaimToken" | "checkoutProviderLeaseUntil" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "acceptedDeliveryAmountMinor" | "acceptedParcelTier" | "monetaryPolicyReference" | "merchandiseGrossMinor" | "deliveryGrossMinor" | "deliveryVatMinor" | "totalVatMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutUrl" | "checkoutCancelUrl" | "checkoutSuccessUrl" | "idempotencyKeyDigest" | "idempotencyFingerprint" | "idempotencyEnvironment" | "checkoutProviderClaimToken" | "checkoutProviderLeaseUntil" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "acceptedDeliveryAmountMinor" | "acceptedParcelTier" | "monetaryPolicyReference" | "merchandiseGrossMinor" | "deliveryGrossMinor" | "deliveryVatMinor" | "totalVatMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "shippingLockerAddressLine" | "shippingLockerPostalCode" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
 export type CheckoutOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
   deliveries?: boolean | Prisma.CheckoutOrder$deliveriesArgs<ExtArgs>
@@ -2322,6 +2398,8 @@ export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     shippingLockerId: string | null
     shippingLockerCountryCode: string | null
     shippingLockerNameOrLabel: string | null
+    shippingLockerAddressLine: string | null
+    shippingLockerPostalCode: string | null
     status: $Enums.OrderStatus
     statusUpdatedAt: Date
     paidAt: Date | null
@@ -2794,6 +2872,8 @@ export interface CheckoutOrderFieldRefs {
   readonly shippingLockerId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly shippingLockerCountryCode: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly shippingLockerNameOrLabel: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly shippingLockerAddressLine: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly shippingLockerPostalCode: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly status: Prisma.FieldRef<"CheckoutOrder", 'OrderStatus'>
   readonly statusUpdatedAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly paidAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>

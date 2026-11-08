@@ -6,6 +6,7 @@ import type {
   SessionlessPendingCheckoutOrder,
   StockRepository,
   StoreItemOptionRepository,
+  ShippingLockerSnapshot,
 } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
@@ -48,6 +49,8 @@ export type StartCheckoutCommand = {
   idempotencyKey?: string;
   lines?: StartCheckoutLineCommand[];
   newsletterOptIn?: boolean;
+  shippingLocker?: { lockerId: string; name: string; addressLine?: string; postalCode?: string; countryCode: 'GR' };
+  lockerFallback?: true;
   successUrl: string;
   storeItemSlug?: StoreItemSlug;
   variantId?: VariantId;
@@ -139,6 +142,29 @@ export async function startCheckout(
   featureFlags: FeatureFlagReader = enabledFeatureFlags,
   options: StartCheckoutOptions = {},
 ): Promise<Pick<HostedCheckoutSession, 'checkoutSessionId' | 'checkoutUrl'>> {
+  const locker = command.shippingLocker;
+  if (
+    locker &&
+    (command.lockerFallback ||
+      !locker.lockerId.trim() ||
+      locker.lockerId.trim().length > 32 ||
+      !locker.name.trim() ||
+      locker.name.trim().length > 200 ||
+      locker.countryCode.trim() !== 'GR' ||
+      (locker.addressLine?.trim().length ?? 0) > 200 ||
+      (locker.postalCode?.trim().length ?? 0) > 16)
+  ) {
+    throw new CheckoutUnavailableError();
+  }
+  const shippingLocker: ShippingLockerSnapshot | null = locker
+    ? {
+        locker_id: locker.lockerId.trim(),
+        locker_name_or_label: locker.name.trim(),
+        country_code: 'GR',
+        address_line: locker.addressLine?.trim() ?? null,
+        postal_code: locker.postalCode?.trim() ?? null,
+      }
+    : null;
   if (!(await featureFlags.isNativeCheckoutEnabled())) {
     throw new NativeCheckoutDisabledError();
   }
@@ -155,6 +181,8 @@ export async function startCheckout(
     cancelUrl: command.cancelUrl,
     lines: requestedLines,
     newsletterOptIn: command.newsletterOptIn === true,
+    shippingLocker,
+    lockerFallback: command.lockerFallback === true,
     successUrl: command.successUrl,
   });
   const requestIdentity = await createRequestIdentity({
@@ -275,6 +303,7 @@ export async function startCheckout(
     newsletterConsentCopyVersion: command.newsletterOptIn ? NEWSLETTER_CONSENT_COPY_VERSION : null,
     newsletterOptIn: command.newsletterOptIn === true,
     orderId: crypto.randomUUID(),
+    shippingLocker,
     requestIdentity,
   };
   let holdResult = await checkoutHolds.createPendingHold(holdInput);

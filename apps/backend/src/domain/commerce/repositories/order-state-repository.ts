@@ -7,9 +7,11 @@ export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_revie
 export type OrderReviewReason = 'stock_unavailable' | 'line_mismatch' | 'incomplete_fulfillment';
 
 export type ShippingLockerSnapshot = {
+  address_line: string | null;
   locker_id: string;
   country_code: 'GR';
   locker_name_or_label: string;
+  postal_code: string | null;
 };
 
 export type CheckoutOrderRecord = OrderMonetaryFields & {

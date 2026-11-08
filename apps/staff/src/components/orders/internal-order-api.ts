@@ -2,6 +2,11 @@ import { createInternalApiFetcher, type InternalApiComponents } from '@blackbox/
 
 export type InternalOrder = InternalApiComponents['schemas']['InternalCheckoutOrder'];
 export type OrderStatus = InternalApiComponents['schemas']['InternalOrderStatus'];
+/** What the operator records from BOX NOW's Send parcel form when marking an order shipped. */
+export type DispatchCarrierFacts = {
+  lockerUsed?: { lockerId: string; name: string };
+  parcelNumbers?: string[];
+};
 
 export class InternalOrderApiError extends Error {
   constructor(readonly status: number) {
@@ -76,7 +81,11 @@ export function createInternalOrderApi(baseUrl = '') {
     },
     async setDispatch(
       checkoutSessionId: string,
-      change: { shipped: boolean; expectedShipped: boolean; sendShippingEmail?: boolean },
+      change: {
+        shipped: boolean;
+        expectedShipped: boolean;
+        sendShippingEmail?: boolean;
+      } & DispatchCarrierFacts,
     ) {
       return read(() =>
         setDispatch(

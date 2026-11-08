@@ -1,6 +1,7 @@
 ---
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import DeliveryRates from '@/components/store/checkout/DeliveryRates';
+import LockerFinder from '@/components/store/checkout/LockerFinder';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import PurchaseDocument from '@/platform/components/PurchaseDocument';
@@ -20,6 +21,7 @@ const information = Astro.props.information === undefined ? getPurchaseInformati
   <section class="layout-container space-y-6 py-10" aria-label="Delivery information">
     <div class="max-w-2xl space-y-5 text-sm leading-7">
       <DeliveryRates />
+      <LockerFinder client:visible />
       <p>
         <a
           class="inline-flex min-h-11 items-center underline underline-offset-4"
@@ -40,9 +42,10 @@ const information = Astro.props.information === undefined ? getPurchaseInformati
           <section id="delivery" class="scroll-mt-6 space-y-3">
             <h2 class="font-display text-3xl">Locker delivery</h2>
             <p>
-              Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island
-              surcharge. We arrange your locker with you before dispatch. A street address collected at payment does not
-              mean home delivery.
+              Delivery is to the BOX NOW locker in Greece that you choose at checkout, including supported island
+              destinations, with no island surcharge. BOX NOW texts you a pickup code when the parcel arrives. If that
+              locker is full, BOX NOW moves the parcel to the nearest one and tells you where. A street address
+              collected at payment does not mean home delivery.
             </p>
             <p>
               Delivery is charged by the total product quantity in your cart. We absorb packaging and carrier cost

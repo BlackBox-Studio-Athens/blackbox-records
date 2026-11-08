@@ -67,6 +67,8 @@ type CheckoutOrderRow = {
   shippingLockerCountryCode: null | string;
   shippingLockerId: null | string;
   shippingLockerNameOrLabel: null | string;
+  shippingLockerAddressLine: null | string;
+  shippingLockerPostalCode: null | string;
   status: OrderStatus;
   statusUpdatedAt: string;
   storeItemSlug: string;
@@ -160,6 +162,8 @@ const checkoutOrderSelectSql = [
   '  "shippingLockerId",',
   '  "shippingLockerCountryCode",',
   '  "shippingLockerNameOrLabel",',
+  '  "shippingLockerAddressLine",',
+  '  "shippingLockerPostalCode",',
   '  "status",',
   '  "statusUpdatedAt",',
   '  "paidAt",',
@@ -684,9 +688,11 @@ function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[
     shippingLocker:
       row.shippingLockerId && row.shippingLockerCountryCode === 'GR' && row.shippingLockerNameOrLabel
         ? {
+            address_line: row.shippingLockerAddressLine,
             country_code: row.shippingLockerCountryCode,
             locker_id: row.shippingLockerId,
             locker_name_or_label: row.shippingLockerNameOrLabel,
+            postal_code: row.shippingLockerPostalCode,
           }
         : null,
     status: row.status,

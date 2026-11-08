@@ -1,4 +1,5 @@
 import type { CartLine } from '@/components/store/cart/store-cart';
+import type { BoxNowLocker } from './boxnow-locker';
 
 export const checkoutAttemptKey = 'blackbox-checkout-attempt';
 
@@ -7,12 +8,16 @@ type CheckoutAttempt = {
   idempotencyKey: string;
 };
 
-export function checkoutAttemptFingerprint(input: {
+type CheckoutAttemptInput = {
   lines: CartLine[];
+  /** A changed locker must start a new attempt; the Worker refuses a reused key with a different body. */
+  locker?: BoxNowLocker | 'fallback' | undefined;
   newsletterOptIn: boolean;
   storeItemSlug: string;
   variantId: string;
-}): string {
+};
+
+export function checkoutAttemptFingerprint(input: CheckoutAttemptInput): string {
   const merged = new Map<string, { quantity: number; storeItemSlug: string; variantId: string }>();
   for (const line of input.lines) {
     const key = line.storeItemSlug + ':' + line.variantId;
@@ -29,6 +34,7 @@ export function checkoutAttemptFingerprint(input: {
       (left, right) =>
         left.storeItemSlug.localeCompare(right.storeItemSlug) || left.variantId.localeCompare(right.variantId),
     ),
+    ...(input.locker ? { locker: input.locker } : {}),
     newsletterOptIn: input.newsletterOptIn,
     returnContext:
       typeof window === 'undefined' ? '' : window.location.origin + window.location.pathname + window.location.search,
@@ -38,15 +44,7 @@ export function checkoutAttemptFingerprint(input: {
   });
 }
 
-export function getOrCreateCheckoutAttempt(
-  input: {
-    lines: CartLine[];
-    newsletterOptIn: boolean;
-    storeItemSlug: string;
-    variantId: string;
-  },
-  storage: Storage = sessionStorage,
-): string {
+export function getOrCreateCheckoutAttempt(input: CheckoutAttemptInput, storage: Storage = sessionStorage): string {
   const fingerprint = checkoutAttemptFingerprint(input);
   try {
     const current = readCheckoutAttempt(storage);

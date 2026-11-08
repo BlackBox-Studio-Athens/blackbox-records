@@ -10,7 +10,7 @@ import {
   parseOrderListLocation,
   toShipFilters,
 } from './order-workspace';
-import OrderDetail, { money, notificationStatus } from './OrderDetail';
+import OrderDetail, { boxNowTrackingUrl, money, notificationStatus } from './OrderDetail';
 import { exampleOrder } from './order-fixtures.test-support.ts';
 import OrderWorkspace from './OrderWorkspace';
 import { writeStaffLocation } from '../../lib/staff-navigation';
@@ -502,6 +502,82 @@ describe('Order dispatch', () => {
     expect(html).toContain('Marking shipped again will not send it.');
     expect(html).not.toContain('type="checkbox"');
     expect(notificationStatus(order)).toBe('delivered');
+  });
+
+  it('prepares BOX NOW Send parcel with copyable details and a size suggestion', () => {
+    const html = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
+    expect(html).toContain('For BOX NOW Send parcel');
+    expect(html).toContain('Small · BOX NOW €3 (we charged €4)');
+    expect(html).toContain('Example recipient');
+    expect(html).toContain('example@example.invalid');
+    expect(html).toContain('BOX NOW STORE - Ακαδημίας 86 (Αθήνα)');
+    expect(html).toContain('>7721<');
+    expect(html).toContain('Copy all');
+    expect(html).toContain('href="https://steiledema.boxnow.gr/en/apostoli-dematos"');
+    expect(html).not.toContain('Copy phone');
+    expect(html).not.toContain('Parcel value');
+  });
+
+  it('says when the customer chose no locker and asks for the agreed one', () => {
+    const fulfillment = exampleOrder.fulfillment as Extract<InternalOrder['fulfillment'], { kind: 'current' }>;
+    const order: InternalOrder = { ...exampleOrder, fulfillment: { ...fulfillment, shippingLocker: null } };
+    const html = renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />);
+    expect(html).toContain('No locker chosen: BOX NOW&#x27;s map was unavailable at checkout.');
+    expect(html).not.toContain('Copy locker id');
+    expect(html).toContain('Enter the locker agreed with the customer.');
+    expect(html).toContain('Locker name');
+  });
+
+  it('offers locker used and parcel numbers before marking shipped', () => {
+    const html = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
+    expect(html).toContain('Locker used');
+    expect(html).toContain('Change');
+    expect(html).toContain('BOX NOW parcel number');
+    expect(html).toContain('+ Add parcel');
+    expect(html).toContain('the one that opens the locker door');
+    expect(html).not.toContain('Check the number on BOX NOW');
+  });
+
+  it('shows the saved locker and parcel numbers on a shipped order', () => {
+    const order: InternalOrder = {
+      ...exampleOrder,
+      dispatch: {
+        ...exampleOrder.dispatch,
+        shippedAt: '2026-11-06T10:00:00.000Z',
+        updatedAt: '2026-11-06T10:00:00.000Z',
+        updatedBy: 'ops@example.com',
+        lockerUsed: { lockerId: '7722', name: 'BOX NOW Σόλωνος' },
+        parcelNumbers: ['9876543210', '9876543211'],
+      },
+    };
+    const html = renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />);
+    expect(html).toContain('Locker used: BOX NOW Σόλωνος · 7722');
+    expect(html).toContain('Parcels: 9876543210, 9876543211');
+    expect(html).not.toContain('BOX NOW parcel number');
+  });
+
+  it('sends the carrier facts only with a shipped mark', async () => {
+    const client = { ...api(), setDispatch: vi.fn(async () => exampleOrder) };
+    const workspace = createOrderWorkspace(client);
+    await workspace.lookup('cs_test_example');
+    const carrier = { lockerUsed: { lockerId: '7721', name: 'Locker' }, parcelNumbers: ['9876543210'] };
+    await workspace.setDispatch(true, true, carrier);
+    expect(client.setDispatch).toHaveBeenLastCalledWith('cs_test_example', {
+      shipped: true,
+      expectedShipped: false,
+      sendShippingEmail: true,
+      ...carrier,
+    });
+    await workspace.setDispatch(false, true, carrier);
+    expect(client.setDispatch).toHaveBeenLastCalledWith('cs_test_example', {
+      shipped: false,
+      expectedShipped: true,
+      sendShippingEmail: true,
+    });
+  });
+
+  it('builds the BOX NOW tracking link from a parcel number', () => {
+    expect(boxNowTrackingUrl('9876543210')).toBe('https://boxnow.gr/en?track=9876543210');
   });
 
   it('shows existing shipping email outcomes after undo instead of offering a new choice', () => {

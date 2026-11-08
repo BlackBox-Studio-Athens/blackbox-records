@@ -274,9 +274,11 @@ describe('Stripe sandbox Playwright smoke runner', () => {
         orderStatus: 'paid',
         paymentStatus: 'paid',
         shippingLocker: {
+          address_line: null,
           country_code: 'GR',
           locker_id: 'locker_1',
           locker_name_or_label: 'Locker 1',
+          postal_code: null,
         },
         state: 'paid',
         status: 'complete',

@@ -368,10 +368,12 @@ export type components = {
             status: "open" | "complete" | "expired" | null;
         };
         CheckoutStateShippingLocker: {
+            address_line: string | null;
             /** @enum {string} */
             country_code: "GR";
             locker_id: string;
             locker_name_or_label: string;
+            postal_code: string | null;
         };
         DeliveryQuoteResponse: {
             quote: {
@@ -540,7 +542,17 @@ export type components = {
         };
         StartCheckoutBody: {
             lines?: components["schemas"]["StartCheckoutLine"][];
+            /** @enum {boolean} */
+            lockerFallback?: true;
             newsletterOptIn?: boolean;
+            shippingLocker?: {
+                addressLine?: string;
+                /** @enum {string} */
+                countryCode: "GR";
+                lockerId: string;
+                name: string;
+                postalCode?: string;
+            };
             storeItemSlug?: string;
             variantId?: string;
         };

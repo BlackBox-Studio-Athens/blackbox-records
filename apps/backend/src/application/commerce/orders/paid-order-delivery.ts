@@ -13,6 +13,7 @@ import {
 import type {
   ClaimedPaidOrderDelivery,
   CurrentPaidCheckoutOrder,
+  OrderDispatch,
   PaidOrderDeliverySafeReason,
 } from '../../../domain/commerce/repositories/spi';
 import { createCheckoutOrderReferenceToken, resolveTaxCollectionMode } from '../../../domain/commerce';
@@ -36,9 +37,12 @@ export async function attemptPaidOrderDelivery(input: {
   delivery: ClaimedPaidOrderDelivery;
   logger?: Pick<Console, 'info' | 'warn'>;
   order: CurrentPaidCheckoutOrder;
+  dispatch?: OrderDispatch | null;
   provider: EmailProviderGateway;
 }): Promise<PaidOrderDeliveryAttemptResult> {
   const order = toPaidOrderEmailInput(input.order);
+  order.lockerUsed = input.dispatch?.lockerUsed ?? null;
+  order.parcelNumbers = input.dispatch?.parcelNumbers ?? [];
 
   switch (input.delivery.kind) {
     case 'shopper_shipping':
@@ -116,6 +120,13 @@ function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailI
       referenceDate: order.paidAt,
     }),
     paidAt: order.paidAt,
+    shippingLocker: order.shippingLocker
+      ? {
+          lockerId: order.shippingLocker.locker_id,
+          name: order.shippingLocker.locker_name_or_label,
+          postalCode: order.shippingLocker.postal_code,
+        }
+      : null,
     shippingAddress: {
       city: order.shippingAddressCity,
       country: order.shippingAddressCountryCode,

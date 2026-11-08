@@ -95,7 +95,15 @@ For incomplete or suspect historical shipping, record whether customer contact/m
 ## Paid delivery and manual dispatch
 
 1. Verify paid persisted order state and complete collected Greek recipient/address plus shopper contact. Check shopper confirmation and ops fulfillment delivery summaries; investigate exhausted attempts. Scheduled outbox recovery owns transient email failures and does not authorize another stock decrement or payment.
-2. Confirm the Greek BOX NOW destination with the customer where needed, then create the shipment manually in the authorized partner portal. No BOX NOW credentials or raw portal payloads belong in this repository.
+2. Ship with BOX NOW:
+   1. Open the order in Staff.
+   2. Copy the values from “For BOX NOW Send parcel” into the [BOX NOW public Send parcel form](https://steiledema.boxnow.gr/en/apostoli-dematos) and pay by card.
+   3. Drop the parcel at any BOX NOW locker using the 10-digit number from the BOX NOW email.
+   4. Paste that number in Dispatch, and change Locker used if the form refused the customer locker.
+   5. Mark shipped.
+
+   If the order has no locker, agree one with the customer by email first, then enter it under Locker used.
+
 3. Before dispatch, open the order in Orders and check that it shows Not shipped. After the shipment handoff, choose Mark shipped; Orders records the operator and time and refuses a second mark, so another operator cannot ship twice. Use Mark not shipped only to correct a mistake. Keep any verified destination correction in the private exception record. A rehearsal is not evidence of a physical shipment.
 4. For returns, verify actual receipt before recording a stock delta or recount. Use current revision/state and reassess any stale-count conflict.
 

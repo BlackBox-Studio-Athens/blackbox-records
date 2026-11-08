@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
-import type { InternalOrder, OrderStatus } from './internal-order-api';
+import type { DispatchCarrierFacts, InternalOrder, OrderStatus } from './internal-order-api';
+import SendParcelDetails from './SendParcelDetails';
 
 export const paymentLabels: Record<OrderStatus, string> = {
   pending_payment: 'Pending payment',
@@ -136,27 +137,62 @@ function orderShipEstimateText(estimate: OrderShipEstimate): string {
     : `around ${estimate.part ? `${estimate.part} ` : ''}${formatted}`;
 }
 
-function DispatchControl({
-  order,
-  onSetDispatch,
-}: {
-  order: InternalOrder;
-  onSetDispatch: (shipped: boolean, sendShippingEmail?: boolean) => Promise<string | null>;
-}) {
+const PARCEL_NUMBER = /^\d{10}$/;
+const MAX_PARCELS = 5;
+
+export function boxNowTrackingUrl(parcelNumber: string) {
+  return `https://boxnow.gr/en?track=${parcelNumber}`;
+}
+
+type SetDispatch = (
+  shipped: boolean,
+  sendShippingEmail?: boolean,
+  carrier?: DispatchCarrierFacts,
+) => Promise<string | null>;
+
+function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSetDispatch: SetDispatch }) {
   const [busy, setBusy] = useState(false);
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [message, setMessage] = useState('');
   const [sendShippingEmail, setSendShippingEmail] = useState(true);
+  const customerLocker = order.fulfillment.kind === 'current' ? order.fulfillment.shippingLocker : null;
+  const [editingLocker, setEditingLocker] = useState(!customerLocker);
+  const [lockerName, setLockerName] = useState(customerLocker?.name ?? '');
+  const [lockerId, setLockerId] = useState(customerLocker?.lockerId ?? '');
+  const [parcelNumbers, setParcelNumbers] = useState(['']);
+  const [carrierError, setCarrierError] = useState('');
   const shipped = Boolean(order.dispatch.shippedAt);
   const shippingDelivery = order.deliveries.some((delivery) => delivery.kind === 'shopper_shipping');
   const suppressed = order.dispatch.shippingEmailSuppressed && !shippingDelivery;
   const canChooseEmail =
     typeof order.dispatch.shippingEmailSuppressed === 'boolean' && !suppressed && !shippingDelivery;
+  const enteredNumbers = parcelNumbers.map((value) => value.trim()).filter(Boolean);
+  const firstValidNumber = enteredNumbers.find((value) => PARCEL_NUMBER.test(value));
+
+  function readCarrier(): DispatchCarrierFacts | string {
+    if (enteredNumbers.some((value) => !PARCEL_NUMBER.test(value)))
+      return 'Each parcel number must be exactly 10 digits.';
+    if (new Set(enteredNumbers).size !== enteredNumbers.length) return 'Each parcel number can be entered only once.';
+    const name = lockerName.trim();
+    const id = lockerId.trim();
+    if (Boolean(name) !== Boolean(id)) return 'Enter both the locker name and its ID, or leave both empty.';
+    return {
+      ...(name && id ? { lockerUsed: { lockerId: id, name } } : {}),
+      ...(enteredNumbers.length ? { parcelNumbers: enteredNumbers } : {}),
+    };
+  }
+
   async function change(next: boolean) {
+    const carrier = next ? readCarrier() : {};
+    if (typeof carrier === 'string') {
+      setCarrierError(carrier);
+      return;
+    }
+    setCarrierError('');
     setBusy(true);
     setMessage('');
     const sendEmail = !suppressed && (shippingDelivery || sendShippingEmail);
-    const error = await onSetDispatch(next, sendEmail);
+    const error = await onSetDispatch(next, sendEmail, carrier);
     setBusy(false);
     setConfirmUndo(false);
     setMessage(
@@ -170,6 +206,107 @@ function DispatchControl({
   }
   return (
     <div className="order-dispatch">
+      {!shipped && (
+        <div className="order-dispatch-carrier" data-dispatch-carrier>
+          <div className="order-field">
+            <span className="order-field__label" id="locker-used-label">
+              Locker used
+            </span>
+            {editingLocker ? (
+              <div className="order-field__pair" role="group" aria-labelledby="locker-used-label">
+                <label>
+                  Locker name
+                  <input
+                    value={lockerName}
+                    disabled={busy}
+                    onChange={(event) => {
+                      setCarrierError('');
+                      setLockerName(event.target.value);
+                    }}
+                  />
+                </label>
+                <label>
+                  Locker ID
+                  <input
+                    value={lockerId}
+                    inputMode="numeric"
+                    disabled={busy}
+                    onChange={(event) => {
+                      setCarrierError('');
+                      setLockerId(event.target.value);
+                    }}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="order-locker-used">
+                <span>
+                  {lockerName} <code>{lockerId}</code>
+                </span>
+                <Button variant="ghost" disabled={busy} onClick={() => setEditingLocker(true)}>
+                  Change
+                </Button>
+              </div>
+            )}
+            <small className="order-muted">
+              {customerLocker
+                ? "The customer's choice. Change it only if Send parcel would not take it; the shipping email names this locker."
+                : 'No locker chosen at checkout. Enter the locker agreed with the customer.'}
+            </small>
+          </div>
+          {parcelNumbers.map((value, index) => (
+            <div className="order-field" key={index}>
+              <label className="order-field__label" htmlFor={`parcel-number-${index}`}>
+                {parcelNumbers.length > 1 ? `Parcel ${index + 1} number` : 'BOX NOW parcel number'}
+              </label>
+              <input
+                id={`parcel-number-${index}`}
+                className="order-parcel-input"
+                value={value}
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={14}
+                disabled={busy}
+                aria-describedby="parcel-number-help"
+                aria-invalid={value.trim() !== '' && !PARCEL_NUMBER.test(value.trim())}
+                onChange={(event) => {
+                  setCarrierError('');
+                  setParcelNumbers((current) => current.map((item, at) => (at === index ? event.target.value : item)));
+                }}
+              />
+            </div>
+          ))}
+          {parcelNumbers.length < MAX_PARCELS && (
+            <Button
+              variant="ghost"
+              className="justify-self-start"
+              disabled={busy}
+              onClick={() => setParcelNumbers((current) => [...current, ''])}
+            >
+              + Add parcel
+            </Button>
+          )}
+          <small id="parcel-number-help" className="order-muted">
+            The 10-digit number from BOX NOW&apos;s email, the one that opens the locker door. Adds a tracking link to
+            the shipping email. Leave it empty to send the email without tracking.
+          </small>
+          {carrierError && (
+            <p className="order-field__error" role="alert">
+              {carrierError}
+            </p>
+          )}
+          {firstValidNumber && (
+            <a
+              className="order-dispatch-check"
+              href={boxNowTrackingUrl(firstValidNumber)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Check the number on BOX NOW ↗
+            </a>
+          )}
+        </div>
+      )}
       {!shipped && canChooseEmail && (
         <label className="order-dispatch-email">
           <input
@@ -241,7 +378,7 @@ export default function OrderDetail({
   onSetDispatch,
 }: {
   order: InternalOrder;
-  onSetDispatch?: ((shipped: boolean, sendShippingEmail?: boolean) => Promise<string | null>) | undefined;
+  onSetDispatch?: SetDispatch | undefined;
 }) {
   const fulfillment = order.fulfillment;
   const attention = notificationStatus(order);
@@ -283,12 +420,23 @@ export default function OrderDetail({
               {dispatch.shippedAt ? 'Marked' : 'Undone'} {formatOrderTime(dispatch.updatedAt)} by {dispatch.updatedBy}
             </small>
           )}
+          {dispatch.lockerUsed && (
+            <small className="order-muted">
+              Locker used: {dispatch.lockerUsed.name} · {dispatch.lockerUsed.lockerId}
+            </small>
+          )}
+          {dispatch.parcelNumbers.length > 0 && (
+            <small className="order-muted">
+              {dispatch.parcelNumbers.length > 1 ? 'Parcels' : 'Parcel'}: {dispatch.parcelNumbers.join(', ')}
+            </small>
+          )}
         </div>
         <div>
           <span className="order-eyebrow">Notifications</span>
           {attention ? <OrderStatusLabel status={attention} /> : <span>No notifications recorded</span>}
         </div>
       </div>
+      {order.status === 'paid' && fulfillment.kind === 'current' && <SendParcelDetails fulfillment={fulfillment} />}
       {onSetDispatch && order.status === 'paid' && fulfillment.kind === 'current' && (
         <DispatchControl
           key={order.orderReference ?? order.checkoutSessionId}

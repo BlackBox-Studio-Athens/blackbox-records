@@ -23,6 +23,7 @@
         "./CheckoutOrderSummary.tsx",
         "./DeliverySummary.tsx",
         "./DeliveryRates.tsx",
+        "./LockerFinder.tsx",
         "./StoreItemPurchaseActions.tsx",
         "./CheckoutOfferStatus.tsx",
         "./CheckoutReturnStatus.tsx"

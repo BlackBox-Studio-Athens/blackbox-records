@@ -8087,8 +8087,139 @@ body.is-app-shell-overlay-open {
   color: var(--muted-foreground);
 }
 
+.checkout-review__stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tighter than the review card so Continue to Payment stays above the fold at 1440x900. */
+.checkout-locker__content {
+  gap: 12px;
+}
+
+.checkout-locker__intro {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--muted-foreground);
+  font: 400 0.875rem/1.6 var(--font-sans);
+}
+
+.checkout-locker__notice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  background: var(--secondary);
+  font: 400 0.8125rem/1.5 var(--font-sans);
+}
+
+.checkout-locker__notice p {
+  margin: 0;
+}
+
+.checkout-locker__label {
+  color: var(--muted-foreground);
+  font: 500 0.75rem/1.3 var(--font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.checkout-locker__chosen {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 14px;
+  border: 1px solid var(--flint-700);
+  padding: 14px;
+  background: var(--flint-surface);
+}
+
+.checkout-locker__chosen svg {
+  grid-row: span 3;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  color: var(--flint-300);
+}
+
+.checkout-locker__chosen p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.checkout-locker__name {
+  font: 600 0.9375rem/1.35 var(--font-sans);
+}
+
+.checkout-locker__address {
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.5 var(--font-sans);
+}
+
+.checkout-locker__id {
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.35 var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+.locker-finder {
+  display: flex;
+  max-width: 35rem;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border);
+  padding: 20px;
+  background: var(--card);
+}
+
+.boxnow-map {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.boxnow-map__frame {
+  height: clamp(26rem, 70svh, 37rem);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.boxnow-map__frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.boxnow-map__caption {
+  margin: 0;
+  color: var(--muted-foreground);
+  font: 400 0.75rem/1.5 var(--font-sans);
+}
+
 .checkout-summary__content {
   gap: 18px;
+}
+
+.checkout-summary__delivery-to {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font: 400 0.8125rem/1.5 var(--font-sans);
+  overflow-wrap: anywhere;
+}
+
+.checkout-summary__delivery-to > span:first-child {
+  color: var(--muted-foreground);
+  font: 500 0.75rem/1.3 var(--font-sans);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .checkout-summary__heading {

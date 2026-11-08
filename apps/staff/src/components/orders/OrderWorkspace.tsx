@@ -408,7 +408,9 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
           <OrderDetail
             order={state.detail.data}
             onSetDispatch={
-              state.session ? (shipped, sendEmail) => workspace.setDispatch(shipped, sendEmail) : undefined
+              state.session
+                ? (shipped, sendEmail, carrier) => workspace.setDispatch(shipped, sendEmail, carrier)
+                : undefined
             }
           />
         )

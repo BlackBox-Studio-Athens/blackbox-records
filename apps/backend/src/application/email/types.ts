@@ -92,6 +92,9 @@ export type PaidOrderEmailShopperContact = {
 };
 
 export type PaidOrderEmailInput = {
+  shippingLocker?: { lockerId: string; name: string; postalCode: string | null } | null;
+  lockerUsed?: { lockerId: string; name: string } | null;
+  parcelNumbers?: string[];
   taxCollectionMode?: 'STRIPE_AUTOMATIC_TAX' | 'NO_TAX_COLLECTED' | null;
   merchandiseGrossMinor?: number | null;
   deliveryGrossMinor?: number | null;

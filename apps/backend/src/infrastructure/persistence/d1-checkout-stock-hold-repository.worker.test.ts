@@ -77,6 +77,13 @@ describe('D1CheckoutStockHoldRepository', () => {
         orderId: crypto.randomUUID(),
         createdAt: new Date('2026-10-02T10:00:00Z'),
         checkoutExpiresAt: new Date('2026-10-02T10:30:00Z'),
+        shippingLocker: {
+          locker_id: '4',
+          locker_name_or_label: 'Athens',
+          country_code: 'GR',
+          address_line: 'Street',
+          postal_code: '12345',
+        },
         requestIdentity,
         lines: [
           {
@@ -110,6 +117,13 @@ describe('D1CheckoutStockHoldRepository', () => {
       const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
       const orders = new PrismaOrderStateRepository(prisma);
       try {
+        expect((await orders.findById(result.hold.id))?.shippingLocker).toEqual({
+          locker_id: '4',
+          locker_name_or_label: 'Athens',
+          country_code: 'GR',
+          address_line: 'Street',
+          postal_code: '12345',
+        });
         await env.COMMERCE_DB.prepare(
           'UPDATE "Stock" SET "preorderStartedAt" = ?, "preorderShipMonth" = ? WHERE "variantId" = ?',
         )

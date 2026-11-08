@@ -24,6 +24,10 @@ import PurchaseInformation, { NEWSLETTER_CONSENT_LABEL, PrivacyLink } from '@/pl
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
 import { clearCheckoutAttempt, getOrCreateCheckoutAttempt } from './checkout-attempt';
+import CheckoutLockerPanel, { type CheckoutLockerChoice } from './CheckoutLockerPanel';
+import { BOXNOW_LOCKER_CHOSEN_EVENT } from './boxnow-locker';
+
+export const LOCKER_REQUIRED_COPY = 'Choose a locker above to continue.';
 
 interface CheckoutOfferStatusProps {
   checkoutClientMode?: string;
@@ -88,6 +92,8 @@ export default function CheckoutOfferStatus({
   const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>();
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
+  const [lockerChoice, setLockerChoice] = useState<CheckoutLockerChoice>({ kind: 'none' });
+  const hasLockerChoice = lockerChoice.kind !== 'none';
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
   const isCartLoading =
     cartLines === undefined || (!cartLines.length && Boolean(storeItemSlug) && view.tone === 'loading');
@@ -201,8 +207,16 @@ export default function CheckoutOfferStatus({
     return () => window.removeEventListener('pageshow', resetRestoredCheckout);
   }, []);
 
+  function changeLocker(next: CheckoutLockerChoice) {
+    setLockerChoice(next);
+    clearCheckoutError();
+    window.dispatchEvent(
+      new CustomEvent(BOXNOW_LOCKER_CHOSEN_EVENT, { detail: next.kind === 'locker' ? next.locker : null }),
+    );
+  }
+
   async function handleStartCheckout() {
-    if (!delivery.quote || delivery.loading) return;
+    if (!delivery.quote || delivery.loading || !hasLockerChoice) return;
     const checkoutApi = api ?? createPublicCheckoutApi();
 
     const currentCartLines = readStoreCartState(window.localStorage).lines;
@@ -222,8 +236,10 @@ export default function CheckoutOfferStatus({
     setIsStartingCheckout(true);
 
     const primaryVariantId = currentCartLines[0]?.variantId ?? view.variantId ?? fallbackStartLine.variantId;
+    const locker = lockerChoice.kind === 'locker' ? lockerChoice.locker : ('fallback' as const);
     const idempotencyKey = getOrCreateCheckoutAttempt({
       lines: currentCartLines,
+      locker,
       newsletterOptIn: isNewsletterOptedIn,
       storeItemSlug: fallbackStartLine.storeItemSlug,
       variantId: primaryVariantId,
@@ -232,6 +248,7 @@ export default function CheckoutOfferStatus({
       api: checkoutApi,
       idempotencyKey,
       lines: currentCartLines,
+      locker,
       newsletterOptIn: isNewsletterOptedIn,
       storeItemSlug: fallbackStartLine.storeItemSlug,
       variantId: primaryVariantId,
@@ -253,149 +270,163 @@ export default function CheckoutOfferStatus({
   }
 
   return (
-    <Card
-      className="checkout-review__panel rounded-none shadow-none"
-      data-checkout-offer-status
-      aria-busy={isCartLoading}
-    >
-      <CardContent className="checkout-review__panel-content">
-        <div className="checkout-review__panel-heading">
-          <h2 className="checkout-review__panel-title">Review and Pay</h2>
-          <Badge variant="outline" className={badgeClassName}>
-            {badgeLabel}
-          </Badge>
-        </div>
+    <div className="checkout-review__stack">
+      {(isCartLoading || hasCheckoutLine) && (
+        <CheckoutLockerPanel choice={lockerChoice} onChange={changeLocker} disabled={isStartingCheckout} />
+      )}
+      <Card
+        className="checkout-review__panel rounded-none shadow-none"
+        data-checkout-offer-status
+        aria-busy={isCartLoading}
+      >
+        <CardContent className="checkout-review__panel-content">
+          <div className="checkout-review__panel-heading">
+            <h2 className="checkout-review__panel-title">Review and Pay</h2>
+            <Badge variant="outline" className={badgeClassName}>
+              {badgeLabel}
+            </Badge>
+          </div>
 
-        {(isCartLoading || hasCheckoutLine) && (
-          <DeliverySummary {...delivery} loading={isCartLoading || delivery.loading} />
-        )}
-        <PreorderCartNotice lines={reviewLines} />
-        {hasCheckoutLine && (
-          <InternationalOrderNotice
-            variant="card"
-            borderTone="neutral"
-            itemTitles={reviewLines.map((line) => line.title)}
-          />
-        )}
-
-        <div className="checkout-review__actions">
-          {!view.canStartCheckout && <p className="checkout-review__note">{view.detail}</p>}
-          {view.tone === 'loading' && (
-            <LoadingInline
-              className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
-              label="Confirming price and availability"
+          {(isCartLoading || hasCheckoutLine) && (
+            <DeliverySummary {...delivery} loading={isCartLoading || delivery.loading} />
+          )}
+          <PreorderCartNotice lines={reviewLines} />
+          {hasCheckoutLine && (
+            <InternationalOrderNotice
+              variant="card"
+              borderTone="neutral"
+              itemTitles={reviewLines.map((line) => line.title)}
             />
           )}
 
-          {canShowPayment ? (
-            <>
-              <div className="checkout-review__newsletter">
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-4 shrink-0 accent-foreground"
-                    checked={isNewsletterOptedIn}
-                    disabled={isStartingCheckout}
-                    onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
-                  />
-                  <span>{NEWSLETTER_CONSENT_LABEL}</span>
-                </label>
-                <PrivacyLink />
-              </div>
+          <div className="checkout-review__actions">
+            {!view.canStartCheckout && <p className="checkout-review__note">{view.detail}</p>}
+            {view.tone === 'loading' && (
+              <LoadingInline
+                className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
+                label="Confirming price and availability"
+              />
+            )}
 
-              {showReviewSiteMarker && (
-                <p className="text-xs font-semibold leading-relaxed text-foreground" data-review-site-checkout-warning>
-                  Test checkout. No real payment will be taken.
-                </p>
-              )}
-
-              <div className="checkout-review__payment-handoff">
-                <Button
-                  type="button"
-                  variant={payView.variant}
-                  className={cn(
-                    'checkout-review__pay whitespace-normal',
-                    payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
-                  )}
-                  disabled={isStartingCheckout || delivery.loading || !delivery.quote}
-                  aria-busy={isStartingCheckout || payView.isWaitingForQuote ? 'true' : undefined}
-                  data-checkout-pay-state={payView.variant === 'default' ? 'ready' : 'waiting'}
-                  onClick={() => {
-                    void handleStartCheckout();
-                  }}
-                >
-                  {isStartingCheckout || payView.isWaitingForQuote ? (
-                    <LoadingButtonContent label={payView.label} />
-                  ) : (
-                    <>
-                      <span className="min-w-0 leading-tight">{payView.label}</span>
-                      {payView.amountDisplay && (
-                        <span className="sr-only" aria-hidden="true" data-checkout-pay-amount>
-                          {payView.amountDisplay}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Button>
-                <div className="checkout-review__stripe-badge">
-                  {payView.badgeSrc && (
-                    <img
-                      src={payView.badgeSrc}
-                      alt="Powered by Stripe"
-                      width="150"
-                      height="34"
-                      data-checkout-stripe-badge
+            {canShowPayment ? (
+              <>
+                <div className="checkout-review__newsletter">
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 size-4 shrink-0 accent-foreground"
+                      checked={isNewsletterOptedIn}
+                      disabled={isStartingCheckout}
+                      onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
                     />
-                  )}
+                    <span>{NEWSLETTER_CONSENT_LABEL}</span>
+                  </label>
+                  <PrivacyLink />
                 </div>
-              </div>
-            </>
-          ) : (
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              {isCartLoading
-                ? 'Loading your cart…'
-                : !hasCheckoutLine
-                  ? 'Add a priced item to the cart before checkout.'
-                  : view.canStartCheckout
-                    ? 'Stripe opens after checkout is ready.'
-                    : 'Payment opens after price and availability are confirmed.'}
-            </p>
-          )}
 
-          {(isCartLoading || hasCheckoutLine) && <PurchaseInformation presentation="checkout-support" />}
+                {showReviewSiteMarker && (
+                  <p
+                    className="text-xs font-semibold leading-relaxed text-foreground"
+                    data-review-site-checkout-warning
+                  >
+                    Test checkout. No real payment will be taken.
+                  </p>
+                )}
 
-          {checkoutError && (
-            <div className="space-y-3">
-              <p
-                className="border border-flint-700 bg-flint-surface p-3 text-xs leading-relaxed text-flint-300"
-                role="alert"
-              >
-                <span className="form-error-label">Error</span>
-                {checkoutError}
+                <div className="checkout-review__payment-handoff">
+                  <Button
+                    type="button"
+                    variant={payView.variant}
+                    className={cn(
+                      'checkout-review__pay whitespace-normal',
+                      payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
+                    )}
+                    disabled={isStartingCheckout || delivery.loading || !delivery.quote || !hasLockerChoice}
+                    aria-describedby={hasLockerChoice ? undefined : 'checkout-locker-required'}
+                    aria-busy={isStartingCheckout || payView.isWaitingForQuote ? 'true' : undefined}
+                    data-checkout-pay-state={payView.variant === 'default' ? 'ready' : 'waiting'}
+                    onClick={() => {
+                      void handleStartCheckout();
+                    }}
+                  >
+                    {isStartingCheckout || payView.isWaitingForQuote ? (
+                      <LoadingButtonContent label={payView.label} />
+                    ) : (
+                      <>
+                        <span className="min-w-0 leading-tight">{payView.label}</span>
+                        {payView.amountDisplay && (
+                          <span className="sr-only" aria-hidden="true" data-checkout-pay-amount>
+                            {payView.amountDisplay}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                  {!hasLockerChoice && (
+                    <p className="checkout-review__note" id="checkout-locker-required">
+                      {LOCKER_REQUIRED_COPY}
+                    </p>
+                  )}
+                  <div className="checkout-review__stripe-badge">
+                    {payView.badgeSrc && hasLockerChoice && (
+                      <img
+                        src={payView.badgeSrc}
+                        alt="Powered by Stripe"
+                        width="150"
+                        height="34"
+                        data-checkout-stripe-badge
+                      />
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {isCartLoading
+                  ? 'Loading your cart…'
+                  : !hasCheckoutLine
+                    ? 'Add a priced item to the cart before checkout.'
+                    : view.canStartCheckout
+                      ? 'Stripe opens after checkout is ready.'
+                      : 'Payment opens after price and availability are confirmed.'}
               </p>
-              {checkoutAttemptTerminal && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    clearCheckoutAttempt();
-                    setCheckoutAttemptTerminal(false);
-                    setCheckoutError(null);
-                  }}
-                >
-                  Start a new checkout
-                </Button>
-              )}
-            </div>
-          )}
+            )}
 
-          {isStartingCheckout && (
-            <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
-              Opening Stripe Checkout. Keep this tab open while the secure payment page loads.
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            {(isCartLoading || hasCheckoutLine) && <PurchaseInformation presentation="checkout-support" />}
+
+            {checkoutError && (
+              <div className="space-y-3">
+                <p
+                  className="border border-flint-700 bg-flint-surface p-3 text-xs leading-relaxed text-flint-300"
+                  role="alert"
+                >
+                  <span className="form-error-label">Error</span>
+                  {checkoutError}
+                </p>
+                {checkoutAttemptTerminal && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      clearCheckoutAttempt();
+                      setCheckoutAttemptTerminal(false);
+                      setCheckoutError(null);
+                    }}
+                  >
+                    Start a new checkout
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {isStartingCheckout && (
+              <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+                Opening Stripe Checkout. Keep this tab open while the secure payment page loads.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

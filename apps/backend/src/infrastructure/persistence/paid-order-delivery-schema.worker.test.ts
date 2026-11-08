@@ -56,7 +56,14 @@ describe('paid order delivery schema', () => {
     expect(await db.prepare('SELECT * FROM "OrderDispatch"').first()).toEqual({
       ...dispatch,
       shippingEmailSuppressed: 0,
+      lockerUsedId: null,
+      lockerUsedName: null,
+      parcelNumbers: null,
     });
+    expect(
+      await db.prepare('SELECT "shippingLockerAddressLine", "shippingLockerPostalCode" FROM "CheckoutOrder"').first(),
+    ).toEqual({ shippingLockerAddressLine: null, shippingLockerPostalCode: null });
+    await expect(db.prepare(`UPDATE "OrderDispatch" SET "parcelNumbers" = 'not-json'`).run()).rejects.toThrow();
     await expect(db.prepare('UPDATE "OrderDispatch" SET "shippingEmailSuppressed" = 2').run()).rejects.toThrow();
     await expect(
       db

@@ -60,9 +60,10 @@ export async function processPaidOrderDelivery(
     return markNeedsReview(input.repository, delivery, attemptedAt, 'incomplete_paid_fulfillment');
   }
 
+  let dispatch;
   if (delivery.kind === 'shopper_shipping') {
     if (!input.dispatches) return markNeedsReview(input.repository, delivery, attemptedAt, 'configuration');
-    const [dispatch] = await input.dispatches.listByOrderIds([delivery.orderId]);
+    [dispatch] = await input.dispatches.listByOrderIds([delivery.orderId]);
     if (!dispatch?.shippedAt) return markNeedsReview(input.repository, delivery, attemptedAt, 'dispatch_undone');
   }
 
@@ -70,6 +71,7 @@ export async function processPaidOrderDelivery(
     const attempt = await attemptPaidOrderDelivery({
       config: input.config,
       delivery,
+      dispatch,
       logger: input.logger,
       order,
       provider: input.provider,

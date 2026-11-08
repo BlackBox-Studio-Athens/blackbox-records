@@ -214,7 +214,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
       notPaidAt: null,
       paidAt: null,
       newsletterOptIn: input.newsletterOptIn ?? false,
-      shippingLocker: null,
+      shippingLocker: input.shippingLocker ?? null,
       status: 'pending_payment',
       statusUpdatedAt: input.createdAt,
       storeItemSlug: primaryLine.storeItemSlug,
@@ -616,6 +616,103 @@ describe('checkout use cases', () => {
       taxCode: null,
     });
     catalogReconciler.prices.set(storeItem.variantId, createCatalogPrice({ storeItem }));
+  });
+
+  it('carries a trimmed locker into the hold and refuses invalid data before a hold or session', async () => {
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+      shippingLocker: {
+        lockerId: ' 4 ',
+        name: ' Athens ',
+        addressLine: ' Street ',
+        postalCode: ' 12345 ',
+        countryCode: 'GR' as const,
+      },
+    };
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        { ...command, shippingLocker: { ...command.shippingLocker, lockerId: ' ' } },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutUnavailableError);
+    expect(orders.createPendingHoldCalls).toBe(0);
+    expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+    expect([...orders.records.values()][0]?.shippingLocker).toEqual({
+      locker_id: '4',
+      locker_name_or_label: 'Athens',
+      address_line: 'Street',
+      postal_code: '12345',
+      country_code: 'GR',
+    });
+  });
+
+  it('accepts fallback and fingerprints locker changes', async () => {
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+      idempotencyKey: 'locker-key',
+      lockerFallback: true as const,
+    };
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+    expect([...orders.records.values()][0]?.shippingLocker).toBeNull();
+    const changed = {
+      ...command,
+      lockerFallback: undefined,
+      shippingLocker: { lockerId: '5', name: 'Athens', countryCode: 'GR' as const },
+    };
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        changed,
+      ),
+    ).rejects.toBeInstanceOf(CheckoutIdempotencyConflictError);
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      { ...changed, idempotencyKey: 'another-locker-key' },
+    );
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(2);
   });
 
   it.each([

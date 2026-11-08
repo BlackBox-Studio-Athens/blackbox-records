@@ -236,6 +236,7 @@ describe('internal order routes', () => {
           },
           paidAt: '2026-08-31T10:00:00.000Z',
           recipientName: 'Buyer Name',
+          shippingLocker: null,
           shippingAddress: {
             city: 'Athens',
             country: 'GR',
@@ -301,7 +302,14 @@ describe('internal order routes', () => {
       checkoutSessionId: 'cs_test_review',
       createdAt: '2026-04-25T11:00:00.000Z',
       deliveries: [],
-      dispatch: { shippedAt: null, updatedAt: null, updatedBy: null, shippingEmailSuppressed: false },
+      dispatch: {
+        shippedAt: null,
+        updatedAt: null,
+        updatedBy: null,
+        shippingEmailSuppressed: false,
+        lockerUsed: null,
+        parcelNumbers: [],
+      },
       fulfillment: { kind: 'unavailable' },
       needsReviewAt: '2026-04-25T11:05:00.000Z',
       needsReviewReason: 'stock_unavailable',
@@ -429,6 +437,24 @@ describe('internal order routes', () => {
         operatorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
         at: expect.any(Date),
       });
+    });
+
+    it.each([
+      [['123']],
+      [['1234567890', '1234567890']],
+      [['1234567890', '1234567891', '1234567892', '1234567893', '1234567894', '1234567895']],
+    ])('rejects invalid parcel numbers %j without writing', async (parcelNumbers) => {
+      const response = await createHttpApp().request(
+        url,
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json', origin: 'http://127.0.0.1', 'x-blackbox-request': '1' },
+          body: JSON.stringify({ shipped: true, expectedShipped: false, parcelNumbers }),
+        },
+        LOCAL_ENV,
+      );
+      expect(response.status).toBe(400);
+      expect(mockSetDispatch).not.toHaveBeenCalled();
     });
 
     it.each([true, false])(

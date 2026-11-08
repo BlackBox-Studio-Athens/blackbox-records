@@ -7,9 +7,11 @@ import { checkoutSessionId, paymentIntentId } from '../../../../test/support/com
 
 describe('order readback use cases', () => {
   const shippingLocker = {
+    address_line: null,
     country_code: 'GR' as const,
     locker_id: '4',
     locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    postal_code: null,
   };
   const paidOrder: CheckoutOrderRecord = {
     ...currentPaidCheckoutOrder(),

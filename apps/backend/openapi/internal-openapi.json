@@ -206,6 +206,30 @@
           "dispatch": {
             "type": "object",
             "properties": {
+              "lockerUsed": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "lockerId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "lockerId",
+                  "name"
+                ]
+              },
+              "parcelNumbers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "shippingEmailSuppressed": {
                 "type": "boolean"
               },
@@ -231,6 +255,8 @@
               }
             },
             "required": [
+              "lockerUsed",
+              "parcelNumbers",
               "shippingEmailSuppressed",
               "shippedAt",
               "updatedAt",
@@ -507,6 +533,45 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "shippingLocker": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "lockerId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "addressLine": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "postalCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "countryCode": {
+                        "type": "string",
+                        "enum": [
+                          "GR"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "lockerId",
+                      "name",
+                      "addressLine",
+                      "postalCode",
+                      "countryCode"
+                    ]
+                  },
                   "shippingAddress": {
                     "type": "object",
                     "properties": {
@@ -582,6 +647,7 @@
                   "newsletterConsent",
                   "paidAt",
                   "recipientName",
+                  "shippingLocker",
                   "shippingAddress",
                   "shopperContact"
                 ]
@@ -657,6 +723,12 @@
               "null"
             ],
             "properties": {
+              "address_line": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
               "country_code": {
                 "type": "string",
                 "enum": [
@@ -668,12 +740,20 @@
               },
               "locker_name_or_label": {
                 "type": "string"
+              },
+              "postal_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
+              "address_line",
               "country_code",
               "locker_id",
-              "locker_name_or_label"
+              "locker_name_or_label",
+              "postal_code"
             ]
           },
           "status": {
@@ -745,6 +825,34 @@
           "sendShippingEmail": {
             "type": "boolean",
             "default": true
+          },
+          "lockerUsed": {
+            "type": "object",
+            "properties": {
+              "lockerId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "lockerId",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "parcelNumbers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{10}$"
+            },
+            "maxItems": 5
           }
         },
         "required": [

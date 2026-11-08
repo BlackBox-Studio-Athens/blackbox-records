@@ -14,6 +14,7 @@ import { cn } from '@/components/ui/utils';
 import { clearCheckoutAttempt } from './checkout-attempt';
 import { shipEstimateText } from '@/platform/lib/preorder-estimate';
 import {
+  CHECKOUT_RETURN_DELIVERY_COPY,
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,
   readCheckoutSessionIdFromSearch,
@@ -238,8 +239,8 @@ export function CheckoutSuccessScreen({
               <dt>Delivery</dt>
               <dd>
                 {view.shippingLocker.kind === 'selected'
-                  ? `One BOX NOW locker parcel to ${view.shippingLocker.label}.`
-                  : 'One BOX NOW locker parcel. We contact you to arrange the locker before dispatch.'}
+                  ? `One BOX NOW parcel to ${view.shippingLocker.label} (${view.shippingLocker.detail}).`
+                  : 'One BOX NOW parcel. We email you to agree a locker before we ship.'}
               </dd>
             </div>
           </dl>
@@ -295,6 +296,18 @@ export function CheckoutSuccessScreen({
               </h1>
               <p className="max-w-xl text-lg leading-8 text-muted-foreground">{view.detail}</p>
             </div>
+
+            <dl className="grid max-w-xl gap-1 border border-border/70 p-4" data-checkout-return-locker>
+              <dt className="text-xs uppercase tracking-[0.18em] text-muted-foreground">BOX NOW locker</dt>
+              {view.shippingLocker.kind === 'selected' ? (
+                <dd className="text-sm leading-6 text-foreground [overflow-wrap:anywhere]">
+                  {view.shippingLocker.label}
+                  <span className="block text-muted-foreground">{view.shippingLocker.detail}</span>
+                </dd>
+              ) : (
+                <dd className="text-sm leading-6 text-foreground">{CHECKOUT_RETURN_DELIVERY_COPY.lockerNotChosen}</dd>
+              )}
+            </dl>
           </div>
 
           <div className="mt-10 border-t border-border/60 pt-5">

@@ -5,6 +5,7 @@ import {
   type StoreCapabilities,
 } from './public-checkout-api';
 import type { CartLine } from '../cart/store-cart';
+import type { BoxNowLocker } from './boxnow-locker';
 import { availabilityLabel } from '@/platform/lib/availability-copy';
 
 export type CheckoutOfferInitialAvailability = {
@@ -180,6 +181,8 @@ export type HostedCheckoutStartState =
 export type HostedCheckoutStartInput = {
   api: PublicCheckoutApi;
   lines?: CartLine[];
+  /** The chosen BOX NOW locker, or `fallback` when the map was unavailable. */
+  locker?: BoxNowLocker | 'fallback';
   newsletterOptIn?: boolean;
   idempotencyKey?: string;
   storeItemSlug: string;
@@ -189,6 +192,7 @@ export type HostedCheckoutStartInput = {
 export async function startHostedCheckout({
   api,
   lines,
+  locker,
   newsletterOptIn = false,
   idempotencyKey,
   storeItemSlug,
@@ -206,6 +210,7 @@ export async function startHostedCheckout({
     const checkoutRequest = {
       ...(checkoutLines.length > 0 ? { lines: checkoutLines } : {}),
       ...(newsletterOptIn ? { newsletterOptIn: true } : {}),
+      ...(locker === 'fallback' ? { lockerFallback: true as const } : locker ? { shippingLocker: locker } : {}),
       storeItemSlug,
       variantId,
     };

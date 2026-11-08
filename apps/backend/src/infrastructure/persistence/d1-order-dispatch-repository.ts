@@ -11,12 +11,24 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
     if (!orderIds.length) return [];
     const { results } = await this.db
       .prepare(
-        `SELECT "orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed" FROM "OrderDispatch"
+        `SELECT "orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed", "lockerUsedId", "lockerUsedName", "parcelNumbers" FROM "OrderDispatch"
       WHERE "orderId" IN (${orderIds.map(() => '?').join(',')})`,
       )
       .bind(...orderIds)
-      .all<Omit<OrderDispatch, 'shippingEmailSuppressed'> & { shippingEmailSuppressed: number }>();
-    return results.map((row) => ({ ...row, shippingEmailSuppressed: row.shippingEmailSuppressed === 1 }));
+      .all<
+        Omit<OrderDispatch, 'shippingEmailSuppressed' | 'lockerUsed' | 'parcelNumbers'> & {
+          shippingEmailSuppressed: number;
+          lockerUsedId: string | null;
+          lockerUsedName: string | null;
+          parcelNumbers: string | null;
+        }
+      >();
+    return results.map(({ lockerUsedId, lockerUsedName, parcelNumbers, ...row }) => ({
+      ...row,
+      shippingEmailSuppressed: row.shippingEmailSuppressed === 1,
+      lockerUsed: lockerUsedId && lockerUsedName ? { lockerId: lockerUsedId, name: lockerUsedName } : null,
+      parcelNumbers: parcelNumbers ? (JSON.parse(parcelNumbers) as string[]) : [],
+    }));
   }
 
   public async set(input: Parameters<OrderDispatchRepository['set']>[0]): Promise<'updated' | 'conflict'> {
@@ -24,13 +36,16 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
     // A missing row counts as not shipped; the same transaction queues only a successful first mark.
     const mark = this.db
       .prepare(
-        `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed")
+        `INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy", "shippingEmailSuppressed", "lockerUsedId", "lockerUsedName", "parcelNumbers")
       SELECT ?, ?, ?, ?, ? AND NOT EXISTS (
         SELECT 1 FROM "PaidOrderDelivery" WHERE "orderId" = ? AND "kind" = 'shopper_shipping'
-      ) WHERE ? = 0 OR EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ?)
+      ), ?, ?, ? WHERE ? = 0 OR EXISTS (SELECT 1 FROM "OrderDispatch" WHERE "orderId" = ?)
       ON CONFLICT ("orderId") DO UPDATE SET
         "shippedAt" = excluded."shippedAt", "updatedAt" = excluded."updatedAt", "updatedBy" = excluded."updatedBy",
-        "shippingEmailSuppressed" = MAX("OrderDispatch"."shippingEmailSuppressed", excluded."shippingEmailSuppressed")
+        "shippingEmailSuppressed" = MAX("OrderDispatch"."shippingEmailSuppressed", excluded."shippingEmailSuppressed"),
+        "lockerUsedId" = CASE WHEN excluded."shippedAt" IS NOT NULL THEN excluded."lockerUsedId" ELSE "OrderDispatch"."lockerUsedId" END,
+        "lockerUsedName" = CASE WHEN excluded."shippedAt" IS NOT NULL THEN excluded."lockerUsedName" ELSE "OrderDispatch"."lockerUsedName" END,
+        "parcelNumbers" = CASE WHEN excluded."shippedAt" IS NOT NULL THEN excluded."parcelNumbers" ELSE "OrderDispatch"."parcelNumbers" END
       WHERE ("OrderDispatch"."shippedAt" IS NOT NULL) = ?`,
       )
       .bind(
@@ -40,6 +55,9 @@ export class D1OrderDispatchRepository implements OrderDispatchRepository {
         input.operatorEmail,
         input.shipped && input.sendShippingEmail === false ? 1 : 0,
         input.orderId,
+        input.shipped ? (input.lockerUsed?.lockerId ?? null) : null,
+        input.shipped ? (input.lockerUsed?.name ?? null) : null,
+        input.shipped ? JSON.stringify(input.parcelNumbers ?? []) : null,
         input.expectedShipped ? 1 : 0,
         input.orderId,
         input.expectedShipped ? 1 : 0,

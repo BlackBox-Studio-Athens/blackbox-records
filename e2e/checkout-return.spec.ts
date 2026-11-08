@@ -51,7 +51,7 @@ test('paid mixed return shows saved facts and shopping preserves the shell', asy
   await expect(screen.locator('dl > div')).toHaveCount(3);
   await expect(screen).toContainText('Pre-order, expected to ship around November 2026');
   await expect(screen).toContainText('In stock, sent with the pre-order');
-  await expect(screen).toContainText('We contact you to arrange the locker before dispatch.');
+  await expect(screen).toContainText('One BOX NOW parcel. We email you to agree a locker before we ship.');
   expect(
     await screen.locator('.checkout-return__panel').evaluate((element) => element.getBoundingClientRect().width),
   ).toBeCloseTo(720, 0);

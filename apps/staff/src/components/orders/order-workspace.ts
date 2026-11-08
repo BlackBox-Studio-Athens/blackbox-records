@@ -1,6 +1,7 @@
 import {
   InternalOrderApiError,
   type createInternalOrderApi,
+  type DispatchCarrierFacts,
   type InternalOrder,
   type OrderStatus,
 } from './internal-order-api';
@@ -195,11 +196,20 @@ export function createOrderWorkspace(
       }
     },
     /** Returns an error message, or null once the changed order is shown. */
-    async setDispatch(shipped: boolean, sendShippingEmail = true): Promise<string | null> {
+    async setDispatch(
+      shipped: boolean,
+      sendShippingEmail = true,
+      carrier: DispatchCarrierFacts = {},
+    ): Promise<string | null> {
       const session = state.session;
       if (state.denied || !session || !api.setDispatch) return 'Reload this order and try again.';
       try {
-        const data = await api.setDispatch(session, { shipped, expectedShipped: !shipped, sendShippingEmail });
+        const data = await api.setDispatch(session, {
+          shipped,
+          expectedShipped: !shipped,
+          sendShippingEmail,
+          ...(shipped ? carrier : {}),
+        });
         detailRequest++;
         if (state.session === session)
           publish({ detail: { data, readAt: new Date().toISOString(), loading: false, error: null } });

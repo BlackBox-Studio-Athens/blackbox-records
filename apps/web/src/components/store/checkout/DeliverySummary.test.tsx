@@ -75,7 +75,7 @@ describe('delivery summary', () => {
     expect(html).toContain('>Delivery</dt>');
     expect(html).toContain('€45.00');
     expect(html).toContain('€3.50');
-    expect(html).toContain('BOX NOW locker delivery within Greece.');
+    expect(html).toContain('BOX NOW locker delivery within Greece. You choose the locker at checkout.');
     expect(html).not.toContain('Total, VAT included');
     expect(html).toContain('€48.50');
     expect(html.match(/>Total<\/dt>/g)).toHaveLength(1);
@@ -96,7 +96,7 @@ describe('delivery summary', () => {
     expect(html).toContain(tier === 'small' ? '€2.50' : '€3.50');
     expect(html).toContain(tier === 'small' ? '€27.30' : '€28.30');
     expect(html).toContain('>Total</dt>');
-    expect(html).toContain('does not mean home delivery');
+    expect(html).toContain('Stripe also asks for a street address; it is not used for delivery.');
   });
   it('never presents an unavailable or loading quote as free delivery', () => {
     for (const loading of [true, false]) {

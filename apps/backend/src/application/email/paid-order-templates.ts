@@ -62,7 +62,16 @@ export function buildPaidOrderShopperEmail(input: {
   const preorderCopy = preorder
     ? `Your order includes a pre-order. Everything is sent in one parcel when ${arrival}${preorder.shipEstimate ? `, expected ${shipEstimateText(preorder.shipEstimate)}` : ''}. We email you if that changes.`
     : '';
-  const fulfillmentCopy = preorderCopy || shopperPaymentThankYouCopy;
+  const fulfillmentCopy = [
+    preorderCopy || shopperPaymentThankYouCopy,
+    !input.order.shippingLocker ? 'We will email you to agree a BOX NOW locker before we ship.' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const locker = input.order.shippingLocker;
+  const lockerValue = locker
+    ? [locker.name, locker.postalCode, `Locker ${locker.lockerId}`].filter(Boolean).join(' · ')
+    : null;
   const money = shopperMonetaryRows(input.order);
 
   return createBlackBoxEmailTemplate({
@@ -72,6 +81,7 @@ export function buildPaidOrderShopperEmail(input: {
       contentHtml: [
         renderShopperFacts([['Order reference', input.order.orderReference]]),
         renderShopperLineItems(input.order),
+        lockerValue ? renderShopperFacts([['Locker', lockerValue]]) : '',
         renderShopperFacts(money),
         renderShopperParagraph(fulfillmentCopy),
         renderShopperReply(input.replyToEmail),
@@ -85,6 +95,7 @@ export function buildPaidOrderShopperEmail(input: {
       '',
       `Order reference: ${input.order.orderReference}`,
       `Item: ${shopperLineItems}`,
+      ...(lockerValue ? [`Locker: ${lockerValue}`] : []),
       ...money.map(([label, amount]) => `${label}: ${amount}`),
       '',
       'Thank you for your order. We have received your payment in full.',
@@ -102,12 +113,42 @@ export function buildPaidOrderShopperEmail(input: {
 
 export function buildPaidOrderShippingEmail(input: {
   brand: PaidOrderEmailBrand;
-  order: Pick<PaidOrderEmailInput, 'orderReference'>;
+  order: Pick<PaidOrderEmailInput, 'orderReference' | 'shippingLocker' | 'lockerUsed' | 'parcelNumbers'>;
   replyToEmail: string;
 }): EmailMessageContent {
   const title = 'Your order has been shipped';
   const preheader = 'Your order is on its way with BOX NOW.';
   const replyCopy = 'Thank you for supporting BlackBox Records. If you need anything, just reply to this email.';
+  // The shopper's own record keeps the postcode; a cleared locker used is unknown and shows no row.
+  const locker =
+    input.order.lockerUsed?.lockerId === input.order.shippingLocker?.lockerId
+      ? input.order.shippingLocker
+      : input.order.lockerUsed;
+  const lockerValue = locker
+    ? [locker.name, 'postalCode' in locker ? locker.postalCode : null, `Locker ${locker.lockerId}`]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
+  const numbers = (input.order.parcelNumbers ?? []).filter((number) => /^\d{10}$/.test(number));
+  const rows: Array<[string, string]> = [
+    ...(lockerValue ? [['Locker', lockerValue] as [string, string]] : []),
+    ...numbers.map((number, index): [string, string] => [
+      numbers.length === 1 ? 'Parcel number' : `Parcel ${index + 1}`,
+      number,
+    ]),
+  ];
+  // The title and preheader already say the order is on its way with BOX NOW.
+  const pickup =
+    numbers.length > 1
+      ? 'BOX NOW texts you a pickup code for each parcel when it arrives.'
+      : numbers.length === 1
+        ? 'BOX NOW texts you a 6-digit pickup code when the parcel arrives. It waits at least 24 hours; add 24 more on the tracking page.'
+        : 'BOX NOW texts you a 6-digit pickup code when the parcel arrives.';
+  const copy = `${pickup} If the locker is full, BOX NOW uses the nearest one and tells you.`;
+  const actions = numbers.map((number, index) => ({
+    label: numbers.length === 1 ? 'Track your parcel' : `Track parcel ${index + 1}`,
+    url: `https://boxnow.gr/en?track=${number}`,
+  }));
 
   return createBlackBoxEmailTemplate({
     brandFontStylesheetUrl: shopperBrandFontStylesheetUrl(input.brand),
@@ -115,7 +156,16 @@ export function buildPaidOrderShippingEmail(input: {
       brand: input.brand,
       contentHtml: [
         renderShopperFacts([['Order reference', input.order.orderReference]]),
-        renderShopperParagraph(preheader),
+        rows.length ? renderShopperFacts(rows) : '',
+        renderShopperParagraph(copy),
+        actions.length
+          ? `<p style="margin:0 0 8px;">${actions
+              .map(
+                (action) =>
+                  `<span style="display:inline-block;margin:0 8px 8px 0;">${renderShopperButtonLink(action.url, action.label)}</span>`,
+              )
+              .join('')}</p>`
+          : '',
         renderShopperParagraph(replyCopy),
         renderShopperReply(input.replyToEmail),
       ].join(''),
@@ -126,7 +176,9 @@ export function buildPaidOrderShippingEmail(input: {
       'BlackBox Records',
       title,
       `Order reference: ${input.order.orderReference}`,
-      preheader,
+      ...rows.map(([label, value]) => `${label}: ${value}`),
+      copy,
+      ...actions.map((action) => `${action.label}: ${action.url}`),
       replyCopy,
       `Support: ${input.replyToEmail}`,
     ].join('\n\n'),

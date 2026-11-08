@@ -1,5 +1,7 @@
 export type OrderDispatch = {
   orderId: string;
+  lockerUsed: { lockerId: string; name: string } | null;
+  parcelNumbers: string[];
   shippingEmailSuppressed: boolean;
   shippedAt: string | null;
   updatedAt: string;
@@ -11,6 +13,8 @@ export interface OrderDispatchRepository {
   /** Changes the shipped mark only when the current mark matches `expectedShipped`. */
   set(input: {
     orderId: string;
+    lockerUsed?: { lockerId: string; name: string };
+    parcelNumbers?: string[];
     shipped: boolean;
     sendShippingEmail?: boolean;
     expectedShipped: boolean;

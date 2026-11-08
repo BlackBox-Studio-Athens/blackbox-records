@@ -13,6 +13,8 @@ export type PaidOrderEmailPreviewName =
   | 'ops-ready'
   | 'shopper-long-content'
   | 'shopper-shipped'
+  | 'shopper-shipped-one'
+  | 'shopper-shipped-no-number'
   | 'shopper-preorder'
   | 'ops-preorder'
   | 'preorder-estimate-changed'
@@ -48,6 +50,9 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
       },
     ],
     orderReference: 'BBR-PREVIEW-LONG',
+    shippingLocker: { lockerId: '123', name: 'Athens Centre', postalCode: '10551' },
+    lockerUsed: { lockerId: '123', name: 'Athens Centre' },
+    parcelNumbers: ['1234567890', '0987654321'],
     paidAt: new Date('2026-04-25T11:00:00.000Z'),
     shippingAddress: {
       city: 'Athens',
@@ -77,6 +82,7 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
   };
   const preorderOrder: PaidOrderEmailInput = {
     ...longContentOrder,
+    shippingLocker: null,
     lineItems: longContentOrder.lineItems.map((line) => ({
       ...line,
       preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
@@ -103,6 +109,20 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
       name: 'shopper-shipped',
       order: longContentOrder,
     },
+    ...(
+      [
+        ['shopper-shipped-one', ['1234567890']],
+        ['shopper-shipped-no-number', []],
+      ] as const
+    ).map(([name, parcelNumbers]) => ({
+      message: buildPaidOrderShippingEmail({
+        brand: previewBrand,
+        order: { ...longContentOrder, parcelNumbers: [...parcelNumbers] },
+        replyToEmail: 'support@blackboxrecordsathens.com',
+      }),
+      name,
+      order: longContentOrder,
+    })),
     {
       message: buildPaidOrderOpsEmail({
         brand: previewBrand,
