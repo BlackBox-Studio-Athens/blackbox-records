@@ -75,8 +75,12 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: '@coding-tree-io'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.BOXNOW_PACKAGES_TOKEN }}
       - name: Install Chromium
         uses: ./.github/actions/playwright-browsers
         timeout-minutes: 5

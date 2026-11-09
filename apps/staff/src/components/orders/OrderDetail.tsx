@@ -1,3 +1,4 @@
+import { boxNowTrackingUrl } from '@coding-tree-io/boxnow-widget';
 import {
   CircleCheck,
   CircleX,
@@ -140,9 +141,7 @@ function orderShipEstimateText(estimate: OrderShipEstimate): string {
 const PARCEL_NUMBER = /^\d{10}$/;
 const MAX_PARCELS = 5;
 
-export function boxNowTrackingUrl(parcelNumber: string) {
-  return `https://boxnow.gr/en?track=${parcelNumber}`;
-}
+export { boxNowTrackingUrl };
 
 type SetDispatch = (
   shipped: boolean,

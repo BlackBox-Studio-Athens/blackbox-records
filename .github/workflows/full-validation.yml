@@ -19,7 +19,11 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: '@coding-tree-io'
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.BOXNOW_PACKAGES_TOKEN }}
       - name: Run uncached full validation
         run: pnpm validate:full --no-cache
       - uses: actions/upload-artifact@v7.0.1

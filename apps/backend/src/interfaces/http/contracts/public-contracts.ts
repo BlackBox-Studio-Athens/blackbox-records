@@ -1,3 +1,4 @@
+import { LOCKER_LIMITS } from '@coding-tree-io/boxnow-widget';
 import { createRoute, z } from '@hono/zod-openapi';
 
 import { AVAILABILITY_ALERT_CONSENT_COPY, LOW_STOCK_THRESHOLD } from '../../../domain/commerce';
@@ -208,10 +209,10 @@ const startCheckoutBodySchema = z
     newsletterOptIn: z.boolean().optional(),
     shippingLocker: z
       .object({
-        lockerId: z.string().trim().min(1).max(32),
-        name: z.string().trim().min(1).max(200),
-        addressLine: z.string().trim().max(200).optional(),
-        postalCode: z.string().trim().max(16).optional(),
+        lockerId: z.string().trim().min(1).max(LOCKER_LIMITS.lockerId),
+        name: z.string().trim().min(1).max(LOCKER_LIMITS.name),
+        addressLine: z.string().trim().max(LOCKER_LIMITS.addressLine).optional(),
+        postalCode: z.string().trim().max(LOCKER_LIMITS.postalCode).optional(),
         countryCode: z
           .string()
           .trim()

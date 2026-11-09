@@ -1,3 +1,4 @@
+import { SEND_PARCEL_PRICES, SEND_PARCEL_URL } from '@coding-tree-io/boxnow-widget';
 import { Copy, ExternalLink, Package } from 'lucide-react';
 import { useState } from 'react';
 
@@ -6,28 +7,19 @@ import type { InternalOrder } from './internal-order-api';
 
 type CurrentFulfillment = Extract<InternalOrder['fulfillment'], { kind: 'current' }>;
 
-export const SEND_PARCEL_URL = 'https://steiledema.boxnow.gr/en/apostoli-dematos';
-
-// shortcut: BOX NOW's public Send parcel prices inside Greece (VAT included, price list from 30 July 2026); update them
-// here when BOX NOW publishes a new list.
-const BOX_NOW_SIZES = [
-  { name: 'Small', maxUnits: 4, priceMinor: 300 },
-  { name: 'Medium', maxUnits: 8, priceMinor: 500 },
-  { name: 'Large', maxUnits: Infinity, priceMinor: 1000 },
-] as const;
-
 const euros = (minor: number) =>
   new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(minor / 100);
 
 /** Suggests BOX NOW's compartment from the same item-count bands as our delivery charge; the operator decides. */
 export function suggestedParcelSize(fulfillment: CurrentFulfillment): string {
   const units = fulfillment.lines.reduce((sum, line) => sum + line.quantity, 0);
-  const size = BOX_NOW_SIZES.find((candidate) => units <= candidate.maxUnits) ?? BOX_NOW_SIZES[2];
+  const size = SEND_PARCEL_PRICES.sizes[units <= 4 ? 0 : units <= 8 ? 1 : 2];
   const charged =
     fulfillment.deliveryGrossMinor === null
       ? 'charge not recorded'
       : `we charged ${euros(fulfillment.deliveryGrossMinor)}`;
-  return `${size.name} · BOX NOW ${euros(size.priceMinor)} (${charged})`;
+  const island = euros(size.priceMinor + SEND_PARCEL_PRICES.islandSurchargeMinor);
+  return `${size.label} · BOX NOW ${euros(size.priceMinor)}, ${island} for an island (${charged})`;
 }
 
 export default function SendParcelDetails({ fulfillment }: { fulfillment: CurrentFulfillment }) {

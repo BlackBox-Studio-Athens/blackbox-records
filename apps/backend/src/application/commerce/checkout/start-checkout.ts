@@ -1,3 +1,5 @@
+import { LOCKER_LIMITS } from '@coding-tree-io/boxnow-widget';
+
 import type {
   CheckoutRetryAttempt,
   CheckoutStockHoldRepository,
@@ -147,12 +149,12 @@ export async function startCheckout(
     locker &&
     (command.lockerFallback ||
       !locker.lockerId.trim() ||
-      locker.lockerId.trim().length > 32 ||
+      locker.lockerId.trim().length > LOCKER_LIMITS.lockerId ||
       !locker.name.trim() ||
-      locker.name.trim().length > 200 ||
+      locker.name.trim().length > LOCKER_LIMITS.name ||
       locker.countryCode.trim() !== 'GR' ||
-      (locker.addressLine?.trim().length ?? 0) > 200 ||
-      (locker.postalCode?.trim().length ?? 0) > 16)
+      (locker.addressLine?.trim().length ?? 0) > LOCKER_LIMITS.addressLine ||
+      (locker.postalCode?.trim().length ?? 0) > LOCKER_LIMITS.postalCode)
   ) {
     throw new CheckoutUnavailableError();
   }

@@ -37,9 +37,13 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+          registry-url: https://npm.pkg.github.com
+          scope: '@coding-tree-io'
       - &install
         name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.BOXNOW_PACKAGES_TOKEN }}
       - name: Run validation checks
         # nx.json keeps 3 for laptops; public-repository runners have 4 vCPUs.
         env:

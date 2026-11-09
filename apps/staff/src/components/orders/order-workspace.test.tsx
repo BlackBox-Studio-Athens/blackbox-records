@@ -507,7 +507,7 @@ describe('Order dispatch', () => {
   it('prepares BOX NOW Send parcel with copyable details and a size suggestion', () => {
     const html = renderToStaticMarkup(<OrderDetail order={exampleOrder} onSetDispatch={noop} />);
     expect(html).toContain('For BOX NOW Send parcel');
-    expect(html).toContain('Small · BOX NOW €3 (we charged €4)');
+    expect(html).toContain('Small · BOX NOW €3, €4 for an island (we charged €4)');
     expect(html).toContain('Example recipient');
     expect(html).toContain('example@example.invalid');
     expect(html).toContain('BOX NOW STORE - Ακαδημίας 86 (Αθήνα)');

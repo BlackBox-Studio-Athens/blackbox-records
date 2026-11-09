@@ -1,3 +1,5 @@
+import { boxNowTrackingUrl } from '@coding-tree-io/boxnow-widget';
+
 import { createBlackBoxEmailTemplate, escapeHtml } from './templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
 import { latestEmailShipEstimate, shipEstimateText } from './ship-estimate-format';
@@ -147,7 +149,7 @@ export function buildPaidOrderShippingEmail(input: {
   const copy = `${pickup} If the locker is full, BOX NOW uses the nearest one and tells you.`;
   const actions = numbers.map((number, index) => ({
     label: numbers.length === 1 ? 'Track your parcel' : `Track parcel ${index + 1}`,
-    url: `https://boxnow.gr/en?track=${number}`,
+    url: boxNowTrackingUrl(number),
   }));
 
   return createBlackBoxEmailTemplate({

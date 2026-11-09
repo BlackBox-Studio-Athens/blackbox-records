@@ -113,6 +113,8 @@ Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Loc
 
 ## Setup
 
+`@coding-tree-io/boxnow-widget` comes from the private GitHub Packages registry. Locally, run `gh auth refresh -s read:packages`, then add `//npm.pkg.github.com/:tokenHelper=<absolute path to a script that runs gh auth token>` to your user-level `~/.npmrc`. CI reads a classic token with `read:packages` from the `BOXNOW_PACKAGES_TOKEN` repository secret.
+
 ```sh
 pnpm install
 ```
