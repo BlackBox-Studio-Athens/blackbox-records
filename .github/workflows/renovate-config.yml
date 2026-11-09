@@ -40,6 +40,10 @@ jobs:
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
+          registry-url: https://npm.pkg.github.com
+          scope: '@coding-tree-io'
 
       - name: Validate Renovate config
         run: pnpm renovate:validate
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.BOXNOW_PACKAGES_TOKEN }}
