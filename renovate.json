@@ -8,13 +8,26 @@
   "semanticCommitType": "chore",
   "semanticCommitScope": "deps",
   "addLabels": ["dependencies"],
-  "prConcurrentLimit": 8,
-  "prHourlyLimit": 4,
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": { "schedule": ["at any time"], "addLabels": ["security"] },
+  "lockFileMaintenance": { "enabled": true, "automerge": true },
+  "hostRules": [
+    {
+      "description": "Read the private BOX NOW widget from GitHub Packages with the Mend app secret.",
+      "matchHost": "npm.pkg.github.com",
+      "hostType": "npm",
+      "token": "{{ secrets.BOXNOW_PACKAGES_TOKEN }}"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Update the private BOX NOW widget by hand; Renovate has no access to its registry.",
-      "matchPackageNames": ["@coding-tree-io/boxnow-widget"],
-      "enabled": false
+      "description": "Automerge low-risk dev tooling once checks pass; later rules with automerge false win.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
     },
     {
       "description": "Require dashboard approval for major updates.",
@@ -176,6 +189,12 @@
       "dependencyDashboardApproval": true,
       "automerge": false,
       "addLabels": ["ci"]
+    },
+    {
+      "description": "Our own BOX NOW widget: review every release, with no waiting period.",
+      "matchPackageNames": ["@coding-tree-io/boxnow-widget"],
+      "automerge": false,
+      "minimumReleaseAge": null
     }
   ]
 }
