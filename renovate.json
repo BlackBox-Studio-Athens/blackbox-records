@@ -12,6 +12,11 @@
   "prHourlyLimit": 4,
   "packageRules": [
     {
+      "description": "Update the private BOX NOW widget by hand; Renovate has no access to its registry.",
+      "matchPackageNames": ["@coding-tree-io/boxnow-widget"],
+      "enabled": false
+    },
+    {
       "description": "Require dashboard approval for major updates.",
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true,
