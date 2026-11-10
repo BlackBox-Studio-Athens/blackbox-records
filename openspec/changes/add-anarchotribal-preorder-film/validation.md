@@ -26,6 +26,17 @@
 - Local Home (1568px Chrome window): Anarchotribal chapter played `ouranopithecus-montagu-loop-desktop.mp4` (videoWidth 1920) and showed "Official video · Montagu · Live @ Blackbox Studio", Pre-order · ships around December 2026, €28.00.
 - Pre-order → Store item → cart → checkout: each step shows ships around December 2026; checkout shows €28 + €3 delivery and the pre-order timeline. Payment was not submitted; checkout is unchanged by this change.
 
+## PRD release and held item publication
+
+- PRD promotion run 42641456023 shipped `a81eda4e`. Attempt 1 failed at Deploy PRD Workers (wrangler could not resolve the just-uploaded CMS version tag); attempt 2 passed every step. PRD serves both loops at their encoded sizes.
+- PRD Staff item publish for `variant_anarchotribal-vinyl_standard` reported "Ask a label administrator to review this shop update." Cause: a retained operation from 13 Oct 2026, held since then. The 12 Oct 2026 artwork migration moved every live Stripe Product image to the apex origin without updating D1 `StoreItemOption.productProjection`. The publish then found that the Stripe presentation matched neither D1 nor the new content. 97 of 99 PRD records still carry the legacy Worker image origin.
+- The owner confirmed in the live Stripe dashboard that the Product name, description and tax code equal the D1 record. The Product was last updated 12 Oct 2026 13:46, during the artwork migration.
+- One-off owner-approved D1 fix: the image URL in this record was changed to the apex origin, and the held operation was deleted. Full row before deletion:
+  - `id` 6c53c3f6-7ff9-44b5-832a-46f33cc44e55, `kind` item_publish, `status` needs_review, `step` artwork_approved, `safeReason` identity_conflict, actor blackboxrecordsathens@gmail.com, `expectedRevision` 3, created 2026-10-13 16:17:45, updated 2026-10-13T16:17:47.539Z.
+  - `results`: cmsSourceId 01M2J1HQJ2KXCZGYPE3ZX178XT; stripeProductId prod_blackbox_prd_variant_anarchotribal-vinyl_standard; stripePriceId price_1UOPXcV05GGRpxubbp1VJ3aT; cmsRevision MTM6MjAyNi0xMC0wNFQyMDoxMzowMC44NzZa; sourceFingerprint shape_v0a4243c380b31d76213248e3cdb04709. The productProjection had the "co-released by BlackBox Records, Underground Union, Patari Records and B-Otherside Records" description and the apex image URL.
+
+- Owner-approved backfill, same day: a guarded `replace()` moved every remaining PRD `StoreItemOption.productProjection` image from the legacy Worker origin to `https://blackboxrecordsathens.com/media/published/` (97 rows changed). Readback: 0 legacy, 99 apex out of 99. The apex URL for Anarchotribal served `image/webp` with status 200. No per-item Stripe read was needed: item publish still compares the live Product with this record and stops on any difference.
+
 ## Not established
 
 - UAT/PRD browser acceptance, Staff content (Montagu clip on the Anarchotribal release) and opening the pre-order. These are owner operations after software release.

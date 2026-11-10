@@ -1,6 +1,8 @@
 # Merchant product synchronization
 
-Owner: the backend commerce schedule. This integration sends accepted public, buyable, fixed-price EUR Store Items to Google for Greece free listings. It adds no staff or shopper interface. Publication, stock and price changes continue through their existing owners. The [Merchant change](../openspec/changes/integrate-google-merchant-api/design.md) owns scope and acceptance; [commerce operations](commerce-operations.md) owns physical stock and fulfillment.
+Owner: the backend commerce schedule. This integration sends accepted public, buyable, fixed-price EUR Store Items to Google for Greece free listings. It uses the existing Staff physical-condition controls and publication, stock and price owners; it adds no separate Merchant dashboard. The [Merchant change](../openspec/changes/integrate-google-merchant-api/design.md) owns scope and acceptance; [commerce operations](commerce-operations.md) owns physical stock and fulfillment.
+
+**Operational checkpoint, 29 October 2026:** production release `8a654db1` is deployed and both Merchant switches are enabled. Four scheduled slots from 19:30 through 20:15 UTC produced seven successful input acknowledgments. Two sampled processed products match their submitted fields, with no account-level issues; Greece free listings remain pending Google's initial policy review, not approved or established as serving. The [dated acceptance evidence](../openspec/changes/integrate-google-merchant-api/validation.md) records the exact release, controls, resource limits, diagnostics and remaining acceptance. This checkpoint is not live telemetry.
 
 ## Configuration and activation gates
 
