@@ -539,3 +539,60 @@ test('an open pre-order shows the Show on Home switch on and locked, with the ex
   expect(control).toContain('disabled');
   expect(markup).toContain('so Home shows it automatically');
 });
+
+test('the Show form edits structured fields and reports missing facts', () => {
+  let data: ComponentProps<typeof ContentFields>['data'] = { title: 'BlackBox Showcase Vol. II', lineup: [] };
+  const render = (validationAttempt = 0) => {
+    controls.inputs = [];
+    controls.buttons = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection="shows"
+        data={data}
+        base=""
+        validation={getContentValidation('shows', data)}
+        validationAttempt={validationAttempt}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  const markup = render(1);
+  // The editor is the ordered card stack, one exclusive group.
+  const titles = [...markup.matchAll(/data-editor-card="(\w+)"/g)].map((match) => match[1]);
+  expect(titles).toEqual(['title', 'when', 'where', 'tickets', 'lineup', 'poster', 'links']);
+  expect(markup).toMatch(/<details[^>]*name="show-new"/);
+  for (const label of [
+    'Show date',
+    'Doors open',
+    '24-hour time',
+    'Venue',
+    'Ticket prices',
+    'Ticket link',
+    'Facebook event',
+  ])
+    expect(markup).toContain(label);
+  expect(markup).toContain('Date missing');
+  expect(markup).toMatch(/data-editor-card="title" data-state="done"/);
+  expect(markup).toMatch(/data-editor-card="when" data-state="missing"/);
+  // Review reports the facts a title-only draft still lacks.
+  const issues = getContentValidation('shows', data).byPath;
+  for (const path of ['date', 'doors', 'venue', 'ticket_url', 'lineup']) expect(issues[path]).toBeDefined();
+  const input = (path: string) => controls.inputs.find((props) => props['data-content-path'] === path)!;
+  input('doors').onChange!({ target: { value: '20' } } as never);
+  expect(data.doors).toBe('20:00');
+  render();
+  input('ticket_url').onChange!({ target: { value: 'www.more.com/gr-el/tickets/music/offer/sidus/' } } as never);
+  expect(data.ticket_url).toBe('https://www.more.com/gr-el/tickets/music/offer/sidus/');
+  render();
+  input('facebook_url').onChange!({ target: { value: 'https://www.instagram.com/blackbox' } } as never);
+  expect(data.facebook_url).toBeUndefined();
+  expect(data.doors).toBe('20:00');
+
+  data = { ...data, date: '2026-12-05', prices: [1000, 1200, 1500] };
+  const filled = render();
+  expect(filled).toContain('Sat 05 Dec 2026 · doors 20:00');
+  expect(filled).toContain('€10 / €12 / €15 · More.com');
+  expect(filled).toContain('Remove €12');
+});

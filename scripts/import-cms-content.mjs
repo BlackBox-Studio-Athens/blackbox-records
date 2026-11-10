@@ -29,6 +29,27 @@ function contentData(record, manifest, mediaIds, recordIds) {
       : value;
   });
   if (record.collection === 'artists') delete data.slug;
+  if (record.collection === 'shows') {
+    data.ticket_url = data.ticketUrl;
+    data.poster_alt = data.posterAlt;
+    if (data.facebookUrl) data.facebook_url = data.facebookUrl;
+    delete data.ticketUrl;
+    delete data.posterAlt;
+    delete data.facebookUrl;
+    data.lineup = data.lineup.map((entry) => {
+      const result = { ...entry };
+      for (const [field, collection] of [
+        ['artist', 'artists'],
+        ['release', 'releases'],
+      ]) {
+        if (!entry[field]) continue;
+        const id = recordIds.get(`${collection}/${entry[field]}`);
+        if (!id) throw new Error(`Unresolved reference: ${record.source} -> ${collection}/${entry[field]}`);
+        result[field] = id;
+      }
+      return result;
+    });
+  }
   for (const reference of record.references) {
     const id = recordIds.get(`${reference.collection}/${reference.id}`);
     if (!id) throw new Error(`Unresolved reference: ${record.source} -> ${reference.id}`);

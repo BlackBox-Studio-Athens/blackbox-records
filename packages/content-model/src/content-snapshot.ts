@@ -88,6 +88,9 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
   const artists = new Set(
     snapshot.records.filter((record) => record.collection === 'artists').map((record) => record.id),
   );
+  const releases = new Map(
+    snapshot.records.filter((record) => record.collection === 'releases').map((record) => [record.id, record]),
+  );
   const referencedMedia = new Set<string>();
   for (const record of snapshot.records) {
     if (!isCmsCollection(record.collection)) throw new Error('Invalid snapshot content.');
@@ -104,6 +107,14 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
       !artists.has(record.data.artist as string)
     )
       throw new Error('Missing published Artist.');
+    if (record.collection === 'shows' && Array.isArray(record.data.lineup)) {
+      for (const entry of record.data.lineup as Array<{ artist?: string; release?: string }>) {
+        if (entry.artist && !artists.has(entry.artist)) throw new Error('Missing published Artist.');
+        if (entry.release && !releases.has(entry.release)) throw new Error('Missing published Release.');
+        if (entry.release && releases.get(entry.release)?.data.artist !== entry.artist)
+          throw new Error('The linked Release belongs to another Artist.');
+      }
+    }
     for (const mediaId of contentMediaIds(record.data)) referencedMedia.add(mediaId);
   }
   const mediaIds = new Set(snapshot.media.map((media) => media.id));

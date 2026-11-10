@@ -107,6 +107,8 @@ const CATALOG_PRD_DEFAULT_INITIAL_STOCK = {
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
+// shortcut: LOTUS is a Local placeholder; remove this exclusion when approved catalog data replaces it.
+const localFixtureReleaseFiles = new Set(['lotus.md']);
 
 export async function loadStripeCatalogStoreItemContracts(
   options: LoadStripeCatalogContractsOptions = {},
@@ -210,7 +212,7 @@ async function readReleaseContracts(
   const entries = await readdir(releasesDir, { withFileTypes: true });
   const releases = await Promise.all(
     entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md') && !localFixtureReleaseFiles.has(entry.name))
       .map(async (entry) => {
         const sourceId = path.basename(entry.name, '.md');
         const content = parseFrontmatter(await readFile(path.join(releasesDir, entry.name), 'utf8')) as ReleaseContent;

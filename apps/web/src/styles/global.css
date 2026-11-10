@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import './prose.css';
 @import './fonts.css';
+@import './live-shows.css';
 
 @source '..';
 

@@ -609,7 +609,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (pending) {
       try {
         const saved = JSON.parse(pending) as { collection: ContentSection; slug: string; data: ContentData };
-        if (!['news', 'socials', 'artists', 'releases'].includes(saved.collection))
+        if (!['news', 'shows', 'socials', 'artists', 'releases'].includes(saved.collection))
           throw new Error('Unsupported section');
         setCollection(saved.collection);
         setDocument({ item: { id: '', slug: saved.slug, data: saved.data }, _rev: '' });
@@ -1060,7 +1060,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   async function create(section = collection, initial: ContentData = {}) {
     if (!canLeaveEditor()) return;
-    if (!['news', 'socials', 'artists', 'releases'].includes(section) || !(await autosave.flush())) return;
+    if (!['news', 'shows', 'socials', 'artists', 'releases'].includes(section) || !(await autosave.flush())) return;
     setCollection(section);
     setItemTab('details');
     setPendingNew(null);
@@ -1073,7 +1073,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           ? { title: '', artist: '', release_stage: 'upcoming', cover_image: null, cover_image_alt: '' }
           : section === 'news'
             ? { title: '', date: '', summary: '', image: null, image_alt: '', body: [] }
-            : { title: '', url: '', order: 0 }),
+            : section === 'shows'
+              ? {
+                  title: '',
+                  date: '',
+                  doors: '',
+                  venue: '',
+                  prices: [],
+                  ticket_url: '',
+                  poster: null,
+                  poster_alt: '',
+                  lineup: [],
+                }
+              : { title: '', url: '', order: 0 }),
       ...initial,
     });
     setDirty(false);
@@ -1100,7 +1112,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   async function remove() {
-    if (!document?.item.id || busy || !['news', 'socials'].includes(collection)) return;
+    if (!document?.item.id || busy || !['news', 'shows', 'socials'].includes(collection)) return;
     setConfirmTrash(false);
     setBusy(true);
     try {
@@ -1157,7 +1169,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
   }
 
-  const canCreate = ['news', 'socials', 'artists'].includes(collection);
+  const canCreate = ['news', 'shows', 'socials', 'artists'].includes(collection);
 
   const title = String(data.title || data.label_name || contentSections[collection]);
   // Selling state belongs to the open item; it stays available while its publish review replaces the editor.
@@ -1327,7 +1339,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 {canCreate && (
                   <Button type="button" disabled={!ready || busy || !!pendingNew} onClick={() => void create()}>
                     <Plus className="size-4" aria-hidden="true" />
-                    Add {collection === 'news' ? 'news' : collection === 'artists' ? 'artist' : 'social link'}
+                    Add{' '}
+                    {collection === 'news'
+                      ? 'news'
+                      : collection === 'shows'
+                        ? 'show'
+                        : collection === 'artists'
+                          ? 'artist'
+                          : 'social link'}
                   </Button>
                 )}
               </div>
@@ -1368,7 +1387,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                   <TableBody>
                     {(['navigation', 'socials'].includes(collection)
                       ? [...items].sort((a, b) => Number(a.data.order ?? 0) - Number(b.data.order ?? 0))
-                      : items
+                      : collection === 'shows'
+                        ? // shortcut: orders the loaded page only; a label has a handful of Shows, so one page holds them all.
+                          [...items].sort((a, b) =>
+                            String(a.data.date || '9999').localeCompare(String(b.data.date || '9999')),
+                          )
+                        : items
                     ).map((item, index) => (
                       <TableRow key={item.id} data-state={document?.item.id === item.id ? 'selected' : undefined}>
                         <TableCell className="p-0">
@@ -1650,7 +1674,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                     Discard saved changes
                                   </DropdownMenuItem>
                                 )}
-                                {['news', 'socials'].includes(collection) && (
+                                {['news', 'shows', 'socials'].includes(collection) && (
                                   <DropdownMenuItem
                                     disabled={!document.item.id || dirty}
                                     onSelect={() => setConfirmTrash(true)}

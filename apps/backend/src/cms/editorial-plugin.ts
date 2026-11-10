@@ -26,7 +26,7 @@ export default {
     'content:beforeDelete': async (event, context) => {
       if (event.permanent) return false;
       if (['news', 'socials'].includes(event.collection)) return true;
-      if (!['artists', 'releases'].includes(event.collection)) return false;
+      if (!['artists', 'releases', 'shows'].includes(event.collection)) return false;
       const item = await context.content?.get(event.collection, event.id);
       return Boolean(item && item.status === 'draft' && !item.liveRevisionId && !item.publishedAt);
     },

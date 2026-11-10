@@ -117,6 +117,19 @@ export async function selectPreviewContent(
       !content.records.some((artist) => artist.collection === 'artists' && artist.id === record.data.artist)
     )
       throw new Error('Include the linked Artist in the review before previewing this content.');
+    if (record.collection === 'shows' && Array.isArray(record.data.lineup)) {
+      for (const row of record.data.lineup as Array<{ artist?: string; release?: string }>) {
+        if (row.artist && !content.records.some((item) => item.collection === 'artists' && item.id === row.artist))
+          throw new Error('Include the linked Artist in the review before previewing this content.');
+        if (
+          row.release &&
+          !content.records.some(
+            (item) => item.collection === 'releases' && item.id === row.release && item.data.artist === row.artist,
+          )
+        )
+          throw new Error('Include the linked Release for this Artist in the review before previewing this content.');
+      }
+    }
   }
   return { content, input: selected, media };
 }

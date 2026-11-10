@@ -161,7 +161,7 @@ test('captures only pinned live data with a deterministic digest, omitting draft
   assert.equal(first.json.includes('secret'), false);
   assert.equal(first.json.includes('draft-two'), false);
   assert.equal(first.sha256, (await captureCmsSnapshot(readers())).sha256);
-  assert.equal(first.requests, 27);
+  assert.equal(first.requests, 29);
 });
 
 test('exports captured bytes into a fresh build directory and rejects invalid input before writes', async (t) => {
@@ -330,7 +330,7 @@ test('captures referenced image bytes once and rejects missing, corrupt, oversiz
   };
   const result = await captureCmsSnapshot(input);
   assert.equal(downloads, 1);
-  assert.equal(result.requests, 29);
+  assert.equal(result.requests, 31);
   assert.equal(result.snapshot.media.length, 1);
   assert.deepEqual(result.files.get(result.snapshot.media[0].sha256), bytes);
   assert.equal(result.json.includes('storageKey'), false);

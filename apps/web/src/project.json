@@ -54,7 +54,11 @@
         "./components/icons/SocialIcon.astro",
         "./lib/exact-first-search.ts",
         "./lib/item-availability.ts",
-        "./lib/open-preorders.ts"
+        "./lib/open-preorders.ts",
+        "./lib/live-show.ts",
+        "./components/shows/HomeShowSection.astro",
+        "./components/shows/ArtistNextShow.astro",
+        "./components/shows/ReleaseShowLine.astro"
       ],
       "namedInterfaces": {},
       "dependsOn": [

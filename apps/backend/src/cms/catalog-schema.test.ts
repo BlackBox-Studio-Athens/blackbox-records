@@ -10,7 +10,14 @@ test('catalog preparation adds optional Artist activity and News reference field
   vi.spyOn(SchemaRegistry.prototype, 'getField').mockImplementation(
     async (collection, slug) => fields.get(`${collection}/${slug}`) ?? null,
   );
-  vi.spyOn(SchemaRegistry.prototype, 'getCollection').mockResolvedValue(null);
+  let showsCreated = false;
+  vi.spyOn(SchemaRegistry.prototype, 'getCollection').mockImplementation(async (slug) =>
+    slug === 'shows' && showsCreated ? ({ slug, titleField: 'title' } as never) : null,
+  );
+  const createCollection = vi.spyOn(SchemaRegistry.prototype, 'createCollection').mockImplementation(async () => {
+    showsCreated = true;
+    return {} as never;
+  });
   const create = vi.spyOn(SchemaRegistry.prototype, 'createField').mockImplementation(async (collection, input) => {
     const field = input as Awaited<ReturnType<SchemaRegistry['createField']>>;
     fields.set(`${collection}/${input.slug}`, field);
@@ -18,6 +25,8 @@ test('catalog preparation adds optional Artist activity and News reference field
   });
   const runtime = { db: {} } as EmDashRuntime;
   expect((await prepareCatalogSchema(runtime)).status).toBe(200);
+  expect(createCollection).toHaveBeenCalledTimes(1);
+  expect(create).toHaveBeenCalledWith('shows', { slug: 'poster', label: 'poster', type: 'image', required: false });
   expect(create).toHaveBeenCalledWith('releases', {
     slug: 'catalog_number',
     label: 'Catalog number',
@@ -77,7 +86,11 @@ test('catalog preparation adds optional Artist activity and News reference field
     required: false,
   });
   expect((await prepareCatalogSchema(runtime)).status).toBe(200);
+  expect(createCollection).toHaveBeenCalledTimes(1);
   expect(create).toHaveBeenCalledTimes(created);
+  fields.set('shows/doors', { ...fields.get('shows/doors')!, type: 'number' });
+  await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: shows.doors');
+  fields.set('shows/doors', { ...fields.get('shows/doors')!, type: 'string' });
   fields.set('releases/show_on_home', { ...fields.get('releases/show_on_home')!, type: 'string' });
   await expect(prepareCatalogSchema(runtime)).rejects.toThrow('Unexpected field type: releases.show_on_home');
   fields.set('releases/show_on_home', { ...fields.get('releases/show_on_home')!, type: 'boolean' });

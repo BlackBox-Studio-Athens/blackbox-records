@@ -427,6 +427,14 @@ test('CMS schemas accept every source shape without optional-field loss', async 
       return typeof value === 'string' && imageFields.has(value) && name !== 'logo' ? { id: 'fixture-image' } : value;
     });
     if (collection === 'artists') delete data.slug;
+    if (collection === 'shows') {
+      data.ticket_url = data.ticketUrl;
+      data.poster_alt = data.posterAlt;
+      if (data.facebookUrl) data.facebook_url = data.facebookUrl;
+      delete data.ticketUrl;
+      delete data.facebookUrl;
+      delete data.posterAlt;
+    }
     if (record.body.trim()) data.body = markdownTreeToPortableText(parseMarkdown(record.body));
     assert.deepEqual(validateCmsContent(collection, data), [], record.source);
     assert.ok(validateCmsContent(collection, { ...data, stripe_price_id: 'forged' }).length, record.source);

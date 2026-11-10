@@ -4,6 +4,7 @@ import { CalendarDays, Clock, PackageCheck, Save, Truck } from 'lucide-react';
 import type { InternalStockDetail } from '../../lib/backend/internal-stock-api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { SwitchTrack } from '../fields/Switch';
 import { athensToday, preorderPreview, shipEstimateText, type ShipEstimate } from './preorder-preview';
 
 interface PreorderControlProps {
@@ -77,10 +78,7 @@ export default function PreorderControl({
               else setEnabled(event.currentTarget.checked);
             }}
           />
-          <span
-            aria-hidden="true"
-            className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50"
-          />
+          <SwitchTrack />
         </label>
         {enabled && (
           <>

@@ -24,7 +24,7 @@
         "./ZeroStockStateControl.tsx"
       ],
       "namedInterfaces": {},
-      "dependsOn": ["staff-ui", "staff-platform", "staff-publication"],
+      "dependsOn": ["staff-ui", "staff-fields", "staff-platform", "staff-publication"],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]
       }

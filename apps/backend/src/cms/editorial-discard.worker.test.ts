@@ -3,7 +3,7 @@ import plugin from './editorial-plugin';
 
 test('artist and release discard permits only never-published drafts and never permanent deletion', async () => {
   const beforeDelete = plugin.hooks['content:beforeDelete'];
-  for (const collection of ['artists', 'releases']) {
+  for (const collection of ['artists', 'releases', 'shows']) {
     const event = { collection, id: 'draft', permanent: false };
     const get = vi.fn().mockResolvedValue({ status: 'draft', liveRevisionId: null, publishedAt: null });
     const context = { content: { get } } as unknown as Parameters<typeof beforeDelete>[1];

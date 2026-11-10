@@ -71,6 +71,45 @@ Pause hidden/offline background reads, deduplicate simultaneous reads, retain us
 
 Run repository and editor gates against the final tree, browser acceptance at 390/768/1280/1600 px in Chromium and Firefox, and the real shared-template preview smoke. The fixture preview is intentionally simplified and cannot establish public-template fidelity. Screenshots and logs remain under ignored `.codex-artifacts/`. Measure request/database-read costs locally before the bounded UAT pilot required by [the Free-tier rule](cloudflare-free-tier.md). This redesign does not authorize payment launch, public-site redesign or fulfillment automation.
 
+## Current Stats brief
+
+The approved Daily brief (19 October 2026) supersedes the earlier Stats chart arrangements. Design from 320 px upward: one period control and a sentence of reported figures, then separate Visits, Store and Google Search reports with restrained violet, sage and warm neutral bars. Explore opens source detail with draft filters, removable selections, metric choices, day/week/month grouping, tap/keyboard inspection and an optional date table. Keep 44 px targets, honest missing-data gaps and source-specific timezone/coverage notes. Blue denotes actions.
+
+The eight date choices are Today, Yesterday, 7 days, 30 days, 90 days, This month, 12 months and Custom. Only Custom renders Start date and End date. Dates and filters apply explicitly and survive Back/Forward; Cancel preserves the applied selection. The [Daily brief requirements](../openspec/changes/implement-staff-daily-brief/specs/site-analytics/spec.md) own date validation and report semantics.
+
+The 27 October 2026 Stats refinement keeps previous-period comparison on by default; `compare=false` turns it off. The opening sentence states only reported figures. Brief charts name their highest value and label every bar up to seven, otherwise first, middle and last. Unreported days are hatched with a note; an all-zero period is stated in words rather than drawn. Preserve the distinction between missing data and zero. [Slice 4 evidence](../openspec/changes/redesign-staff-around-stats/validation.md) records these accepted details.
+
+## Structured editors — accepted 2026-11-10, Show editor implemented
+
+The owner chose direction B, grouped task cards, for every Staff editor ([change](../openspec/changes/staff-structured-editors/design.md)). The Show editor is the first implemented slice; the other editors follow in later slices.
+
+**Cards.** An editor is a list of task cards, for example Title, When, Where, Tickets, Lineup, Poster and Links for a Show. Each card is a native `<details>` in one named group, so only one card is open at a time. A closed card shows its title and a one-line summary of the stored values, such as "Sat 05 Dec 2026 · doors 20:00" or "€10 / €12 / €15 · More.com". Each card has one of four states, with an icon and screen-reader text:
+
+- **Done**: every field in the card is filled and valid.
+- **Optional**: the card is empty and nothing in it is required.
+- **Required, missing**: a required field is empty. The summary uses the warning colour.
+- **Needs attention**: a stored value is invalid, or a field holds a draft that cannot be stored. The summary shows the message in the destructive colour.
+
+Enter or Space opens a card from its summary. Escape closes the open card and returns focus to its summary; an Escape inside a field's own popover or inline input does not close the card. Publish and Review changes open the card of the first blocking field through the existing focus-first-invalid step. On wide editors a card body uses two columns; phones use one.
+
+**Field kit** (`apps/staff/src/components/fields/`). Fields store typed values from `packages/content-model` and never free text where a known shape exists:
+
+| Field            | Stores                         | Behaviour                                                                                  |
+| ---------------- | ------------------------------ | ------------------------------------------------------------------------------------------ |
+| MoneyInput       | Euro cents                     | € input; a draft that is not an amount stays visible with its message and is not stored.   |
+| DateField        | ISO date                       | Native date input, a Today button and a readable day-date readback.                        |
+| TimeOfDayField   | 24-hour `HH:MM`                | Hour and minute steppers (minutes in 5-minute steps); independent of the browser locale.   |
+| DurationField    | Seconds                        | Minutes and seconds inputs.                                                                |
+| ProviderUrlField | HTTPS link for a known service | Adds `https://`, names the recognised service, and rejects a link for a different service. |
+| ChoiceChips      | One or more known choices      | Chips for values already in use; Other adds a new value inline.                            |
+| SegmentedChoice  | One option from a short list   | Equal-width segmented buttons instead of a select.                                         |
+| CountStepper     | A bounded whole number         | −/+ buttons around a numeric input; announces when it reaches a limit.                     |
+| Switch           | On or off                      | Labelled switch with visible On/Off text, shared by Content and Stock.                     |
+
+All targets are at least 44 px. Inputs stay 16 px. A field that cannot store its draft reports it to its card, so the card shows Needs attention until the draft is fixed or cleared.
+
+Evidence: [structured editors validation](../openspec/changes/staff-structured-editors/validation.md). The owner approved the Show editor result on 10 November 2026 from Local captures at 390 and 1440 px.
+
 ## Research ledger
 
 Reviewed official documentation and product UI examples on 2026-09-16. This is a reference study, not authenticated usability testing of all twelve products. Ghost's publishing example also received direct browser visual review. Adopt the task pattern, not a product's branding or its larger feature set.

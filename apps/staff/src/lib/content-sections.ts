@@ -5,6 +5,7 @@ export const contentSections = {
   releases: 'Releases',
   distro: 'Distro and merch',
   news: 'News',
+  shows: 'Shows',
   home: 'Home page',
   about: 'Who we are page',
   services: 'Services page',

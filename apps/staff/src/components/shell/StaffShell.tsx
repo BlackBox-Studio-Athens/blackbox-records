@@ -48,6 +48,7 @@ const areas = [
     links: [
       { label: 'Pages', href: '/content/', icon: FileText },
       { label: 'News', href: '/content/?collection=news', icon: FileText },
+      { label: 'Shows', href: '/content/?collection=shows', icon: FileText },
       { label: 'Navigation & footer', href: '/content/?view=footer', icon: Menu },
       { label: 'Label details', href: '/content/?collection=settings', icon: House },
     ],
@@ -207,7 +208,7 @@ export default function StaffShell({
     area.color === 'website'
       ? view === 'footer' || ['navigation', 'socials', 'newsletter'].includes(section ?? '')
         ? '/content/?view=footer'
-        : ['news', 'settings'].includes(section ?? '')
+        : ['news', 'shows', 'settings'].includes(section ?? '')
           ? `/content/?collection=${section}`
           : '/content/'
       : `/content/?collection=${section}`;

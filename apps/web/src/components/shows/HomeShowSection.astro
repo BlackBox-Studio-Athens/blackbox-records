@@ -1,0 +1,104 @@
+---
+import { Image } from 'astro:assets';
+import { buttonVariants } from '@/components/ui/button';
+import type { LiveShow } from '@/lib/live-show';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
+
+interface Props {
+  show: LiveShow;
+}
+
+const { show } = Astro.props;
+// Existing ladder rungs only (docs/cloudflare-free-tier.md): the 420px column at 1x and 2x, and phone widths.
+const posterWidths = [480, 720, 1080];
+const kicker = [show.fullDayLabel, show.billing].filter(Boolean).join(' · ');
+---
+
+<section class="home-show-section layout-container mt-16" id="live" aria-labelledby="home-live-heading">
+  <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+    <div class="home-section-header__lead">
+      <h2 class="home-section-header__title" id="home-live-heading">
+        Live
+      </h2>
+      <span class="home-section-header__rule" aria-hidden="true"></span>
+    </div>
+  </div>
+  <div class="home-show">
+    {/* Shown whole at its own ratio: no crop. */}
+    <Image
+      src={show.entry.data.poster}
+      alt={show.entry.data.posterAlt}
+      class="home-show__poster"
+      widths={posterWidths}
+      width={largestImageWidth(show.entry.data.poster, posterWidths)}
+      quality={editorialImageQuality}
+      sizes="(min-width: 48rem) 420px, calc(100vw - 2rem)"
+      data-show-poster
+    />
+    <div class="home-show__copy">
+      <p class="show-kick show-kick--amber m-0">
+        <time datetime={show.date}>{kicker}</time>
+      </p>
+      <h3 class="show-title home-show__title">{show.title}</h3>
+      <ul class="show-title home-show__lineup" aria-label="Lineup">
+        {show.headliners.map((act) => (
+          <li>
+            {act.href ? (
+              <a href={act.href} data-astro-prefetch>
+                {act.name}
+              </a>
+            ) : (
+              act.name
+            )}
+            {act.releaseTitle && <span class="show-kick show-kick--muted"> {act.releaseTitle}</span>}
+          </li>
+        ))}
+        {show.openers.map((act) => (
+          <li class="home-show__opener">
+            +{' '}
+            {act.href ? (
+              <a href={act.href} data-astro-prefetch>
+                {act.name}
+              </a>
+            ) : (
+              act.name
+            )}
+            <span class="show-kick"> Opening</span>
+          </li>
+        ))}
+      </ul>
+      <dl class="home-show__facts">
+        <div>
+          <dt>Venue</dt>
+          <dd>{show.venueShort}</dd>
+        </div>
+        <div>
+          <dt>Doors</dt>
+          <dd>{show.doors}</dd>
+        </div>
+        {show.priceText && (
+          <div>
+            <dt>Tickets</dt>
+            <dd>{show.priceText}</dd>
+          </div>
+        )}
+      </dl>
+      <div class="show-actions">
+        <a
+          href={show.ticketUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={buttonVariants({ variant: 'default' })}
+          data-show-tickets
+        >
+          Get tickets<span class="sr-only"> at {show.ticketSeller} (opens in a new tab)</span>
+        </a>
+        {show.facebookUrl && (
+          <a href={show.facebookUrl} target="_blank" rel="noopener noreferrer" class="show-quiet-link">
+            Facebook event<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

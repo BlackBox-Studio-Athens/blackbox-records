@@ -1,0 +1,26 @@
+{
+  "name": "staff-fields",
+  "tags": ["module", "scope:staff"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/staff exec vitest run --project=staff-fields --config vitest.modules.config.ts",
+      "inputs": ["staffTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/staff exec vitest --watch --project=staff-fields --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./*.tsx", "./field-values.ts", "./draft-problems.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
+}

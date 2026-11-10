@@ -4,6 +4,8 @@ import { getMainNavigation } from '@/lib/site-data';
 import HeaderBrand from '@/components/header/HeaderBrand.astro';
 import HeaderDesktopNav from '@/components/header/HeaderDesktopNav.astro';
 import HeaderShell from '@/components/header/HeaderShell.astro';
+import ShowStrip from '@/components/shows/ShowStrip.astro';
+import { getUpcomingLiveShow } from '@/lib/live-show';
 import { Menu } from 'lucide-react';
 
 interface Props {
@@ -13,9 +15,11 @@ interface Props {
 const { pathname } = Astro.props;
 const { sections } = await getMainNavigation();
 const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
+const upcomingShow = await getUpcomingLiveShow();
 ---
 
-<HeaderShell hasBanner={showReviewSiteMarker}>
+<HeaderShell hasBanner={showReviewSiteMarker || !!upcomingShow}>
+  {upcomingShow && <ShowStrip slot="banner" show={upcomingShow} />}
   {showReviewSiteMarker && (
     <aside slot="banner" class="uat-site-banner" aria-label="UAT environment">
       <strong>UAT · TESTING ONLY</strong>

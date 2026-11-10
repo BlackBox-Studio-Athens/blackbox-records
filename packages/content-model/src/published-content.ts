@@ -65,6 +65,9 @@ export function publishedCollection(
       .map((record) => [record.id, record] as const)
       .reverse(),
   );
+  const releases = new Map(
+    snapshot.records.filter((record) => record.collection === 'releases').map((record) => [record.id, record.slug]),
+  );
   const storeItems = new Map(
     (snapshot.storeItems ?? []).map((item) => [`${item.sourceKind}/${item.sourceId}`, item] as const).reverse(),
   );
@@ -110,9 +113,24 @@ export function publishedCollection(
         if (!artist) throw new Error('Published Artist is unavailable.');
         data.artist = { collection: 'artists', id: artist.slug };
       }
+      if (record.collection === 'shows') {
+        data.prices ??= [];
+        data.ticketUrl = data.ticket_url;
+        data.posterAlt = data.poster_alt;
+        if (data.facebook_url) data.facebookUrl = data.facebook_url;
+        delete data.ticket_url;
+        delete data.poster_alt;
+        delete data.facebook_url;
+      }
+      if (record.collection === 'shows' && Array.isArray(data.lineup))
+        data.lineup = data.lineup.map((entry: { artist?: string; release?: string }) => ({
+          ...entry,
+          ...(entry.artist ? { artist: artists.get(entry.artist)?.slug } : {}),
+          ...(entry.release ? { release: releases.get(entry.release) } : {}),
+        }));
       if (record.collection === 'releases' && (data.show_on_home === 0 || data.show_on_home === 1))
         data.show_on_home = data.show_on_home === 1;
-      for (const key of ['date', 'release_date']) {
+      for (const key of record.collection === 'shows' ? [] : ['date', 'release_date']) {
         if (data[key] === '') delete data[key];
         else if (typeof data[key] === 'string') data[key] = new Date(data[key]);
       }
@@ -125,7 +143,7 @@ export function publishedCollection(
         data.store_item = item ? { storeItemSlug: item.storeItemSlug, variantId: item.variantId } : null;
       }
       return {
-        id: ['artists', 'releases', 'news', 'distro', 'navigation', 'socials'].includes(record.collection)
+        id: ['artists', 'releases', 'news', 'shows', 'distro', 'navigation', 'socials'].includes(record.collection)
           ? record.slug
           : 'site',
         collection,

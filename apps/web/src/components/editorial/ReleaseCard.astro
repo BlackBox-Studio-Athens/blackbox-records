@@ -369,6 +369,7 @@ const dataAttributes = embeddedPlayerData
               <Prose value={release.data.summary} rich={release.data.summary_rich} />
             </div>
           )}
+          <slot name="after-summary" />
           {summaryDisclosure && (
             <div class="releases-feature__links">
               <details class="releases-feature__more" data-release-more>

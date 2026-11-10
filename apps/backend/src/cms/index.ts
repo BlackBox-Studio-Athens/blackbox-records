@@ -44,4 +44,4 @@ export {
 } from './staff-thumbnails';
 export { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 export { previewInputSchema, previewPath, readBoundedText } from './preview-content';
-export { projectArtistReference, readRevisionContent } from './publication-projection';
+export { projectArtistReference, readRevisionContent, showLineupReferenceIssues } from './publication-projection';

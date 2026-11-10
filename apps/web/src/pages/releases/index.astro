@@ -6,9 +6,13 @@ import ReleaseCatalogPresentation, {
 } from '@/components/editorial/ReleaseCatalogPresentation';
 import { getReleaseCommerceLink, getReleasePresentationEntry } from '@/components/editorial/release-commerce';
 import { listArtistProfiles, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
+import ReleaseShowLine from '@/components/shows/ReleaseShowLine.astro';
+import { getUpcomingLiveShow } from '@/lib/live-show';
 
 const [artistProfiles, releaseCatalogEntries] = await Promise.all([listArtistProfiles(), listReleaseCatalog()]);
 const artistProfileById = mapArtistProfilesById(artistProfiles);
+const upcomingShow = await getUpcomingLiveShow();
+const showReleaseIds = new Set(upcomingShow?.headliners.map((act) => act.releaseId).filter(Boolean));
 const commerceLinks = await Promise.all(releaseCatalogEntries.map(getReleaseCommerceLink));
 const { principal, remainder } = selectReleaseMerchandisingEntries(
   releaseCatalogEntries.map((release, index) => ({
@@ -33,7 +37,11 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
             imagePriority={index === 0}
             variant="releases"
             role={index === 0 ? 'lead' : 'supporting'}
-          />
+          >
+            {upcomingShow && showReleaseIds.has(release.id) && (
+              <ReleaseShowLine slot="after-summary" show={upcomingShow} />
+            )}
+          </ReleaseCard>
         ))}
         <section
           class="releases-catalog-section"
@@ -51,7 +59,11 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
                 artist={artistProfileById.get(release.data.artist.id)}
                 commerceLink={commerceLink}
                 variant="releases"
-              />
+              >
+                {upcomingShow && showReleaseIds.has(release.id) && (
+                  <ReleaseShowLine slot="after-summary" show={upcomingShow} />
+                )}
+              </ReleaseCard>
             ))}
           </div>
         </section>

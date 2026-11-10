@@ -1,0 +1,30 @@
+---
+import type { LiveShow } from '@/lib/live-show';
+
+interface Props {
+  show: LiveShow;
+}
+
+const { show } = Astro.props;
+const lineup = [
+  show.headliners.map((act) => act.name).join(' / '),
+  show.openers.length ? `+ ${show.openers.map((act) => act.name).join(' + ')}` : '',
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{/* A new tab keeps the player session; the shell does not intercept external links. */}
+<a
+  class="show-strip show-kick"
+  href={show.ticketUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label={`${show.title}, ${show.fullDayLabel}, ${show.venue}: get tickets at ${show.ticketSeller} (opens in a new tab)`}
+  data-show-strip
+>
+  <span class="show-kick--amber">Live · {show.dayLabel}</span>
+  {lineup && <span class="show-strip__lineup">{lineup}</span>}
+  <span class="show-strip__venue">{show.venueShort}</span>
+  <span class="show-strip__tickets">Tickets</span>
+</a>

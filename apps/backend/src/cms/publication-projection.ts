@@ -35,6 +35,37 @@ export function projectArtistReference<T extends { data: Record<string, unknown>
   return { ...item, data: { ...item.data, artist: children[0]?.id ?? '' } };
 }
 
+export async function showLineupReferenceIssues(runtime: EmDashRuntime, lineup: unknown[]) {
+  const issues: string[] = [];
+  for (const [index, value] of lineup.entries()) {
+    if (!value || typeof value !== 'object') continue;
+    const row = value as { artist?: string; release?: string };
+    if (row.artist && !(await runtime.handleContentGet('artists', row.artist)).success)
+      issues.push(`lineup.${index}.artist: Select an existing Artist.`);
+    if (!row.release) continue;
+    const release = await runtime.handleContentGet('releases', row.release);
+    if (!release.success) {
+      issues.push(`lineup.${index}.release: Select an existing Release.`);
+      continue;
+    }
+    const item = release.data.item;
+    const revisionId = item.draftRevisionId ?? item.liveRevisionId;
+    const revision = revisionId ? await runtime.handleRevisionGet(revisionId) : null;
+    if (
+      revisionId &&
+      (!revision?.success || revision.data.item.collection !== 'releases' || revision.data.item.entryId !== item.id)
+    ) {
+      issues.push(`lineup.${index}.release: The saved Release is unavailable. Reload and retry.`);
+      continue;
+    }
+    const content = revision?.success
+      ? await readRevisionContent(runtime, revision.data.item)
+      : projectArtistReference(item).data;
+    if (content.artist !== row.artist) issues.push(`lineup.${index}.release: Select a Release by this Artist.`);
+  }
+  return issues;
+}
+
 /** The same selected source replaces its accepted catalog identity in review and publication. */
 export function projectPublicationStoreItems(
   previous: ContentSnapshot['storeItems'],

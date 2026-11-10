@@ -199,6 +199,9 @@ describe('stripe catalog contract projection', () => {
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
     expect(contracts).toHaveLength(101);
+    expect(contracts.some((contract) => contract.sourceKind === 'release' && contract.sourceId === 'lotus')).toBe(
+      false,
+    );
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
@@ -413,6 +416,9 @@ describe('stripe catalog contract projection', () => {
 
   it('generates sandbox UAT D1 readiness rows with default stock for current Store Items', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
+    expect(contracts.some((contract) => contract.sourceKind === 'release' && contract.sourceId === 'lotus')).toBe(
+      false,
+    );
     const stockBySlug = new Map(
       contracts.map((contract) => [contract.storeItemSlug, createSandboxUatCatalogStock(contract)]),
     );

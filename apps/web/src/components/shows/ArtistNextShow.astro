@@ -1,0 +1,74 @@
+---
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/components/ui/utils';
+import { formatPriceText, type LiveShow } from '@/lib/live-show';
+
+interface Props {
+  show: LiveShow;
+  artistId: string;
+  overlay?: boolean;
+}
+
+const { show, artistId, overlay = false } = Astro.props;
+const act = show.acts.find((candidate) => candidate.artistId === artistId);
+const others = show.acts.filter((candidate) => candidate !== act);
+const otherHeadliners = others.filter((candidate) => candidate.role === 'headliner').map((candidate) => candidate.name);
+const otherOpeners = others.filter((candidate) => candidate.role === 'opening').map((candidate) => candidate.name);
+const meta = [
+  show.venue,
+  otherHeadliners.length ? `with ${otherHeadliners.join(' · ')}` : '',
+  otherOpeners.length ? `${otherOpeners.join(' · ')} ${otherOpeners.length > 1 ? 'open' : 'opens'}` : '',
+  `Doors ${show.doors}`,
+]
+  .filter(Boolean)
+  .join(' · ');
+const ticketLabel = show.lowestPrice === null ? 'Get tickets' : `Tickets from ${formatPriceText([show.lowestPrice])}`;
+---
+
+{act && (
+  <section
+    class={cn(
+      'layout-container artist-detail artist-next-show-section',
+      overlay ? 'artist-detail--overlay' : 'artist-detail--page',
+    )}
+    aria-labelledby="artist-next-show-heading"
+    data-artist-next-show
+  >
+    <div class="artist-next-show__heading">
+      <h2 class="artist-detail-section-label" id="artist-next-show-heading">
+        Next show
+      </h2>
+      <span aria-hidden="true"></span>
+    </div>
+    <div class="artist-next-show">
+      <div class="artist-next-show__row">
+        <time class="artist-next-show__date" datetime={show.date}>
+          <span class="show-kick show-kick--amber">{show.weekday}</span>
+          <span class="artist-next-show__day">{show.day}</span>
+          <span class="artist-next-show__month">{show.month}</span>
+        </time>
+        <div class="artist-next-show__copy">
+          {act.releaseTitle && <span class="show-kick show-kick--amber">{act.releaseTitle} release show</span>}
+          <span class="show-title artist-next-show__title">{show.title}</span>
+          <p class="artist-next-show__meta">{meta}</p>
+        </div>
+      </div>
+      <div class="show-actions">
+        <a
+          href={show.ticketUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={buttonVariants({ variant: 'default' })}
+        >
+          {ticketLabel}
+          <span class="sr-only"> at {show.ticketSeller} (opens in a new tab)</span>
+        </a>
+        {show.facebookUrl && (
+          <a href={show.facebookUrl} target="_blank" rel="noopener noreferrer" class="show-quiet-link">
+            Facebook event<span class="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+)}

@@ -1,5 +1,6 @@
 import { tracklistSchema } from './tracklist';
 import { catalogNumberSchema } from './catalog-number';
+import { moneySchema, timeOfDaySchema } from './values';
 import { productSafetyOfferSchema } from './product-safety';
 import { artistCountriesSchema, parseArtistCountries, validArtistLink } from './artist-fields';
 import { z } from 'zod';
@@ -140,6 +141,38 @@ export function createNewsContentSchema<TImage extends z.ZodType, TReference ext
     image: image(),
     image_alt: requiredAltText,
     section_label: z.string().optional(),
+  });
+}
+
+export function createShowsContentSchema<TImage extends z.ZodType>(image: () => TImage) {
+  const lineupEntry = z
+    .object({
+      role: z.enum(['headliner', 'opening']),
+      artist: requiredText.max(128).optional(),
+      name: requiredText.max(200).optional(),
+      release: requiredText.max(128).optional(),
+    })
+    .strict()
+    .superRefine((entry, ctx) => {
+      if (Boolean(entry.artist) === Boolean(entry.name))
+        ctx.addIssue({ code: 'custom', path: ['artist'], message: 'Choose an Artist or enter a name.' });
+      if (entry.release && (entry.role !== 'headliner' || !entry.artist))
+        ctx.addIssue({ code: 'custom', path: ['release'], message: 'Only an Artist Headliner can link a Release.' });
+    });
+  return z.object({
+    title: requiredText,
+    date: z.iso.date(),
+    doors: timeOfDaySchema,
+    venue: requiredText,
+    prices: z.array(moneySchema).max(4).default([]),
+    ticketUrl: httpsUrl,
+    facebookUrl: httpsUrl.optional(),
+    billing: z.string().trim().max(200).optional(),
+    poster: image(),
+    posterAlt: requiredAltText,
+    lineup: z.array(lineupEntry).refine((entries) => entries.some((entry) => entry.role === 'headliner'), {
+      message: 'Add at least one Headliner.',
+    }),
   });
 }
 

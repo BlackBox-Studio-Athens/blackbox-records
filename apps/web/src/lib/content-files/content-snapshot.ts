@@ -50,6 +50,11 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
       .filter((record) => record.collection === 'artists')
       .map((record) => [record.id, record.slug]),
   );
+  const releases = new Map(
+    loaded.snapshot.records
+      .filter((record) => record.collection === 'releases')
+      .map((record) => [record.id, record.slug]),
+  );
   const storeItems = new Map(
     (loaded.snapshot.storeItems ?? []).map((item) => [`${item.sourceKind}/${item.sourceId}`, item] as const).reverse(),
   );
@@ -76,6 +81,21 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
       }
       if (record.collection === 'artists') data.slug = record.slug;
       if (record.collection === 'releases') data.artist = artists.get(String(record.data.artist));
+      if (record.collection === 'shows') {
+        data.prices ??= [];
+        data.ticketUrl = data.ticket_url;
+        data.posterAlt = data.poster_alt;
+        if (data.facebook_url) data.facebookUrl = data.facebook_url;
+        delete data.ticket_url;
+        delete data.poster_alt;
+        delete data.facebook_url;
+      }
+      if (record.collection === 'shows' && Array.isArray(data.lineup))
+        data.lineup = data.lineup.map((entry: { artist?: string; release?: string }) => ({
+          ...entry,
+          ...(entry.artist ? { artist: artists.get(entry.artist) } : {}),
+          ...(entry.release ? { release: releases.get(entry.release) } : {}),
+        }));
       if (['artists', 'releases', 'news'].includes(record.collection)) {
         data.editorial_body = body ?? [];
         data.content_media = Object.fromEntries(

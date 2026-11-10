@@ -15,7 +15,7 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     // Editorial dates are calendar days, not instants subject to timezone normalization.
     if (property.type === 'string') type = 'string';
     if (property.type === 'integer' || property.type === 'number' || property.type === 'boolean') type = property.type;
-    if (name === 'image' || name === 'cover_image') type = 'image';
+    if (name === 'image' || name === 'cover_image' || (slug === 'shows' && name === 'poster')) type = 'image';
     if (name === 'tracklist') type = 'json';
     if (slug === 'releases' && name === 'catalog_number') type = 'string';
     if (slug === 'releases' && name === 'releases_priority') type = 'number';

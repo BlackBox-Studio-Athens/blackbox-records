@@ -47,7 +47,7 @@ const canDiscardSavedChanges = (item: EditorialRecord) =>
     ((item.liveRevisionId && item.draftRevisionId && item.publicationState === 'changes') ||
       (item.publicationState === 'draft' &&
         !item.liveRevisionId &&
-        ['artists', 'releases', 'news', 'socials'].includes(item.collection))),
+        ['artists', 'releases', 'news', 'shows', 'socials'].includes(item.collection))),
   );
 type CurrentEditorialDocument = { item: EditorialRecord; _rev: string };
 type DiscardCandidate = { document: CurrentEditorialDocument; record: EditorialRecord };

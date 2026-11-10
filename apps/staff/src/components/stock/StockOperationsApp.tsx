@@ -1,3 +1,4 @@
+import { SwitchTrack } from '../fields/Switch';
 import {
   ArrowDownUp,
   ClipboardCheck,
@@ -1612,10 +1613,7 @@ function StockFlagSwitch({
         aria-describedby={descriptionId}
         type="checkbox"
       />
-      <span
-        aria-hidden="true"
-        className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50"
-      />
+      <SwitchTrack />
     </label>
   );
 }

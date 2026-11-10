@@ -13,6 +13,8 @@ import { cn, publicTitleClass } from '@/components/ui/utils';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
+import ArtistNextShow from '@/components/shows/ArtistNextShow.astro';
+import { getUpcomingLiveShow } from '@/lib/live-show';
 import { createImageSizes, editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
@@ -29,6 +31,7 @@ const profileLinks = artist.data.profile_links || [];
 const artistVideos = artist.data.videos || [];
 
 const artistReleases = await listReleaseCatalogByArtistId(artist.id);
+const upcomingShow = await getUpcomingLiveShow();
 const { upcomingReleases, outNowReleases } = splitReleaseCatalogByAvailability(artistReleases);
 const latestRelease = upcomingReleases[0] || outNowReleases[0] || null;
 const latestReleaseDate = latestRelease ? formatMonthYear(latestRelease.data.release_date) : '';
@@ -147,6 +150,8 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
     </div>
   </div>
 </section>
+
+{upcomingShow && <ArtistNextShow show={upcomingShow} artistId={artist.id} overlay={isOverlayPresentation} />}
 
 {latestRelease && (
   <section

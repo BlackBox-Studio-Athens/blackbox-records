@@ -185,6 +185,37 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
     });
     review.referenceTitles[entry.after.artist] = title;
   }
+  for (const entry of review.entries.filter((item) => item.collection === 'shows')) {
+    if (!Array.isArray(entry.after.lineup)) continue;
+    for (const row of entry.after.lineup) {
+      if (!row || typeof row !== 'object') continue;
+      for (const [collection, id] of [
+        ['artists', row.artist],
+        ['releases', row.release],
+      ] as const) {
+        if (typeof id !== 'string' || !id) continue;
+        const existing = candidate.records.find((record) => record.collection === collection && record.id === id);
+        if (existing) {
+          if (collection === 'releases' && existing.data.artist !== row.artist)
+            entry.issues.push('lineup: The linked Release belongs to another Artist.');
+          continue;
+        }
+        reads++;
+        const result = await deps.runtime.handleContentGet(collection, id);
+        const title = result.success
+          ? String(result.data.item.data.title ?? result.data.item.slug)
+          : `Unavailable ${collection === 'artists' ? 'Artist' : 'Release'}`;
+        review.dependencies.push({
+          collection,
+          recordId: id,
+          title,
+          requiredBy: entry.title,
+          available: result.success,
+        });
+        review.referenceTitles[id] = title;
+      }
+    }
+  }
   // One read per distinct selected image; never scan the media library or unrelated drafts.
   const ids = [...new Set(review.entries.flatMap((entry) => contentMediaIds(entry.after)))];
   if (ids.length > 100) throw new PublicationReviewConflict('Select fewer image-heavy entries (maximum 100 images).');

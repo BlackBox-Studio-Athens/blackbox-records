@@ -6,6 +6,7 @@ import {
   createArtistsContentSchema,
   createReleasesContentSchema,
   createNewsContentSchema,
+  createShowsContentSchema,
   createDistroContentSchema,
   createHomeContentSchema,
   createAboutContentSchema,
@@ -85,6 +86,7 @@ export function normalizeEditorialBody(value: unknown): unknown {
 
 const mediaId = z.string().min(1).max(128);
 const image = () => z.object({ id: mediaId }).strict();
+const publicShowSchema = createShowsContentSchema(image);
 const key = z.string().min(1).max(128);
 const bodyError =
   'Unsupported full-text formatting. Undo or remove this block. Use paragraphs, headings, lists, quotes, safe links, images with descriptions, code, or YouTube/Vimeo videos. HTML, tables and galleries are not supported.';
@@ -149,6 +151,11 @@ export const cmsContentSchemas = {
     body: cmsBodySchema.optional(),
     date: z.iso.date(),
   }),
+  shows: publicShowSchema.omit({ ticketUrl: true, facebookUrl: true, posterAlt: true }).extend({
+    ticket_url: publicShowSchema.shape.ticketUrl,
+    facebook_url: publicShowSchema.shape.facebookUrl,
+    poster_alt: publicShowSchema.shape.posterAlt,
+  }),
   distro: createDistroContentSchema(image).extend({
     release_date: z.iso.date().optional(),
     product_safety: productSafetyContentSchema.optional(),
@@ -173,6 +180,7 @@ export const sourceCollectionNames: Record<CmsCollection, string> = {
   artists: 'artists',
   releases: 'releases',
   news: 'news',
+  shows: 'shows',
   distro: 'distro',
   distro_page: 'distroPage',
   navigation: 'navigation',
@@ -290,6 +298,19 @@ export function validateCmsDraft(collection: CmsCollection, data: Record<string,
   if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
   const result = cmsDraftSchemas[collection]!.safeParse(nativeBooleans(collection, data));
   if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('./')}: ${issue.message}`);
+  if (collection === 'shows') {
+    const issues: string[] = [];
+    if (Array.isArray(data.prices) && data.prices.length > 4) issues.push('prices: Enter up to four prices.');
+    if (Array.isArray(data.lineup))
+      data.lineup.forEach((entry, index) => {
+        if (!entry || typeof entry !== 'object') return;
+        if (Boolean(entry.artist) === Boolean(entry.name))
+          issues.push(`lineup.${index}.artist: Choose an Artist or enter a name.`);
+        if (entry.release && (entry.role !== 'headliner' || !entry.artist))
+          issues.push(`lineup.${index}.release: Only an Artist Headliner can link a Release.`);
+      });
+    return issues;
+  }
   if (collection === 'artists' && Array.isArray(data.profile_links))
     return data.profile_links.flatMap((link, index) =>
       link?.label && link?.url && !validArtistLink(link.label, link.url)

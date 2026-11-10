@@ -1,0 +1,24 @@
+---
+import { CalendarDays } from 'lucide-react';
+import type { LiveShow } from '@/lib/live-show';
+
+interface Props {
+  show: LiveShow;
+}
+
+const { show } = Astro.props;
+---
+
+<a
+  class="release-show-line show-kick"
+  href={show.ticketUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label={`Release show, ${show.title}, ${show.fullDayLabel}, ${show.venue}: tickets at ${show.ticketSeller} (opens in a new tab)`}
+  data-release-show-line
+>
+  <CalendarDays className="size-3.5" aria-hidden="true" />
+  <span>
+    Release show · <time datetime={show.date}>{show.dayLabel}</time>, {show.venueShort}
+  </span>
+</a>

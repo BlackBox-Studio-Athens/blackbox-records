@@ -68,6 +68,7 @@ import {
   readInventoryArtwork,
   readPublicationCatalog,
   readRevisionContent,
+  showLineupReferenceIssues,
   readPriceDrafts,
   readStaffWorkspace,
   readReleaseCatalogNumbers,
@@ -871,6 +872,17 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
+          if (editorialWrite[1] === 'shows' && Array.isArray(draftData.lineup)) {
+            const { withEmDashRuntime } = await import('emdash/middleware');
+            const referenceIssues = await withEmDashRuntime((runtime) =>
+              showLineupReferenceIssues(runtime, draftData.lineup as unknown[]),
+            );
+            if (referenceIssues.length)
+              return cmsNestedProblemResponse(422, {
+                code: 'invalid_editorial_save',
+                message: referenceIssues.join('\n'),
+              });
+          }
           if (editorialWrite[1] === 'releases' && identity && identity.role >= 30) {
             const { withEmDashRuntime } = await import('emdash/middleware');
             const clash = await withEmDashRuntime((runtime) =>

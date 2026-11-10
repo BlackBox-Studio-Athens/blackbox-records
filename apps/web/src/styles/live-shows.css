@@ -1,0 +1,321 @@
+/* Live show placements (owner-approved direction C with Home option 2b, 10 November 2026). */
+
+.show-kick {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.show-kick--amber {
+  color: var(--amber-500);
+}
+
+.show-kick--muted {
+  color: var(--flint-400);
+}
+
+.show-title {
+  margin: 0;
+  color: var(--foreground);
+  font-family: var(--font-display-brand);
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.show-quiet-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--flint-700);
+  text-underline-offset: 4px;
+}
+
+.show-quiet-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.show-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 1. One line above the header. It never wraps; the lineup drops out first on phones. */
+.show-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 36px;
+  padding: 0 16px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--flint-850);
+  background: #141414;
+  color: var(--foreground);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Reserve the strip before HeaderShell measures the header, so first paint does not shift. */
+:root:has([data-show-strip]) {
+  --header-height: calc(80px + 36px);
+}
+
+.show-strip > * {
+  flex-shrink: 0;
+}
+
+.show-strip__venue {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.show-strip__tickets {
+  text-decoration: underline;
+  text-decoration-color: var(--flint-700);
+  text-underline-offset: 4px;
+}
+
+.show-strip:hover .show-strip__tickets {
+  text-decoration-color: currentColor;
+}
+
+.show-strip:focus-visible {
+  outline: 2px solid var(--amber-500);
+  outline-offset: -2px;
+}
+
+@media (max-width: 39.99rem) {
+  .show-strip {
+    gap: 10px;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+  }
+
+  .show-strip__lineup {
+    display: none;
+  }
+}
+
+/* 2. Home Live section: the whole poster beside the facts. */
+.home-show-section {
+  position: relative;
+  z-index: 5;
+}
+
+.home-show {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  align-items: center;
+  gap: 3rem;
+}
+
+.home-show__poster {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--flint-850);
+}
+
+.home-show__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.home-show__title {
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+}
+
+.home-show__lineup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  list-style: none;
+}
+
+.home-show__lineup a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-show__lineup a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.home-show__lineup .show-kick {
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.home-show__opener {
+  color: var(--flint-400);
+  font-size: 0.75em;
+}
+
+.home-show__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--flint-850);
+}
+
+.home-show__facts > div {
+  padding: 14px 0;
+}
+
+.home-show__facts dt {
+  color: var(--flint-400);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.home-show__facts dd {
+  margin: 6px 0 0;
+  color: var(--foreground);
+  font-family: var(--font-display-ui);
+  font-size: 24px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 47.99rem) {
+  .home-show {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .home-show__facts dd {
+    font-size: 20px;
+  }
+
+  .home-show .show-actions .site-button {
+    flex: 1 1 100%;
+  }
+}
+
+/* 3. Artist page Next show box. */
+.artist-next-show-section {
+  margin-top: 3rem;
+}
+
+.artist-next-show__heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1.25rem;
+}
+
+.artist-next-show__heading h2 {
+  margin: 0;
+}
+
+.artist-next-show__heading span {
+  flex: 1;
+  height: 1px;
+  background: var(--flint-850);
+}
+
+.artist-next-show {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 46rem;
+  padding: 1.5rem;
+  border: 1px solid var(--flint-850);
+  background: #141414;
+}
+
+.artist-next-show__row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+}
+
+.artist-next-show__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  border: 1px solid var(--flint-850);
+  color: var(--foreground);
+  font-family: var(--font-display-ui);
+  letter-spacing: 0.05em;
+}
+
+.artist-next-show__day {
+  font-size: 52px;
+  line-height: 0.85;
+}
+
+.artist-next-show__month {
+  font-size: 18px;
+}
+
+.artist-next-show__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.artist-next-show__title {
+  font-size: 1.75rem;
+}
+
+.artist-next-show__meta {
+  margin: 0;
+  color: var(--flint-400);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.artist-next-show .show-actions {
+  padding-top: 1rem;
+  border-top: 1px solid var(--flint-850);
+}
+
+@media (max-width: 47.99rem) {
+  .artist-next-show .show-actions .site-button {
+    flex: 1 1 100%;
+  }
+}
+
+/* 4. Release-show line on a Releases listing entry. */
+.release-show-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--amber-300);
+  text-decoration: none;
+}
+
+.release-show-line:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.release-show-line svg {
+  flex-shrink: 0;
+  color: var(--amber-500);
+}

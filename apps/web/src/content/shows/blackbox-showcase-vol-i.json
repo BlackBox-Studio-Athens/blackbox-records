@@ -1,0 +1,17 @@
+{
+  "title": "BlackBox Showcase Vol. I",
+  "date": "2026-12-05",
+  "doors": "20:00",
+  "venue": "AN Club, Athens",
+  "prices": [1000, 1200, 1500],
+  "ticketUrl": "https://www.more.com/gr-el/tickets/music/offer/sidus-afterwise-double-release-live-show-hylas/",
+  "facebookUrl": "https://www.facebook.com/events/1446071347664122/",
+  "billing": "Double Album Release Show · with Dunk!records",
+  "poster": "./blackbox-showcase-vol-i-poster.png",
+  "posterAlt": "BlackBox Records Showcase Vol. I poster: Sidus and Afterwise, with Hylas, AN Club, Saturday 5 December 2026",
+  "lineup": [
+    { "role": "headliner", "artist": "sidus", "release": "lotus" },
+    { "role": "headliner", "artist": "afterwise", "release": "disintegration" },
+    { "role": "opening", "name": "Hylas" }
+  ]
+}

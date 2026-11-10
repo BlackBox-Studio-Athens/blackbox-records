@@ -25,6 +25,7 @@ function RecordPicker({
   onBlur,
   required = true,
   onClear,
+  filter,
 }: {
   base: string;
   collection: 'artists' | 'releases' | 'distro' | 'media';
@@ -37,6 +38,8 @@ function RecordPicker({
   onBlur?: (() => void) | undefined;
   required?: boolean;
   onClear?: () => void;
+  // shortcut: filters each loaded page client-side; add a backend query parameter if a filter hides most results.
+  filter?: ((item: Choice) => boolean) | undefined;
 }) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Choice[]>([]);
@@ -86,9 +89,10 @@ function RecordPicker({
       if (next) params.set('cursor', next);
       const page = await editorialRequest<EditorialList<Choice>>(base, `content/${collection}?${params}`);
       if (request !== requestSequence.current) return;
-      setItems((previous) => (next ? [...previous, ...page.items] : page.items));
+      const pageItems = filter ? page.items.filter(filter) : page.items;
+      setItems((previous) => (next ? [...previous, ...pageItems] : pageItems));
       setCursor(page.nextCursor);
-      if (!page.items.length) setMessage('No matches.');
+      if (!pageItems.length && !page.nextCursor) setMessage('No matches.');
     } catch (error) {
       if (request !== requestSequence.current) return;
       setMessage(error instanceof Error ? error.message : 'Could not load choices.');

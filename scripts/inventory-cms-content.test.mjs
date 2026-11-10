@@ -17,10 +17,24 @@ test('inventory preserves frontmatter types, Markdown, and Astro slug overrides'
 test('actual collection inventory is deterministic and resolves references and media', async () => {
   const first = await inventory();
   assert.deepEqual(await inventory(), first);
-  assert.equal(first.collections.length, 13);
+  assert.equal(first.collections.length, 14);
   assert.deepEqual(first.anomalies, []);
   const release = first.records.find((record) => record.collection === 'releases' && record.id === 'disintegration');
   assert.deepEqual(release.references, [{ field: 'artist', collection: 'artists', id: 'afterwise' }]);
+  const show = first.records.find((record) => record.collection === 'shows' && record.id === 'blackbox-showcase-vol-i');
+  assert.deepEqual(show.data.lineup, [
+    { role: 'headliner', artist: 'sidus', release: 'lotus' },
+    { role: 'headliner', artist: 'afterwise', release: 'disintegration' },
+    { role: 'opening', name: 'Hylas' },
+  ]);
+  for (const entry of show.data.lineup) {
+    if (entry.artist)
+      assert.ok(first.records.some((record) => record.collection === 'artists' && record.id === entry.artist));
+    if (entry.release) {
+      const linked = first.records.find((record) => record.collection === 'releases' && record.id === entry.release);
+      assert.equal(linked?.data.artist, entry.artist);
+    }
+  }
   for (const [id, artist] of [
     ['disintegration', 'afterwise'],
     ['anarchotribal', 'ouranopithecus'],

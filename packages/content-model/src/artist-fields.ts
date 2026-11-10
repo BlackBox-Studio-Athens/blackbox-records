@@ -1,7 +1,8 @@
 import english from 'i18n-iso-countries/langs/en.json';
 import { z } from 'zod';
 
-export type CountryCode = keyof typeof english.countries;
+declare const countryCodeBrand: unique symbol;
+export type CountryCode = keyof typeof english.countries & { readonly [countryCodeBrand]: true };
 export const countryOptions = /* @__PURE__ */ (() =>
   Object.entries(english.countries)
     .map(([code, names]) => ({ code: code as CountryCode, name: Array.isArray(names) ? names[0]! : names }))
@@ -14,6 +15,11 @@ const countryAliases = /* @__PURE__ */ (() => {
   }
   return aliases;
 })();
+
+export function parseCountryCode(input: unknown): CountryCode | null {
+  if (typeof input !== 'string' || !/^[A-Za-z]{2}$/.test(input)) return null;
+  return countryAliases.get(input.toLowerCase()) ?? null;
+}
 
 // Keep the existing CMS text format at the storage boundary, with ISO identities in the editor.
 export function parseArtistCountries(value: string): CountryCode[] | null {

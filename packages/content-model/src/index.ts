@@ -1,5 +1,6 @@
 export * from './validation';
 export * from './catalog-number';
+export * from './values';
 export * from './music';
 export * from './release-status';
 export * from './schemas';

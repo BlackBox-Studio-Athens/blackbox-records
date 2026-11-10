@@ -5,6 +5,30 @@ import type { EmDashRuntime } from 'emdash/middleware';
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  if (!(await registry.getCollection('shows')))
+    await registry.createCollection({
+      slug: 'shows',
+      label: 'shows',
+      routable: false,
+      supports: ['drafts', 'revisions', 'preview'],
+    });
+  for (const [slug, type] of [
+    ['title', 'string'],
+    ['date', 'string'],
+    ['doors', 'string'],
+    ['venue', 'string'],
+    ['prices', 'json'],
+    ['ticket_url', 'string'],
+    ['facebook_url', 'string'],
+    ['billing', 'string'],
+    ['poster', 'image'],
+    ['poster_alt', 'string'],
+    ['lineup', 'json'],
+  ] as const) {
+    const existing = await registry.getField('shows', slug);
+    if (!existing) await registry.createField('shows', { slug, label: slug, type, required: false });
+    else if (existing.type !== type) throw new Error(`Unexpected field type: shows.${slug}`);
+  }
   const catalogNumber = await registry.getField('releases', 'catalog_number');
   if (!catalogNumber)
     await registry.createField('releases', {
@@ -121,7 +145,7 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   }
   const group = await registry.getField('distro', 'group');
   if (group && !group.indexed) await registry.updateField('distro', 'group', { indexed: true });
-  for (const slug of ['artists', 'releases', 'distro', 'news']) {
+  for (const slug of ['artists', 'releases', 'distro', 'news', 'shows']) {
     const collection = await registry.getCollection(slug);
     if (collection && collection.titleField !== 'title') await registry.updateCollection(slug, { titleField: 'title' });
   }

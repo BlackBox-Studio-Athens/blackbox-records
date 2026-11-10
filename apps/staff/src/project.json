@@ -4,6 +4,7 @@
   "targets": {},
   "implicitDependencies": [
     "staff-ui",
+    "staff-fields",
     "staff-platform",
     "staff-orders",
     "staff-stats",

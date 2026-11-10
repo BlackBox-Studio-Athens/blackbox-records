@@ -6,6 +6,7 @@ import {
   createArtistsContentSchema,
   createReleasesContentSchema,
   createNewsContentSchema,
+  createShowsContentSchema,
   createDistroContentSchema,
   distroPageContentSchema,
   navigationContentSchema,
@@ -55,6 +56,11 @@ const news = defineCollection({
       editorial_body: cmsBodySchema.optional(),
       content_media: z.record(z.string(), image()).optional(),
     }),
+});
+
+const shows = defineCollection({
+  loader: publicContentLoader('shows', '**/*.json', './src/content/shows'),
+  schema: ({ image }) => createShowsContentSchema(image),
 });
 
 const distro = defineCollection({
@@ -112,6 +118,7 @@ export const collections = {
   artists,
   releases,
   news,
+  shows,
   distro,
   distroPage,
   navigation,

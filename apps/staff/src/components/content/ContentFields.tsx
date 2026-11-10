@@ -1,4 +1,5 @@
 import TracklistFields from './TracklistFields';
+import LineupFields, { type LineupEntry } from './LineupFields';
 import BandcampField from './BandcampField';
 import CountryPicker from './CountryPicker';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
@@ -48,6 +49,15 @@ import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
 import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
 import CatalogNumberField from './CatalogNumberField';
+import EditorCards from './EditorCards';
+import PriceList from './PriceList';
+import { showCardSummaries, showCards, type ShowCardId } from './show-cards';
+import { useCollectionRecords } from './use-collection-records';
+import { SwitchTrack } from '../fields/Switch';
+import ChoiceChips from '../fields/ChoiceChips';
+import DateField from '../fields/DateField';
+import ProviderUrlField from '../fields/ProviderUrlField';
+import TimeOfDayField from '../fields/TimeOfDayField';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
@@ -74,16 +84,6 @@ const linkNameInput = (input: string) =>
     .replace(/[^a-z0-9-]+/g, '-')
     .replace(/-{2,}/g, '-')
     .replace(/^-/, '');
-
-// The track and knob drawn after a visually hidden role="switch" checkbox (peer).
-function SwitchTrack() {
-  return (
-    <span
-      aria-hidden="true"
-      className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50 motion-reduce:transition-none motion-reduce:after:transition-none"
-    />
-  );
-}
 
 export default function ContentFields({
   collection,
@@ -124,6 +124,9 @@ export default function ContentFields({
 }) {
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
   const [openSections, setOpenSections] = useState<string[]>([]);
+  // Show cards read artist names for the Lineup summary and earlier venues for the Where choices.
+  const artistRecords = useCollectionRecords(base, collection === 'shows' ? 'artists' : null);
+  const showRecords = useCollectionRecords(base, collection === 'shows' ? 'shows' : null);
   useEffect(() => {
     if (validationAttempt > 0) setOpenSections(['music', 'credits', 'text', 'presentation']);
   }, [validationAttempt]);
@@ -366,12 +369,13 @@ export default function ContentFields({
       clearToNull: true,
     });
   }
-  function image(path: string, alt: string, label: string) {
+  /** `inCard` drops the section rule and shows the description field openly, for use inside an editor card. */
+  function image(path: string, alt: string, label: string, { inCard = false }: { inCard?: boolean } = {}) {
     const reference = value(path) as { id?: string } | undefined;
     const fieldErrors = exactErrors(path);
     return (
       <FieldSet
-        className="col-span-full min-w-0 gap-4 border-y border-border py-6"
+        className={inCard ? 'col-span-full min-w-0 gap-4' : 'col-span-full min-w-0 gap-4 border-y border-border py-6'}
         data-invalid={errors(path).length > 0}
       >
         <FieldLegend variant="label" required icon={ImageIcon}>
@@ -394,13 +398,22 @@ export default function ContentFields({
             }}
             path={path}
           />
-          <details>
-            <summary className="cursor-pointer text-sm">Image description for accessibility</summary>
-            <p className="my-2 text-sm text-muted-foreground">
-              Filled from the image library or entry title. Change it when the image conveys more information.
-            </p>
-            {field(alt, 'Image description')}
-          </details>
+          {inCard ? (
+            <>
+              {field(alt, 'Image description')}
+              <p className="-mt-2 text-sm text-muted-foreground">
+                Describe what the image shows for people who cannot see it, including any text on it.
+              </p>
+            </>
+          ) : (
+            <details>
+              <summary className="cursor-pointer text-sm">Image description for accessibility</summary>
+              <p className="my-2 text-sm text-muted-foreground">
+                Filled from the image library or entry title. Change it when the image conveys more information.
+              </p>
+              {field(alt, 'Image description')}
+            </details>
+          )}
         </FieldGroup>
       </FieldSet>
     );
@@ -847,6 +860,124 @@ export default function ContentFields({
         {body}
       </>
     );
+  if (collection === 'shows') {
+    const prices = Array.isArray(data.prices) ? data.prices.filter((price) => typeof price === 'number') : [];
+    const venue = typeof data.venue === 'string' ? data.venue : '';
+    const venues = [
+      ...new Set(
+        showRecords
+          .map((record) => record.data.venue)
+          .filter((used): used is string => typeof used === 'string' && !!used),
+      ),
+    ];
+    const edit = (path: string) => (next: unknown) => {
+      touch(path);
+      set(path, next);
+    };
+    const bodies: Record<ShowCardId, React.ReactNode> = {
+      title: (
+        <>
+          {field('title', 'Show title')}
+          {field('billing', 'Billing line', { required: false })}
+        </>
+      ),
+      when: (
+        <>
+          <DateField
+            path="date"
+            label="Show date"
+            value={data.date}
+            errors={errors('date')}
+            disabled={disabled}
+            onChange={edit('date')}
+            onBlur={() => touch('date')}
+          />
+          <TimeOfDayField
+            path="doors"
+            label="Doors open"
+            value={data.doors}
+            errors={errors('doors')}
+            disabled={disabled}
+            onChange={edit('doors')}
+          />
+        </>
+      ),
+      where: (
+        <ChoiceChips
+          path="venue"
+          label="Venue"
+          single
+          required
+          options={venues}
+          value={venue ? [venue] : []}
+          otherLabel="New venue"
+          maxLength={200}
+          description={venues.length ? 'Choose a venue used before, or add a new one.' : 'Add the venue name and city.'}
+          errors={errors('venue')}
+          disabled={disabled}
+          onChange={(next) => edit('venue')(next[0] ?? '')}
+        />
+      ),
+      tickets: (
+        <>
+          <PriceList
+            path="prices"
+            label="Ticket prices"
+            value={prices}
+            errors={exactErrors('prices')}
+            disabled={disabled}
+            onChange={edit('prices')}
+          />
+          <ProviderUrlField
+            path="ticket_url"
+            label="Ticket link"
+            service="any"
+            value={data.ticket_url}
+            anyMessage="Paste the full ticket page address, starting with https://"
+            errors={errors('ticket_url')}
+            disabled={disabled}
+            onChange={(next) => edit('ticket_url')(next ?? '')}
+            onBlur={() => touch('ticket_url')}
+          />
+        </>
+      ),
+      lineup: (
+        <LineupFields
+          base={base}
+          disabled={disabled}
+          value={(Array.isArray(data.lineup) ? data.lineup : []) as LineupEntry[]}
+          onChange={edit('lineup')}
+          errorsFor={(path) => (validationAttempt > 0 || touched.has('lineup') ? (validation.byPath[path] ?? []) : [])}
+        />
+      ),
+      poster: image('poster', 'poster_alt', 'Poster', { inCard: true }),
+      links: (
+        <ProviderUrlField
+          path="facebook_url"
+          label="Facebook event"
+          service="facebook"
+          value={data.facebook_url}
+          required={false}
+          errors={errors('facebook_url')}
+          disabled={disabled}
+          onChange={edit('facebook_url')}
+          onBlur={() => touch('facebook_url')}
+        />
+      ),
+    };
+    const summaries = showCardSummaries(
+      data,
+      new Map(artistRecords.map((record) => [record.id, String(record.data.title ?? record.slug)])),
+    );
+    return (
+      <EditorCards
+        name={`show-${recordId ?? 'new'}`}
+        data={data}
+        validation={validation}
+        cards={showCards.map((card) => ({ ...card, summary: summaries[card.id], content: bodies[card.id] }))}
+      />
+    );
+  }
   if (collection === 'distro')
     return (
       <>

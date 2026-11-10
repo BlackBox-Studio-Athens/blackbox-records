@@ -81,7 +81,7 @@ test('captures through fixed GET routes without forwarding unrelated credentials
   });
   const result = await captureCmsSnapshot(readers);
   assert.equal(result.snapshot.records[0].data.title, 'Instagram');
-  assert.equal(requests.length, 29);
+  assert.equal(requests.length, 31);
   await assert.rejects(readers.readRevision('../private'), /Invalid/);
 });
 

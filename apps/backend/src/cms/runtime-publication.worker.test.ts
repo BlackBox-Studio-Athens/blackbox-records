@@ -27,7 +27,7 @@ import {
 } from '@blackbox/content-model';
 import { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
 import { selectPreviewContent, previewDestination } from './preview-selection';
-import { projectArtistReference, readRevisionContent } from './publication-projection';
+import { projectArtistReference, readRevisionContent, showLineupReferenceIssues } from './publication-projection';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -358,6 +358,141 @@ test('News review requires its unpublished Artist instead of exposing an unrelat
     data: { item: { id: 'selected', collection: 'news', entryId: 'news', data: { ...news.data, artist: '' } } },
   });
   expect((await reviewPublication({ records }, deps)).review.dependencies).toEqual([]);
+});
+
+test('Show review asks for unpublished lineup Artists and Releases and previews Home', async () => {
+  const { deps, runtime, pointer } = await setup();
+  const baseline = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+  const poster = baseline.media[0]!.id;
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
+    data: {
+      item: {
+        id: 'show-draft',
+        collection: 'shows',
+        entryId: 'show',
+        data: {
+          title: 'Show',
+          date: '2026-12-05',
+          doors: '20:00',
+          venue: 'AN Club',
+          prices: [1000, 1200, 1500],
+          ticket_url: 'https://example.com',
+          poster: { id: poster },
+          poster_alt: 'Poster',
+          lineup: [{ role: 'headliner', artist: 'sidus', release: 'lotus' }],
+        },
+      },
+    },
+  });
+  runtime.handleContentGet.mockImplementation(async (collection?: string, id = '') => ({
+    success: true,
+    data: {
+      _rev: 'version-1',
+      item:
+        collection === 'shows'
+          ? { id: 'show', slug: 'show', status: 'draft', draftRevisionId: 'show-draft', liveRevisionId: '' }
+          : {
+              id,
+              slug: id,
+              status: 'draft',
+              draftRevisionId: 'draft',
+              liveRevisionId: '',
+              data: { title: collection === 'artists' ? 'Sidus' : 'LOTUS' },
+            },
+    },
+  }));
+  const records = [{ collection: 'shows', recordId: 'show' }];
+  const { review } = await reviewPublication({ records }, deps);
+  expect(review.dependencies).toEqual([
+    { collection: 'artists', recordId: 'sidus', title: 'Sidus', requiredBy: 'Show', available: true },
+    { collection: 'releases', recordId: 'lotus', title: 'LOTUS', requiredBy: 'Show', available: true },
+  ]);
+  await expect(
+    selectPreviewContent(
+      { collection: 'shows', id: 'show', publication: { records, baseline: pointer.snapshotSha256 } },
+      deps,
+    ),
+  ).rejects.toThrow('Resolve');
+  expect(
+    previewDestination(
+      {
+        input: { collection: 'shows', slug: 'show', data: { prices: [1000, 1200, 1500] } },
+        content: baseline,
+        media: {},
+      },
+      'detail',
+      '/',
+    ),
+  ).toBe('/');
+  const showRevision = (await runtime.handleRevisionGet()).data.item;
+  runtime.handleContentGet.mockImplementation(async (collection?: string, id = '') => ({
+    success: true,
+    data: {
+      _rev: 'version-1',
+      item: {
+        id,
+        slug: id,
+        status: 'draft',
+        draftRevisionId: `${collection}-draft`,
+        liveRevisionId: '',
+        data: { title: id },
+      },
+    },
+  }));
+  runtime.handleRevisionGet.mockImplementation(async (id?: string) => ({
+    success: true,
+    data: {
+      item:
+        id === 'artists-draft'
+          ? {
+              id: 'artists-draft',
+              collection: 'artists',
+              entryId: 'sidus',
+              data: { title: 'Sidus', genre: 'Post Metal', bio: 'Bio', image: { id: poster }, image_alt: 'Artist' },
+            }
+          : id === 'releases-draft'
+            ? {
+                id: 'releases-draft',
+                collection: 'releases',
+                entryId: 'lotus',
+                data: {
+                  title: 'LOTUS',
+                  artist: 'sidus',
+                  catalog_number: 'BBR#004',
+                  release_stage: 'upcoming',
+                  cover_image: { id: poster },
+                  cover_image_alt: 'Cover',
+                },
+              }
+            : showRevision,
+    },
+  }));
+  const combined = await reviewPublication(
+    {
+      records: [
+        ...records,
+        { collection: 'artists', recordId: 'sidus' },
+        { collection: 'releases', recordId: 'lotus' },
+      ],
+    },
+    deps,
+  );
+  expect(combined.review.dependencies).toEqual([]);
+  expect(combined.review.entries.flatMap((entry) => entry.issues)).toEqual([]);
+});
+
+test('Show draft rejects a Release by another Artist', async () => {
+  const runtime = {
+    handleContentGet: vi.fn(async (collection: string) =>
+      collection === 'artists'
+        ? { success: true, data: { item: { id: 'sidus' } } }
+        : { success: true, data: { item: { id: 'release', data: { artist: 'another' } } } },
+    ),
+  } as unknown as EmDashRuntime;
+  expect(
+    await showLineupReferenceIssues(runtime, [{ role: 'headliner', artist: 'sidus', release: 'release' }]),
+  ).toEqual(['lineup.0.release: Select a Release by this Artist.']);
 });
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));

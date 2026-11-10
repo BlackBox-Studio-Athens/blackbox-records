@@ -17,7 +17,7 @@
       "status": "closed",
       "exports": ["./ContentApp.tsx", "./ItemSetupApp.tsx"],
       "namedInterfaces": {},
-      "dependsOn": ["staff-ui", "staff-platform", "staff-publication", "staff-stock"],
+      "dependsOn": ["staff-ui", "staff-fields", "staff-platform", "staff-publication", "staff-stock"],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]
       }
