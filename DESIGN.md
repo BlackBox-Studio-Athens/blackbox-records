@@ -1,389 +1,243 @@
 ---
 name: BlackBox Records
-description: Monochrome editorial label site and storefront for BlackBox Records.
-colors:
-  void-background: '#0d0d0d'
-  ink-foreground: '#f5f5f5'
-  black-card: '#0f0f0f'
-  charcoal-surface: '#141414'
-  hover-surface: '#161616'
-  soft-muted: '#abb5b8'
-  hard-border: '#212729'
-  deep-border: '#262c2e'
-  primary-inverse: '#090909'
-  control-ink: '#e8e8e8'
-  sea-green: '#2d766a'
-  sea-green-pressed: '#256258'
-  sea-green-text: '#4ca999'
-  flint: '#626e72'
-  flint-pressed: '#4d595c'
-  flint-text: '#889396'
-  flint-error: '#c1cbce'
-  amber: '#e3b56c'
-  amber-light: '#f0d7b0'
-typography:
-  display:
-    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
-    fontSize: 'clamp(2.35rem, 8.5vw, 4.15rem)'
-    fontWeight: 900
-    lineHeight: 0.98
-    letterSpacing: '0.04em'
-  headline:
-    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
-    fontSize: 'clamp(1.7rem, 6vw, 2.65rem)'
-    fontWeight: 900
-    lineHeight: 0.98
-    letterSpacing: '0.04em'
-  title:
-    fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
-    fontSize: 'clamp(1.55rem, 4.6vw, 2.05rem)'
-    fontWeight: 900
-    lineHeight: 0.98
-    letterSpacing: '0.035em'
-  body:
-    fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif'
-    fontSize: '0.95rem'
-    fontWeight: 400
-    lineHeight: 1.7
-    letterSpacing: 'normal'
-  label:
-    fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif'
-    fontSize: '0.72rem'
-    fontWeight: 500
-    lineHeight: 1
-    letterSpacing: '0.22em'
-  mono:
-    fontFamily: 'Geist Mono, Courier New, monospace'
-    fontSize: '0.74rem'
-    fontWeight: 400
-    lineHeight: 1.35
-    letterSpacing: '0.12em'
-rounded:
-  none: '0'
-  sm: '0.1rem'
-  md: '0.225rem'
-  lg: '0.35rem'
-  pill: '999px'
-spacing:
-  xs: '0.5rem'
-  sm: '0.75rem'
-  md: '1rem'
-  lg: '1.5rem'
-  xl: '2rem'
-  section: '4rem'
-components:
-  button-primary:
-    backgroundColor: '{colors.control-ink}'
-    textColor: '{colors.primary-inverse}'
-    rounded: '{rounded.none}'
-    padding: '0 0.75rem'
-  button-outline:
-    backgroundColor: '{colors.charcoal-surface}'
-    textColor: '{colors.ink-foreground}'
-    rounded: '{rounded.none}'
-    padding: '0 0.75rem'
-  catalog-card:
-    backgroundColor: '{colors.charcoal-surface}'
-    textColor: '{colors.ink-foreground}'
-    rounded: '{rounded.none}'
-    padding: '1.25rem'
-  input:
-    backgroundColor: '{colors.void-background}'
-    textColor: '{colors.ink-foreground}'
-    rounded: '{rounded.md}'
-    padding: '0.5rem 0.75rem'
+description: Current visual contract for the BlackBox Records public site and storefront.
 ---
 
 # Design System: BlackBox Records
 
-## 1. Overview
+## Scope and identity
 
-**Creative North Star: "The Working Distro Table"**
+**The Working Distro Table:** black record sleeves, photocopied show listings, practical service notes, music imagery and a curated distro shelf. Keep the public site dark, direct, editorial and label-operated. Commerce and service inquiries share that identity.
 
-BlackBox Records should feel like a physical label surface translated to the web: black record sleeves, photocopied show listings, practical service notes, a curated distro table, and a player that stays out of the way until the listener asks for it. The system is dark by default because the site is built around music imagery, night venues, record artwork, and focused browsing.
+[PRODUCT.md](PRODUCT.md) owns users, purpose, voice and anti-references; [Staff guidance](#staff-workspace) routes internal surfaces. This file records current public visual rules. Research/history belongs in [design decisions](docs/design-inspiration.md) and the relevant OpenSpec change.
 
-The visual system is editorial first and commercial second. Storefront, checkout, shipping, and service inquiry screens must stay inside the same monochrome language instead of turning into a generic ecommerce product flow. The work should feel direct and label-operated, not corporate, cute, or algorithmically polished.
+## Colors
 
-**Key Characteristics:**
+Monochrome grounds, off-white titles and quiet body text carry the page. Accent clarifies meaning; no route has its own accent, and accents never wash ordinary pages or recolor public titles. Store Blood, Services Rose, Violet and Slate are retired public accents.
 
-- Monochrome surfaces with low-contrast tonal layering.
-- Condensed uppercase display type for identity and section rhythm.
-- Three fixed accents at one level: Sea Green for pre-orders, Flint for buying and the labels you read, amber for listening and small marks.
-- Square or hard-edged cards, flat by default, with image motion used carefully.
-- Content-owned copy and metadata, never debug labels or backend identifiers.
+### Palette and roles
 
-## 2. Colors
+- **Void** (`#0d0d0d`): Body, page ground and footer
+- **Ink** (`#f5f5f5`): Primary text, public titles and shared focus ring
+- **Black Card** (`#0f0f0f`): Popovers, panels and framed bases
+- **Charcoal** (`#141414`): Catalog cards and repeated editorial surfaces
+- **Hover Surface** (`#161616`): Tonal hover/focus-within lift
+- **Soft Muted** (Flint 400, `#abb5b8`): Secondary text, credits, dates, counts, status and inactive header links; 9.3:1 on Void, 8.8:1 on Charcoal
+- **Borders** (Flint 900 `#212729`; 850 `#262c2e`; 950 `#1a2022`): Hard Border: token/input strokes and Store tab line. Deep Border: frames/dividers/control edges. 950: quiet edge
+- **Control Ink / Primary Inverse** (`#e8e8e8` / `#090909`): Neutral filled action and its dark label; face becomes Ink on hover
+- **Flint** (700 `#626e72`; 800 `#4d595c`; 500 `#889396`; 300 `#c1cbce`; surface `rgba(98,110,114,.16)`): Buy/Add to cart faces; browse edges; tags, kickers, artist links, selected filters, current underlines, Store Sold Out/Only N left and form errors
+- **Amber** (500 `#e3b56c`; 300 `#f0d7b0`; surface `rgba(227,181,108,.16)`): Listen edges/bars, In player, date/catalog marks, dots, format marks, hover underlines, input focus edges and footer meta/Est. 2026; never a control face or title
+- **Sea Green** (700 `#2d766a`; 800 `#256258`; 500 `#4ca999`; 300 `#7cc7b9`; surface `rgba(45,118,106,.16)`): Pre-order actions and information, including a pre-order cart's Checkout. Never ordinary stock or page washes
+- **Error red** (700 `#bc4945`; 500 `#e4706a`; surface `rgba(188,73,69,.16)`): International restriction icon/edge/text, plus the editorial Releases Sold out edge below. Never a control face; form errors remain Flint 300
 
-The palette is near-black and off-white with three fixed accent roles (accent-and-button-system, 15 October 2026): Sea means pre-order, Flint means buy and labels, amber means listen and small marks. Flint, a cool gray (OKLCH h215, chroma 0.012 to 0.016), replaced Violet on 16 October 2026 so the third role reads as a neutral rather than a third hue. The owner chose the pre-redesign amber over Slate for Listen and small marks on 16 October 2026. Store Blood, Services Rose, Violet and Slate are retired. Every Veneer title, ground, card and line of body copy stays ink or grey.
+Flint's cool-gray hue (OKLCH h215, C .012–.016) reads as a neutral. Informational neutral tints use C .008–.012 while preserving lightness; grounds and Ink remain unchanged. Store search and Grid/Crate frames use Flint 700. Flint 700 with an Ink label is 4.8:1; Flint 500 on Charcoal is 5.8:1. Sea 700 with an Ink label is 4.9:1; Sea 500 on Charcoal is 6.5:1. Error 500 on Charcoal is 6.0:1.
 
-### Primary
+Runtime tokens live in [global.css](apps/web/src/styles/global.css): `--flint-*`, `--amber-*`, `--sea-*`, their `--*-surface` tokens and `--error-700/500`. `--preorder-accent`, `--preorder-accent-active` and `--preorder-accent-surface` remain Sea aliases. This table describes the approved palette, not a second token implementation.
 
-- **Ink Foreground** (#f5f5f5): Primary text, primary filled buttons, active shell states, and high-contrast marks.
-- **Void Background** (#0d0d0d): Site body and default page background.
+## Typography
 
-### Secondary
+Veneer gives public content a physical, letterpress character. Bebas Neue keeps controls and dense UI compressed and clear. Inter carries reading text; Geist Mono supplies existing technical-feeling, public-safe metadata.
 
-- **Flint** (cool gray; #626e72 face and edges, white label 4.8:1, hover #4d595c, text on dark #889396 at 5.8:1 on Charcoal Surface, error text #c1cbce, surface `rgba(98, 110, 114, 0.16)`): fills Buy, Buy vinyl and Add to cart; edges browse actions (Read News, View Full Roster, Continue shopping), Store Sold Out and Only N left; colours tags, kickers, artist link underlines, the current-page and current-tab underline, selected filter chips and error text. Tokens `--flint-800/700/500/300` and `--flint-surface`.
-- **Amber** (edges, text and marks #e3b56c, light #f0d7b0, surface `rgba(227, 181, 108, 0.16)`, 16 October 2026): Listen edge and equalizer bars, In player, the date and catalog line, current dots, link hover underlines, input focus edges, footer meta and Est. 2026. Tokens `--amber-500/300` and `--amber-surface`.
-- **Preorder Sea Green** (#2d766a, hover #256258, text on dark #4ca999, surface `rgba(45, 118, 106, 0.16)`): The wait for copies that are not on the shelf yet. Tokens `--sea-800/700/500/300` and `--sea-surface`; `--preorder-accent`, `--preorder-accent-active` and `--preorder-accent-surface` remain as aliases. It fills the Pre-order control at rest (Ink Foreground label, 4.9:1), colours the plain pre-order status line and the Pre-orders chip count and selection (6.5:1 on Charcoal Surface), and draws the 2px top edge of pre-order panels and the outline of the facts list and ships-together notice. Never on page washes or ordinary items.
-- **Error red** (#bc4945 edge, #e4706a icon and text at 6.0:1 on Charcoal Surface, surface `rgba(188, 73, 69, 0.16)`; OKLCH h25, the warm opposite of the cool accents): Error red marks the international restriction notices only (Ships within Greece only, the Store strip, the cart drawer and checkout cards). Icon, edge and text; never a control face. Form errors stay Flint error text after their "Error" label. Tokens `--error-700/500` and `--error-surface`.
+- **Brand display:** Veneer, Bebas Neue, Impact, sans-serif. 900; line-height .98.
+- **UI display:** Bebas Neue, Impact, sans-serif. Navigation, buttons, prices, cart/checkout chrome, totals, controls and dense operational labels.
+- **Body:** Inter, Helvetica Neue, Arial, sans-serif. 400; .95rem; line-height 1.7; normal tracking.
+- **Label:** Inter, Helvetica Neue, Arial, sans-serif. 500; .72rem; line-height 1; .22em tracking.
+- **Mono:** Geist Mono, Courier New, monospace. 400; .74rem; line-height 1.35; .12em tracking.
 
-### Neutral
+Brand sizes: Display `clamp(2.35rem, 8.5vw, 4.15rem)`, .04em tracking; Headline `clamp(1.7rem, 6vw, 2.65rem)`, .04em; Title `clamp(1.55rem, 4.6vw, 2.05rem)`, .035em. Display serves heroes and major features; Headline serves sections/groups; Title serves public content names. Surface-specific scales below take precedence.
 
-- **Black Card** (#0f0f0f): Popovers, cards, and framed panel bases.
-- **Charcoal Surface** (#141414): Catalog cards, artist surfaces, and repeated editorial modules. The footer sits on the Void ground.
-- **Hover Surface** (#161616): Hover and focus-within tonal lift for cards.
-- **Soft Muted** (Flint 400, #abb5b8; was #b3b3b3): Secondary body text, metadata, "by" credits, dates, counts, status lines such as Digital out now, and inactive header links. 9.3:1 on Void, 8.8:1 on Charcoal.
-- **Hard Border** (Flint 900, #212729; was #262626): Default token border, input stroke and the Store category tab line.
-- **Deep Border** (Flint 850, #262c2e; was #2b2b2b): Explicit editorial dividers, image frames, card borders, footer rules and control rest edges; the quiet edge is Flint 950 (#1a2022; was #1f1f1f).
-- **Primary Inverse** (#090909): Text on the light primary button.
+**Public titles:** Veneer owns artist, release, Store/distro, service and editorial titles, including cart/checkout item names. Bebas remains the UI display face. A public content title containing Greek uses self-hosted Inter 600 for its entire text, including Latin words in a mixed title. Latin-only titles retain Veneer. Preserve casing, size, wrapping, links and layout; credits, prices, controls and Staff keep their treatment ([Greek title decision](openspec/changes/fix-greek-public-titles/design.md)).
 
-### Named Rules
+**Store listing scale:** artwork → actual format → title → artist/label → lifecycle → price/action. Format is plain ink Inter semibold 13/16px capitals, without a leading mark. Titles are source-cased Veneer 900 at 20–24px. Credits use Inter medium, 16px phone/17px desktop: muted “by”, ink name, Flint underline only for verified independent artist links. Prices are Bebas 20px phone/24px desktop. Apply across All, BlackBox Releases, Distro and populated Merch; item pages, cart and checkout retain their own scale.
 
-**Flint tints every neutral that carries information** (round 2, 16 October 2026). Muted text, hairlines, card borders and control rest edges are Flint steps at the lightness of the pure greys they replaced (OKLCH h215, C .008 to .012), so contrast holds and the site reads as a tinted monochrome rather than pure black and white. The Store search edge and the Grid / Crate frame take Flint 700. Grounds (#0d0d0d, #141414, #0f0f0f), Ink, Sea, amber and the error red stay as they are.
+Keep metadata subordinate to content names. Long prose reads near 65–75 characters per line. News articles use a 46rem card at 16px; About's text column stops at 46rem. Running paragraphs in both stop at 34rem, about 70 characters.
 
-**The Monochrome Owns The Page Rule.** Black, charcoal, off-white, and gray must carry the screen. Accent color clarifies an action or a label; it must not recolor the whole product. Every Veneer title stays Ink Foreground.
+## Page frame, cards and depth
 
-**The Flint Means Buy And Labels Rule.** Flint fills Buy, Buy vinyl and Add to cart, edges browse actions, and carries tags, kickers, artist link underlines, current underlines, selected filters, Store Sold Out and error text. Editorial Releases has the scoped Sold out exception below. Never a title.
+Header, editorial routes and footer share `.layout-container`: `--page-max-width: 72rem`, with gutters 16px below 640px, 24px from 640px and 32px from 1024px, never smaller than the safe-area inset. Store collections raise only the maximum to 90rem. Modules add no second gutter; News cards pad 16px.
 
-**The Amber Means Listen And Small Marks Rule.** Amber draws the Listen edge and bars, In player, the date and catalog line, current dots, format marks, hover underlines, focus edges and footer meta. Never a face or a title.
+Header and Home hero film/still/shade may bleed. Home video/photo chapters span the viewport above 800px. Cover-only chapters, all chapters at 800px and below, swipe rows, section/footer rules and the hero divider stop at the frame. Veils over the fixed hero photo may span the page without a visible edge.
 
-**The Commerce Is Subordinate Rule.** Checkout UI must still look like BlackBox, not a payment provider, marketplace, or Shopify theme. No route has its own accent.
+Cards are square, flat, image-led frames on Charcoal or Black Card, with artwork on Void. Use Deep Border for explicit frames and Hard Border for token primitives. Padding is normally 1–1.5rem, or .75rem in dense metadata. Hover may change border/background and subtly scale an image; it does not lift or move the card. Use complete square catalog artwork. Avoid rounded ecommerce cards, decorative icon grids, side-stripe accents, gradient text and default glass effects.
 
-**The Sea Green Marks The Wait Rule.** Preorder Sea Green appears only where an item or order waits for copies: it fills Pre-order and Pre-order vinyl at rest, marks every pre-order status, and appears nowhere else. It does not wash sections or tint ordinary items.
+Heavy shadows identify floating UI only: overlay `0 28px 90px rgba(0,0,0,.56)`; mini player `0 14px 30px rgba(0,0,0,.32)`. Repeated cards have no shadow.
 
-## 3. Typography
+Artist roster photos preserve the complete 3:4 frame. Columns: one below 360px, two from 360px, three from 1280px. Phones use 16px row/12px column gaps, 12px copy padding and 20px titles. Count stacks above Latest with a top hairline on phones; otherwise the Bebas 28px count/12px tracked label sits beside Latest, separated by a hairline, with Flint Latest and an amber date. Keep the rendered count wording and wrapping under enlarged text.
 
-**Brand Display Font:** Veneer, with Bebas Neue, Impact, and sans-serif fallback.
-**UI Display Font:** Bebas Neue, with Impact and sans-serif fallback.
-**Body Font:** Inter, with Helvetica Neue, Arial, and sans-serif fallback.
-**Label/Mono Font:** Geist Mono, with Courier New and monospace fallback.
+## Shared controls
 
-**Character:** Brand display type is physical, letterpress, loud, and poster-like. UI display type stays compressed and clean for dense cards and controls. Body type is quiet, practical, and readable, with labels pushed into uppercase tracking for editorial metadata.
+Use [button.tsx](apps/web/src/components/ui/button.tsx) and its `.site-button` rules. Controls are square, flat and typographic, behind the artwork. Default action height is 44px, Bebas 16px capitals, .06em tracking, 1px baseline adjustment, 16px horizontal padding and 112px minimum action width. The hero is the sole 48px height exception. Icon controls and text-action rows retain 44px targets.
 
-**Greek public-title exception (approved 18 October 2026).** A public content title containing Greek uses the existing self-hosted Inter at weight 600 for its entire text, including Latin words in mixed titles. Latin-only titles retain Veneer. Preserve each surface's casing, size, wrapping, links and layout. This applies to the Public Title Rule and Store Listing Scale below; credits, prices, controls and Staff keep their existing treatment.
+- **Neutral:** Control Ink with Primary Inverse label; Ink hover. Pay/Continue to Payment, Subscribe, Show N items, Send inquiry and hero at rest
+- **Buy:** Flint 700 with Ink label; hover/press Flint 800 and Flint 500 edge
+- **Pre-order:** Sea 700 with Ink label; hover/press Sea 800 and Sea 500 edge; Home Soft edge exception below
+- **Inverse/browse:** Charcoal, Flint edge, Ink label: Read News, View Full Roster, Continue shopping
+- **Outline:** Charcoal, Deep Border edge, Ink label; tonal hover. Icon controls use a quieter neutral edge with no accent
+- **Listen:** Charcoal, Amber 500 edge/bars, Ink label; hover uses amber surface with the same edge
+- **In player:** Disabled amber status, Amber 300 text on amber surface; identifies the shell session, including a paused provider, without claiming verified playback
+- **Filter chip:** Charcoal, quiet edge, muted label; selected: Flint edge/surface, Ink label and check mark. Pre-orders selects in Sea. May show result count
+- **Text/quiet action:** Inter 13/500 in a 44px row; hairline underline, amber hover. Store Clear filters: Inter 700, 16px (15px phone), 2px underline and leading ×
 
-### Hierarchy
+Ordinary adjacent action pairs use one filled control and its outlined twin at equal height. Price is text, so one filled action may sit beside it. The Home phone/cover-only Pre-order/Listen pair follows its scoped composition below.
 
-- **Display** (900, `clamp(2.35rem, 8.5vw, 4.15rem)`, 0.98 line-height): Veneer for homepage hero, public route heroes, artist detail H1s, and major release/artist feature titles.
-- **Headline** (900, `clamp(1.7rem, 6vw, 2.65rem)`, 0.98 line-height): Veneer for public section titles, distro group headings, service offering titles, and editorial route panels.
-- **Title** (900, `clamp(1.55rem, 4.6vw, 2.05rem)`, 0.98 line-height): Veneer for public artist, release, distro, store, and service content titles.
-- **Body** (400, `0.95rem`, 1.7 line-height): Paragraph copy, service descriptions, checkout explanations, and artist profile text. Keep long prose near 65 to 75 characters per line.
-- **Label** (500, `0.72rem`, 0.22em tracking): Eyebrows, metadata, nav labels, status labels, and section kickers.
-- **Mono** (400, `0.74rem`, 0.12em tracking): Technical-feeling but public-safe small metadata where monospace is already used.
+Hover is tonal on hover-capable devices; press darkens without shifting geometry or labels. Focus is a 2px Ink outline with 2px offset; inputs additionally take an amber edge. Disabled opacity is 45%. Loading keeps width, sets `aria-busy` and changes the label. Tags such as News genres use a Flint edge/text and compact tracked type, not decorative pills.
 
-### Named Rules
+Feedback stays in place: Add to cart becomes Added; Remove leaves Undo; Stop ends the player on its first activation; Pay fills when the quote is ready. Do not add toasts or confirmation dialogs for those actions.
 
-**The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, cart and checkout line item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart/checkout chrome, totals, controls, labels, stock operations, order-state surfaces, metadata-heavy panels, and any surface where texture would slow scanning.
+**Icons and action meaning:**
 
-**The Store Listing Scale.** Store listing cards (store-mobile-first-browse, 15 October 2026) read artwork, format, title, artist, status, then price and action. The actual format precedes the title as a plain ink Inter 13/16px semibold capitals line, without a leading mark. Titles stay Veneer weight 900, source-cased, at the existing responsive 20–24px size. The credit underneath uses Inter medium at 16px on phones and 17px on desktop: a muted “by” and the unchanged artist or label name in ink, with a Flint underline on verified artist links, which remain independent. Lifecycle status is plain text; prices are Bebas 20px on phones and 24px on desktop beside one filled action. This applies across All, BlackBox Releases, Distro and populated Merch; item pages, cart, checkout and order confirmation retain their existing typography.
+| Surface            | Label and icon                                                                                                   | Activation                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Store Grid/Crate   | Buy for every format, static 18px Disc3; retain it for Adding/Added. Pre-order keeps its truthful label/Sea face | Read live offer, add one copy and open cart |
+| Editorial Releases | Buy vinyl/CD/cassette or corresponding Pre-order; vinyl uses static Disc3, CD/cassette retain StoreBuyIcon       | Native edition navigation                   |
+| Store item page    | Add to cart and existing icon treatment                                                                          | Existing cart action                        |
 
-**The Metadata Is Quiet Rule.** Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.
+Intrinsic Store/Release listing controls use at least 112×44px, 16px padding, 18px icon and 8px icon/text gap, without growth. Labels may wrap under enlarged text. Below 40rem Store Buy/Pre-order takes its own full-width line under price, 12px padding and no minimum width; height stays 44px. Reserve 88px for the purchase row; price without Buy sits on its bottom line. From 40rem retain the side-by-side row and right-aligned Buy.
 
-## 4. Elevation
+The Listen mark is five amber bars, shared by controls, modal heading and mini player. Hover/focus and modal entry run two brief cycles then settle; reduced motion is static. Preserve the dark face, Player Ready and shell lifecycle. There is no continuous catalog-wide animation or inferred playback.
 
-The system is flat by default. Depth comes from tonal separation, borders, image frames, sticky positioning, overlays, and state changes. Shadows are rare and reserved for modal/player surfaces that must sit above the document.
+## Availability and pre-order components
 
-### Shadow Vocabulary
+Status is information, not a disabled-looking action. Do not expose raw provider identifiers, runtime details or stock counts except the staff-enabled Only N left notice.
 
-- **Catalog Rest** (`box-shadow: none`): Default catalog, artist, release, news, and distro cards.
-- **Overlay Panel** (`0 28px 90px rgba(0, 0, 0, 0.56)`): App-shell overlays and modal-level surfaces.
-- **Mini Player** (`0 14px 30px rgba(0, 0, 0, 0.32)`): Floating player continuity surface.
+| State                      | Store/item/cart/checkout              | Editorial Releases               |
+| -------------------------- | ------------------------------------- | -------------------------------- |
+| Stocked, ready             | Buy/Add to cart; optional Only N left | Format-aware Buy                 |
+| Open pre-order with copies | Sea action and plain Sea status       | Format-aware Sea Pre-order       |
+| Coming Soon / Repressing   | Static dashed neutral status          | Static dashed Flint status       |
+| Sold Out                   | Static solid Flint status             | Static red edge, as scoped below |
+| Technical pause / unknown  | No status/Buy; ready-price rule below | Same; no invented fallback       |
+| Pending without projection | No asserted purchase facts            | No state, price or Buy           |
 
-### Named Rules
+Stocked items have no routine stock label. Static zero-stock statuses occupy the purchase slot. Paused/unknown offers retain price only under existing ready-price rules. Editorial Releases Sold out uses a solid 1px Error 700 edge, pale text and transparent/near-black interior on cards and direct/overlay purchase blocks only.
 
-**The Flat By Default Rule.** Repeated content cards do not lift. They shift border and background only.
+Staff chooses the zero-stock lifecycle. Out of Stock, Currently Unavailable and shopper “Unavailable” labels are retired. A pre-order with no remaining copies uses the ordinary zero-stock state, with no pre-order status or action; ended pre-orders use ordinary Buy without a pre-order marker. Digital availability never establishes physical stock.
 
-**The Shadow Means Floating Rule.** If a surface has a heavy shadow, it must be a modal, overlay, mini player, or similarly floating UI.
+Item-page Coming Soon/Repressing adds a 14px disc/circular-arrow icon and “First pressing on its way”/“More copies being pressed”, followed by “· Expected Month YYYY” only while that month has not passed. Sold Out has no icon or explanatory line.
 
-## 5. Components
+**Only N left:** show only when Staff enabled Show copies left and the real online count is 5 or fewer. Store cards place it beside Buy in the status chip's box, with Flint edge/surface. Item pages use a 28px tab fused to Add to cart's top edge, matching width, square 1px border and display type. No pulses, dots, countdowns, fake urgency or color-only meaning.
 
-### Buttons
+**Notify me:** Coming Soon/Repressing may show the quiet mail action “Email me when it lands”. It opens an inline Email field, unticked one-off consent, Send and Cancel. Errors use visible Error plus Flint 300 text beneath the relevant control; success replaces the form inline. No modal or toast.
 
-Buttons are hard, typographic controls with direct action language: one family (`apps/web/src/components/ui/button.tsx`), one size, one focus ring. They sit behind the artwork; nothing glows.
+Pre-order components reuse shared controls/cards and [global.css](apps/web/src/styles/global.css):
 
-- **Shape:** Square (`0`) everywhere, including shared primitives. No pills.
-- **Type:** Bebas Neue caps, 0.06em tracking, nudged 1px down to centre the caps. Text actions (Remove, Back to Store, Refresh status) stay Inter 13/500 with an underline. Store Clear filters is the approved exception (9 October 2026): Inter 700 at 16px (15px in the phone filter row) with a 2px underline and a leading × mark.
-- **Sizes:** One drawn size, 44px, for every action, chip, toggle, text-action row and icon control (accent-and-button-system, 15 October 2026). The Home hero Browse the Store is the single 48px exception (52px until 16 October 2026). Labels are Bebas 16px caps, padding 0 16px, minimum width 112px for actions.
-- **Labels:** Every control label is white (#f5f5f5), except on the ink-faced neutral, whose label stays Primary Inverse.
-- **Neutral (ink face):** Control Ink (#e8e8e8) face with Primary Inverse text, lifting to Ink Foreground on hover: Pay, Subscribe, Show N items, Send inquiry and the hero CTA at rest.
-- **Buy:** filled Flint (#626e72) with a white label; hover and press #4d595c with a #889396 edge. Store listing cards say Buy and use static 18px Disc3 for every format. Releases say Buy vinyl, Buy CD or Buy cassette: vinyl uses Disc3, while CD/cassette retain `StoreBuyIcon`. The item page keeps Add to cart.
-- **Pre-order:** filled Sea Green (#2d766a) with a white label; hover and press #256258 with a #4ca999 edge.
-- **Home pre-order Soft edge** (approved 19 October 2026): all video, photograph and cover-only showcase actions keep their 44px box and stationary label. Hover and keyboard focus fade to Sea 800 in 385ms and reveal a 1px Sea 500 line from its centre in 700ms, 6px from each side and 4px above the bottom, with transparent ends and 72% final opacity. Use `cubic-bezier(.22,.61,.36,1)` and a 455ms exit; desktop press is immediate. This Home-only exception supersedes the general 250ms hover limit. Touch or non-hover/coarse input uses a 220ms press and 180ms retreat, holding quick-tap decoration until 220ms from pointer down without delaying native navigation. Reduced motion removes transitions and the visual hold. Preserve the shared focus outline and touch halo; Store and Releases keep their existing treatment.
-- **Pair rule:** two adjacent actions are one filled control and its outlined twin at the same height, never two filled or two outlined side by side; a price is text, so a lone filled control may sit beside it.
-- **Inverse:** Charcoal Surface face with a Flint edge and white label, for browse actions: Read News, View Full Roster and Continue shopping.
-- **Outline:** Charcoal Surface face with a Deep Border edge; hover lifts face and edge. No surface recolours it. Icon controls keep a quieter neutral edge and never take an accent.
-- **Listen:** the amber control, chosen by the owner over Slate on 16 October 2026: Charcoal Surface face, #e3b56c edge, white label, #e3b56c equalizer bars; hover keeps the #e3b56c edge on the amber surface. In player is #f0d7b0 on the amber surface.
-- **Hero CTA:** 48px, Bebas 18px (reduced from 52px and 20px on 16 October 2026, padding 0 18px 0 22px), ink face with Primary Inverse label and a trailing arrow at rest. Hover and keyboard focus raise a Flint fill from the base edge in 240ms, turn the label white and slide the arrow 6px inside the box; reduced motion switches instantly.
-- **Quiet:** Soft Muted text with a hairline underline that grows from the centre on hover.
-- **Chips:** Charcoal face, quiet edge and muted label at rest; selected chips take a Flint edge on the Flint surface with a white label and a check mark, and may show their result count. The Pre-orders chip selects in Sea Green.
-- **States:** Hover is tonal and only on hover-capable devices; press darkens the face; nothing moves. Focus is a 2px ink ring at 2px on every control. Disabled drops to 45%. Loading keeps the width, sets `aria-busy` and changes the label.
-- **Status is not a control:** An item with no copies online shows Coming Soon, Repressing or Sold Out in the purchase slot, as staff chose. Store cards, item page, cart and checkout share these tones; editorial Releases follows the approved quiet exception below: a dashed neutral edge means "not here yet" (Coming Soon, Repressing), a solid Flint edge means Sold Out, and Pre-order keeps Preorder Sea Green. Outside approved Home video/photo desktop media backplates above 800px, status reads as plain text lines without a box: the pre-order line in Sea Green, Digital out now in Soft Muted. On the item page Coming Soon and Repressing add a small 14px leading icon (a disc, a circular arrow) and a muted line below: "First pressing on its way" or "More copies being pressed", then "· Expected Month YYYY" while that month has not passed. Sold Out has no icon or line. A technical selling pause or an unknown state shows the price only: no status and no Buy. A pre-order whose copies ran out reads like any zero-stock card, with no pre-order badge or Pre-order control. Out of Stock, Currently Unavailable and any shopper "Unavailable" label are retired.
-- **Notify me:** Under a Coming Soon or Repressing status, a quiet text action with a mail icon, "Email me when it lands", opens a small form in place: an Email field, an unticked one-off consent, Send and a Cancel link. Errors sit in Flint error text (#c1cbce) after a visible "Error" label under their control; success replaces the form with an inline status. Never an outlined or red control, a modal or a toast.
+- `.store-item-card__preorder` / `.preorder-badge`: plain Inter 13/20 Sea 500 text, left-aligned below identity/format; retain Only N left if present. Only approved Home video/photo backplates above 800px use boxed status. `.store-item-card__release-status` is the Soft Muted Digital out now twin on surfaces that retain it.
+- `.preorder-facts`: Sea outline, Inter label/value rows, at least 4.5:1 text contrast.
+- `.preorder-notice` / `.preorder-rail`: outlined tinted ships-together panel; solid Today step and dashed estimated-arrival step.
+- `.preorder-edge`: 2px Sea top edge on the return panel.
+- `.store-preorder-filter` / `.store-preorder-notes`: 44px filter with Sea count/selected edge/surface/check mark, plus a three-note strip with Sea top edge.
 
-**The Feedback Stays In Place Rule.** Add to cart says Added, Remove leaves an Undo line, Stop ends the player session on its first activation, and Pay fills when the shipping quote is ready. No toasts or confirmation dialogs for these.
+## Store browsing and item pages
 
-**The Header Cart Rule.** The bag control appears when the cart has items or the shopper is on a store route; its box is reserved so the navigation never shifts.
+Collections have a visually hidden H1 (All/category), category links first and one 44px toolbar row. No visible Store/category introduction or side pane. The compact purchase note follows the grid or empty state at every width, then the international restriction strip.
 
-**Purchase flow refinement, approved 20 October 2026.** The header bag uses the existing ghost icon control, with no permanent rectangle on ordinary pages or checkout; preserve its 44px target, count, supplementary Cart label and keyboard focus. Keep Continue to Payment in the native ink face and center the official white Powered by Stripe badge beneath that button. Item purchase information follows the action as one short shipping note and Delivery & returns link; existing authoritative pre-order facts stay above the action, without repeated prose beneath it. Cart and checkout show costs before delivery and conditional ships-together information. Checkout keeps the address/locker clarification before payment and secondary policy/help and the existing legal-guarantee disclosure after the handoff. Preserve full accepted policy documents, contextual privacy and optional newsletter consent, global withdrawal access, product safety, artwork, typography, page columns and responsive layout.
+Below 1024px: Search Store and one Filter chip, with a reserved box and applied-choice count in Flint. Its bottom sheet orders Formats, Availability (Pre-orders), View (Grid/Crate), Artists, then neutral Show N items; it owns one Back entry. From 1024px: Search, Formats menu, Artists menu, Pre-orders, Grid/Crate and result count. Native desktop popovers add no history entry.
 
-### Chips
+Formats retain Distro links/counts; phone options wrap as square chips, selected in Flint with check marks, never a horizontal scroller. Without JavaScript, Formats/Filter open the native Formats menu so links remain reachable. The multi-artist checkbox filter has counts, no All artists choice, Find an artist to narrow unticked names, and ticked names pinned under Selected · N with artists-only Clear. Moving a checkbox preserves focus; the desktop Artists · N chip gains the Flint selected edge.
 
-Chips and badges are compact metadata, not decorative pills.
+Grid is continuous and default: five columns from 1280px, four from 1024px, three from 640px, two from 360px and one below; gaps are 20px desktop/16px phone. At 1440px cards are 259.2px. Preserve readable wrapping and the stable bottom price/action row rather than clipping to force equal content.
 
-- **Style:** Small uppercase labels, tracked text and thin borders. Tags (News genres) take a Flint edge with Flint text.
-- **State:** Selected filter chips take Flint; the Pre-orders chip takes Sea Green. No section accents.
+Crate requires explicit selection and one format: 12-inch vinyl crate, flipping CD bin or spine-out tape rack. A format needs at least seven items; All formats is always Grid. The 44px Grid/Crate switch appears only for a Grid format with a bin: two glyph segments (2×2 grid/stacked crate), Flint 700 frame, pressed segment in Ink. It stays below the desktop header; phone View lives in Filter, which closes before Crate opens.
 
-### Pre-order components
+The bin has A–Z dividers and a logo back board; its item-in-hand card sits beside it on desktop/below on phones, keeping purchase row and Buy visible. Keep the letters rail/counter. A drag past the tipping point drops a sleeve onto the pile; one drag, flick or wheel notch turns one sleeve. Search, artist or pre-order filtering uses Grid. In Crate, format links move between bins and All formats returns to Grid.
 
-Pre-orders reuse the existing button, chip and card families and add only Sea Green marks. Rules live in `apps/web/src/styles/global.css`.
+**Order and membership:** All contains BlackBox releases in ascending catalog-number order, then Distro by displayed artist/band or label credit A–Z, then title/slug (`sortAllStoreCollectionEntries`). Pre-orders get no sorting priority and there is no Sort control. Grid, bins and artist/text filtering preserve that sequence. BlackBox Releases, Merch and Home retain their own ordering. Distro contains only Distro sources in band A–Z order; release-sourced BlackBox items belong to All/BlackBox Releases. Format links filter cards in place with artist/text filters; on All they open the corresponding Distro group. Do not add a New release row to the lifecycle card composition.
 
-- **Status line** (`.store-item-card__preorder` on cards; `.preorder-badge` elsewhere): a plain Inter 13/20 text line in Sea Green (#4ca999), with no box outside approved Home video/photo media backplates above 800px. Card status lines sit left-aligned below artist and format, and retain Only N left when present. `Digital out now` (`.store-item-card__release-status`) is the neutral twin. A pre-order whose copies ran out reads like any zero-stock card (its Coming Soon, Repressing or Sold Out chip, no pre-order badge, no Pre-order control); ended pre-orders have no pre-order badge and use ordinary Buy.
-- **Pre-order button** (`.preorder-action`): the filled Sea Green control at the one 44px size with a white label; hover and focus-visible darken it to #256258 with a #4ca999 edge.
-- **Facts** (`.preorder-facts`): label and value rows in a Sea Green outline, Inter, 4.5:1 text.
-- **Ships-together notice** (`.preorder-notice`, `.preorder-rail`): outlined, tinted panel with a two-step rail; Today is solid, the arrival step (`--later`) is dashed because its date is an estimate.
-- **Panel edge** (`.preorder-edge`): 2px Sea Green top edge for the return page panel.
-- **Store filter and notes** (`.store-preorder-filter`, `.store-preorder-notes`): a 44px chip with the pre-order count in Sea Green (Sea Green edge, Sea Green surface and a check mark when selected) and a three-note strip with a Sea Green top edge.
-- **Home section** (`.home-preorders`): successive release chapters after the existing introduction and before News. The approved film scene centers the artist, large Veneer title, truthful badges, Bebas price, pre-order link and one complete sharp sleeve over a small silent native backdrop. Shipping stays by the purchase action, shown once. Its no-video companion uses the release's own band photograph, one sleeve and the identity, then the purchase column beside the summary under a facts row. At 800 CSS pixels and below chapters retain their current frame/composition; above 800px the accepted Thursday exception below applies. The format and Bebas price share one row, and the filled Sea Pre-order and the amber Listen share the next, half each and 16px apart at 800px and below and in cover-only chapters. Phones below 48rem read each chapter as a film strip inside the 16px gutters (owner's choice, 16 October 2026): a clean 16:9 band, then a 96px sleeve beside the artist link, the ink Veneer title and the format and price row, then the status line, the pair, the shipping and international lines, and one row with the terms link and, when a full video exists, Watch full video as a 44px text link in the same style after it; the facts and summary stay on the Store Item page. A release with a video always gets the band: its silent film plays there, a clip without a film shows its poster or else the artist photograph. Nothing renders over the film, poster or photograph, and tapping the band does nothing (owner, 16 October 2026). A release without a video shows its artist photograph band, and one with neither video nor photograph leads with a 160px sleeve beside the artist, title and price instead of an empty band. Between 48rem and 50rem the earlier one-column layout remains. Artwork comes from accepted originals, never sampled screenshots; film posters never repeat a sleeve.
-- **Home motion exception, approved 5 October 2026:** muted inline footage plays only while at least 15% of its chapter is in view, the tab is visible, no shell music session exists and the full video is closed. The background text play button is removed, and on 16 October 2026 the owner removed the pause/resume icon on every viewport; reduced motion and data saving remain the opt-out and retain the complete poster experience without a background-play override. Only explicit Watch mounts a centered player and Close button below the film, full-width within 16px mobile gutters and capped at 65rem on desktop. It contains no duplicate sleeve or album details. Closing removes the panel and returns visible focus to Watch. Listen pairs with Pre-order at 800px and below and in cover-only chapters; above 800px video Listen joins Watch at lower-right and photo-backed Listen follows identity. Every viewport uses ordinary flow; no competing audio, intercepted scrolling, sticky spacer, video scrubbing or added motion library.
-- **Home refinement, approved 5 October 2026:** The base sweep moved to the hero CTA in Flint on 15 October 2026; Home Pre-order now uses the approved 19 October Soft edge treatment described under Buttons. Artwork is noninteractive. Accepted artist paths become subtle profile links. Retain a clearly spaced “Pre-order & delivery information” link, and omit repeated payment/whole-parcel text on Home. A small down-arrow links to the next chapter with a descriptive accessible name.
-- Other pre-order surfaces retain existing motion and Veneer/Bebas sizes. Home alone uses the approved larger feature title; every interactive target remains at least 44px.
+A native card link covers the card; independent artist, Listen and Buy actions retain their own targets. Title underline is faint at rest and full on card-link hover/focus; card border/surface lift only on hover-capable input. Hovering Buy/Listen leaves the card at rest.
 
-**Thursday desktop restoration, approved 19 October 2026:** Above 800 CSS pixels restore Thursday adc595c8 with current controls: video spans the viewport, with centred 780px/88% copy, dark status backplates, complete 220px sleeve and a 920px minimum scene that grows with content; Listen joins Watch at lower-right. Photo-backed chapters contain the complete photograph in a 520px band over blurred same-photo fill, with sleeve left and identity/status/Listen right; facts span below, then summary left and purchase/terms right. Current Pre-order/Listen are 168×44px at default text size and grow with text enlargement. Use CSS-only responsive placement with one visible/focusable Listen; preserve source IDs, shell synchronization, HomePreorderAction/Soft edge, data and playback fixes. Cover-only chapters and section links retain the current frame/placement. Everything at 800px and below is unchanged. Codex owns this local-only slice by explicit override; no Pause restoration, new API/dependency, commit, push, deployment or publication.
+Store Listen sits bottom-left on artwork only when a source exists: icon-only 44×44px below 40rem, named “Listen, <title> by <artist>”; labelled 112×44px from 40rem. Only its button intercepts input. The Crate item-in-hand keeps Listen in flow. Source-less items omit it without changing the bottom purchase row. Reopen/Stop remain in the floating player, with 44px phone controls; Stop/source switching resets previous Listen controls.
 
-### Cards / Containers
+Item pages use complete artwork capped at 26rem beside purchase information on desktop; phone order is identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and listening actions. Item titles remain Veneer (Greek exception applies), credits Inter and prices Bebas.
 
-Cards are editorial frames for images and text.
+**Phone buy bar:** below 40rem, while the inline purchase action is still below the viewport, show the same price, item's Sea status or Only N left, and 44px purchase action with Adding/Added/cart behavior. Use Black Card, Deep Border top edge, no blur/shadow. Rise in 300ms `cubic-bezier(.16,1,.3,1)`; leave in 195ms `cubic-bezier(.7,0,.84,0)`, transform/opacity only with explicit resting values. It is present without entrance motion at first paint; reduced motion switches instantly. After reaching the inline action it stays absent below it, returning only above it; hidden means `inert`. Mini player lifts above it. No bar for status-only items, item checkout or widths from 40rem.
 
-- **Corner Style:** Square by default (`0`), even when built with shared Card primitives.
-- **Background:** Charcoal Surface or Black Card, with image frames on Void Background.
-- **Shadow Strategy:** No shadow at rest. Hover changes border and background, not position.
-- **Border:** Deep Border for explicit frames, Hard Border for tokenized primitives.
-- **Internal Padding:** Usually `1rem` to `1.5rem`; dense metadata panels may use `0.75rem`.
-- **Page frame:** Header, editorial routes and footer share one frame, `.layout-container`: `--page-max-width` (72rem) with `--page-gutter` steps of 16, 24 and 32px at 0, 640 and 1024px, never less than the safe-area inset. Pages use the class instead of their own widths; Store collections only raise `--page-max-width` to 90rem. Header and Home hero film (with still/shade) retain their bleed; approved Home video/photo-backed chapters also span the viewport above 800px. Cover-only chapters, every chapter at 800px and below, section/footer rules, hero divider and swipe rows stop at the frame, while veils over the fixed hero photo may still span the page without a visible edge. Modules add no second inset inside the gutter (News cards pad 16px).
-- **Artists roster:** phones from 360px show two columns with 16px row and 12px column gaps; the photo keeps its whole 3:4 frame, the copy pads 12px, the title drops to 20px and the count stacks above Latest, whose hairline becomes a top rule. One column below 360px, two from 640px, three from 1280px.
-- **Artist release count:** roster cards show the count as inline information beside Latest: a Bebas 28px number with its 12px tracked label as rendered ("1 Releases"), no box or gradient, a hairline before the Flint Latest label and the amber date; the pair wraps when text grows (15 October 2026).
+## Editorial Releases
 
-### Inputs / Fields
+Releases uses the page frame without an outer box or visible section labels. Preserve two stacked featured rows, complete square covers, equal cover/copy halves with 1.5rem gaps from 640px and 29rem covers from 1024px. Catalog is one/two/three columns with 1.5rem gaps. Editorial source order/roles never change because of live offers.
 
-Inputs are quiet operational controls that must not become a second visual system.
+Cards share this DOM/visual order at every width:
 
-- **Style:** Void Background or near-black field with Hard Border, off-white text, and muted placeholders.
-- **Focus:** Ring plus an amber (#e3b56c) focus edge on every field.
-- **Error / Disabled:** Disabled controls reduce opacity and remain non-interactive. Errors should be textual and visible, not color-only.
+1. Title/band, separated by 4px.
+2. Purchase/status, optional Listen, then existing price in one wrapping row, 12px after identity with 16px gaps.
+3. Formats 4px after the action row; supplied shipping/applicable terms 8px after facts.
+4. Digital date/catalog 12px after the final group, then summary/Read more.
 
-### Navigation
+Catalog scale: Veneer 32/36 title, Inter 16/24 artist, 13/20 format/helper, Bebas 24/28 price, 12/18 metadata. Preserve larger featured/detail headings and featured prices. Price is plain centered text after Listen, with no far-edge auto margin. Controls/price wrap in DOM order; missing Listen adds no placeholder. Detail retains its purchase block, copy/date positions and no-price policy.
 
-Navigation is compact, uppercase, and shell-owned. One link model and one `.site-nav-link` style serve the header, the phone Menu and the footer sitemap; each surface changes only size.
+Use the shared intrinsic controls and availability rules above. Remove routine In stock, Digital out now, duplicate badges, generic View details and bracketed edition presentation from these surfaces. Complete artwork and native purchase actions retain their existing edition destination; title links reach release detail. Listen stays independent in the action row below identity, never over artwork.
 
-- Header links use 12px uppercase text with wide tracking. On every surface the current page carries the same underline under its label.
-- The current page's underline is Flint (#889396) for every section; hover stays ink. No route has its own accent, and never side stripes.
-- The phone Menu lists Home first, then the main-menu sections. Desktop shows the sections beside the logo, which links Home. The header button shows the word Menu beside its icon.
-- On touch screens, Menu rows, Close and footer sitemap links are at least 44px tall, and the sitemap wraps instead of clipping.
-- The owner-approved Flowing links footer (19 October 2026, `redesign-footer-flowing-links`) uses a 56px desktop logo beside the full Staff description and existing 44px social controls. Below 720px the logo is 44px; below 460px logo/socials share the first row and the description follows at 12px. The sitemap flows in DOM order at every width, browsing links before configured Delivery information, withdrawal and available privacy, with 44px-high targets and 13px Inter labels. Support links are muted, footer hover/focus is amber and the shared Flint current-page underline remains. Copyright and amber Est. sit above the exact AI assistance disclosure, separated from navigation by an inset rule. Both rules align with the shared page frame. Normal reference ceilings are 380px at 320px, 360px at 390px, 285px at 768px and 245px at 1440px; longer content and enlarged text grow naturally. This supersedes the old 200px/four-column prescription without removing its historical evidence.
-- Home News and Artists swipe below 40rem inside the frame: the row is clipped at the gutters and the next card peeks about 42px. Each position dot is a 44 × 44px button with a small amber current mark.
-- Mobile navigation must preserve the same shell routing behavior and not introduce real document swaps for top-level sections.
+Physical format text is an underlined native link with at least 44×44px target only to verified existing destinations. Announced may link to release detail; unmapped formats stay plain. Preserve modified clicks and external target/rel; never invent a CD route.
 
-### Signature Component: Persistent Music Player
+Metadata reads “Digital release · [date]” plus catalog, with semantic time. Offers never rewrite it. Without a date, omit only the digital fragment and retain catalog. Detail uses its existing date position, with no duplicate purchase metadata; omit the entire digital label/date/separator when dateless. Never put catalog numbers over artwork or add a badge/stamp/row.
 
-The embedded player is a shell-level continuity feature, not page-local decoration. Its modal and mini-player states may use floating shadows because they sit above the document. The mini player appears only after real embed intent and must stay compact, legible, and keyboard reachable.
+Shipping remains independent of digital timing; pre-order terms are conditional with no reserved blank row. Preserve SSR projections on failed reads, disposal/navigation cancellation and cache reset. When a successful live read removes the focused Buy, transfer focus to its existing mapped format link, falling back to the existing title destination. Do not focus static status, invent a visible link or steal focus elsewhere.
 
-### Home Motto Scrub
+The geometry and 44px targets are approved BlackBox choices, not a universal empirical ratio or an AA claim. Research and acceptance live in the [quiet-release change](openspec/changes/simplify-release-purchase-presentation/design.md).
 
-Approved 6 October 2026. When the Staff motto ends in Records, Art or Noise, that word cycles in this order from the written word: 1.2 s first hold, 2.3 s holds, 1.1 s scrub that leaves fast and settles into the last letter. The first change therefore finishes by about 2.3 s, well before most visitors scroll; the owner shortened the first hold from 2.5 s after seeing it on UAT, and on 14 October 2026 asked for the whole cycle a tad faster (from 1.5 / 2.8 / 1.4 s). A thin white playhead travels from the start of the word to the end of the next word, so each change spans the old word's length and ends at the new word's length; behind it the next word, ahead of it the current one. Chaos from the owner's mockup rides on it: in random bursts during the first two thirds of each scrub, horizontal slices of either word tear sideways and torn fragments of a filled, mirrored session-clip waveform flash between them, all clipped to the span so nothing touches the words before it. Each word then lands clean. Monochrome only. The rest of the hero keeps its single fade-rise entrance; the glitch is reserved for the cycling word. Reduced motion keeps the written word; the cycle pauses off screen and in hidden tabs. Rejected in the rendered study: Signal (word folds into a sine), Scan (sine-displaced bands) and a background waveform window behind the word.
+## Home pre-order chapters
 
-### Home Hero Film
+Chapters follow the introduction and precede News. Use accepted original artwork, never sampled screenshots; film posters never repeat a sleeve. Keep the artist link, ink public title, truthful lifecycle, Bebas format/price, purchase/Listen, shipping once and a clearly spaced Pre-order & delivery information link. Omit repeated payment/whole-parcel prose. Artwork is noninteractive; accepted artist paths are subtle profile links, otherwise plain text. Down-arrows link to the next chapter with descriptive accessible names.
 
-Requested 14 October 2026, after reviewing live probes. The owner's session montage loops silently over the hero still, in high-contrast grayscale baked into the files so the Monochrome Owns The Page rule holds without a runtime filter. The BlackBox Studio logo burned into the source footage must never appear on the site; every delivered crop excludes it. Portrait screens get a 9:16 centre crop, wider screens a landscape crop. The film fades in over the still once it plays and follows the Home motion exception: muted and inline, only while at least half the hero is in view and the tab is visible, and paused during a music session. The owner removed the hero's pause/resume button on 14 October 2026 after UAT review; pausing is automatic only. Reduced motion, data saving, a failed source and refused autoplay keep the still. A lighter film-only shade keeps darkening only behind the header and tagline (revised 14 October 2026 after UAT review found the first grade hazy). The motto scrub, ghost fade and scroll cue are unchanged. On 16 October 2026 the owner, seeing the still flash on PRD, ruled that the film must render first: on a visit that can play it, the film starts loading while the page parses and the hero keeps its dark ground until the film plays, with no still before it or between orientation crops. The still shows at once without JavaScript, with reduced motion or data saving, on a failed source or refused autoplay, and after 2.5 s when the film has not started. The same day the owner asked for a slightly smaller Browse the Store set further down: the CTA is 48px and sits 2.5rem below the tagline on phones and 3rem from 48rem (1.25rem on sideways phones, keeping the round-1 height).
+**Released chapters.** Staff can keep a released item on Home after its pre-order closes (Show on Home). Open pre-orders come first, then kept releases, newest first. Media, Listen and Watch full video are unchanged; only the purchase block reads the offer. In stock: the Flint Buy action (Buy vinyl with the disc icon, Buy CD, Buy cassette, otherwise Buy), a muted Out now, no shipping line and a Delivery information link. Sold out: the static Flint Sold out status in place of the action. Sea belongs to open pre-orders only. The closing link reads All pre-orders while a chapter is a pre-order, otherwise Visit the Store.
 
-### Signature Component: Catalog Tile
+### Responsive composition
 
-Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Scale above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
+Below 48rem, each chapter is a film strip within 16px gutters: clean 16:9 media band; then 96px sleeve beside artist/title/format-price; status; paired Pre-order/Listen; shipping/international lines; then terms and, if available, Watch full video as a 44px text link. Facts/summary stay on the Store item page. A video chapter always gets a band: prepared silent film, otherwise clip poster, otherwise artist photograph. Without a video use the artist photograph; without either video or photo, start with a 160px sleeve beside identity/price, without an empty band.
 
-Release catalog numbers (approved 15 October 2026, "option 1, date line") sit at the end of the existing date line on the release page and every Releases card, after a middle dot: `Jun 2026 · BBR#002`. They take the line's muted uppercase style and add no badge, stamp or new row. Never set them over cover artwork.
+From 48rem through 800px retain the intermediate one-column layout. At 800px and below, and in cover-only chapters, format/price share a row, then Sea Pre-order/amber Listen share the next, half each with 16px gap.
+
+Above 800px, video chapters span the viewport with centered 780px/88% copy, dark status backplates, a complete 220px sleeve and a 920px minimum scene that grows with content. Listen joins Watch at lower-right. Photo chapters contain the full photograph in a 520px band over blurred same-photo fill: sleeve left, identity/status/Listen right; facts across below; summary left and purchase/terms right. Pre-order/Listen are 168×44px at default text size and grow with enlarged text. Use CSS placement with one visible/focusable Listen. Cover-only chapters and section links retain their existing frame. Other surfaces retain their own Veneer/Bebas sizes.
+
+### Media and interaction
+
+Native silent footage plays only while at least 15% of its chapter is visible, the tab is visible, no shell music session exists and full video is closed. Reduced motion and data saving retain the complete poster experience. No visible background play/pause icon or caption.
+
+Click/tap the exposed native film to pause/resume, retaining its frozen frame. A descriptive native keyboard control supports Enter/Space and visible keyboard focus. Manual intent is per chapter/clip and survives visibility, music/full-video suspension and responsive-source changes. Drag/cancel, text selection and sibling actions do not toggle it; no captured scrolling. Disabled motion, missing/failed/refused footage provides no active toggle. The hero and full-video provider retain their separate behavior ([approved film interaction](openspec/changes/preorder-background-tap-pause/design.md)).
+
+Only explicit Watch mounts a centered full-video player and Close below the film: full width within phone gutters, capped at 65rem desktop, without duplicate sleeve/details. Close removes it and returns visible focus to Watch. Preserve source IDs, shell synchronization and media lifecycle. Every viewport uses ordinary flow: no competing audio, intercepted scrolling, sticky spacer, scrubbing or additional motion library.
+
+### Home purchase motion
+
+Home's Soft edge is the scoped exception to the general 250ms hover limit. Keep the 44px box and stationary label. Hover/keyboard focus fades to Sea 800 in 385ms and reveals a center-out 1px Sea 500 line in 700ms, inset 6px each side and 4px above bottom, transparent ends, 72% final opacity. Ease `cubic-bezier(.22,.61,.36,1)`; exit 455ms; desktop press immediate.
+
+Touch/coarse/non-hover press enters over 220ms and retreats over 180ms. Hold quick-tap decoration until 220ms from pointer down without delaying native navigation. Reduced motion removes transitions and hold. Preserve shared focus/touch halo. Apply to video/photo/cover-only Home actions only; Store and Releases retain their treatment. [Current Home/palette delta](openspec/changes/accent-and-button-system/specs/store-preorders/spec.md) owns the accepted treatment where baseline prose is older.
+
+## Home hero and motto
+
+Hero montage is the owner's session footage, silent and looped, with high-contrast grayscale baked into files. Every crop excludes the source's BlackBox Studio logo. Use a 9:16 center crop for portrait and landscape for wider screens; no runtime grayscale filter. Play only with at least half the hero visible, visible tab and no music session. No pause/resume icon.
+
+On eligible visits, load film while parsing and retain the dark ground until playback; show no still flash before film or between orientation crops. Fade the playing film in. Show the still immediately without JavaScript, under reduced motion/data saving, on failed source/refused autoplay, or after 2.5 seconds without playback. Film-only shade darkens behind the header/tagline; preserve the motto, ghost fade and scroll cue.
+
+Browse the Store: 48px high, Bebas 18px, 22px start/18px end padding, trailing arrow, neutral face/dark label. Hover/focus raises Flint from the base in 240ms, makes label Ink and moves arrow 6px within the box; reduced motion switches instantly. Place 2.5rem below tagline on phones, 3rem from 48rem, 1.25rem on sideways phones without increasing their hero height.
+
+When the Staff motto ends in Records, Art or Noise, cycle from the written word in that order: first hold 1.2s, later holds 2.3s, scrub 1.1s. A thin white playhead crosses the old word into the new word's length; new text is behind it, old text ahead. During the first two thirds, random horizontal tears and fragments of a filled mirrored session-clip waveform stay clipped within that word; each settles cleanly. No color or effects on preceding words. Keep the rest of the hero's single fade-rise entrance. Reduced motion keeps the written word; pause offscreen/hidden tabs.
+
+## Navigation, footer and player
+
+One shell-owned link model and `.site-nav-link` style serve header, phone Menu and footer sitemap; surfaces change only size. Header labels are 12px uppercase with wide tracking. Current page/tab underline is Flint 500 across sections; ordinary navigation hover is Ink. Footer hover/focus follows its amber exception. Phone Menu starts Home, then main-menu sections; desktop logo links Home. The header control says Menu beside its icon. Touch menu rows, Close and footer links are at least 44px; sitemap wraps without clipping.
+
+Home News/Artists swipe below 40rem within the gutters, with about 42px of the next card peeking. Each dot is a 44×44px button with a small amber current mark.
+
+The header bag appears when the cart has items or the shopper is on a Store route; reserve its box so navigation does not shift. Use the ghost icon, no permanent rectangle on ordinary pages/checkout; keep count, supplementary Cart label, 44px target and keyboard focus.
+
+**Flowing links footer:** desktop 56px logo beside the full Staff-owned description and existing 44px social controls. Below 720px logo is 44px; below 460px logo/socials share row one, with 12px description after. Sitemap flows in DOM order: browsing links, then configured Delivery information, withdrawal and available privacy. Use 44px targets/13px Inter labels, muted support links, amber hover/focus and Flint current underline. Copyright/amber Est. precede the exact AI assistance disclosure with an inset separator; both rules align to the frame. Normal reference height ceilings: 380px at 320px, 360px at 390px, 285px at 768px, 245px at 1440px; longer content/enlarged text grows naturally, without clipping ([footer decision](openspec/changes/redesign-footer-flowing-links/design.md)).
+
+The embedded player belongs to the persistent shell. Retain its modal/mini-player lifecycle, compact readable controls and keyboard access; the mini player appears only after real embed intent. Top-level, Store item and information navigation must preserve the same iframe session through shell handling. Checkout remains native. Reopen/Stop belong to the floating player. Do not move player state into page scripts. Detailed routing, focus, cache and loading contracts live in the [shell/player spec](openspec/specs/app-shell-and-player/spec.md).
+
+## Forms and purchase information
+
+Inputs use Void/near-black, Hard Border, off-white text and muted placeholders, with the existing .225rem field radius. Keep visible focus, disabled noninteraction, textual errors and associations; never color-only meaning. Newsletter order is email, consent, Subscribe at every width, with consent error directly beneath its checkbox. Services General shows no extra-details field and must not submit stale details; other services retain adaptive prompts. Send inquiry uses the neutral ink face.
+
+Item purchase information follows the action as one short shipping note plus Delivery & returns. Authoritative pre-order facts stay above the action without repeated prose below. Cart/checkout show costs before delivery and conditional ships-together information. Pending cart quotes retain Items/Delivery/Total rows; Items shows the cart's fixed-price subtotal and pending amounts use “…”. A cart with pre-orders uses Sea Checkout with a light label; ordinary carts use Ink.
+
+Continue to Payment uses the neutral ink face, with the official white Powered by Stripe badge centered beneath it. Keep address/locker clarification before payment; secondary policy/help and existing legal-guarantee disclosure follow the handoff. Preserve full accepted policies, contextual privacy, optional newsletter consent, global withdrawal access, product safety, artwork, type, columns and responsive layout. Provider/publication authority belongs to its operational contracts, not this visual guide.
 
 ## Staff workspace
 
-Staff uses its own dark, sans-serif product surface built on EmDash APIs. The living [backoffice reference](docs/backoffice-design.md) supersedes the older Content landing, staging, refresh, preview-default and all-sidebar decisions.
+Staff is a separate dark sans-serif product surface using EmDash APIs, blue actions and its own semantic palette. Public accent/type rules do not override it. [Backoffice design](docs/backoffice-design.md) owns shell/navigation, exact Office stamp artwork, editor/preview, publication review, Overview and current Stats patterns. [Daily brief requirements](openspec/changes/implement-staff-daily-brief/specs/site-analytics/spec.md) define dates, filters and honest source coverage; [current Staff change](openspec/changes/redesign-staff-around-stats/design.md) records later decisions. Private drafts, explicit publication and immediate stock retain separate authority.
 
-At widths of at least 1440 px, a 72 px top bar exposes Overview, Catalog, Website, Images, Stock, Orders and Stats with labeled icons on muted gray, violet, blue, sage, copper, teal and straw-yellow squares. Filled active backgrounds provide clear selection. Catalog and Website have optional 256 px contextual sidebars. Between 1440 and 1919 px the header utilities move into the Menu drawer. Smaller widths use a compact header and labeled Menu drawer. Stats (approved 12 October 2026, "A · Summary sentence") opens with one plain sentence with bold figures, then visits per day as Recharts bars (busiest day labelled, today lighter, dashed daily average), a devices sentence with a donut, and ranked rows of member-readable page and source names with a share of visits. Store and Google search (approved 13 October 2026, "Visits first") add an orders clause and paid orders per 100 visits to the sentence, open the rail with a paid-total comparison bar and orders, items and checkouts marked by a trend icon and signed change, and put a search-terms table under the visits chart. It uses one violet accent for visits plus tinted neutrals, static charts, lucide icons and monochrome brand marks. Blue means action; semantic statuses retain text and icons.
+## References and maintenance
 
-Stats now follows the approved **Daily brief** (19 October 2026), superseding the earlier Stats arrangements above. Design from 320 px upward: one readable period control, a short sentence of actual figures, then separate Visits, Store and Google Search reports with restrained violet, sage and warm neutral bars. Explore opens the source detail with draft filters, removable selections, metric choices, day/week/month grouping, tap/keyboard inspection and an optional date table. Blue denotes actions. Keep 44 px targets, honest missing-data gaps and source-specific timezone/coverage notes; never fabricate history. The eight date choices are Today, Yesterday, 7 days, 30 days, 90 days, This month, 12 months and Custom. Only Custom renders Start date and End date. Dates and filters apply explicitly and survive Back/Forward; Cancel preserves the applied selection. From 27 October 2026 (`redesign-staff-around-stats` slice 4) comparison with the previous period is on by default (`compare=false` turns it off), the opening sentence states only reported figures, brief charts name their highest value and label days (every bar up to seven, otherwise first, middle and last), unreported days are hatched with a note, and an all-zero period is said in words instead of drawn.
+Use [design decisions](docs/design-inspiration.md) for research/choices, the [pattern guide](docs/ui-design-patterns-guide.md) for local IDs and the personal [Design Library](C:/Users/SVall/.codex/design-library/README.md) for shared references. Historical studies do not override current decisions.
 
-Overview is stats-led (approved 27 October 2026, option A "Brief, then to-do"): a period control, one sentence of figures, four ruled figure rows with signed text changes in the Stats source colours, a read-time line, counted To do rows and outline quick actions. Details live in the [backoffice reference](docs/backoffice-design.md). All area titles share one 28 px (24 px phone) scale, and the phone header names the current area.
-
-The approved Staff logo is the Office stamp treatment: the selected C artwork extracted directly from the approved concept image as a transparent 686 × 162 PNG. Preserve its exact composition, lettering and Staff badge rather than recreating the endorsement in HTML. This is staff-only branding; public logo assets remain unchanged.
-
-Editors autosave private drafts and publish explicitly. Catalog items show one Publish changes on both tabs with a count of what is not live yet; typed prices wait as EmDash drafts until that single review applies them, and stock stays immediate. Real shared-template previews start alongside editors at 1280 px and above, with remembered visibility; smaller widths use Edit/Preview tabs. Preview remains non-interactive and debounces typing for 750 ms. Review changes is a blue icon button; opening a comparison entry drives the publication preview, while Publication history opens in a right-side panel with colored status badges and expandable details. Preserve draft buffers and navigation recovery.
-
-## 6. Do's and Don'ts
-
-### Do:
-
-- **Do** preserve the monochrome BlackBox visual language unless the task explicitly changes the visual direction.
-- **Do** keep the three accent roles fixed: Sea Green only for pre-orders, Flint for buying and labels, amber for listening and small marks.
-- **Do** keep release, artist, distro, and news cards square, flat, and image-led.
-- **Do** keep checkout and shipping states understandable through text, structure, and disabled/action states, not color alone.
-- **Do** validate rendered UI changes with Browser Use first, with DevTools only as the documented fallback.
-- **Do** respect reduced-motion preferences for hero animation, route transitions, overlays, player UI, and card effects.
-
-### Don't:
-
-- **Don't** make public pages look like a generic ecommerce grid, SaaS landing page, polished corporate music platform, Shopify clone, marketplace catalog, or debug-heavy admin UI.
-- **Don't** introduce pastel ecommerce styling, neon music-app cliches, crypto/nightclub gradients, glassmorphism, decorative metric blocks, or fake urgency. The opt-in Only N left notice shows a real count of 5 or fewer and never animates.
-- **Don't** expose Stripe IDs, stock counts (except the staff-enabled Only N left notice), backend identifiers, BOX NOW raw payloads, or internal runtime details in shopper-facing UI.
-- **Don't** add rounded card-heavy layouts where a hard editorial frame or full-width section is more appropriate.
-- **Don't** use side-stripe borders, gradient text, or repeated icon-card grids as a shortcut for hierarchy.
-- **Don't** move player behavior into page-local scripts or break shell-owned top-level navigation continuity.
-
-# Backoffice guidance
-
-## Design inspiration and component studies
-
-For reference research, start with the personal [Design Library](C:/Users/SVall/.codex/design-library/README.md), which maps shared sources, inventories and reusable pattern evidence. [BlackBox design references and decisions](docs/design-inspiration.md) retains project studies and selections. The [pattern application guide](docs/ui-design-patterns-guide.md) explains the local application table and stable pattern IDs.
-
-Listen refinement selected September 24, 2026: **Fluid five with animation**. Preserve the familiar dark face, square edges and compact label; replace the circular indicator with five bars in amber (#e3b56c), restored over Slate on 16 October 2026. Use the same mark in the modal heading and minimized player. Hover/focus and modal entry run two brief cycles, then settle; reduced motion disables the animation. The mark identifies listening and never claims verified playback. Retain `Player Ready` and the existing shell-owned lifecycle. Future button studies should extend this restrained family. Cosmos Public Work remains an aesthetic reference for quiet hierarchy and image-first restraint; amber is the listening accent, not a replacement global action color. Store Buy refinement selected 7 October 2026 and recoloured 15 October 2026: Buy on Store cards is the filled Flint control with the Rim add record mark (`apps/web/src/components/store/StoreBuyIcon.tsx`), 18px; Pre-order is the filled Sea Green control. Format icons selected 8 October 2026: the mark follows the card's format (vinyl, CD or cassette; other goods keep the record) as realistic layered SVGs whose light, shell and plus stay still while the print or reels turn. The vinyl label flick was restored on 13 October 2026; release-card records stay removed. One flick plays on tap, mouse entry or keyboard focus: one turn in 1 s, starting at speed and coasting to rest, so it reads before the phone bag opens. No continuous motion; reduced motion disables it.
-
-For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.
-
-## Website changes review (September 2026 refinement)
-
-Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Review changes shortcut finishes autosave and selects only that entry. One selected entry uses Publish change; several use Publish N changes.
-
-Batch publication includes selling-linked entries but does not activate the shop, apply price drafts, or change stock. Entries with a price draft show it and link to the item, whose own publish review applies the price, the checkout presentation and a first sale. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
-
-Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
-
-Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.
-
-### Store browsing and item information
-
-Store cards retain their price and show a 44px Buy in the filled Flint face at its right when the item is stocked, so Buy never shares the outlined look of a status; Coming Soon, Repressing or Sold Out take Buy's place, with a shown expected month inside the same chip ("Coming Soon · Nov 2026"); a paused or unknown state shows the price alone. Both wrap below the price when needed, and the purchase row reserves Buy's height so cards never grow when prices arrive. Buy reads the live offer, adds one copy and opens the cart, confirming with Added; it never links to the item page, which keeps Add To Cart. Keep artwork unobstructed and Listen in its existing row. Use readable foreground text with a solid Flint outline for Sold Out and a dashed neutral outline for Coming Soon and Repressing; stocked items need no additional label, except that an item whose staff enabled Show copies left and which has 5 or fewer copies online reads Only N left beside Buy in the status chip's exact box, Flint edge on the Flint surface. On its page the same words sit in a 28px tab fused to the top edge of Add To Cart, sharing its width, square 1px edge and display type, so notice and action read as one unit. No dots, pulses, countdowns or colour-only meaning: the real count carries the message. In the Crate the item in hand is its own card beside the bin, so its purchase row and Buy stay visible at every width. One native link covers the card, with only the independent Listen and Buy buttons above its hit area. The title says so: it carries the text-link underline, faint at rest and full when the card link is hovered or focused, while the card's border and surface lift on hover-capable devices. Hovering Buy or Listen leaves the card at rest.
-
-Store Listen actions sit on the artwork's bottom-left corner (15 October 2026), only when a listening source exists: icon-only 44 × 44px below 40rem, named “Listen, <title> by <artist>”, and labelled 112 × 44px from 40rem. Only the button takes input there, so the card link answers everywhere else; the Crate's item in hand lists Listen in flow, since its sleeve is the artwork. Source-less items show no control; the price/action row stays at the bottom. The active recording shows disabled amber **In player** status across Store, Releases and details. This denotes the shell's existing session, including a paused provider, rather than verified playback. Reopen and Stop belong to the floating player, with 44px controls on mobile. Stop or switching recordings resets the previous source's Listen controls. On Releases, Listen sits directly below the artist in every card, featured or catalog, never over the artwork.
-
-Store collections use a 90rem container with 32px desktop and 16px mobile gutters, a visually hidden H1 (All or the category name, as on Releases) and no visible Store / category introduction or side pane (15 October 2026). Category links come first, then one 44px toolbar row; the purchase note follows the grid (or the empty state) as one compact line on every viewport, with the international strip right after it (16 October 2026). Below 1024px the row holds Search Store and one Filter chip (white label, an applied-choice count in Flint, its box reserved) that opens one bottom sheet with Formats, Availability (Pre-orders), View (Grid / Crate) and Artists, in that order, and a neutral ink Show N items; the sheet has its own Back entry. From 1024px the row holds Search, a Formats menu, an Artists menu, Pre-orders, Grid / Crate and the result count; the menus are native popovers with no history entry. Formats keep the existing Distro links and Distro counts (on phones as wrapping square chips, selected in Flint with a check mark, never a horizontal scroller); without JavaScript, Formats and Filter open the native Formats menu, so the links stay reachable. The Artists filter accepts several artists (approved 9 October 2026): a checkbox list with counts and no All artists choice, a Find an artist box that narrows the unticked names, and ticked artists pinned above the list under Selected · N with an artists-only Clear; a moved checkbox keeps focus. The desktop Artists chip reads Artists · N and takes the Flint selected edge while artists are ticked. Cards form a continuous Grid by default: five columns from 1280px (259.2px at 1440), four from 1024px, three from 640px, two from 360px, and one below, with 20px gaps on desktop and 16px on phones. The optional Crate requires explicit selection and browses one format at a time, the way a record shop keeps stock: Vinyl 12-inch in a crate and CDs in a CD bin, both flipping, and Tapes spine-out in a rack. A format gets a bin from 7 items; All formats is always the Grid. Grid and Crate form one 44px switch in the toolbar row, which stays under the header on desktop; on phones it sits in the Filter sheet's View section, and a choice there closes the sheet before the Crate opens. Two segments in a Flint 700 frame, each with a drawn glyph (2×2 grid; a stacked crate), the pressed one in ink, shown only while the Grid holds a format with a bin. The bin stands its sleeves with A–Z divider tabs and a back board carrying the logo; the item in hand's own card sits beside it on desktop and below it on phones, with a letters rail and a counter. A drag past a sleeve's tipping point drops it onto the pile, and one drag, flick or wheel notch turns one sleeve.
-
-All uses one complete mixed-source catalog: BlackBox releases first, in ascending catalog-number order, then Distro by displayed artist/band or label credit A–Z, then item title and slug (sortAllStoreCollectionEntries). Pre-orders have no sorting priority, and there is no Sort control. Grid, the Crate's bins and artist/text filters retain that sequence. BlackBox Releases, Merch and the Home pre-order showcase retain their existing ordering rules.
-
-Distro uses one mixed-format catalog of Distro sources, ordered band A–Z. Release-sourced BlackBox Store items belong to All and BlackBox Releases and are excluded from Distro. The approved lifecycle card composition keeps artist and format together without an additional New release row. Format links filter individual cards in place and share the artist/text filters; on All they open the matching Distro group. Any search, artist or pre-order filter uses Grid; in the Crate the format links walk between bins, and All formats returns to the Grid. Pre-orders are marked on cards (Pre-order badge, Pre-order button) and collected under a Pre-orders filter; see Pre-order components.
-
-Releases sits in the page frame without an outer box or visible section labels. Preserve two stacked featured rows, complete square covers, equal cover/copy halves with 1.5rem gaps from 640px and 29rem covers from 1024px. Catalog remains one/two/three columns with 1.5rem gaps. Source order/roles remain editorial and offers never reorder them. Native artwork and purchase actions share the existing edition destination/feedback; title links reach release detail. Listening stays independent. The approved quiet revision below supersedes former internal card ordering, bracketed edition links and release badges.
-
-**Quiet default with intrinsic release controls, approved 20 October 2026.** Cards share one DOM/visual order: title/band (4px gap), purchase/status plus optional Listen then the existing price in one wrapping action row (12px after identity, 16px gaps), formats (4px after that row), supplied shipping/applicable terms (8px after facts), digital date/catalog (12px after the final group), then editorial summary/Read more. Catalog type is Veneer 32/36, Inter 16/24, format/helper 13/20, Bebas price 24/28 and metadata 12/18; preserve larger featured/detail headings and existing featured prices. Controls use intrinsic width without growth: a minimum of 112×44px, 16px horizontal padding, 16px Bebas labels, 18px icons and 8px icon/text gaps, consistently on phone/desktop and in existing detail controls. Labels may wrap within the available container under enlarged text. Price is plain centered text directly after Listen, without auto far-edge margin. Controls/price wrap in DOM order at narrow widths. Preserve outer geometry; detail retains its purchase block, copy/date positions and no-price policy.
-
-**Quiet release states and access.** Stocked ready offers use Flint Buy vinyl/CD/cassette or Sea Pre-order for open preorders. Coming soon/Repressing are static dashed Flint statuses. Sold out has a solid 1px #bc4945 edge, pale text and transparent/near-black interior on editorial Releases cards and direct/overlay purchase blocks only: an explicit exception to the older Flint-only Sold Out/red reservation. Other Store surfaces retain their palette. Unknown/pending/paused has no public state or Buy; any matching ready record retains price, including depleted/paused. Remove routine In stock, Digital out now, duplicate badges and View details from these release surfaces. Physical format text is an underlined native link with minimum 44×44px target only to verified existing destinations; announced may use release detail, unmapped formats stay plain, no invented CD path. Vinyl uses static 18px Disc3; CD/cassette retain existing marks. Native actions navigate rather than add to cart. Listen/In player stays independent; missing Listen adds no placeholder. Card metadata reads Digital release · [date] plus catalog with semantic time; omit only the digital fragment without a date. Offers never rewrite it. Detail labels its existing date Digital release without duplicate purchase metadata; a dateless detail omits the entire digital label/date/separator fragment and keeps its catalog number. Supplied shipping remains independent of digital timing; preorder terms are conditional with no reserved blank row. Preserve SSR/failure/disposal/cache reset.
-
-**Store BUY reuse, approved 20 October 2026 after Local release review.** Store Grid and Crate listing BUY controls use the same intrinsic geometry as the accepted release actions: minimum 112×44 CSS px, 16px inline padding, 16px default Bebas label, 18px static Disc3 and 8px icon/text gap, without flex growth. The label stays Buy for every format, including vinyl, CD, tape and merch. Pre-order retains its truthful label and Sea face; Adding/Added retain the static icon. Keep the existing price row, right-aligned Buy placement, Grid/Crate composition and authoritative offer/cart behavior. This supersedes the earlier Store-unchanged scope for listing BUY appearance only. Item Add to cart, payment, retry and status commands retain their existing treatment.
-
-**Phone Store BUY line, approved 22 October 2026.** Below 40rem the card is too narrow for the price and the 112px control side by side. BUY and Pre-order keep the 18px Disc3, 16px Bebas label and 44px height, but take their own full-width line under the price (12px inline padding, no minimum width). The price row reserves 88px so cards keep their height; a price without BUY sits on the bottom line. From 40rem the side-by-side row is unchanged.
-
-**Phone buy bar, approved 22 October 2026 (UX-laws review, option A "Rise", shown only before reaching the action).** Below 40rem a Store item page whose inline purchase action is still below the viewport shows a flat bar fixed to the bottom edge: the Bebas price, the item's own status line (the Sea pre-order line, or Only N left) and the same 44px purchase control with the same label, Adding/Added and cart opening. A Deep Border top edge on Black Card, no blur and no shadow. It rises in 300 ms (`cubic-bezier(0.16, 1, 0.3, 1)`) and leaves in 195 ms (`cubic-bezier(0.7, 0, 0.84, 0)`), transform and opacity only, with explicit resting values; it is simply present at first paint, and reduced motion changes state instantly. Once the shopper reaches the inline action it leaves and stays away below it, returning only above it; it is `inert` while hidden. The open mini player lifts above it. Status-only items, the per-item checkout page and widths from 40rem show no bar. Preview: `.codex-artifacts/design-review/ux-laws-2026-10-22/buy-bar-review.html`.
-
-**Forms and long text (UX-laws review, 22 October 2026).** The newsletter reads email, consent, then Subscribe at every width, with a consent error directly under its checkbox. Services General asks for no extra details; Send Inquiry keeps the neutral ink face. News articles read in a 46rem card at 16px and the About text column stops at 46rem; in both, running paragraphs stop at 34rem, about 70 characters. The cart drawer shows no implementation note; while the delivery quote is pending it keeps the Items, Delivery and Total rows, with the cart's own fixed-price subtotal in Items. A cart holding a pre-order shows Checkout on the Sea Green face with its light label; other carts keep the ink face.
-
-**Late release offer correction.** When a successful live read withdraws the currently focused Buy, focus its existing mapped format/edition link before removing the action, with the existing title destination as fallback when available. Never focus static status or add a visible replacement link. Preserve focus elsewhere, projected Buy/focus on failed reads, and disposal/navigation cancellation.
-
-**Release sizing research.** Human Local feedback rejected the earlier full-column width and requested price beside actions. Design Library SPACE-01/UX-Fitts informed target size and hierarchy. [Carbon button guidelines](https://www.carbondesignsystem.com/building-blocks/core/components/button/guidelines) distinguish intrinsic label-plus-padding from fluid/grid widths without prescribing a universal ratio; [WCAG Target Size Enhanced](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced.html) describes 44px targets at AAA. Numeric BlackBox values are project choices, not universal empirical ratios or an AA requirement. Reuse the existing primitive with scoped CSS; no Carbon styling/dependency or global button-system change.
-
-Use complete square artwork and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Store listing cards follow the Store Listing Scale: a plain format line, Veneer item titles, an ink Inter artist or label credit after a muted “by”, plain lifecycle status lines and a stable bottom price/action row. Item pages, cart and checkout retain Veneer item titles and Inter credits; formats and controls retain their existing fonts. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.
+[Agent workflow](docs/agent-workflow.md) owns validation/evidence; [frontend contracts](docs/frontend-agent-contracts.md) own implementation routing. Verify rendered changes, preserve reduced motion and keyboard/focus behavior, and tie acceptance to source. Record decisions in the relevant OpenSpec change, then reconcile current rules here instead of appending conflicting versions.
