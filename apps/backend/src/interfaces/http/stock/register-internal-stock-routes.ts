@@ -138,6 +138,7 @@ const stockDetailSchema = variantSummarySchema
   .extend({
     availableOnlineQuantity: z.number().int().nonnegative().optional(),
     heldQuantity: z.number().int().nonnegative().optional(),
+    owedQuantity: z.number().int().nonnegative(),
     availabilityAlertCount: z
       .number()
       .int()
@@ -170,6 +171,7 @@ const stockCountEntrySchema = z
   .object({
     actorEmail: z.email(),
     countedQuantity: z.number().int().min(0),
+    owedQuantity: z.number().int().min(0).nullable(),
     id: z.string(),
     notes: z.string().nullable(),
     onlineQuantity: z.number().int().min(0),
@@ -242,6 +244,8 @@ const setStockPreorderBodySchema = z
 const recordedStockCountResponseSchema = z
   .object({
     entry: stockCountEntrySchema,
+    owedQuantity: z.number().int().nonnegative().nullable(),
+    shortfall: z.number().int().nonnegative().nullable(),
     stock: stockStateSchema,
     variantId: z.string(),
     ...hypermediaMetadataShape,
@@ -931,6 +935,8 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             addHypermedia(
               {
                 entry: toStockCountEntryResponse(result.entry),
+                owedQuantity: result.owedQuantity,
+                shortfall: result.shortfall,
                 stock: toStockStateResponse(result.stock),
                 variantId,
               },
@@ -976,6 +982,7 @@ function toStockDetailResponse(
   detail: {
     availableOnlineQuantity?: number;
     heldQuantity?: number;
+    owedQuantity: number;
     availabilityAlertCount: number;
     displayName?: string;
     sourceId: string;
@@ -999,6 +1006,7 @@ function toStockDetailResponse(
     {
       availableOnlineQuantity: detail.availableOnlineQuantity,
       heldQuantity: detail.heldQuantity,
+      owedQuantity: detail.owedQuantity,
       availabilityAlertCount: detail.availabilityAlertCount,
       ...(detail.displayName ? { displayName: detail.displayName } : {}),
       sourceId: detail.sourceId,
@@ -1135,6 +1143,7 @@ function toStockChangeEntryResponse(entry: {
 function toStockCountEntryResponse(entry: {
   actorEmail: string;
   countedQuantity: number;
+  owedQuantity: number | null;
   id: string;
   notes: string | null;
   onlineQuantity: number;
@@ -1144,6 +1153,7 @@ function toStockCountEntryResponse(entry: {
   return {
     actorEmail: entry.actorEmail,
     countedQuantity: entry.countedQuantity,
+    owedQuantity: entry.owedQuantity,
     id: entry.id,
     notes: entry.notes,
     onlineQuantity: entry.onlineQuantity,

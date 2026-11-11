@@ -104,6 +104,7 @@ export const internalStockFixtures = {
   } satisfies InternalStockChangeBody,
   stockDetail: {
     availabilityAlertCount: 0,
+    owedQuantity: 0,
     sourceId: 'disintegration',
     sourceKind: 'release',
     stock: {

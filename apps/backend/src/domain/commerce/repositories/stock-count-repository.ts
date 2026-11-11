@@ -6,6 +6,7 @@ export type StockCountRecord = {
   id: string;
   variantId: VariantId;
   countedQuantity: StockQuantity;
+  owedQuantity: StockQuantity | null;
   onlineQuantity: StockQuantity;
   notes: string | null;
   actorEmail: string;

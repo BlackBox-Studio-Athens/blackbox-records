@@ -166,6 +166,7 @@ model StockCount {
   id                    String   @id @default(cuid())
   variantId             String
   countedQuantity       Int
+  owedQuantity          Int?
   onlineQuantity        Int
   notes                 String?
   actorEmail            String

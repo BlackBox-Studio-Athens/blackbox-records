@@ -53,6 +53,7 @@ type StockCountRow = {
   id: string;
   variantId: string;
   countedQuantity: number;
+  owedQuantity: number | null;
   onlineQuantity: number;
   notes: string | null;
   actorEmail: string;
@@ -60,8 +61,19 @@ type StockCountRow = {
   idempotencyFingerprint: string | null;
 };
 
+const owedQuantitySql = `(SELECT COALESCE(SUM(line."quantity"), 0)
+  FROM "CheckoutOrderLine" line
+  JOIN "CheckoutOrder" orders ON orders."id" = line."orderId"
+  LEFT JOIN "OrderDispatch" dispatch ON dispatch."orderId" = orders."id"
+  WHERE line."variantId" = ? AND orders."status" = 'paid' AND dispatch."shippedAt" IS NULL)`;
+
 export class D1OperatorStockRepository implements OperatorStockRepository {
   public constructor(private readonly db: D1Database) {}
+
+  public async readOwedQuantity(variantId: StockRecord['variantId']): Promise<number> {
+    const row = await this.db.prepare(`SELECT ${owedQuantitySql} AS owed`).bind(variantId).first<{ owed: number }>();
+    return row?.owed ?? 0;
+  }
 
   public async setZeroStockState(input: {
     expectedRevision: number | null;
@@ -361,7 +373,7 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
               [
                 `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "revision", "createdAt",
                                     "updatedAt")`,
-                `SELECT ?, ?, ?, ?, 0, ?, ?`,
+                `SELECT ?, ?, MAX(0, ? - ${owedQuantitySql}), MIN(?, MAX(0, ? - ${owedQuantitySql})), 0, ?, ?`,
                 `WHERE (? IS NULL OR NOT EXISTS (SELECT 1 FROM "StockCount" c WHERE c."idempotencyEnvironment" = ? AND c."idempotencyKeyDigest" = ? AND c."actorEmail" = ?))`,
                 `ON CONFLICT ("variantId") DO NOTHING RETURNING *`,
               ].join('\n'),
@@ -370,7 +382,10 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
               crypto.randomUUID(),
               input.variantId,
               input.countedQuantity,
+              input.variantId,
               input.onlineQuantity,
+              input.countedQuantity,
+              input.variantId,
               timestamp,
               timestamp,
               identity?.keyDigest ?? null,
@@ -382,8 +397,8 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
             .prepare(
               [
                 `UPDATE "Stock"
-               SET "quantity" = ?,
-                   "onlineQuantity" = ?,
+               SET "quantity" = MAX(0, ? - ${owedQuantitySql}),
+                   "onlineQuantity" = MIN(?, MAX(0, ? - ${owedQuantitySql})),
                    "revision" = "revision" + 1,
                    "updatedAt" = ?`,
                 `WHERE "variantId" = ? AND "revision" = ?`,
@@ -393,7 +408,10 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
             )
             .bind(
               input.countedQuantity,
+              input.variantId,
               input.onlineQuantity,
+              input.countedQuantity,
+              input.variantId,
               timestamp,
               input.variantId,
               input.expectedRevision,
@@ -404,21 +422,22 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
             );
 
     try {
-      const results = await this.db.batch<StockRow>([
+      const results = await this.db.batch<StockRow & StockCountRow>([
         mutation,
         this.db
           .prepare(
             [
-              `INSERT INTO "StockCount" ("id", "variantId", "countedQuantity", "onlineQuantity", "notes", "actorEmail",
+              `INSERT INTO "StockCount" ("id", "variantId", "countedQuantity", "owedQuantity", "onlineQuantity", "notes", "actorEmail",
                                          "recordedAt", "idempotencyKeyDigest", "idempotencyFingerprint",
                                          "idempotencyEnvironment")`,
-              `SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE changes() = 1`,
+              `SELECT ?, ?, ?, ${owedQuantitySql}, ?, ?, ?, ?, ?, ?, ? WHERE changes() = 1 RETURNING *`,
             ].join('\n'),
           )
           .bind(
             id,
             input.variantId,
             input.countedQuantity,
+            input.variantId,
             input.onlineQuantity,
             input.notes,
             input.actorEmail,
@@ -432,7 +451,7 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
       if (row) {
         return {
           stock: mapStock(row),
-          entry: createCountRecord(input, id, recordedAt),
+          entry: mapCount(results[1].results[0]),
         };
       }
     } catch (error) {
@@ -500,6 +519,7 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
         `SELECT "id",
                 "variantId",
                 "countedQuantity",
+                "owedQuantity",
                 "onlineQuantity",
                 "notes",
                 "actorEmail",
@@ -542,18 +562,6 @@ function createChangeRecord(input: RecordStockChangeInput, id: string, recordedA
   };
 }
 
-function createCountRecord(input: RecordStockCountInput, id: string, recordedAt: Date): StockCountRecord {
-  return {
-    actorEmail: input.actorEmail,
-    countedQuantity: input.countedQuantity,
-    id,
-    notes: input.notes,
-    onlineQuantity: input.onlineQuantity,
-    recordedAt,
-    variantId: input.variantId,
-  };
-}
-
 function mapChange(row: StockChangeRow): StockChangeRecord {
   return {
     actorEmail: row.actorEmail,
@@ -570,6 +578,7 @@ function mapCount(row: StockCountRow): StockCountRecord {
   return {
     actorEmail: row.actorEmail,
     countedQuantity: createStockQuantity(row.countedQuantity),
+    owedQuantity: row.owedQuantity === null ? null : createStockQuantity(row.owedQuantity),
     id: row.id,
     notes: row.notes,
     onlineQuantity: createStockQuantity(row.onlineQuantity),

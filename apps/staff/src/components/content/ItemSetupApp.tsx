@@ -865,7 +865,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               />
               <FieldDescription id="setup-quantity-help">
                 These {kind === 'merch' ? 'units' : 'copies'} will also be available to buy online when the item is
-                published.
+                published. For a pre-order, enter how many you plan to sell before the records arrive.
               </FieldDescription>
             </Field>
             <ZeroStockStateControl

@@ -778,6 +778,7 @@ export type components = {
             id: string;
             notes: string | null;
             onlineQuantity: number;
+            owedQuantity: number | null;
             /** Format: date-time */
             recordedAt: string;
             /** @enum {string} */
@@ -789,6 +790,7 @@ export type components = {
             availabilityAlertCount: number;
             availableOnlineQuantity?: number;
             heldQuantity?: number;
+            owedQuantity: number;
             stock: components["schemas"]["InternalStockState"];
         };
         InternalStockHistoryResponse: {
@@ -873,6 +875,8 @@ export type components = {
             actions?: components["schemas"]["ApiAction"][];
             entry: components["schemas"]["InternalStockCountEntry"];
             links?: components["schemas"]["ApiLink"][];
+            owedQuantity: number | null;
+            shortfall: number | null;
             stock: components["schemas"]["InternalStockState"];
             variantId: string;
         };

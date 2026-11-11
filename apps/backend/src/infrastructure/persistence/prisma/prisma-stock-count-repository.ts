@@ -9,6 +9,7 @@ import type { PrismaClient } from '../../../generated/prisma/client';
 function mapStockCount(record: {
   actorEmail: string;
   countedQuantity: number;
+  owedQuantity: number | null;
   id: string;
   notes: string | null;
   onlineQuantity: number;
@@ -18,6 +19,7 @@ function mapStockCount(record: {
   return {
     actorEmail: record.actorEmail,
     countedQuantity: createStockQuantity(record.countedQuantity),
+    owedQuantity: record.owedQuantity === null ? null : createStockQuantity(record.owedQuantity),
     id: record.id,
     notes: record.notes,
     onlineQuantity: createStockQuantity(record.onlineQuantity),

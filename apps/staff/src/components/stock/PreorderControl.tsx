@@ -13,6 +13,8 @@ interface PreorderControlProps {
   disabled: boolean;
   busy: boolean;
   onSave(estimate: ShipEstimate | null): Promise<void>;
+  /** Ending a pre-order first asks how many copies we have, so both ways out open that step. */
+  onEnd(): void;
   today?: string;
 }
 
@@ -24,6 +26,7 @@ export default function PreorderControl({
   disabled,
   busy,
   onSave,
+  onEnd,
   today = athensToday(),
 }: PreorderControlProps) {
   const id = useId();
@@ -64,16 +67,16 @@ export default function PreorderControl({
           id={id + '-switch'}
           label="Pre-order"
           checked={enabled}
-          description="Take orders before the copies are on the shelf. Release stage describes the music only: released music can still have physical copies on pre-order or read Coming Soon."
+          description="Sell copies before they arrive. Release stage describes the music only: released music can still have physical copies on pre-order or read Coming Soon."
           onChange={(checked) => {
-            if (!checked && preorder?.open) void onSave(null);
+            if (!checked && preorder?.open) onEnd();
             else setEnabled(checked);
           }}
         />
         {enabled && (
           <>
             <p className="text-sm text-muted-foreground">
-              Copies: enter the number you expect as the stock quantity. Count the stock again when they arrive.
+              For sale is how many people can pre-order. When the records arrive, press Copies arrived.
             </p>
             <SegmentedChoice
               label="When it ships"
@@ -166,7 +169,7 @@ export default function PreorderControl({
                   type="button"
                   variant="outline"
                   className="min-h-11 w-full sm:w-auto"
-                  onClick={() => void onSave(null)}
+                  onClick={onEnd}
                   aria-describedby={id + '-arrival'}
                 >
                   <PackageCheck className="size-4" aria-hidden="true" />
@@ -176,8 +179,8 @@ export default function PreorderControl({
             </div>
             {preorder?.open && (
               <p id={id + '-arrival'} className="text-sm text-muted-foreground">
-                Ends the pre-order now. If the plant slips, change the estimate instead: every waiting order gets an
-                email.
+                Asks how many copies we have, then ends the pre-order. If the records are late, change the date instead:
+                every waiting order gets an email.
               </p>
             )}
           </>

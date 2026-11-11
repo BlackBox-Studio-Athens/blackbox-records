@@ -111,6 +111,7 @@ class InMemoryStockCountRepository implements StockCountRepository {
     const record: StockCountRecord = {
       actorEmail: input.actorEmail,
       countedQuantity: input.countedQuantity,
+      owedQuantity: stockQuantity(0),
       id: `count_${this.records.length + 1}`,
       notes: input.notes,
       onlineQuantity: input.onlineQuantity,
@@ -125,6 +126,7 @@ class InMemoryStockCountRepository implements StockCountRepository {
 }
 
 const noAlerts = { countWaiting: async () => 0 };
+const noOwed = { readOwedQuantity: async () => 0 };
 
 describe('commerce stock use cases', () => {
   const storeItem = {
@@ -180,10 +182,11 @@ describe('commerce stock use cases', () => {
 
   it('returns zero stock when the variant exists but has no stock row yet', async () => {
     await expect(
-      readVariantStock(storeItems, stock, { countWaiting: async () => 3 }, storeItem.variantId),
+      readVariantStock(storeItems, stock, { countWaiting: async () => 3 }, noOwed, storeItem.variantId),
     ).resolves.toEqual({
       ...storeItem,
       availabilityAlertCount: 3,
+      owedQuantity: 0,
       stock: {
         revision: null,
         onlineQuantity: 0,
@@ -537,7 +540,7 @@ describe('commerce stock use cases', () => {
     expect(result.stock.onlineQuantity).toBe(3);
     expect(result.entry.actorEmail).toBe('operator@blackboxrecords.example');
 
-    await expect(readVariantStock(storeItems, stock, noAlerts, storeItem.variantId)).resolves.toMatchObject({
+    await expect(readVariantStock(storeItems, stock, noAlerts, noOwed, storeItem.variantId)).resolves.toMatchObject({
       stock: {
         onlineQuantity: 3,
         quantity: 3,
@@ -558,7 +561,7 @@ describe('commerce stock use cases', () => {
     await recordStockChange(storeItems, operatorStock, command);
 
     expect(stockChanges.records).toHaveLength(2);
-    expect((await readVariantStock(storeItems, stock, noAlerts, storeItem.variantId)).stock.quantity).toBe(2);
+    expect((await readVariantStock(storeItems, stock, noAlerts, noOwed, storeItem.variantId)).stock.quantity).toBe(2);
   });
 
   it('rejects stock changes that would drive stock below zero', async () => {
@@ -613,6 +616,41 @@ describe('commerce stock use cases', () => {
     expect(result.stock.quantity).toBe(2);
     expect(result.stock.onlineQuantity).toBe(1);
     expect(result.entry.countedQuantity).toBe(2);
+    expect(result).toMatchObject({ owedQuantity: 0, shortfall: 0 });
+  });
+
+  it('reports the shortfall from the owed quantity recorded with the count', async () => {
+    const original = operatorStock.recordCount;
+    vi.spyOn(operatorStock, 'recordCount').mockImplementation(async (input) => {
+      const result = await original(input);
+      return result && { ...result, entry: { ...result.entry, owedQuantity: stockQuantity(50) } };
+    });
+    const result = await recordStockCount(storeItems, operatorStock, {
+      expectedRevision: null,
+      actorEmail: 'operator@example.com',
+      countedQuantity: 40,
+      notes: null,
+      onlineQuantity: 40,
+      variantId: storeItem.variantId,
+    });
+    expect(result).toMatchObject({ owedQuantity: 50, shortfall: 10, entry: { countedQuantity: 40 } });
+  });
+
+  it('leaves the shortfall unknown when replaying an older count without owed copies', async () => {
+    const original = operatorStock.recordCount;
+    vi.spyOn(operatorStock, 'recordCount').mockImplementation(async (input) => {
+      const result = await original(input);
+      return result && { ...result, entry: { ...result.entry, owedQuantity: null } };
+    });
+    const result = await recordStockCount(storeItems, operatorStock, {
+      expectedRevision: null,
+      actorEmail: 'operator@example.com',
+      countedQuantity: 40,
+      notes: null,
+      onlineQuantity: 40,
+      variantId: storeItem.variantId,
+    });
+    expect(result).toMatchObject({ owedQuantity: null, shortfall: null });
   });
 
   it('returns immutable combined stock history entries ordered by most recent first', async () => {
@@ -649,8 +687,8 @@ describe('commerce stock use cases', () => {
   });
 
   it('throws a variant-not-found error for unknown variants', async () => {
-    await expect(readVariantStock(storeItems, stock, noAlerts, toVariantId('variant_missing'))).rejects.toBeInstanceOf(
-      VariantNotFoundError,
-    );
+    await expect(
+      readVariantStock(storeItems, stock, noAlerts, noOwed, toVariantId('variant_missing')),
+    ).rejects.toBeInstanceOf(VariantNotFoundError);
   });
 });

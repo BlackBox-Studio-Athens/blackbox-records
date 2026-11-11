@@ -1720,6 +1720,10 @@
                 "type": "integer",
                 "minimum": 0
               },
+              "owedQuantity": {
+                "type": "integer",
+                "minimum": 0
+              },
               "availabilityAlertCount": {
                 "type": "integer",
                 "minimum": 0,
@@ -1730,6 +1734,7 @@
               }
             },
             "required": [
+              "owedQuantity",
               "availabilityAlertCount",
               "stock"
             ]
@@ -2090,6 +2095,13 @@
             "type": "integer",
             "minimum": 0
           },
+          "owedQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
           "id": {
             "type": "string"
           },
@@ -2120,6 +2132,7 @@
         "required": [
           "actorEmail",
           "countedQuantity",
+          "owedQuantity",
           "id",
           "notes",
           "onlineQuantity",
@@ -2196,6 +2209,20 @@
           "entry": {
             "$ref": "#/components/schemas/InternalStockCountEntry"
           },
+          "owedQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "shortfall": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
           "stock": {
             "$ref": "#/components/schemas/InternalStockState"
           },
@@ -2219,6 +2246,8 @@
         },
         "required": [
           "entry",
+          "owedQuantity",
+          "shortfall",
           "stock",
           "variantId"
         ]

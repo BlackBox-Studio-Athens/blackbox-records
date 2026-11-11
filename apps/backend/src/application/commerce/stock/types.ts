@@ -8,6 +8,7 @@ import type {
 export type VariantSummary = StoreItemOptionRecord;
 
 export type VariantStockDetail = VariantSummary & {
+  owedQuantity: number;
   /** Shoppers waiting for an availability alert; a count only, never addresses. */
   availabilityAlertCount: number;
   stock: {
@@ -38,6 +39,7 @@ export type VariantStockHistoryEntry =
       id: string;
       variantId: string;
       countedQuantity: number;
+      owedQuantity: number | null;
       onlineQuantity: number;
       notes: string | null;
       actorEmail: string;
@@ -52,4 +54,6 @@ export type RecordedStockChange = {
 export type RecordedStockCount = {
   entry: StockCountRecord;
   stock: StockRecord;
+  owedQuantity: number | null;
+  shortfall: number | null;
 };

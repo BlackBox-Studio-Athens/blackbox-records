@@ -84,5 +84,10 @@ export async function recordStockCount(
   }
 
   if (!result) throw new StockConflictError();
-  return result;
+  const owedQuantity = result.entry.owedQuantity;
+  return {
+    ...result,
+    owedQuantity,
+    shortfall: owedQuantity === null ? null : Math.max(0, owedQuantity - result.entry.countedQuantity),
+  };
 }

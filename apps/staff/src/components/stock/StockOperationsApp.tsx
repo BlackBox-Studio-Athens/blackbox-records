@@ -72,6 +72,8 @@ import {
 import CountStepper from '../fields/CountStepper';
 import SegmentedChoice from '../fields/SegmentedChoice';
 import ZeroStockStateControl, { type ZeroStockState } from './ZeroStockStateControl';
+import CopiesArrivedStep from './CopiesArrivedStep';
+import { copyWord, splitCopies } from './copies';
 
 const PreorderControl = lazy(() => import('./PreorderControl'));
 
@@ -125,6 +127,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const [submittingIntent, setSubmittingIntent] = useState<StockSubmittingIntent>(null);
   const isSubmitting = submittingIntent !== null;
   const [statusMessage, setStatusMessage] = useState('Choose an item to see its stock.');
+  const [arrivalOpen, setArrivalOpen] = useState(false);
+  // Kept per item so the notice does not follow staff to another record.
+  const [arrivalDone, setArrivalDone] = useState<{ variantId: string; ready: number } | null>(null);
+  const [arrivalStuckVariant, setArrivalStuckVariant] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [changeUnconfirmed, setChangeUnconfirmed] = useState(false);
   const [changeDelta, setChangeDelta] = useState('');
@@ -144,6 +150,11 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const api = createInternalStockApi({ backendBaseUrl });
   const selectedStockDetail = canSubmitStockMutation(selectedVariantId, stockDetail) ? stockDetail : null;
   const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading && !otherPending;
+  const preorderOpen = selectedStockDetail?.stock.preorder?.open ?? false;
+  const unit = copyWord(selectedStockDetail?.itemType);
+  const soldNotSent = selectedStockDetail?.owedQuantity ?? 0;
+  const countValid = /^\d+$/.test(countedQuantity);
+  const countSplit = splitCopies(countValid ? Number(countedQuantity) : 0, soldNotSent);
   const savedExpectedMonth = selectedStockDetail?.stock.expectedMonth ?? '';
   const [expectedMonthDraft, setExpectedMonthDraft] = useState(savedExpectedMonth);
   useEffect(() => setExpectedMonthDraft(savedExpectedMonth), [selectedVariantId, savedExpectedMonth]);
@@ -288,7 +299,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       setHasFreshStock(true);
       if (countVariantRef.current !== variantId) {
         countVariantRef.current = variantId;
-        setCountedQuantity(String(detail.stock.quantity));
+        setCountedQuantity(String(detail.stock.quantity + detail.owedQuantity));
         setOnlineQuantity(String(detail.stock.onlineQuantity));
         setCountNotes('');
         setExpectedRevision(detail.stock.revision);
@@ -552,7 +563,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
     saveStocktake(next);
     if (next.index === stocktake.index) {
       if (status === 'skipped' && selectedStockDetail) {
-        setCountedQuantity(String(selectedStockDetail.stock.quantity));
+        setCountedQuantity(String(selectedStockDetail.stock.quantity + selectedStockDetail.owedQuantity));
         setOnlineQuantity(String(selectedStockDetail.stock.onlineQuantity));
       }
       setStatusMessage('End of the count. Review skipped items or finish.');
@@ -643,7 +654,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
         JSON.stringify({ variantId, expectedRevision, countedQuantity, onlineQuantity, notes, idempotencyKey }),
       );
       setCountUnconfirmed(true);
-      await api.recordStockCount(
+      const counted = await api.recordStockCount(
         variantId,
         {
           expectedRevision,
@@ -659,7 +670,11 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       setCountEdited(false);
       countVariantRef.current = '';
       await loadVariant(variantId, false, 'refresh');
-      setStatusMessage('Stock count saved.');
+      setStatusMessage(
+        counted.shortfall
+          ? `Stock count saved. ${counted.shortfall} short: fewer copies than people who pre-ordered. For sale is 0.`
+          : 'Stock count saved.',
+      );
       await advanceStocktake('confirmed');
     } catch (error) {
       setCountNeedsReassessment(true);
@@ -742,6 +757,29 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       );
       setStatusMessage(result.statusMessage);
       if (result.errorMessage) setErrorMessage(result.errorMessage);
+    } finally {
+      setSubmittingIntent(null);
+    }
+  }
+
+  // Ending a pre-order records the copies we have first, then ends it with the revision the count returned.
+  async function handleArrival(have: number) {
+    const detail = selectedStockDetail;
+    if (!detail || !canMutateSelectedStock || isSubmitting) return;
+    const variantId = selectedVariantId;
+    const soldNotSent = detail.owedQuantity;
+    setSubmittingIntent('preorder');
+    setErrorMessage(null);
+    setStatusMessage(have === 0 ? 'Stopping the pre-order.' : 'Saving the copies we have.');
+    try {
+      const result = await recordCopiesArrived(api, variantId, detail.stock.revision, have, soldNotSent);
+      // Refresh first: loading the item resets the status line.
+      await loadVariant(variantId, false, 'refresh');
+      setStatusMessage(result.statusMessage);
+      setErrorMessage(result.errorMessage);
+      if (result.step !== 'count_failed') setArrivalOpen(false);
+      setArrivalStuckVariant(result.step === 'end_failed' ? variantId : null);
+      setArrivalDone(result.step === 'ended' && have > 0 ? { variantId, ready: Math.min(have, soldNotSent) } : null);
     } finally {
       setSubmittingIntent(null);
     }
@@ -1097,19 +1135,61 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                   />
                 ) : (
                   <div className="grid gap-4">
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    {preorderOpen && (
+                      <Badge variant="secondary" className="w-fit uppercase tracking-[0.12em]">
+                        Pre-order
+                      </Badge>
+                    )}
+                    <div className="staff-stock-figures grid gap-3 sm:grid-cols-3">
                       <StockMetric
-                        label={selectedStockDetail?.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}
-                        value={selectedStockDetail?.stock.quantity}
+                        label="We have"
+                        value={
+                          !selectedStockDetail
+                            ? undefined
+                            : preorderOpen
+                              ? 'Not here yet'
+                              : selectedStockDetail.stock.quantity + selectedStockDetail.owedQuantity
+                        }
+                        hint={
+                          preorderOpen
+                            ? `The ${unit} have not arrived. Press Copies arrived when they do.`
+                            : `All ${unit} in the office, including ones packed for orders.`
+                        }
                       />
-                      <StockMetric label="Allocated online" value={selectedStockDetail?.stock.onlineQuantity} />
                       <StockMetric
-                        label="Available to buy online"
-                        value={hasFreshStock ? selectedStockDetail?.availableOnlineQuantity : undefined}
+                        label="Sold, not sent"
+                        value={selectedStockDetail?.owedQuantity}
+                        hint="Paid orders that still need to be sent."
+                      />
+                      <StockMetric
+                        label="For sale"
+                        value={selectedStockDetail?.stock.quantity}
+                        hint="How many more people can buy."
+                        highlight
                       />
                     </div>
+                    {arrivalDone?.variantId === selectedVariantId && (
+                      <p className="border-l-4 border-primary pl-3">
+                        Pre-order ended. <strong>{arrivalDone.ready}</strong> {unit} ready to send.{' '}
+                        <a className="underline" href="/orders/">
+                          Go to Orders
+                        </a>
+                      </p>
+                    )}
+                    {arrivalStuckVariant === selectedVariantId && preorderOpen && (
+                      <div role="alert" className="flex flex-wrap items-center gap-3 border border-destructive p-3">
+                        <p>The copies are saved, but the pre-order is still open.</p>
+                        <Button
+                          type="button"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          onClick={() => void handlePreorderChange(null)}
+                        >
+                          End pre-order
+                        </Button>
+                      </div>
+                    )}
                     <p className="text-sm text-muted-foreground">
-                      Held for checkouts:{' '}
+                      Online: <strong>{selectedStockDetail?.stock.onlineQuantity ?? '-'}</strong>. Held for checkouts:{' '}
                       <strong>{hasFreshStock ? (selectedStockDetail?.heldQuantity ?? '-') : '-'}</strong>. Updated{' '}
                       {formatDate(selectedStockDetail?.stock.updatedAt)}.
                     </p>
@@ -1161,8 +1241,20 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         disabled={!canMutateSelectedStock || isSubmitting}
                         busy={submittingIntent === 'preorder'}
                         onSave={handlePreorderChange}
+                        onEnd={() => setArrivalOpen(true)}
                       />
                     </Suspense>
+                    {arrivalOpen && selectedStockDetail && preorderOpen && (
+                      <CopiesArrivedStep
+                        key={selectedVariantId}
+                        planned={selectedStockDetail.stock.quantity + selectedStockDetail.owedQuantity}
+                        soldNotSent={selectedStockDetail.owedQuantity}
+                        unit={unit}
+                        busy={submittingIntent === 'preorder'}
+                        onSave={(have) => void handleArrival(have)}
+                        onCancel={() => setArrivalOpen(false)}
+                      />
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -1323,8 +1415,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                     <CardHeader>
                       <CardTitle className="sr-only">Count stock</CardTitle>
                       <CardDescription>
-                        Enter how many you have counted and how many to allocate online. Checkout holds reduce the
-                        copies currently available to buy.
+                        Count everything in the office, including copies packed for orders not sent yet.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1335,25 +1426,27 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       >
                         <label htmlFor="stock-count-counted-quantity" className="flex items-center gap-2">
                           <Package className="size-4 text-muted-foreground" aria-hidden="true" />
-                          Physical stock counted
+                          How many {unit} do we have?
                         </label>
                         <CountStepper
                           id="stock-count-counted-quantity"
-                          label="counted copies"
+                          label={unit}
+                          invalid={countSplit.short > 0}
                           disabled={!selectedStockDetail || isSubmitting}
                           value={/^\d+$/.test(countedQuantity) ? Number(countedQuantity) : null}
                           min={0}
                           onChange={(count) => {
                             setCountedQuantity(String(count));
-                            // Online copies can never exceed what is on the shelf.
-                            if (/^\d+$/.test(onlineQuantity) && Number(onlineQuantity) > count)
-                              setOnlineQuantity(String(count));
+                            // Online can never be more than what is for sale.
+                            const forSale = splitCopies(count, soldNotSent).forSale;
+                            if (/^\d+$/.test(onlineQuantity) && Number(onlineQuantity) > forSale)
+                              setOnlineQuantity(String(forSale));
                             setCountEdited(true);
                           }}
                         />
                         <label htmlFor="stock-count-online-quantity" className="flex items-center gap-2">
                           <ShoppingBag className="size-4 text-muted-foreground" aria-hidden="true" />
-                          Allocated online
+                          Online
                         </label>
                         <CountStepper
                           id="stock-count-online-quantity"
@@ -1361,8 +1454,8 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           disabled={!selectedStockDetail || isSubmitting}
                           value={/^\d+$/.test(onlineQuantity) ? Number(onlineQuantity) : null}
                           min={0}
-                          max={/^\d+$/.test(countedQuantity) ? Number(countedQuantity) : undefined}
-                          limitMessage="Online copies cannot be more than the copies counted."
+                          max={countValid ? countSplit.forSale : undefined}
+                          limitMessage="Online cannot be more than For sale."
                           onChange={(count) => {
                             setOnlineQuantity(String(count));
                             setCountEdited(true);
@@ -1408,14 +1501,24 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                             I have reassessed this count
                           </Button>
                         )}
-                        <div className="staff-operation-preview" aria-live="polite">
-                          <span>Count to save</span>
-                          <strong>
-                            {countedQuantity && onlineQuantity
-                              ? `${countedQuantity} on hand · ${onlineQuantity} allocated online · difference ${Number(countedQuantity) - (selectedStockDetail?.stock.quantity ?? 0)}`
-                              : 'Enter both quantities'}
-                          </strong>
-                        </div>
+                        {countValid && countSplit.short > 0 ? (
+                          <p role="alert" className="border border-destructive p-3 text-sm">
+                            <strong>{countSplit.short} short.</strong> {soldNotSent} {unit} are sold, not sent. For sale
+                            becomes 0.{' '}
+                            <a className="underline" href="/orders/">
+                              See the orders
+                            </a>
+                          </p>
+                        ) : (
+                          <div className="staff-operation-preview" aria-live="polite">
+                            <span>Count to save</span>
+                            <strong>
+                              {countValid && onlineQuantity
+                                ? `${soldNotSent} sold, not sent · ${countSplit.forSale} for sale · ${onlineQuantity} online`
+                                : 'Enter both numbers'}
+                            </strong>
+                          </div>
+                        )}
                         <Button
                           disabled={
                             !canMutateSelectedStock ||
@@ -1544,6 +1647,54 @@ export async function saveStockPreorder(
   }
 }
 
+// Records the copies we have, then ends the pre-order with the revision the count returned. If only the count
+// saves, the caller keeps it and offers to end the pre-order again.
+export async function recordCopiesArrived(
+  api: Pick<ReturnType<typeof createInternalStockApi>, 'recordStockCount' | 'setStockPreorder'>,
+  variantId: string,
+  expectedRevision: number | null,
+  have: number,
+  soldNotSent: number,
+): Promise<{ step: 'ended' | 'count_failed' | 'end_failed'; statusMessage: string; errorMessage: string | null }> {
+  let revision: number | null;
+  try {
+    const counted = await api.recordStockCount(
+      variantId,
+      {
+        expectedRevision,
+        countedQuantity: have,
+        notes: have === 0 ? 'The records did not come' : 'Copies arrived',
+        onlineQuantity: splitCopies(have, soldNotSent).forSale,
+      },
+      crypto.randomUUID(),
+    );
+    revision = counted.stock.revision;
+  } catch (error) {
+    return {
+      step: 'count_failed',
+      statusMessage:
+        error instanceof InternalStockApiError && error.status === 409
+          ? 'Stock changed while the step was open. Check the numbers and save again.'
+          : 'The copies were not saved. Check the stock and try again.',
+      errorMessage: readErrorMessage(error),
+    };
+  }
+  try {
+    await api.setStockPreorder(variantId, { expectedRevision: revision, shipEstimate: null });
+    return {
+      step: 'ended',
+      statusMessage: have === 0 ? 'Pre-order stopped. For sale is 0.' : 'Pre-order ended.',
+      errorMessage: null,
+    };
+  } catch (error) {
+    return {
+      step: 'end_failed',
+      statusMessage: 'The copies are saved, but the pre-order is still open.',
+      errorMessage: readErrorMessage(error),
+    };
+  }
+}
+
 // Sold Out never carries an expected month, so choosing it clears any saved month.
 export async function saveZeroStockState(
   api: Pick<ReturnType<typeof createInternalStockApi>, 'setZeroStockState'>,
@@ -1617,11 +1768,32 @@ function StockFlagSwitch({
   );
 }
 
-function StockMetric({ label, value }: { label: string; value?: number | string | null | undefined }) {
+function StockMetric({
+  label,
+  value,
+  hint,
+  highlight = false,
+}: {
+  label: string;
+  value?: number | string | null | undefined;
+  hint: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="staff-stock-metric border border-border bg-background p-4">
+    <div
+      className="staff-stock-metric grid content-start gap-2 bg-background p-4"
+      data-highlight={highlight ? 'true' : undefined}
+    >
       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-      <p className="mt-3 font-mono text-3xl font-semibold tabular-nums text-foreground">{value ?? '-'}</p>
+      <p
+        className={cn(
+          'staff-stock-metric-value font-semibold text-foreground',
+          typeof value === 'number' && 'font-mono tabular-nums',
+        )}
+      >
+        {value ?? '-'}
+      </p>
+      <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   );
 }
@@ -1630,7 +1802,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
   const quantityLabel =
     entry.type === 'change'
       ? `${entry.quantityDelta > 0 ? '+' : ''}${entry.quantityDelta}`
-      : `count ${entry.countedQuantity}`;
+      : `we have ${entry.countedQuantity}${entry.owedQuantity ? ` · ${entry.owedQuantity} sold, not sent` : ''}`;
 
   return (
     <article className="staff-history-row grid gap-2 p-3 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-center">
@@ -1645,7 +1817,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
         {entry.notes && <p className="text-sm text-muted-foreground">{entry.notes}</p>}
       </div>
       {'onlineQuantity' in entry && (
-        <p className="font-mono text-xs text-muted-foreground">Allocated online: {entry.onlineQuantity}</p>
+        <p className="font-mono text-xs text-muted-foreground">Online: {entry.onlineQuantity}</p>
       )}
     </article>
   );

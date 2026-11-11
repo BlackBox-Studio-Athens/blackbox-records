@@ -256,6 +256,7 @@ describe('internal stock routes', () => {
   const stockCountEntry = {
     actorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
     countedQuantity: 4,
+    owedQuantity: 1,
     id: 'count_1',
     notes: null,
     onlineQuantity: 3,
@@ -314,6 +315,8 @@ describe('internal stock routes', () => {
   it('returns the successful count entry and current stock without service-only fields', async () => {
     mockRecordStockCount.mockResolvedValueOnce({
       entry: { ...stockCountEntry, recordedAt: new Date(stockCountEntry.recordedAt), internalOnly: 'private' },
+      owedQuantity: 1,
+      shortfall: 0,
       stock: { ...stockState, updatedAt: new Date(stockState.updatedAt), createdAt: new Date(), variantId },
     });
     const response = await createHttpApp().request(
@@ -330,6 +333,8 @@ describe('internal stock routes', () => {
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
       entry: { ...stockCountEntry, type: 'count' },
+      owedQuantity: 1,
+      shortfall: 0,
       stock: stockState,
       variantId,
       links: stockLinks,
@@ -511,6 +516,7 @@ describe('internal stock routes', () => {
 
   it('returns current stock detail for a known variant', async () => {
     mockReadVariantStock.mockResolvedValueOnce({
+      owedQuantity: 50,
       sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
@@ -533,6 +539,7 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toMatchObject({
+      owedQuantity: 50,
       sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {

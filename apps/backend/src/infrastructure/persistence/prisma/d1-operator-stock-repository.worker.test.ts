@@ -314,6 +314,81 @@ describe('D1OperatorStockRepository idempotency', () => {
     await expect(countRows('StockChange', variantId)).resolves.toBe(2);
   });
 
+  it('subtracts paid unshipped copies atomically, caps online stock and replays the recorded owed count', async () => {
+    const variantId = parseVariantId(`variant_owed_${crypto.randomUUID()}`);
+    await seedStock(variantId, 300);
+    const paid = await seedPreorderOrder(variantId, null, 'paid', 50);
+    const shipped = await seedPreorderOrder(variantId, null, 'paid', 7);
+    await seedPreorderOrder(variantId, null, 'pending_payment', 9);
+    await env.COMMERCE_DB.prepare(
+      'INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy") VALUES (?, ?, ?, ?)',
+    )
+      .bind(shipped, '2026-10-03T00:00:00.000Z', '2026-10-03T00:00:00.000Z', 'staff@example.com')
+      .run();
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    expect(await repository.readOwedQuantity(variantId)).toBe(50);
+    const count = {
+      actorEmail: 'operator@example.com',
+      countedQuantity: createStockQuantity(300),
+      expectedRevision: 0,
+      notes: null,
+      onlineQuantity: createStockQuantity(280),
+      requestIdentity: identity('q', 'r'),
+      variantId,
+    };
+    const first = await repository.recordCount(count);
+    expect(first?.stock).toMatchObject({ quantity: 250, onlineQuantity: 250, revision: 1 });
+    expect(first?.entry).toMatchObject({ countedQuantity: 300, owedQuantity: 50, onlineQuantity: 280 });
+    await env.COMMERCE_DB.prepare('UPDATE "OrderDispatch" SET "shippedAt" = ? WHERE "orderId" = ?')
+      .bind('2026-10-03T00:00:00.000Z', shipped)
+      .run();
+    await env.COMMERCE_DB.prepare(
+      'INSERT INTO "OrderDispatch" ("orderId", "shippedAt", "updatedAt", "updatedBy") VALUES (?, ?, ?, ?)',
+    )
+      .bind(paid, '2026-10-03T00:00:00.000Z', '2026-10-03T00:00:00.000Z', 'staff@example.com')
+      .run();
+    expect(await repository.readOwedQuantity(variantId)).toBe(0);
+    expect((await repository.recordCount(count))?.entry).toEqual(first?.entry);
+    await expect(countRows('StockCount', variantId)).resolves.toBe(1);
+  });
+
+  it('records a short shelf without negative stock and rejects a stale revision', async () => {
+    const variantId = parseVariantId(`variant_short_${crypto.randomUUID()}`);
+    await seedStock(variantId, 100);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    expect(await repository.readOwedQuantity(variantId)).toBe(0);
+    await seedPreorderOrder(variantId, null, 'paid', 50);
+    const count = {
+      actorEmail: 'operator@example.com',
+      countedQuantity: createStockQuantity(40),
+      expectedRevision: 0,
+      notes: null,
+      onlineQuantity: createStockQuantity(40),
+      variantId,
+    };
+    const result = await repository.recordCount(count);
+    expect(result?.stock).toMatchObject({ quantity: 0, onlineQuantity: 0 });
+    expect(result?.entry).toMatchObject({ countedQuantity: 40, owedQuantity: 50 });
+    expect(await repository.recordCount(count)).toBeNull();
+    await expect(countRows('StockCount', variantId)).resolves.toBe(1);
+  });
+
+  it('subtracts owed copies when the first stock row is created', async () => {
+    const variantId = parseVariantId(`variant_first_count_${crypto.randomUUID()}`);
+    await seedPreorderOrder(variantId, null, 'paid', 50);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const result = await repository.recordCount({
+      actorEmail: 'operator@example.com',
+      countedQuantity: createStockQuantity(300),
+      expectedRevision: null,
+      notes: null,
+      onlineQuantity: createStockQuantity(300),
+      variantId,
+    });
+    expect(result?.stock).toMatchObject({ quantity: 250, onlineQuantity: 250, revision: 0 });
+    expect(result?.entry).toMatchObject({ countedQuantity: 300, owedQuantity: 50 });
+  });
+
   it('replays a count after the revision advances and rejects a stale first execution', async () => {
     const variantId = parseVariantId(`variant_idempotent_count_${crypto.randomUUID()}`);
     await seedStock(variantId, 5);
@@ -536,9 +611,16 @@ describe('D1OperatorStockRepository idempotency', () => {
     await db.batch([
       insert.bind('stock_planned', 'variant_planned', 0, 0, 1, 1, '2026-09-01T10:00:00.000Z', '2026-12', 4),
       insert.bind('stock_plain', 'variant_plain', 3, 2, 0, 0, null, null, 7),
+      db.prepare(
+        `INSERT INTO "StockCount" ("id", "variantId", "countedQuantity", "onlineQuantity", "actorEmail", "recordedAt") VALUES ('old_count', 'variant_plain', 3, 2, 'staff@example.com', '2026-09-01T10:00:00.000Z')`,
+      ),
     ]);
 
     await applyD1Migrations(db, env.TEST_MIGRATIONS);
+
+    expect(
+      await db.prepare('SELECT "owedQuantity" FROM "StockCount" WHERE "id" = ?').bind('old_count').first(),
+    ).toEqual({ owedQuantity: null });
 
     const { results } = await db.prepare(`SELECT * FROM "Stock" ORDER BY "id"`).all();
     expect(results).toEqual([
@@ -621,6 +703,7 @@ async function seedPreorderOrder(
   variantId: string,
   cycle: string | null,
   status: 'paid' | 'pending_payment' | 'not_paid' | 'needs_review' = 'paid',
+  quantity = 1,
 ) {
   const id = crypto.randomUUID();
   const timestamp = '2026-10-02T09:00:00.000Z';
@@ -633,8 +716,8 @@ async function seedPreorderOrder(
     env.COMMERCE_DB.prepare(
       `INSERT INTO "CheckoutOrderLine"
       ("id", "orderId", "storeItemSlug", "variantId", "quantity", "preorderStartedAt", "preorderShipMonth", "createdAt")
-      VALUES (?, ?, 'preorder-notice-item', ?, 1, ?, ?, ?)`,
-    ).bind(crypto.randomUUID(), id, variantId, cycle, cycle ? '2099-11' : null, timestamp),
+      VALUES (?, ?, 'preorder-notice-item', ?, ?, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), id, variantId, quantity, cycle, cycle ? '2099-11' : null, timestamp),
   ]);
   return id;
 }

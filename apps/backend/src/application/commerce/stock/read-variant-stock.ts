@@ -1,5 +1,6 @@
 import type {
   AvailabilityAlertRepository,
+  OperatorStockRepository,
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
@@ -11,6 +12,7 @@ export async function readVariantStock(
   storeItemOptions: StoreItemOptionRepository,
   stock: StockRepository,
   alerts: Pick<AvailabilityAlertRepository, 'countWaiting'>,
+  orders: Pick<OperatorStockRepository, 'readOwedQuantity'>,
   variantId: unknown,
 ): Promise<VariantStockDetail> {
   const parsedVariantId = parseVariantId(variantId);
@@ -25,6 +27,7 @@ export async function readVariantStock(
   return {
     ...storeItem,
     availabilityAlertCount: await alerts.countWaiting(parsedVariantId),
+    owedQuantity: await orders.readOwedQuantity(parsedVariantId),
     stock: {
       revision: currentStock?.revision ?? null,
       quantity: currentStock?.quantity ?? 0,

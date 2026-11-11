@@ -300,8 +300,10 @@ body[data-workspace='content'] {
   padding: 8px;
   border: 0;
 }
-.staff-stock-metric > p:last-child {
-  margin-top: 4px;
+.staff-stock-metric[data-highlight='true'] {
+  border: 2px solid var(--primary);
+}
+.staff-stock-metric-value {
   font-size: 20px;
 }
 @media (max-width: 1023px) {
@@ -314,7 +316,7 @@ body[data-workspace='content'] {
   .staff-stock-controls [data-slot='card-content'] {
     padding-inline: 12px;
   }
-  .staff-current-stock [data-slot='card-content'] > div > div:first-child {
+  .staff-current-stock .staff-stock-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .staff-current-stock .staff-stock-metric:last-child {

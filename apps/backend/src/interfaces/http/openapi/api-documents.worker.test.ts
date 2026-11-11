@@ -87,5 +87,14 @@ describe('OpenAPI documents', () => {
       required: expect.arrayContaining(['showLowStock', 'preorder']),
       properties: { preorder: expect.any(Object) },
     });
+    expect(document.components?.schemas?.InternalStockDetail).toMatchObject({
+      allOf: expect.arrayContaining([expect.objectContaining({ required: expect.arrayContaining(['owedQuantity']) })]),
+    });
+    expect(document.components?.schemas?.InternalStockCountEntry).toMatchObject({
+      required: expect.arrayContaining(['countedQuantity', 'owedQuantity']),
+    });
+    expect(document.components?.schemas?.RecordedStockCountResponse).toMatchObject({
+      required: expect.arrayContaining(['entry', 'stock', 'owedQuantity', 'shortfall']),
+    });
   });
 });

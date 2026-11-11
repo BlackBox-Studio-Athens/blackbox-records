@@ -12,14 +12,21 @@ const preorder: Preorder = {
 };
 const render = (value: Preorder | null, disabled = false, busy = false) =>
   renderToStaticMarkup(
-    <PreorderControl preorder={value} today="2026-10-02" disabled={disabled} busy={busy} onSave={vi.fn()} />,
+    <PreorderControl
+      preorder={value}
+      today="2026-10-02"
+      disabled={disabled}
+      busy={busy}
+      onSave={vi.fn()}
+      onEnd={vi.fn()}
+    />,
   );
 
 describe('PreorderControl', () => {
   it('renders a labelled native switch and ordinary state when ended', () => {
     const html = render(null);
     expect(html).toContain('role="switch"');
-    expect(html).toContain('Take orders before the copies are on the shelf.');
+    expect(html).toContain('Sell copies before they arrive.');
     expect(html).toContain('What shoppers see');
     expect(html).toContain('Not on pre-order');
     expect(html).not.toContain('Save pre-order');
@@ -38,11 +45,11 @@ describe('PreorderControl', () => {
     for (const label of ['Any time', 'Early', 'Mid', 'Late'])
       expect(html).toMatch(new RegExp(`role="radio"[^>]*>${label}<`));
     expect(html).toContain('Shoppers see &quot;ships around October 2026&quot;.');
-    expect(html).toContain('Copies: enter the number you expect as the stock quantity.');
+    expect(html).toContain('For sale is how many people can pre-order.');
     expect(html).toContain('Save pre-order');
     expect(html).toContain('Copies arrived');
     expect(html).toContain(
-      'Ends the pre-order now. If the plant slips, change the estimate instead: every waiting order gets an email.',
+      'Asks how many copies we have, then ends the pre-order. If the records are late, change the date instead: every waiting order gets an email.',
     );
     expect(html.match(/<label[^>]*for=/g)).toHaveLength(2);
   });

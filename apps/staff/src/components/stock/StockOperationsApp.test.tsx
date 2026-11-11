@@ -10,6 +10,7 @@ import {
 import StockOperationsApp, {
   canSubmitStockMutation,
   readStockLoadingLabel,
+  recordCopiesArrived,
   saveStockPreorder,
   saveZeroStockState,
 } from './StockOperationsApp';
@@ -58,6 +59,7 @@ describe('Stock operations pre-order writes', () => {
     sourceKind: 'release',
     storeItemSlug: 'one',
     availabilityAlertCount: 0,
+    owedQuantity: 0,
     stock: {
       revision: 7,
       quantity: 10,
@@ -150,6 +152,55 @@ describe('Stock operations pre-order writes', () => {
       expect(fetcher).toHaveBeenCalledTimes(2);
     },
   );
+});
+
+describe('Copies arrived', () => {
+  const counted = (revision: number) =>
+    new Response(JSON.stringify({ variantId: 'variant_one', stock: { revision }, owedQuantity: 50, shortfall: null }), {
+      status: 201,
+    });
+  const problem = (status: number) =>
+    new Response(JSON.stringify({ type: '/problems/x', detail: 'Nope.', status }), { status });
+  const bodyOf = (fetcher: ReturnType<typeof vi.fn>, call: number) =>
+    JSON.parse((fetcher.mock.calls[call]![1] as RequestInit).body as string);
+
+  it('records the copies we have, then ends the pre-order with the revision the count returned', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(counted(8)).mockResolvedValueOnce(new Response('{}'));
+    const result = await recordCopiesArrived(createInternalStockApi({ fetcher }), 'variant_one', 7, 300, 50);
+    expect(result).toEqual({ step: 'ended', statusMessage: 'Pre-order ended.', errorMessage: null });
+    expect(bodyOf(fetcher, 0)).toEqual({
+      expectedRevision: 7,
+      countedQuantity: 300,
+      notes: 'Copies arrived',
+      onlineQuantity: 250,
+    });
+    expect(fetcher.mock.calls[1]![0]).toBe('/api/internal/variants/variant_one/stock/preorder');
+    expect(bodyOf(fetcher, 1)).toEqual({ expectedRevision: 8, shipEstimate: null });
+  });
+
+  it('records 0 when the records did not come', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(counted(8)).mockResolvedValueOnce(new Response('{}'));
+    const result = await recordCopiesArrived(createInternalStockApi({ fetcher }), 'variant_one', 7, 0, 3);
+    expect(result.statusMessage).toBe('Pre-order stopped. For sale is 0.');
+    expect(bodyOf(fetcher, 0)).toMatchObject({ countedQuantity: 0, onlineQuantity: 0 });
+  });
+
+  it('keeps the count and reports the open pre-order when ending fails', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(counted(8)).mockResolvedValueOnce(problem(500));
+    const result = await recordCopiesArrived(createInternalStockApi({ fetcher }), 'variant_one', 7, 300, 50);
+    expect(result).toMatchObject({
+      step: 'end_failed',
+      statusMessage: 'The copies are saved, but the pre-order is still open.',
+    });
+  });
+
+  it('does not end the pre-order when the count fails', async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(problem(409));
+    const result = await recordCopiesArrived(createInternalStockApi({ fetcher }), 'variant_one', 7, 300, 50);
+    expect(result.step).toBe('count_failed');
+    expect(result.statusMessage).toContain('Stock changed');
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
 });
 
 describe('Stock operations zero-stock state', () => {

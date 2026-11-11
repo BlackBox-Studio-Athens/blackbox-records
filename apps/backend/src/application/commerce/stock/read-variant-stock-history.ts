@@ -40,6 +40,7 @@ export async function readVariantStockHistory(
     ...counts.map((entry) => ({
       actorEmail: entry.actorEmail,
       countedQuantity: entry.countedQuantity,
+      owedQuantity: entry.owedQuantity,
       id: entry.id,
       notes: entry.notes,
       onlineQuantity: entry.onlineQuantity,

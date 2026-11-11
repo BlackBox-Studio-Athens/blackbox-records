@@ -248,6 +248,7 @@ records.artists.push({
   _rev: '2',
 });
 const state = {
+  counts: [],
   initialStockReads: Promise.resolve(),
   conflict: false,
   failSave: false,
@@ -286,6 +287,7 @@ const publications = [];
 // EmDash blackbox-editorial plugin KV stand-in: price drafts with compare-and-set revisions.
 const priceDrafts = new Map();
 const preorders = new Map();
+const owedFor = (variantId) => (variantId === 'variant_retained' ? 2 : 0);
 let priceDraftRevision = 0;
 const previewDocuments = new Map();
 const previewBridge =
@@ -576,8 +578,16 @@ const server = createServer(async (req, res) => {
       if (state.countFailure) return fail(503);
       if (body.expectedRevision !== state.stockRevision) return fail(409);
       state.stockRevision++;
+      state.counts.push(body);
+      const owed = owedFor(url.pathname.split('/')[4]);
       return json({
-        stock: { quantity: body.countedQuantity, onlineQuantity: body.onlineQuantity, revision: state.stockRevision },
+        owedQuantity: owed,
+        shortfall: Math.max(0, owed - body.countedQuantity),
+        stock: {
+          quantity: Math.max(0, body.countedQuantity - owed),
+          onlineQuantity: body.onlineQuantity,
+          revision: state.stockRevision,
+        },
       });
     }
     if (/^\/api\/internal\/variants\/[^/]+\/selling$/.test(url.pathname)) {
@@ -672,6 +682,7 @@ const server = createServer(async (req, res) => {
         variantId,
         storeItemSlug: variantId,
         displayName: variantId,
+        owedQuantity: owedFor(variantId),
         stock: {
           quantity: variantId === 'variant_retained' ? 1 : variantId === 'first' ? 17 : 29,
           onlineQuantity: variantId === 'variant_retained' ? 1 : 5,
@@ -1525,9 +1536,21 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.getByRole('status').filter({ hasText: 'Pre-order saved.' }).waitFor();
       assert.deepEqual(preorders.get('variant_retained').shipEstimate, { kind: 'date', date: tomorrow });
       await page.getByRole('button', { name: 'Copies arrived', exact: true }).click();
+      const have = page.getByLabel('How many copies do we have now?', { exact: true });
+      assert.equal(await have.inputValue(), '3', 'Arrival starts with for sale plus sold, not sent');
+      await page.getByText('1 for sale', { exact: false }).first().waitFor();
+      await fits(page.getByRole('button', { name: 'Save and end pre-order', exact: true }), 'Save arrival');
+      await fits(page.getByRole('button', { name: 'The records did not come', exact: true }), 'Records did not come');
+      await capture('staff-preorder-arrival-' + width, have.locator('..'));
+      const countsBefore = state.counts.length;
+      await page.getByRole('button', { name: 'Save and end pre-order', exact: true }).click();
       await page.getByRole('status').filter({ hasText: 'Pre-order ended.' }).waitFor();
+      await page.getByText('copies ready to send.', { exact: false }).waitFor();
       assert.equal(await toggle.isChecked(), false);
       assert.equal(preorders.get('variant_retained'), null);
+      assert.deepEqual(state.counts.slice(countsBefore), [
+        { expectedRevision: state.stockRevision - 2, countedQuantity: 3, notes: 'Copies arrived', onlineQuantity: 1 },
+      ]);
       await capture('staff-preorder-ended-' + width, toggle.locator('..'));
       if (width === 390) {
         preorders.set('variant_retained', {
@@ -1543,7 +1566,15 @@ else if (process.argv.includes('--orders-shipping')) {
           'staff-preorder-passed-month-390',
           page.getByRole('alert').filter({ hasText: 'This month has passed.' }),
         );
+        // Switching off also asks first; Not yet keeps the pre-order open.
+        await toggle.press('Space');
+        await page.getByRole('button', { name: 'Not yet', exact: true }).click();
+        assert.equal(await toggle.isChecked(), true, 'Not yet keeps the pre-order open');
         await page.getByRole('button', { name: 'Copies arrived', exact: true }).click();
+        await page.getByLabel('How many copies do we have now?', { exact: true }).fill('1');
+        await page.getByRole('alert').filter({ hasText: '1 short.' }).waitFor();
+        await capture('staff-preorder-arrival-short-390', page.getByRole('alert').filter({ hasText: '1 short.' }));
+        await page.getByRole('button', { name: 'Save anyway', exact: true }).click();
         await page.getByRole('status').filter({ hasText: 'Pre-order ended.' }).waitFor();
       }
       await page.getByRole('button', { name: 'Menu', exact: true }).click();
@@ -1566,7 +1597,7 @@ else if (process.argv.includes('--orders-shipping')) {
       await fits(stockMode.getByRole('button', { name: 'Add or remove copies', exact: true }), 'Adjust stock mode');
       await fits(stockMode.getByRole('button', { name: 'Count stock', exact: true }), 'Count stock mode');
       await stockMode.getByRole('button', { name: 'Count stock', exact: true }).click();
-      await fits(page.getByLabel('Physical stock counted', { exact: true }), 'Physical stock count');
+      await fits(page.getByLabel(/^How many (copies|units) do we have\?$/), 'Stock count');
       await fits(page.getByRole('button', { name: 'Save count', exact: true }), 'Record stock count');
       await capture('staff-stock-count-' + width);
       await page.goto(origin + '/orders/');
@@ -1624,6 +1655,8 @@ else if (process.argv.includes('--orders-shipping')) {
     );
   } catch (error) {
     await page.screenshot({ path: resolve(artifacts, 'staff-mobile-failure.png') });
+    console.error('Messages on failure:', await page.locator('[role=status], [role=alert]').allInnerTexts());
+    console.error('Last requests:', state.requests.slice(-4));
     throw error;
   } finally {
     await browser.close();
@@ -2119,11 +2152,11 @@ else if (process.argv.includes('--orders-shipping')) {
       assert.equal(await page.getByLabel('How many?', { exact: true }).inputValue(), '2');
       assert.equal(new URL(page.url()).searchParams.get('id'), original.id);
       await page.getByRole('button', { name: 'Count stock', exact: true }).click();
-      await page.getByLabel('Physical stock counted', { exact: true }).fill('12');
+      await page.getByLabel('How many copies do we have?', { exact: true }).fill('12');
       state.stockRevision++;
       await page.getByRole('button', { name: 'Save count', exact: true }).click();
       await page.getByRole('button', { name: 'I have reassessed this count', exact: true }).waitFor();
-      assert.equal(await page.getByLabel('Physical stock counted', { exact: true }).inputValue(), '12');
+      assert.equal(await page.getByLabel('How many copies do we have?', { exact: true }).inputValue(), '12');
       assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), false);
       await page.getByRole('button', { name: 'I have reassessed this count', exact: true }).click();
       await page.getByRole('button', { name: 'Save count', exact: true }).click();
@@ -3778,13 +3811,13 @@ else if (process.argv.includes('--orders-shipping')) {
     await page.waitForFunction(() => document.querySelectorAll('.inventory-row').length === 2);
     await page.getByRole('button', { name: 'Count stock', exact: true }).click();
     await page.getByText('Count 1 of 2', { exact: true }).first().waitFor();
-    await page.getByLabel('Physical stock counted').fill('15');
+    await page.getByLabel('How many copies do we have?', { exact: true }).fill('15');
     await page.getByRole('button', { name: 'Record count and next' }).click();
     await page.getByText('Count 2 of 2', { exact: true }).first().waitFor();
     await page.reload();
     await page.getByText('Count 2 of 2', { exact: true }).first().waitFor();
     state.countFailure = true;
-    await page.getByLabel('Physical stock counted').fill('14');
+    await page.getByLabel('How many copies do we have?', { exact: true }).fill('14');
     await page.getByRole('button', { name: 'Record count and next' }).click();
     await page.getByRole('button', { name: 'I have reassessed this count' }).waitFor();
     assert.match(await page.locator('.stocktake-progress').innerText(), /1 recorded/);
@@ -3807,7 +3840,7 @@ else if (process.argv.includes('--orders-shipping')) {
     await page.clock.install();
     await page.goto(`${origin}/stock/?variantId=first`);
     await page.getByRole('group').getByRole('button', { name: 'Count stock', exact: true }).click();
-    await page.getByLabel('Physical stock counted', { exact: true }).fill('12');
+    await page.getByLabel('How many copies do we have?', { exact: true }).fill('12');
     const count = page.locator('#stock-count-counted-quantity');
     assert.equal(await count.inputValue(), '12');
     assert.equal(await page.getByRole('button', { name: 'Refresh', exact: true }).count(), 0);

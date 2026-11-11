@@ -59,14 +59,16 @@ export function createInternalStockServices(bindings: AppBindings) {
       const {
         stock: state,
         availabilityAlertCount,
+        owedQuantity,
         ...item
-      } = await readVariantStock(storeItemOptions, stock, alerts, variantId);
+      } = await readVariantStock(storeItemOptions, stock, alerts, operatorStock, variantId);
       const record = await storeItemOptions.findByStoreItem(item);
       const name = (record?.productProjection as { name?: unknown } | null)?.name;
       const availability = await checkoutHolds.readAvailability(item.variantId);
       return {
         ...item,
         availabilityAlertCount,
+        owedQuantity,
         availableOnlineQuantity: availability?.availableOnlineQuantity ?? 0,
         heldQuantity: availability?.heldQuantity ?? 0,
         stock: state,

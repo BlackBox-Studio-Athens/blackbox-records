@@ -220,6 +220,7 @@ export const StockCountScalarFieldEnum = {
   id: 'id',
   variantId: 'variantId',
   countedQuantity: 'countedQuantity',
+  owedQuantity: 'owedQuantity',
   onlineQuantity: 'onlineQuantity',
   notes: 'notes',
   actorEmail: 'actorEmail',

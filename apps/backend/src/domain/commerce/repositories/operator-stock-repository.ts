@@ -5,6 +5,7 @@ import type { RecordStockCountInput, StockCountRecord } from './stock-count-repo
 import type { StockRecord } from './stock-repository';
 
 export interface OperatorStockRepository {
+  readOwedQuantity(variantId: StockRecord['variantId']): Promise<number>;
   initializeOpeningStock(
     operation: CatalogOperation,
     quantity: StockQuantity,
