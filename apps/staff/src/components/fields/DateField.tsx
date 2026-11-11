@@ -39,7 +39,9 @@ export default function DateField({
           type="date"
           className="min-h-11 w-auto min-w-44 text-base"
           value={date ?? ''}
-          required={required}
+          // Not native `required`: a date inside a closed card or <details> cannot take focus, so the browser
+          // would silently refuse to submit the whole form. The editors report missing dates themselves.
+          aria-required={required || undefined}
           disabled={disabled}
           aria-invalid={errors.length > 0 || undefined}
           aria-describedby={`${id}-readback ${id}-error`}

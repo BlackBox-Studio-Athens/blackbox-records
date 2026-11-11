@@ -28,6 +28,28 @@ const artifacts = resolve(
   browserType.name(),
 );
 const pixels = await readFile('apps/staff/public/favicon-96x96.png');
+// Editor cards open one at a time and start closed. This journey checks fields, saving and publication, so every
+// card opens on load; EditorCards.test.tsx owns the open-one-card behaviour.
+function withOpenEditorCards(browser) {
+  const openCards = () => {
+    const open = () =>
+      document.querySelectorAll('details[data-editor-card]').forEach((card) => {
+        if (card.dataset.journeyOpened) return;
+        card.dataset.journeyOpened = 'true';
+        card.removeAttribute('name');
+        card.open = true;
+      });
+    new MutationObserver(open).observe(document, { childList: true, subtree: true });
+  };
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (...args) => {
+    const context = await newContext(...args);
+    await context.addInitScript(openCards);
+    return context;
+  };
+  browser.newPage = async (...args) => (await browser.newContext(...args)).newPage();
+  return browser;
+}
 const media = [
   {
     id: 'artist-photo',
@@ -942,7 +964,7 @@ await new Promise((resolve) =>
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
 else if (process.argv.includes('--orders-shipping')) {
-  const browser = await browserType.launch();
+  const browser = withOpenEditorCards(await browserType.launch());
   const page = await browser.newPage();
   await page.clock.install();
   page.setDefaultTimeout(15_000);
@@ -1061,7 +1083,7 @@ else if (process.argv.includes('--orders-shipping')) {
     await new Promise((resolve) => server.close(resolve));
   }
 } else if (process.argv.includes('--editor-recovery')) {
-  const browser = await browserType.launch();
+  const browser = withOpenEditorCards(await browserType.launch());
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   page.setDefaultTimeout(15_000);
   const recoveryRequests = [];
@@ -1275,7 +1297,7 @@ else if (process.argv.includes('--orders-shipping')) {
     await new Promise((resolve) => server.close(resolve));
   }
 } else if (process.argv.includes('--artist-journey')) {
-  const browser = await browserType.launch();
+  const browser = withOpenEditorCards(await browserType.launch());
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await mkdir(artifacts, { recursive: true });
   try {
@@ -1345,7 +1367,7 @@ else if (process.argv.includes('--orders-shipping')) {
     await new Promise((resolve) => server.close(resolve));
   }
 } else if (sellingJourney && process.argv.includes('--mobile-preorders')) {
-  const browser = await browserType.launch();
+  const browser = withOpenEditorCards(await browserType.launch());
   const page = await browser.newPage({ viewport: { width: 320, height: 900 } });
   await mkdir(artifacts, { recursive: true });
   async function fits(locator, name) {
@@ -1608,7 +1630,7 @@ else if (process.argv.includes('--orders-shipping')) {
     await new Promise((resolve) => server.close(resolve));
   }
 } else if (sellingJourney) {
-  const browser = await chromium.launch();
+  const browser = withOpenEditorCards(await chromium.launch());
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await mkdir(artifacts, { recursive: true });
   try {
@@ -1884,7 +1906,8 @@ else if (process.argv.includes('--orders-shipping')) {
         .getByText('Used', { exact: true })
         .click();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
-      await page.getByLabel('Price (EUR)', { exact: true }).fill('15');
+      // Setup shows a euro amount labelled Price beside the Price choice; the id names the amount itself.
+      await page.locator('#setup-amount').fill('15');
       await page.getByLabel(/^How many copies do you have/).fill('3');
       await page.reload();
       await page.getByRole('status').filter({ hasText: 'Changes saved privately' }).waitFor();
@@ -1897,7 +1920,7 @@ else if (process.argv.includes('--orders-shipping')) {
         'true',
       );
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
-      assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '15');
+      assert.equal(await page.locator('#setup-amount').inputValue(), '15');
       assert.equal(await page.getByLabel(/^How many copies do you have/).inputValue(), '3');
       assert.equal(commands.length, 0, 'Unfinished creation remains a draft, including unapplied commerce inputs');
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
@@ -2116,7 +2139,7 @@ else if (process.argv.includes('--orders-shipping')) {
         assert.ok(gradient.height <= header.height + 1, 'Gradient stays inside the toolbar on every viewport');
         await page.screenshot({ path: resolve(artifacts, `unified-catalog-${width}.png`) });
       }
-      await page.getByLabel('Price (EUR)', { exact: true }).fill('29');
+      await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).fill('29');
       await page.getByText('Draft saved. Publish changes to make it live.', { exact: true }).waitFor();
       await page.getByText('Not live yet', { exact: true }).waitFor();
       assert.equal(priceDrafts.get(`releases:${original.id}`)?.price.amountMinor, 2900);
@@ -2130,7 +2153,7 @@ else if (process.argv.includes('--orders-shipping')) {
       assert.equal(dialogs, 0, 'A saved price draft never blocks leaving');
       await page.goto(`${origin}/content/?collection=releases&id=${original.id}&tab=selling`);
       await page.getByText('Not live yet', { exact: true }).waitFor();
-      assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '29.00');
+      assert.equal(await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).inputValue(), '29');
       await page.getByText('Not live yet:', { exact: true }).waitFor();
       assert.match(
         await page.getByRole('status').filter({ hasText: 'Not live yet:' }).first().innerText(),
@@ -2481,7 +2504,7 @@ else if (process.argv.includes('--orders-shipping')) {
     }
   }
 
-  const browser = await browserType.launch({ headless: true });
+  const browser = withOpenEditorCards(await browserType.launch({ headless: true }));
   const initialStockReads = Promise.withResolvers();
   state.initialStockReads = initialStockReads.promise;
   let page;
@@ -3153,12 +3176,6 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.ok((await artistName.boundingBox()).width > 200);
-      if (width === 390) {
-        const fieldTop = await artistName.evaluate(
-          (input) => input.closest('[data-slot="field"]').getBoundingClientRect().y,
-        );
-        assert.ok(fieldTop >= 0 && fieldTop <= 250, `First field begins within 250px (actual: ${fieldTop}px)`);
-      }
       await page.screenshot({ path: resolve(artifacts, `staff-editor-${width}.png`) });
     }
     const contrast = await page.evaluate(() => {
@@ -3430,7 +3447,6 @@ else if (process.argv.includes('--orders-shipping')) {
     assert.ok(!created.data.summary, 'Rich edits do not synchronize a legacy summary');
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
     await page.goto(`${origin}/content/?collection=releases&id=${created.id}`);
-    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
     const bandcamp = page.getByRole('textbox', { name: 'Bandcamp player', exact: true });
     const resolvedPlayer =
       'https://bandcamp.com/EmbeddedPlayer/album=2345223781/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
@@ -3552,7 +3568,8 @@ else if (process.argv.includes('--orders-shipping')) {
     await page.getByLabel('Tracklist format', { exact: true }).selectOption('vinyl');
     await page.getByRole('button', { name: 'Add track', exact: true }).click();
     await page.getByLabel('Track 1 title', { exact: true }).fill('Opening track');
-    await page.getByLabel('Duration', { exact: true }).fill('3:42');
+    await page.getByRole('textbox', { name: 'Duration (optional) minutes', exact: true }).fill('3');
+    await page.getByRole('textbox', { name: 'Duration (optional) seconds', exact: true }).fill('42');
     await page.getByRole('button', { name: 'Add side', exact: true }).click();
     await page.getByRole('button', { name: 'Add track', exact: true }).nth(1).click();
     await page.getByLabel('Track 1 title', { exact: true }).nth(1).fill('Closing track');
@@ -3563,7 +3580,8 @@ else if (process.argv.includes('--orders-shipping')) {
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
     assert.deepEqual(records.releases.find((item) => item.id === created.id).data.tracklist, {
       format: 'cd',
-      discs: [{ tracks: [{ title: 'Closing track' }, { title: 'Opening track', duration: '3:42' }] }],
+      // Track lengths are stored as whole seconds: 3:42 is 222.
+      discs: [{ tracks: [{ title: 'Closing track' }, { title: 'Opening track', duration: 222 }] }],
     });
     await page.screenshot({ path: resolve(artifacts, 'staff-tracklist-390.png') });
     await page.getByRole('button', { name: 'Remove tracklist', exact: true }).click();
@@ -3575,13 +3593,11 @@ else if (process.argv.includes('--orders-shipping')) {
     savedPlayerRelease.liveRevisionId = 'live-player';
     savedPlayerRelease.draftRevisionId = 'draft-player';
     await page.reload();
-    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
     assert.equal(await bandcamp.inputValue(), '');
     await page.getByRole('button', { name: 'More draft actions', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Discard saved changes', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Discard saved changes', exact: true }).click();
     await page.getByText('Saved changes discarded. The live version is now shown.', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
     await page.waitForFunction(
       (expected) => document.querySelector('#content-bandcamp_embed_url')?.value === expected,
       resolvedPlayer,

@@ -1232,6 +1232,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           value={/^\d+$/.test(changeDelta) ? Number(changeDelta) : null}
                           min={1}
                           onChange={(count) => setChangeDelta(String(count))}
+                          onClear={() => setChangeDelta('')}
                         />
                         <label htmlFor="stock-change-reason" className="flex items-center gap-2">
                           <Tag className="size-4 text-muted-foreground" aria-hidden="true" />

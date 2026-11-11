@@ -93,6 +93,21 @@ test('a date reads back as a day in words, with a Today shortcut', () => {
   expect(todayIsoDate(new Date(2026, 11, 5, 23, 30))).toBe('2026-12-05');
 });
 
+test('emptying a stepper reports a cleared entry instead of keeping the last number', () => {
+  const onChange = vi.fn();
+  const onClear = vi.fn();
+  render(<CountStepper id="delta" label="copies" value={2} min={1} onChange={onChange} onClear={onClear} />);
+  input('delta').onChange!({ target: { value: '' } });
+  expect(onClear).toHaveBeenCalledOnce();
+  expect(onChange).not.toHaveBeenCalled();
+});
+
+test('a required date never blocks the form natively, since a closed card cannot show the browser prompt', () => {
+  const markup = render(<DateField path="checked_on" label="Checked on" value="" onChange={vi.fn()} />);
+  expect(markup).toContain('aria-required="true"');
+  expect(markup).not.toMatch(/<input[^>]*\srequired=""/);
+});
+
 test('service links check the host and name the recognised service', () => {
   const wrongHost = readServiceLink('facebook', 'https://www.instagram.com/blackbox', '');
   expect(wrongHost.ok).toBe(false);

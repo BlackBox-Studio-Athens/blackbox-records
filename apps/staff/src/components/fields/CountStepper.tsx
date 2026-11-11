@@ -20,6 +20,7 @@ export default function CountStepper({
   invalid = false,
   describedBy,
   onChange,
+  onClear,
 }: {
   id: string;
   /** Names the number for the − and + buttons, for example "hour". */
@@ -39,6 +40,8 @@ export default function CountStepper({
   invalid?: boolean;
   describedBy?: string;
   onChange(value: number): void;
+  /** Called when the person empties the field; without it an emptied field keeps the last number. */
+  onClear?(): void;
 }) {
   const show = (count: number | null) => (count === null ? '' : String(count).padStart(pad, '0'));
   const [text, setText] = useState(() => show(value));
@@ -88,6 +91,7 @@ export default function CountStepper({
             emptied.current = digits === '';
             setText(digits);
             if (digits) store(Number(digits));
+            else onClear?.();
           }}
           onBlur={() => setText(show(value))}
         />
