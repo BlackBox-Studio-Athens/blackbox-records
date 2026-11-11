@@ -41,17 +41,18 @@ export function convertTypedValues(collection: string, input: Record<string, unk
     problems.push('url');
   if (collection === 'distro' && data.group !== undefined && data.group !== null) {
     if (!DISTRO_GROUP_VALUES.includes(data.group as (typeof DISTRO_GROUP_VALUES)[number])) problems.push('group');
+    // EmDash publishes only the revision's keys, so `group` is written as null to clear the old column.
+    else if (typeof data.format_override === 'string') data.group = null;
     else {
       const legacyLabel = data.format;
       if (legacyLabel !== undefined && legacyLabel !== null && typeof legacyLabel !== 'string') problems.push('format');
       else {
         data.format = data.group;
         data.format_override = legacyLabel ?? '';
-        delete data.group;
+        data.group = null;
       }
     }
   }
-  if (collection === 'distro' && data.group === null) delete data.group;
   if (
     collection === 'distro' &&
     (data.group === undefined || data.group === null) &&
@@ -111,7 +112,11 @@ export function readTypedValues(collection: string, data: Record<string, unknown
       : result.data;
   if (collection === 'artists') return { ...data, country: converted.country };
   if (collection === 'releases') return { ...data, tracklist: converted.tracklist };
-  if (collection === 'distro') return converted;
+  if (collection === 'distro') {
+    // Readers drop the cleared legacy column; writers keep `group: null` so EmDash clears it.
+    const { group, ...rest } = converted;
+    return group === null ? rest : converted;
+  }
   return data;
 }
 
@@ -124,7 +129,8 @@ export function projectDistroValues(data: Record<string, unknown>) {
   return {
     ...typed,
     group,
-    format: typed.format_override ?? fallback,
+    // An empty override means no display label.
+    format: typed.format_override || fallback,
     ...(tracklist && typeof tracklist === 'object'
       ? { tracklist: { ...tracklist, format: tracklistFormat(String(group ?? '')) } }
       : {}),

@@ -1,4 +1,4 @@
-import { changedPublicationFields, type PublicationReview } from '@blackbox/content-model';
+import { changedPublicationFields, parseEuroAmount, type PublicationReview } from '@blackbox/content-model';
 import {
   editorialRequest,
   type DraftPrice,
@@ -72,8 +72,11 @@ export function euroMinor(value: string): number {
   return amount;
 }
 
-// Every prefix of an amount euroMinor accepts, so typing can only move towards a legal price.
-export const isEuroDraft = (value: string) => /^\d{0,6}(?:[.,]\d{0,2})?$/.test(value);
+/** Amount text as cents for MoneyInput. Empty or unreadable text is no amount; euroMinor checks the range on save. */
+export function centsOf(text: string): number | null {
+  const parsed = parseEuroAmount(text);
+  return parsed.ok ? parsed.value : null;
+}
 
 export const formatEuro = (minor: number) => `€${(minor / 100).toFixed(2)}`;
 export const priceAmount = (price: DraftPrice) =>

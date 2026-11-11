@@ -219,12 +219,10 @@ test('Catalog number takes digits only behind a fixed BBR# prefix and stores the
   const field = () => controls.inputs.find((input) => input['data-content-path'] === 'catalog_number')!;
   expect(field()['aria-required']).toBe(true);
   expect(field().inputMode).toBe('numeric');
+  // Parsing rules live in catalog-number.test.ts; these rows check the editor's wiring only.
   for (const [typed, shown, stored, valid] of [
     ['bbr #4', '004', 'BBR#004', true],
-    ['12', '012', 'BBR#012', true],
-    ['1000', '1000', 'BBR#1000', true],
     ['0', '0', 'BBR#0', false],
-    ['000', '000', 'BBR#000', false],
     ['', '', '', false],
   ] as const) {
     field().onChange!({ target: { value: typed } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
@@ -473,17 +471,14 @@ function renderCondition(collection: 'releases' | 'distro', initial: Record<stri
     );
   };
   const markup = render();
-  const select = () => controls.selects.find((props) => props['data-content-path'] === 'product_condition')!;
   const segment = () => controls.segments.find((props) => props.path === 'product_condition')!;
-  const choose = (value: string) =>
-    select().onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'select'>['onChange']>>[0]);
-  return { markup, data: () => data, select, segment, choose, render };
+  return { markup, data: () => data, segment, render };
 }
 const conditionError = 'Choose New or Used for this physical product before publishing.';
 
 test.each([
   ['releases', { title: 'Record', formats: ['Vinyl 12-inch'] }],
-  ['distro', { title: 'Tape', group: 'Tapes' }],
+  ['distro', { title: 'Tape', format: 'Tapes' }],
 ] as const)('%s physical condition starts unchosen, required, and never defaults to New', (collection, record) => {
   const view = renderCondition(collection, record);
   expect(view.segment()).toMatchObject({ label: 'Physical condition', value: undefined });
@@ -499,7 +494,7 @@ test.each([
 
 test.each(['new', 'used'] as const)('existing %s condition stays selected and publishable', (condition) => {
   for (const collection of ['releases', 'distro'] as const) {
-    const record = { title: 'Record', formats: ['Cassette'], group: 'Tapes', product_condition: condition };
+    const record = { title: 'Record', formats: ['Cassette'], format: 'Tapes', product_condition: condition };
     const view = renderCondition(collection, record, 1);
     expect(view.segment().value).toBe(condition);
     expect(view.markup).not.toContain(conditionError);
@@ -524,9 +519,7 @@ test('a release offers a named Show on Home switch that is off until staff turn 
   expect(off).toContain('aria-labelledby="content-show_on_home-label"');
   expect(off).not.toContain('checked');
   expect(switchOf({ title: 'Record', show_on_home: true })).toContain('checked');
-  expect(switchOf({ title: 'Record', show_on_home: 1 })).toContain('checked');
-  expect(switchOf({ title: 'Record', show_on_home: 0 })).not.toContain('checked');
-  expect(renderCondition('distro', { title: 'Tape', group: 'Tapes' }).markup).not.toContain('Show on Home');
+  expect(renderCondition('distro', { title: 'Tape', format: 'Tapes' }).markup).not.toContain('Show on Home');
 });
 
 test('an open pre-order shows the Show on Home switch on and locked, with the explanation', () => {

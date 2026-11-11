@@ -92,6 +92,8 @@ import {
 } from '../../lib/backend/editorial-api';
 
 // Loaded on demand: the reader brings the content schemas, which the overview does not need.
+// Records saved before the typed-value migration still store the Distro format as `group`.
+const distroGroup = (data: ContentData) => data.group || data.format;
 const typedValues = (collection: string, data: ContentData) =>
   import('./typed-values').then(({ editorData }) => editorData(collection, data));
 
@@ -773,9 +775,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         collection,
       };
       const nextDocument = { ...loaded, item: nextItem };
+      const typed = await typedValues(collection, loaded.item.data);
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
-      setData(await typedValues(collection, loaded.item.data));
+      setData(typed);
       setEditorReset((value) => value + 1);
       if (!['releases', 'distro'].includes(collection)) setItemTab('details');
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
@@ -1439,9 +1442,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             })()}
                             <span className="min-w-0 break-words">
                               {String(item.data.title ?? item.data.label_name ?? contentSections[collection])}
-                              {typeof item.data.group === 'string' && (
+                              {typeof distroGroup(item.data) === 'string' && (
                                 <span className="block text-sm text-muted-foreground">
-                                  {formatLabel(item.data.group)}
+                                  {formatLabel(String(distroGroup(item.data)))}
                                 </span>
                               )}
                               {(item.artistTitle || typeof item.data.artist_or_label === 'string') && (
@@ -1475,7 +1478,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   ·{' '}
                                   {item.selling.onlineQuantity === null
                                     ? 'Online quantity unavailable'
-                                    : `${item.selling.onlineQuantity} ${item.data.group === 'Clothes' ? 'units' : 'copies'} available to buy online`}
+                                    : `${item.selling.onlineQuantity} ${distroGroup(item.data) === 'Clothes' ? 'units' : 'copies'} available to buy online`}
                                 </>
                               )}
                             </span>

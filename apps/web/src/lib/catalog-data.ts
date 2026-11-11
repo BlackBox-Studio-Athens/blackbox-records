@@ -273,7 +273,7 @@ export async function listStoreItems(): Promise<StoreItem[]> {
       physicalEditionKeys: [
         createPhysicalEditionKey({
           artist: storeItem.subtitle,
-          itemType: distroEntries[index]?.data.format ?? distroEntries[index]?.data.group ?? '',
+          itemType: distroEntries[index]?.data.format || distroEntries[index]?.data.group || '',
           title: storeItem.title,
         }),
       ],

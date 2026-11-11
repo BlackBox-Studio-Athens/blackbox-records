@@ -152,6 +152,8 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       ? selectedStockDetail.stock.quantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)
       : null;
   const adjustmentInvalid = adjustmentQuantity !== null && adjustmentQuantity < 0;
+  // The stock API rejects a zero change, so an empty count cannot be submitted.
+  const hasChange = /^[1-9]\d*$/.test(changeDelta);
 
   async function searchVariants(nextQuery = query) {
     const requestId = ++searchRequest.current;
@@ -562,7 +564,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   async function handleStockChange(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!canMutateSelectedStock || isSubmitting || changeUnconfirmed) {
+    if (!canMutateSelectedStock || isSubmitting || changeUnconfirmed || !hasChange) {
       return;
     }
 
@@ -1295,7 +1297,13 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           </Button>
                         )}
                         <Button
-                          disabled={!canMutateSelectedStock || isSubmitting || adjustmentInvalid || changeUnconfirmed}
+                          disabled={
+                            !canMutateSelectedStock ||
+                            isSubmitting ||
+                            !hasChange ||
+                            adjustmentInvalid ||
+                            changeUnconfirmed
+                          }
                           type="submit"
                         >
                           {submittingIntent === 'stockChange' ? (

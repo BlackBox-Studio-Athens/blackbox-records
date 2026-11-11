@@ -2,11 +2,11 @@ import TracklistFields from './TracklistFields';
 import LineupFields, { type LineupEntry } from './LineupFields';
 import BandcampField from './BandcampField';
 import CountryPicker from './CountryPicker';
+import { draftDistroTracklist } from './collection-cards';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
 import {
   formatArtistCountries,
   parseArtistCountries,
-  readDistroTracklist,
   requiresProductCondition,
   slugify,
   tracklistFormat,
@@ -98,6 +98,7 @@ const statLabels: Record<AboutStatKey, string> = {
   year: 'Years active',
 };
 const unchanged = (text: string) => text;
+
 const defaultFormats = ['Vinyl', 'CD', 'Cassette', 'Digital'];
 const defaultContactLabels = ['General', 'Demo Submissions', 'Press', 'Tour Booking'];
 const artistLinkService: Record<string, LinkService> = {
@@ -940,7 +941,7 @@ export default function ContentFields({
               path="show_on_home"
               label="Show on Home"
               // EmDash returns its native boolean as 1 once saved.
-              checked={openPreorder || data.show_on_home === true || data.show_on_home === 1}
+              checked={openPreorder || data.show_on_home === true}
               disabled={disabled || openPreorder}
               description={
                 openPreorder
@@ -970,6 +971,7 @@ export default function ContentFields({
                 id="content-releases_priority"
                 path="releases_priority"
                 label="position"
+                inputLabel="Position on Releases"
                 value={priority}
                 min={1}
                 max={99}
@@ -1235,7 +1237,7 @@ export default function ContentFields({
         <TracklistFields
           disabled={disabled}
           lockFormat
-          value={readDistroTracklist(data.tracklist, format)}
+          value={draftDistroTracklist(data.tracklist, format)}
           formatHint={tracklistFormat(format)}
           onChange={(next) => {
             // Distro stores only sides or discs; the item format gives the tracklist format.
@@ -1446,7 +1448,7 @@ export default function ContentFields({
             onLabel="Shown"
             offLabel="Hidden"
             description="The top of the site and the phone Menu."
-            checked={value('show_in_header') === true || value('show_in_header') === 1}
+            checked={value('show_in_header') === true}
             disabled={disabled}
             onChange={edit('show_in_header')}
           />
@@ -1456,7 +1458,7 @@ export default function ContentFields({
             label="Bottom of the site"
             onLabel="Shown"
             offLabel="Hidden"
-            checked={value('show_in_footer') === true || value('show_in_footer') === 1}
+            checked={value('show_in_footer') === true}
             disabled={disabled}
             onChange={edit('show_in_footer')}
           />

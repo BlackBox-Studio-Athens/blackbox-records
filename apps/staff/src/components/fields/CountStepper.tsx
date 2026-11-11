@@ -8,6 +8,7 @@ import { clampCount } from './field-values';
 export default function CountStepper({
   id,
   label,
+  inputLabel,
   value,
   min = 0,
   max = Number.MAX_SAFE_INTEGER,
@@ -23,6 +24,8 @@ export default function CountStepper({
   id: string;
   /** Names the number for the − and + buttons, for example "hour". */
   label: string;
+  /** Accessible name for the number when no visible label points at `id`. */
+  inputLabel?: string;
   value: number | null;
   min?: number;
   max?: number | undefined;
@@ -75,6 +78,7 @@ export default function CountStepper({
           inputMode="numeric"
           autoComplete="off"
           className="h-auto w-12 rounded-none border-0 border-x border-input text-center text-base tabular-nums shadow-none focus-visible:ring-inset"
+          aria-label={inputLabel}
           value={text}
           disabled={disabled}
           aria-invalid={invalid || undefined}

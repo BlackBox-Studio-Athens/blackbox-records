@@ -1,5 +1,11 @@
 import { expect, test } from 'vitest';
-import { newsCardSummaries, releaseCardSummaries, safetySummary } from './collection-cards';
+import { draftDistroTracklist, newsCardSummaries, releaseCardSummaries, safetySummary } from './collection-cards';
+
+test('a Distro tracklist keeps an unfinished track while staff type it', () => {
+  const sides = [{ label: 'A', tracks: [{ title: '' }] }];
+  expect(draftDistroTracklist({ sides }, 'Tapes')).toEqual({ format: 'cassette', sides });
+  expect(draftDistroTracklist({ sides }, 'CDs')).toBeNull();
+});
 
 test('release summaries read the stored values in plain language', () => {
   const summaries = releaseCardSummaries(
@@ -18,7 +24,7 @@ test('release summaries read the stored values in plain language', () => {
       tracklist: { format: 'vinyl', sides: [{ label: 'A', tracks: [{ title: 'One' }, { title: 'Two' }] }] },
       credits: [{}],
       summary: 'Short',
-      show_on_home: 1,
+      show_on_home: true,
       releases_priority: 2,
       product_safety: { review_status: 'verified' },
     },

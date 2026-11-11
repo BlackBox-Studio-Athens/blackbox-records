@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseDuration, type DurationSeconds } from './values';
+import type { DurationSeconds } from './values';
 
 export const TRACK_SIDE_LABELS = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] as [string, ...string[]];
 export const trackSchema = z
@@ -40,11 +40,6 @@ export const distroTracklistSchema = z
     });
   });
 
-/** Read a legacy duration without changing stored content. */
-export function readDuration(value: unknown): DurationSeconds | null {
-  if (typeof value === 'string') return parseDuration(value);
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? (value as DurationSeconds) : null;
-}
 export const tracklistSchema = z
   .discriminatedUnion('format', [
     z.object({ format: z.literal('vinyl'), sides: z.array(trackSideSchema).max(26) }).strict(),

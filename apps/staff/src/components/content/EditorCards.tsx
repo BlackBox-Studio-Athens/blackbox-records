@@ -3,6 +3,7 @@ import { DraftProblemContext } from '../fields/draft-problems';
 import { Check, ChevronDown, Minus } from 'lucide-react';
 import type { ContentValidation } from '../publication/content-validation';
 import { cn } from '../ui/utils';
+import { at } from './collection-cards';
 
 export type CardState = 'done' | 'missing' | 'optional' | 'problem';
 
@@ -23,16 +24,6 @@ const stateText: Record<CardState, string> = {
   problem: 'Needs attention',
 };
 
-function valueAt(data: Record<string, unknown>, path: string): unknown {
-  return path
-    .split('.')
-    .reduce<unknown>(
-      (current, key) =>
-        current && typeof current === 'object' ? (current as Record<string, unknown>)[key] : undefined,
-      data,
-    );
-}
-
 const isEmpty = (value: unknown) =>
   value === undefined ||
   value === null ||
@@ -49,7 +40,7 @@ export function cardState(
   data: Record<string, unknown>,
   validation: Pick<ContentValidation, 'byPath'>,
 ): CardState {
-  const filled = paths.some((path) => !isEmpty(valueAt(data, path)));
+  const filled = paths.some((path) => !isEmpty(at(data, path)));
   const failing = Object.keys(validation.byPath).some((key) =>
     paths.some((path) => key === path || key.startsWith(`${path}.`)),
   );

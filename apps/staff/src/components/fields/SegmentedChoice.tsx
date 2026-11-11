@@ -10,6 +10,8 @@ export default function SegmentedChoice<T extends string>({
   onChange,
   path,
   disabled = false,
+  invalid = false,
+  describedBy,
   className,
 }: {
   label: string;
@@ -18,6 +20,9 @@ export default function SegmentedChoice<T extends string>({
   onChange(value: T): void;
   path?: string;
   disabled?: boolean;
+  invalid?: boolean;
+  /** Ids of the hint and error that explain this choice. */
+  describedBy?: string | undefined;
   className?: string;
 }) {
   const id = useId();
@@ -29,6 +34,8 @@ export default function SegmentedChoice<T extends string>({
       <ToggleGroup
         type="single"
         aria-labelledby={`${id}-label`}
+        aria-describedby={describedBy}
+        aria-invalid={invalid || undefined}
         value={value ?? ''}
         disabled={disabled}
         // Radix lets a second press clear the choice; keep the current value instead.

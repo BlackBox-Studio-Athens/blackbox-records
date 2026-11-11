@@ -2,7 +2,6 @@ import {
   BandcampRecording,
   getCmsContentIssues,
   getPublicationProductConditionIssues,
-  readEditorialBooleans,
   type CmsCollection,
   type CmsContentIssue,
 } from '@blackbox/content-model';
@@ -21,7 +20,7 @@ function contentPath(path: string | Array<string | number>): string {
 
 export function getContentValidation(collection: CmsCollection, data: Record<string, unknown>): ContentValidation {
   const issues = [
-    ...getCmsContentIssues(collection, readEditorialBooleans(collection, editorialWriteData(data))).map((issue) => ({
+    ...getCmsContentIssues(collection, editorialWriteData(data)).map((issue) => ({
       ...issue,
       path: issue.path.map((part) => (typeof part === 'string' ? part.replace(/_rich$/, '') : part)),
     })),

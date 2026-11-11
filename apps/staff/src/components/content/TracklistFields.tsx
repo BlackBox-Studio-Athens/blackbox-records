@@ -118,7 +118,7 @@ export default function TracklistFields({
               {group.tracks.map((track, trackIndex) => (
                 <div
                   key={trackIndex}
-                  className="grid min-w-0 gap-3 border-t border-border py-3 sm:grid-cols-[minmax(0,1fr)_8rem]"
+                  className="grid min-w-0 gap-3 border-t border-border py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
                 >
                   <Field>
                     <FieldLabel htmlFor={`track-${groupIndex}-${trackIndex}`} required icon={Type}>

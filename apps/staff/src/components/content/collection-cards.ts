@@ -1,4 +1,10 @@
-import { formatArtistCountries, formatDayDate, parseIsoDate, type Tracklist } from '@blackbox/content-model';
+import {
+  formatArtistCountries,
+  formatDayDate,
+  parseIsoDate,
+  tracklistFormat,
+  type Tracklist,
+} from '@blackbox/content-model';
 import type { ContentData } from '../../lib/content-sections';
 
 type CardConfig<Id extends string> = readonly { id: Id; title: string; paths: readonly string[] }[];
@@ -60,6 +66,15 @@ const hasImage = (value: unknown) => !!(value as { id?: string } | null | undefi
 const truthy = (value: unknown) => value === true || value === 1;
 const hasBody = (value: unknown) => list(value).length > 0;
 
+/** The stored Distro tracklist while it is edited: unfinished tracks, such as a new blank title, must stay. */
+export function draftDistroTracklist(stored: unknown, format: string): Tracklist | null {
+  const type = tracklistFormat(format);
+  if (!type || !stored || typeof stored !== 'object') return null;
+  const groups = type === 'cd' ? (stored as { discs?: unknown }).discs : (stored as { sides?: unknown }).sides;
+  if (!Array.isArray(groups)) return null;
+  return (type === 'cd' ? { format: type, discs: groups } : { format: type, sides: groups }) as Tracklist;
+}
+
 // Distro tracklists store sides or discs without a format, so count by shape.
 function trackCount(tracklist: unknown) {
   if (!tracklist || typeof tracklist !== 'object') return 0;
@@ -118,9 +133,7 @@ export function releaseCardSummaries(
           .filter(Boolean)
           .join(' · ')
       : 'Title missing',
-    artwork: hasImage(data.cover_image)
-      ? imageSummary(data.cover_image, data.cover_image_alt, list(data.gallery).length).replace('Image', 'Cover')
-      : 'Cover missing',
+    artwork: imageSummary(data.cover_image, data.cover_image_alt, list(data.gallery).length).replace('Image', 'Cover'),
     formats: formats.length ? [formats.join(', '), condition].filter(Boolean).join(' · ') : 'No formats yet',
     listening: listening.length ? listening.join(', ') : 'No listening links',
     tracklist: tracks
@@ -129,7 +142,7 @@ export function releaseCardSummaries(
     credits: credits ? count(credits, 'credit') : 'No credits',
     text: textSummary(data),
     home: [
-      truthy(data.show_on_home) ? 'On Home' : 'Not on Home',
+      data.show_on_home === true ? 'On Home' : 'Not on Home',
       priority === null ? 'automatic order' : `order ${priority}`,
     ].join(' · '),
     safety: safetySummary(data.product_safety),
@@ -172,12 +185,7 @@ export function artistCardSummaries(data: ContentData): Record<ArtistCardId, str
   const country = Array.isArray(data.country) ? formatArtistCountries(data.country) : text(data.country);
   return {
     basics: text(data.title)
-      ? [
-          text(data.title),
-          text(data.genre),
-          country,
-          data.is_active === false || data.is_active === 0 ? 'inactive' : '',
-        ]
+      ? [text(data.title), text(data.genre), country, data.is_active === false ? 'inactive' : '']
           .filter(Boolean)
           .join(' · ')
       : 'Name missing',
@@ -207,7 +215,7 @@ export function newsCardSummaries(
   };
 }
 
-const at = (data: ContentData, path: string): unknown =>
+export const at = (data: ContentData, path: string): unknown =>
   path
     .split('.')
     .reduce<unknown>(

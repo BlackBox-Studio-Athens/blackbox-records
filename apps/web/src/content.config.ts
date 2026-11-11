@@ -79,9 +79,10 @@ const distro = defineCollection({
       .transform((data) => ({
         ...data,
         ...projectDistroValues(data),
+        // Restated with their schema types; projectDistroValues returns untyped values.
         group: data.format,
         format:
-          data.format_override ?? (data.format === 'CDs' ? 'CD' : data.format === 'Tapes' ? 'Cassette' : data.format),
+          data.format_override || (data.format === 'CDs' ? 'CD' : data.format === 'Tapes' ? 'Cassette' : data.format),
         tracklist: readDistroTracklist(data.tracklist, data.format),
       })),
 });

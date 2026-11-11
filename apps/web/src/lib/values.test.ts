@@ -171,6 +171,7 @@ describe('shared editorial values', () => {
     const converted = convertTypedValues('distro', old);
     expect(converted).toEqual({
       data: {
+        group: null,
         format: 'CDs',
         format_override: 'CD',
         tracklist: { discs: [{ tracks: [{ title: 'Song', duration: 272 }] }] },
@@ -178,6 +179,12 @@ describe('shared editorial values', () => {
       problems: [],
     });
     expect(convertTypedValues('distro', converted.data)).toEqual(converted);
+    // A published typed record still reads its old `group` column; only the column is cleared.
+    expect(convertTypedValues('distro', { group: 'CDs', format: 'CDs', format_override: 'CD' }).data).toEqual({
+      group: null,
+      format: 'CDs',
+      format_override: 'CD',
+    });
     const mismatched = { group: 'CDs', format: 'CD', tracklist: { format: 'vinyl', sides: [] } };
     expect(convertTypedValues('distro', mismatched)).toEqual({ data: mismatched, problems: ['tracklist.format'] });
     const invalidDuration = {
@@ -205,6 +212,7 @@ describe('shared editorial values', () => {
     const typed = { format: 'CDs', format_override: 'CD' };
     expect(projectDistroValues(old)).toMatchObject({ group: 'CDs', format: 'CD' });
     expect(projectDistroValues(typed)).toMatchObject({ group: 'CDs', format: 'CD' });
+    expect(projectDistroValues(convertTypedValues('distro', { group: 'CDs' }).data)).toMatchObject({ format: 'CD' });
     expect(readTypedValues('artists', { country: 'Greece / Cyprus' }).country).toEqual(['GR', 'CY']);
     expect(readTypedValues('artists', { country: ['GR', 'CY'] }).country).toEqual(['GR', 'CY']);
   });

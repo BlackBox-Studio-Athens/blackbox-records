@@ -9,7 +9,6 @@ import {
   parseCatalogNumber,
   proseBlocks,
   proseText,
-  readTypedValues,
   requiresProductCondition,
   resolveProse,
   type Prose,
@@ -40,7 +39,7 @@ import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import ProductSafetyFields from './ProductSafetyFields';
-import { euroMinor } from '../../lib/item-commerce';
+import { centsOf, euroMinor } from '../../lib/item-commerce';
 import CatalogNumberField from './CatalogNumberField';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
@@ -54,16 +53,8 @@ import {
 } from '../../lib/backend/editorial-api';
 
 // Distro items saved before the typed-value migration still store the format as `group`.
-const distroFormat = (data: Record<string, unknown>) => readTypedValues('distro', data).format;
+const distroFormat = (data: Record<string, unknown>) => data.group || data.format;
 
-/** The stored setup amount as cents for MoneyInput; unreadable or empty text reads as no amount. */
-function centsOf(text: string): number | null {
-  try {
-    return text ? euroMinor(text) : null;
-  } catch {
-    return null;
-  }
-}
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 const maxOpeningStock = 2_147_483_647; // Matches the item setup API bound.
 

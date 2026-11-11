@@ -3,7 +3,7 @@ import type { PublicationReview } from '@blackbox/content-model';
 import {
   applyPriceDraft,
   euroMinor,
-  isEuroDraft,
+  centsOf,
   itemPublicationCommerce,
   planItemPublication,
   PriceConflictError,
@@ -238,6 +238,6 @@ test('a retained operation stops with the server reason instead of pointing at a
 });
 
 test('accepts only keystrokes that can still become a valid EUR amount', () => {
-  for (const draft of ['', '2', '25,', '25.5', '999999.99']) expect(isEuroDraft(draft)).toBe(true);
-  for (const draft of ['-1', '25,555', '1.2.3', '1000000', '25 €', 'abc']) expect(isEuroDraft(draft)).toBe(false);
+  // Amounts beyond the price range stay readable, so MoneyInput keeps showing them.
+  expect([centsOf(''), centsOf('12,5'), centsOf('1234567.00'), centsOf('abc')]).toEqual([null, 1250, 123456700, null]);
 });

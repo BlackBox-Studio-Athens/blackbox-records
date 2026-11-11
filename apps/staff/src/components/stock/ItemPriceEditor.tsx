@@ -6,18 +6,10 @@ import { Button } from '../ui/button';
 import { EditorialApiError } from '../../lib/backend/editorial-api';
 import { createInternalStockApi, type CatalogSellingDetail } from '../../lib/backend/internal-stock-api';
 import MoneyInput, { euroText } from '../fields/MoneyInput';
-
-/** The editor's amount text as cents for MoneyInput; unreadable or empty text reads as no amount. */
-function centsOf(text: string): number | null {
-  try {
-    return text ? euroMinor(text) : null;
-  } catch {
-    return null;
-  }
-}
 import {
   clearPriceDraft,
   describePrice,
+  centsOf,
   euroMinor,
   priceAmount,
   readPriceDraft,

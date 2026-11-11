@@ -290,6 +290,8 @@ export default function ProductSafetyFields({
             value={stored || undefined}
             options={spec.options!.map(([option, label]) => ({ value: option, label }))}
             disabled={disabled}
+            invalid={errors.length > 0}
+            describedBy={props['aria-describedby']}
             onChange={(next) => {
               markTouched();
               update(path, next);
@@ -331,7 +333,7 @@ export default function ProductSafetyFields({
         ) : spec.kind === 'textarea' ? (
           <Textarea {...props} lang={spec.lang} className="min-h-11 w-full min-w-0" rows={3} />
         ) : (
-          <Input {...props} type={spec.kind === 'date' ? 'date' : 'text'} className="min-h-11 w-full min-w-0" />
+          <Input {...props} type="text" className="min-h-11 w-full min-w-0" />
         )}
         {spec.hint && <FieldDescription id={hintId}>{spec.hint}</FieldDescription>}
         <FieldError id={errorId}>{errors.join(' ')}</FieldError>
