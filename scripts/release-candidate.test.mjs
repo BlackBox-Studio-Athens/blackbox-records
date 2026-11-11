@@ -26,15 +26,7 @@ const run = {
   repository: { full_name: repository },
   head_repository: { full_name: repository },
 };
-const jobs = [
-  'e2e (1)',
-  'e2e (2)',
-  'e2e (3)',
-  'e2e (4)',
-  'staff-previews (chromium)',
-  'staff-previews (firefox)',
-  'deploy-uat',
-].map((name) => ({ name, conclusion: 'success' }));
+const jobs = ['e2e', 'staff-previews', 'deploy-uat'].map((name) => ({ name, conclusion: 'success' }));
 
 test('post-deployment propagation checks retry within a fixed attempt budget', async () => {
   let attempts = 0;
@@ -74,7 +66,7 @@ test('only a successful push run of this workflow on main with the selected SHA 
 
 test('a candidate run must have passed the browser suites and the UAT deploy', () => {
   validateSuites(jobs);
-  for (const name of ['e2e (4)', 'staff-previews (chromium)', 'staff-previews (firefox)', 'deploy-uat']) {
+  for (const name of ['e2e', 'staff-previews', 'deploy-uat']) {
     assert.throws(
       () => validateSuites(jobs.filter((job) => job.name !== name)),
       new RegExp(name.replace(/[()]/g, '\\$&')),
@@ -115,7 +107,7 @@ test('promotion resolves only what UAT serves and proves it before any candidate
   await assert.rejects(resolveCandidate(io({ compare: { status: 'diverged' } })), /trusted main history/);
   await assert.rejects(resolveCandidate(io({ run: { run_number: 11 } })), /differs from its run/);
   await assert.rejects(resolveCandidate(io({ run: { conclusion: 'failure' } })), /acceptance failed/);
-  await assert.rejects(resolveCandidate(io({ jobs: jobs.slice(1) })), /e2e \(1\)/);
+  await assert.rejects(resolveCandidate(io({ jobs: jobs.slice(1) })), /passed e2e job/);
 });
 
 test('a target never moves to an older candidate, and the Worker must serve the selected release', () => {

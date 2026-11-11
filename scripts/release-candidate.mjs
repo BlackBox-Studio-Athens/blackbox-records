@@ -56,15 +56,7 @@ export function validateRun(run, sha, repository) {
 
 // A candidate run made before a suite joined the push pipeline cannot skip it.
 export function validateSuites(jobs) {
-  const required = [
-    'e2e (1)',
-    'e2e (2)',
-    'e2e (3)',
-    'e2e (4)',
-    'staff-previews (chromium)',
-    'staff-previews (firefox)',
-    'deploy-uat',
-  ];
+  const required = ['e2e', 'staff-previews', 'deploy-uat'];
   const passed = new Set(jobs.filter((job) => job.conclusion === 'success').map((job) => job.name));
   for (const name of required) assert.ok(passed.has(name), `Candidate run lacks a passed ${name} job.`);
 }

@@ -711,7 +711,7 @@ CI/deploy credentials and public build variables:
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
 - The unused-code report runs in its own weekly or manual workflow and does not gate a release.
-- Builds are content-free: they restore no CMS snapshot, media or secret, and the renderer reads each environment's accepted snapshot from R2 at runtime. The UAT build and the checks run in parallel; `deploy-uat` waits for both, while the e2e shards and the staff previews run beside it and gate promotion.
+- Builds are content-free: they restore no CMS snapshot, media or secret, and the renderer reads each environment's accepted snapshot from R2 at runtime. The UAT build and the checks run in parallel; `deploy-uat` waits for both, while the e2e journey gate and the staff previews run beside it and gate promotion.
 - A failed build, e2e suite or staff preview blocks UAT deployment. If deployment or the static smoke fails, inspect the workflow summary and uploaded smoke evidence before retrying; immediate monotonic run-number checks reject late older candidates.
 - Cloudflare Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 

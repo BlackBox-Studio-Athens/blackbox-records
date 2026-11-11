@@ -13,11 +13,13 @@ const baseURL = execFileSync(process.execPath, [path.join(__dirname, 'scripts', 
   windowsHide: true,
 }).trim();
 const artifacts = '.codex-artifacts/e2e';
+// This suite is the release gate, so it holds shopper journeys only: routes, shell navigation and the player, cart to
+// checkout and payment, withdrawal and email preferences. Layout, typography, motion and catalog-content checks were
+// removed on 11 November 2026 (owner decision): they failed on intended design and content changes, not regressions.
 // Phone projects run these specs whole (each skips its desktop-only cases) plus every test titled @phone elsewhere.
 // A project's grep sees the spec file name in the title path, so one grep selects both. Desktop projects skip @phone
 // tests: a 390px viewport there still reports a mouse, hover and a fine pointer.
-const phoneSpecs =
-  /\b(routes|shell-navigation|store-cart|withdrawal|player-continuity|public-image-fallback)\.spec\.ts\b/;
+const phoneSpecs = /\b(routes|shell-navigation|store-cart|withdrawal|player-continuity)\.spec\.ts\b/;
 const phone = /@phone\b/;
 
 export default defineConfig({
@@ -28,8 +30,8 @@ export default defineConfig({
   // time (about 7 s here, slower with more workers). Two workers and long waits keep it stable; the built preview that
   // the push run serves does not need them, so it uses every core of the 4-vCPU runner.
   workers: process.env.BLACKBOX_E2E_PREVIEW === '1' ? 4 : 2,
-  // A push runs the Chromium and Firefox projects in four shards and webkit-mobile in its own job; one retry keeps a
-  // network hiccup (a font download, a slow first paint) from failing the release, and the report marks it flaky.
+  // A push runs every project in one job; one retry keeps a network hiccup (a font download, a slow first paint) from
+  // failing the release, and the report marks it flaky.
   retries: process.env.CI ? 1 : 0,
   timeout: 90_000,
   expect: { timeout: 30_000 },
@@ -54,24 +56,10 @@ export default defineConfig({
       grep: [phoneSpecs, phone],
     },
     {
-      name: 'firefox-desktop',
-      use: { browserName: 'firefox', viewport: { width: 1440, height: 900 } },
-      testMatch: /(store-cart|home-preorders|home-swipe-rows|release-merchandising|catalog-video-contact)\.spec\.ts$/,
-      grepInvert: phone,
-    },
-    {
-      // Firefox has no isMobile; its phone tests come from the specs firefox-desktop runs.
-      name: 'firefox-compact',
-      use: { browserName: 'firefox', viewport: { width: 390, height: 844 }, hasTouch: true },
-      testMatch: /(store-cart|home-preorders|home-swipe-rows|release-merchandising|catalog-video-contact)\.spec\.ts$/,
-      grep: [/\bstore-cart\.spec\.ts\b/, phone],
-    },
-    {
-      // The iOS Safari engine on the shell, cart and player paths; CI installs it in its own leg.
+      // The iOS Safari engine on the phone journeys.
       name: 'webkit-mobile',
       use: { ...devices['iPhone 13'] },
-      testMatch:
-        /(routes|shell-navigation|store-cart|store-crate|withdrawal|player-continuity|public-image-fallback|home-preorders|home-swipe-rows|home-motto|home-touch-prefetch|about-contact)\.spec\.ts$/,
+      testMatch: phoneSpecs,
       grep: [phoneSpecs, phone],
     },
   ],

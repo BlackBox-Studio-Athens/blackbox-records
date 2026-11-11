@@ -6,63 +6,6 @@ const titles = [
 ];
 
 for (const width of [320, 390, 768, 1440]) {
-  test(`item purchase copy is compact and pre-order facts remain visible at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
-    page,
-  }, testInfo) => {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto('store/disintegration-black-vinyl-lp/');
-    await waitForShell(page);
-    const information = page.locator('[data-purchase-information]');
-    await expect(information).toHaveCount(1);
-    await expect(information).toContainText('Shipping calculated in your cart.');
-    await expect(information).toContainText('BOX NOW locker delivery within Greece.');
-    await expect(information.getByRole('link', { name: 'Delivery & returns', exact: true })).toHaveAttribute(
-      'href',
-      /\/terms\/$/,
-    );
-    await expect(information.getByRole('link')).toHaveCount(1);
-    await expect(page.locator('.preorder-facts')).toHaveCount(0);
-    await expect(
-      page.getByText('Add it to the cart to review this item before checkout.', { exact: true }),
-    ).toHaveCount(0);
-    await expectNoHorizontalOverflow(page);
-    await testInfo.attach(`stocked-item-${width}px`, {
-      body: await page.screenshot({ fullPage: true }),
-      contentType: 'image/png',
-    });
-
-    await page.route('**/api/store/items/disintegration-black-vinyl-lp', (route) =>
-      route.fulfill({
-        json: {
-          storeItemSlug: 'disintegration-black-vinyl-lp',
-          variantId: 'disintegration-black-vinyl-lp_standard',
-          availability: { label: 'Pre-order', status: 'available' },
-          canCheckout: true,
-          catalogStatus: 'ready',
-          price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
-          preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' } },
-        },
-      }),
-    );
-    await page.reload();
-    await waitForShell(page);
-    const facts = page.locator('.preorder-facts');
-    await expect(facts).toContainText('Around mid November 2026');
-    await expect(facts).toContainText('Charged in full today');
-    // The inline action; on phones the buy bar repeats it with the same name until the shopper reaches it.
-    const action = page.locator('[data-store-item-add-to-cart]');
-    await expect(action).toHaveAccessibleName('Pre-order');
-    await expect(action).toBeEnabled();
-    expect((await facts.boundingBox())!.y + (await facts.boundingBox())!.height).toBeLessThanOrEqual(
-      (await action.boundingBox())!.y,
-    );
-    await expectNoHorizontalOverflow(page);
-    await testInfo.attach(`preorder-item-${width}px`, {
-      body: await page.screenshot({ fullPage: true }),
-      contentType: 'image/png',
-    });
-  });
-
   test(`checkout item review precedes payment at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
     page,
   }, testInfo) => {

@@ -29,15 +29,7 @@ const env = {
   STRIPE_LAUNCH_KEY: 'rk_live_private_fixture',
 };
 const html = `<html><link rel="canonical" href="${apex}/"><meta property="og:url" content="${apex}/"><img src="https://images.blackboxrecordsathens.com/cdn-cgi/image/width=480/${pages}/media/content/${'e'.repeat(64)}"></html>`;
-const jobs = [
-  'e2e (1)',
-  'e2e (2)',
-  'e2e (3)',
-  'e2e (4)',
-  'staff-previews (chromium)',
-  'staff-previews (firefox)',
-  'deploy-uat',
-].map((name) => ({ name, conclusion: 'success' }));
+const jobs = ['e2e', 'staff-previews', 'deploy-uat'].map((name) => ({ name, conclusion: 'success' }));
 
 function fixture(t, options = {}) {
   const root = mkdtempSync(path.join(os.tmpdir(), 'blackbox-launch-'));

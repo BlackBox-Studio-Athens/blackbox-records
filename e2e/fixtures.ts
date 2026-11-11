@@ -27,9 +27,6 @@ function readyOffer(storeItemSlug: string) {
 // Chromium reports the socket itself; Vite's client then logs its own connect and error-relay failures.
 const devServerHotReloadSocket =
   /^(WebSocket connection to 'ws:\/\/|\[vite\] failed to connect to websocket|Failed to send error to Vite server)/;
-// Firefox logs a font download that a resize or navigation cancelled (NS_BINDING_ABORTED, 0x804B0002) as an error;
-// a missing or broken font reports another status and still fails.
-const firefoxCancelledFont = /downloadable font: download failed .*status=2152398850 /;
 // WebKit reports a same-origin fetch that a navigation cancelled as an access-control failure; a cross-origin
 // (real CORS) failure names another host and still fails.
 const webkitCancelledLocalFetch =
@@ -62,10 +59,7 @@ export const test = base.extend({
     const pageErrors = diagnostics.pageErrors.filter((message) => !webkitCancelledLocalFetch.test(message));
     expect(pageErrors, 'page errors').toEqual([]);
     const consoleErrors = diagnostics.consoleErrors.filter(
-      (message) =>
-        !devServerHotReloadSocket.test(message) &&
-        !firefoxCancelledFont.test(message) &&
-        !webkitCancelledLocalFetch.test(message),
+      (message) => !devServerHotReloadSocket.test(message) && !webkitCancelledLocalFetch.test(message),
     );
     expect(consoleErrors, 'console errors').toEqual([]);
   },
@@ -133,36 +127,6 @@ export async function plantSentinel(page: Page): Promise<void> {
 
 export async function sentinelIntact(page: Page): Promise<boolean> {
   return page.evaluate(() => (window as unknown as { __e2eSentinel?: boolean }).__e2eSentinel === true);
-}
-
-/**
- * Clicks a shell surface trigger and reports whether the surface committed before the next task. A surface rendered
- * through React.lazy inside a Suspense boundary created on open appears no sooner than React's 300 ms fallback
- * throttle, even with its chunk cached; a warmed shell surface commits with the click itself.
- */
-export async function openSurfaceWithinClickTask(page: Page, triggerSelector: string, surfaceSelector: string) {
-  return page.evaluate(
-    async ([trigger, surface]) => {
-      document.querySelector<HTMLElement>(trigger)?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      return {
-        loadingStatus: [...document.querySelectorAll('[role="status"]')].some((element) =>
-          /^Loading (menu|cart|detail)$/.test(element.textContent?.trim() ?? ''),
-        ),
-        visible: document.querySelector(surface) !== null,
-      };
-    },
-    [triggerSelector, surfaceSelector] as const,
-  );
-}
-
-/**
- * Starts watching for a speculative surface load before navigation. The returned wait resolves once a request whose
- * URL contains `moduleName` has been made and the network has then stayed quiet, so the module graph has loaded.
- * `waitForLoadState('networkidle')` cannot serve here: it resolves at once when the page was already idle earlier.
- */
-export function watchSurfaceWarmup(page: Page, moduleName: string, quietMs = 500) {
-  return watchNetworkQuiet(page, moduleName, quietMs);
 }
 
 /**

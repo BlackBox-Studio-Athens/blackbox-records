@@ -238,7 +238,10 @@ for (const width of [1280, 390]) {
     expect((await summary.boundingBox())!.height).toBeGreaterThan(0);
     await summary.click();
     await expect(notice).toBeVisible();
-    expect(await notice.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+    // The notice starts loading when the reminder opens, so it can still be in flight here.
+    await expect
+      .poll(() => notice.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0))
+      .toBe(true);
     await expect(reminder.getByRole('link', { name: 'Στα ελληνικά' })).toHaveAttribute(
       'href',
       /legal-guarantee-notice-el\.svg$/,
@@ -281,30 +284,6 @@ test('the international card does not bypass a missing authoritative quote', asy
   await expect(review.getByRole('complementary', { name: 'Ordering from outside Greece' })).toBeVisible();
   await expect(review).toContainText('Delivery is unavailable');
   await expect(review.getByRole('button', { name: 'Continue to Payment', exact: true })).toBeDisabled();
-});
-
-test('the checkout card and payment remain reachable with a 200 percent layout zoom', async ({ page }) => {
-  // A 1280x860 window at 200 percent browser zoom lays out 640x430 CSS px. CSS zoom on body would keep the desktop
-  // media queries and push the desktop header past the edge, which no browser zoom shows.
-  await page.setViewportSize({ width: 640, height: 430 });
-  await prepareCheckout(page);
-  await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
-  const review = await openCheckout(page);
-  const email = review.getByRole('link', { name: 'Email us to order', exact: true });
-  const pay = review.getByRole('button', { name: 'Continue to Payment', exact: true });
-  await expect(email).toBeVisible();
-  await email.scrollIntoViewIfNeeded();
-  await expect(email).toBeInViewport({ ratio: 1 });
-  await expect(pay).toBeEnabled();
-  await email.focus();
-  await expect(email).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(review.getByRole('button', { name: 'Deliver to Greece', exact: true })).toBeFocused();
-  await tabThroughNewsletterOptIn(page, review);
-  await expect(pay).toBeFocused();
-  await pay.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
-  await expect(pay).toBeInViewport({ ratio: 1 });
-  await expectNoHorizontalOverflow(page);
 });
 
 test('empty checkout does not mount the international card or allow payment', async ({ page }) => {

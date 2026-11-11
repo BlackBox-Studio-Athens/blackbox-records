@@ -79,7 +79,7 @@ The round-three implementation selects native public scrolling on every pointer 
 
 ## Local Home scrolling check
 
-`pnpm test:e2e e2e/home-scroll.spec.ts --project=chromium-mobile --workers=1` checks that the decorative hero crops cannot become nested scroll containers and that normal touch Home has no hero or swipe-card scroll animations in portrait or landscape. It then requires H.264 support, waits for fonts and 15 seconds, and uses native touch drags to traverse Home to its bottom and back twice. It attaches `scroll-frame-pacing` and fails on an animation-frame callback gap of 500 ms or more. The complete traversal is skipped in CI. CI runs the fast crop/touch-style regression and a narrow fine-pointer check that preserves the desktop animation path.
+Home scroll performance and touch animation behavior require a separate assessment; they are not part of the journey browser gate.
 
 Without extra configuration this uses Chromium mobile emulation. To exercise an actual Android WebView, run a debuggable WebView on a device or hardware-backed AVD, reverse this checkout's Local port with ADB, and forward the WebView's observed DevTools socket to a free host port. Set `BLACKBOX_ANDROID_WEBVIEW_CDP` to that local HTTP CDP endpoint before running the same command. The test attaches to the existing page and records its actual user agent, viewport/DPR and scroll-timeline support as `scroll-browser`; it does not launch or authenticate Messenger. Clear the variable after use. This option is Local only and introduces no Android installation or emulator job in CI.
 

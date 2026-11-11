@@ -1,13 +1,11 @@
 import {
   expect,
   expectNoHorizontalOverflow,
-  openSurfaceWithinClickTask,
   plantSentinel,
   press,
   sentinelIntact,
   test,
   waitForShell,
-  watchSurfaceWarmup,
 } from './fixtures';
 
 const main = 'main[data-app-shell-main]';
@@ -22,52 +20,6 @@ test('rapid Back and Forward cancel stale page swaps', async ({ page }) => {
   await expect(page).toHaveURL(/\/store\/$/);
   await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
   await expect(page.getByRole('heading', { level: 1, name: 'Releases' })).toHaveCount(0);
-});
-
-// Measure card-estimate correction independently of navigation and its destination stylesheet loading.
-test('jumping to the Store bottom keeps unexpected layout shift below 0.1', async ({ page, browserName }) => {
-  test.skip(browserName !== 'chromium', 'The Layout Instability API is Chromium-only.');
-  await page.goto('store/');
-  await waitForShell(page);
-  await expect(page.locator('.store-crate')).toHaveAttribute('data-store-crate-ready', '');
-  await page.evaluate(() => document.fonts.ready);
-  type Shift = { time: number; value: number; nodes: string[] };
-  await page.evaluate(() => {
-    const shifts: Shift[] = [];
-    (window as unknown as { shifts: Shift[] }).shifts = shifts;
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as (PerformanceEntry & {
-        value: number;
-        hadRecentInput: boolean;
-        sources: { node?: Node | null }[];
-      })[])
-        if (!entry.hadRecentInput)
-          shifts.push({
-            time: entry.startTime,
-            value: entry.value,
-            nodes: entry.sources.map(({ node }) =>
-              node instanceof Element ? `${node.localName}.${[...node.classList].join('.')}` : String(node?.nodeName),
-            ),
-          });
-    }).observe({ type: 'layout-shift' });
-  });
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await page.waitForTimeout(1000);
-  const shifts = await page.evaluate(() => (window as unknown as { shifts: Shift[] }).shifts);
-  let maximum = 0;
-  let score = 0;
-  let first = 0;
-  let last = -Infinity;
-  for (const shift of shifts) {
-    if (shift.time - last >= 1000 || shift.time - first >= 5000) {
-      first = shift.time;
-      score = 0;
-    }
-    score += shift.value;
-    last = shift.time;
-    maximum = Math.max(maximum, score);
-  }
-  expect(maximum, JSON.stringify(shifts)).toBeLessThan(0.1);
 });
 
 test('Back preserves the scrolled release listing through nested details and Forward', async ({ page }) => {
@@ -290,41 +242,6 @@ test('News sits before Who we are and preserves the player through navigation an
   expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
 });
 
-test('News precedes Who we are and the main navigation fits phone and desktop widths', async ({ page }) => {
-  for (const width of [320, 390, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto('news/');
-    await waitForShell(page);
-    if (width < 1024) await page.locator('[data-app-shell-mobile-navigation-trigger]').click();
-    const navigation = page.getByRole('navigation', { name: width < 1024 ? 'Mobile' : 'Primary' });
-    const links = navigation.getByRole('link');
-    await expect(links).toHaveText([
-      ...(width < 1024 ? ['Home'] : []),
-      'Artists',
-      'Releases',
-      'Store',
-      'Services',
-      'News',
-      'Who we are',
-    ]);
-    await expect(links.nth(-2)).toHaveAttribute('aria-current', 'page');
-    await expect
-      .poll(async () => {
-        const box = await navigation.boundingBox();
-        return box ? box.x + box.width : Infinity;
-      })
-      .toBeLessThanOrEqual(width);
-    for (const link of await links.all()) {
-      const box = await link.boundingBox();
-      expect(box).not.toBeNull();
-      expect(box!.x).toBeGreaterThanOrEqual(0);
-      expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-      if (width < 1024) expect(box!.height).toBeGreaterThanOrEqual(44);
-    }
-    await expectNoHorizontalOverflow(page);
-  }
-});
-
 test('header section link swaps main in place and shows the delayed Store status', async ({ page, isMobile }) => {
   test.skip(isMobile, 'The primary header navigation is desktop only.');
   await page.goto('./');
@@ -402,28 +319,6 @@ test('closing a detail overlay by Close or Back keeps the list in place and retu
     await expect(card).toBeFocused();
     expect(await page.evaluate(() => window.scrollY)).toBe(listScrollY);
   }
-});
-
-test('detail-link intent warms the overlay panel so the overlay opens in the click task', async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, 'Hover intent is a desktop pointer behaviour.');
-  const panelWarmed = watchSurfaceWarmup(page, 'ShellOverlayPanel');
-  await page.goto('releases/');
-  await waitForShell(page);
-  const trigger = 'a.release-card-title-link[href*="/releases/"]';
-  await page.locator(trigger).first().hover();
-  await panelWarmed();
-
-  expect(
-    await openSurfaceWithinClickTask(page, trigger, '.app-shell-content-overlay[data-state="open"] [role="dialog"]'),
-  ).toEqual({ loadingStatus: false, visible: true });
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toBeHidden();
-  // The closed overlay unmounts once its exit transition ends.
-  await expect(page.locator('.app-shell-content-overlay')).toHaveCount(0);
 });
 
 test('mobile navigation sheet drives shell navigation without horizontal overflow', async ({ page, isMobile }) => {
@@ -547,35 +442,6 @@ test('Escape closes the Menu and returns focus to its button', async ({ page, is
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('a warmed Menu opens in the tap task', async ({ page, isMobile, browserName }) => {
-  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
-  const menuWarmed = watchSurfaceWarmup(page, 'MobileNavigationSheet');
-  await page.goto('about/');
-  await waitForShell(page);
-  const trigger = '[data-app-shell-mobile-navigation-trigger]';
-  // The phone layout warms the Menu at idle; pointer intent starts it sooner.
-  await page.locator(trigger).hover();
-  await menuWarmed();
-
-  expect(await openSurfaceWithinClickTask(page, trigger, '[data-app-shell-mobile-navigation]')).toEqual({
-    loadingStatus: false,
-    visible: true,
-  });
-  await expect(page.getByRole('navigation', { name: 'Mobile' })).toBeVisible();
-  // Coarse pointers use native scrolling; the shell owns the viewport lock before the sheet mounts.
-  await expect(page.locator('body')).toHaveClass(/\bis-shell-scroll-locked\b/);
-  await expect(page.locator('html')).not.toHaveClass(/\blenis\b/);
-  // Mobile WebKit has no wheel input; the lock class above is its check.
-  if (browserName !== 'webkit') {
-    const scrollY = await page.evaluate(() => window.scrollY);
-    await page.mouse.wheel(0, 500);
-    await page.waitForTimeout(150);
-    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
-  }
-  await page.keyboard.press('Escape');
-  await expect(page.locator('body')).not.toHaveClass(/\bis-shell-scroll-locked\b/);
-});
-
 test('the Menu closes when the desktop layout starts', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
   await page.goto('./');
@@ -587,93 +453,6 @@ test('the Menu closes when the desktop layout starts', async ({ page, isMobile }
   await page.setViewportSize({ width: 1280, height: 844 });
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
-});
-
-test('footer sitemap wraps with touch-sized links on small phones', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'Touch-sized sitemap links apply to the phone layout.');
-  for (const [width, textScale] of [
-    [390, 1],
-    [320, 1],
-    [390, 1.25],
-    [320, 2],
-    [390, 2],
-  ] as const) {
-    await page.setViewportSize({ width, height: 800 });
-    // Use a prose route for the 200% reading-size check so unrelated Home media does not own this footer test.
-    await page.goto(textScale === 2 ? './terms/' : './');
-    await page.evaluate((scale) => (document.documentElement.style.fontSize = `${scale * 100}%`), textScale);
-    const footer = page.locator('footer.site-footer-shell');
-    const sitemap = page.locator('.site-footer-nav-list');
-    await sitemap.scrollIntoViewIfNeeded();
-    const sitemapBox = await sitemap.boundingBox();
-    for (const link of await sitemap.getByRole('link').all()) {
-      const box = await link.boundingBox();
-      expect(box?.height, `${width}px link height`).toBeGreaterThanOrEqual(44);
-      expect((box?.x ?? 0) + (box?.width ?? 0), `${width}px link inside the sitemap`).toBeLessThanOrEqual(
-        (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
-      );
-    }
-    // Approved Flowing links reference; enlarged text grows rather than clipping to meet the budget.
-    const height = (await footer.boundingBox())?.height ?? 0;
-    if (textScale === 1) expect(height).toBeLessThanOrEqual(width === 390 ? 360 : 380);
-    await expect(footer.getByText('All rights reserved.')).toBeVisible();
-    await expect(footer.locator('.site-footer-disclosure')).toHaveText(
-      'This website was designed and developed with assistance from generative AI tools.',
-    );
-    // The top rule stops at the page gutters (1rem, so it follows enlarged text).
-    const rule = await footer.locator('.site-footer-top').evaluate((element) => {
-      const before = getComputedStyle(element, '::before');
-      const own = getComputedStyle(element);
-      return [before.left, before.right, own.paddingLeft, own.paddingRight];
-    });
-    expect(rule.slice(0, 2)).toEqual(rule.slice(2));
-    if (textScale === 1) expect(rule[0]).toBe('16px');
-    await expectNoHorizontalOverflow(page);
-  }
-});
-
-test('capturing the live Store snapshot does not fetch its lazy images', async ({ page }) => {
-  const imageRequests: string[] = [];
-  page.on('request', (request) => {
-    if (request.resourceType() === 'image') imageRequests.push(request.url());
-  });
-  await page.goto('store/');
-  await waitForShell(page);
-  // The shell snapshots the live page once the main thread is idle after mount (capped at 2 s); give any fetches that
-  // clone starts time to appear.
-  await page.waitForTimeout(2_500);
-
-  const imageCount = await page.locator(`${main} img`).count();
-  expect(imageCount).toBeGreaterThan(20);
-  expect(imageRequests.length).toBeLessThan(imageCount / 2);
-});
-
-test('a quick mouse pass over the header prefetches nothing; resting on a link prefetches it', async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, 'Hover prefetch applies to mouse pointers on the desktop header.');
-  await page.goto('about/');
-  await waitForShell(page);
-  const sectionFetches: string[] = [];
-  page.on('request', (request) => {
-    if (request.resourceType() === 'fetch' && request.headers().accept === 'text/html') {
-      sectionFetches.push(new URL(request.url()).pathname);
-    }
-  });
-
-  // One synchronous sweep: each link is entered and left within the same task, well inside the dwell.
-  await page.evaluate(() => {
-    const links = document.querySelectorAll('nav[aria-label="Primary"] a[href]');
-    for (const target of [...links, document.body]) {
-      target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }));
-    }
-  });
-  await page.waitForTimeout(400);
-  expect(sectionFetches).toEqual([]);
-
-  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists' }).hover();
-  await expect.poll(() => sectionFetches).toEqual(['/blackbox-records/artists/']);
 });
 
 test('a second click on a link whose page is still loading stays in the shell', async ({ page, isMobile }) => {

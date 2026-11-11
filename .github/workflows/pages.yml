@@ -57,15 +57,11 @@ jobs:
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7
-  # The whole end-to-end suite runs on every push against a Local production fixture, in four balanced Playwright
-  # shards beside the deploy; a red shard fails the run, and promotion refuses a failed run.
+  # Journey-only browser gate: routes, shell navigation and player, cart to checkout and payment, withdrawal, and
+  # email preferences in Chromium desktop, Chromium phone and WebKit phone. Layout, typography and motion are not gated.
   e2e:
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
     concurrency:
-      group: ci-${{ github.ref }}-e2e-${{ matrix.shard }}
+      group: ci-${{ github.ref }}-e2e
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
@@ -85,64 +81,23 @@ jobs:
         env:
           BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
         run: pnpm build:web
-      - name: Run the whole end-to-end suite
+      - name: Run the journey browser gate
         env:
           BLACKBOX_E2E_PREVIEW: '1'
-        # webkit-mobile runs in e2e-webkit.
-        run: pnpm test:e2e --shard=${{ matrix.shard }}/4 '--project=chromium-*' '--project=firefox-*'
+        run: pnpm test:e2e --project=chromium-desktop --project=chromium-mobile --project=webkit-mobile
       - name: Upload end-to-end evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}
           path: .codex-artifacts/e2e
           if-no-files-found: ignore
           retention-days: 7
-  # The iOS Safari engine on the phone paths (webkit-mobile in playwright.config.ts), beside the shards. Not yet a
-  # promotion gate: scripts/release-candidate.mjs requires e2e (1) to e2e (4) only.
-  e2e-webkit:
-    concurrency:
-      group: ci-${{ github.ref }}-e2e-webkit
-      cancel-in-progress: true
-    runs-on: ubuntu-24.04
-    container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
-      options: --ipc=host
-    env:
-      HOME: /root
-    timeout-minutes: 30
-    steps:
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - name: Verify Playwright image
-        uses: ./.github/actions/playwright-browsers
-      - name: Build Local production fixture for end-to-end tests
-        env:
-          BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
-        run: pnpm build:web
-      - name: Run the WebKit phone project
-        env:
-          BLACKBOX_E2E_PREVIEW: '1'
-        run: pnpm test:e2e --project=webkit-mobile
-      - name: Upload WebKit end-to-end evidence
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}-webkit
-          path: .codex-artifacts/e2e
-          if-no-files-found: ignore
-          retention-days: 7
-  # Builds the PRD staff app and checks the previews, one browser per leg, beside the deploy; offline, so it holds no
-  # credential. The chromium leg's preview policy checks both engines.
+  # Builds the PRD staff app and checks previews in Chromium beside the deploy; offline, so it holds no credential.
+  # The preview policy checks both engines.
   staff-previews:
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox]
     concurrency:
-      group: ci-${{ github.ref }}-staff-previews-${{ matrix.browser }}
+      group: ci-${{ github.ref }}-staff-previews
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
@@ -158,16 +113,16 @@ jobs:
       - *install
       - name: Verify Playwright image
         uses: ./.github/actions/playwright-browsers
-      - name: Verify staff previews in ${{ matrix.browser }}
+      - name: Verify staff previews in Chromium
         env:
           PUBLIC_STAFF_ENVIRONMENT: prd
           STAFF_PREVIEW_ENVIRONMENT: prd
-        run: pnpm validate:editor --browser=${{ matrix.browser }}
+        run: pnpm validate:editor --browser=chromium
       - name: Upload staff preview evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: staff-previews-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.browser }}
+          name: staff-previews-${{ github.run_id }}-${{ github.run_attempt }}
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7

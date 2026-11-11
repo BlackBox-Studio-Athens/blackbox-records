@@ -228,29 +228,3 @@ test('a malformed newsletter link posts nothing and points to a fresh sign-up', 
   await page.waitForLoadState('networkidle');
   expect(requests.filter((request) => request.method() !== 'GET')).toEqual([]);
 });
-
-for (const width of [320, 390]) {
-  test(`email-preference states fit ${width}px without horizontal scrolling`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 800 });
-    await stub(page, '/api/newsletter/confirmations', [{ status: 200, json: { status: 'confirmed' } }]);
-    for (const path of [newsletterLink, withdrawalLink, 'email-preferences/']) {
-      await open(page, path);
-      if (path === newsletterLink) await expect(page.getByRole('heading', { level: 1 })).toHaveText('Email confirmed');
-      await expectNoHorizontalOverflow(page, `${path} at ${width}px`);
-    }
-    await page.getByLabel('Email').fill('x');
-    // Enter submits too; a reused astro dev server's toolbar can cover the bottom of a short page.
-    await page.getByLabel('Email').press('Enter');
-    await expect(page.locator('[data-email-preferences-recovery-error]')).toHaveText('Enter a valid email.');
-    const [field, button] = await Promise.all([
-      page.getByLabel('Email').boundingBox(),
-      page.getByRole('button', { name: 'Send link' }).boundingBox(),
-    ]);
-    // Phones stack the field over a full-width 44px action.
-    expect(button!.y).toBeGreaterThan(field!.y);
-    expect(Math.round(button!.height)).toBeGreaterThanOrEqual(44);
-    expect(Math.round(field!.height)).toBe(44);
-    expect(Math.round(button!.width)).toBe(Math.round(field!.width));
-    await expectNoHorizontalOverflow(page);
-  });
-}

@@ -4,21 +4,25 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
-// Shape-free release invariants. Job names, step order and wiring belong to the workflows, not to this test.
+// Release invariants, including the browser jobs required by promotion.
 type Concurrency = { group?: string; 'cancel-in-progress'?: boolean };
 type Step = {
   name?: string;
+  if?: string;
   uses?: string;
   run?: string;
   with?: Record<string, unknown>;
   env?: Record<string, unknown>;
 };
 type Job = {
+  name?: string;
   environment?: unknown;
   concurrency?: Concurrency;
+  strategy?: unknown;
+  'timeout-minutes'?: number;
   steps?: Step[];
   env?: Record<string, unknown>;
-  container?: { image?: string; env?: Record<string, unknown> };
+  container?: { image?: string; options?: string; env?: Record<string, unknown> };
 };
 const directory = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
 const workflows = readdirSync(directory)
@@ -39,6 +43,41 @@ const promotion = workflows.find(({ file }) => file === 'promote-prd.yml')!;
 const releaseLocks = ['release-uat', 'release-prd', 'blackbox-release'];
 
 describe('Release workflow invariants', () => {
+  it('runs the journey and staff browser gates as single jobs', () => {
+    const release = workflows.find(({ file }) => file === 'pages.yml')!.definition.jobs;
+    expect(release['e2e-webkit']).toBeUndefined();
+    for (const name of ['e2e', 'staff-previews']) {
+      const job = release[name];
+      expect(job.name).toBeUndefined();
+      expect(job.strategy).toBeUndefined();
+      expect(job.concurrency?.group).toBe('ci-${{ github.ref }}-' + name);
+      expect(job.container).toEqual({ image: 'mcr.microsoft.com/playwright:v1.63.0-noble', options: '--ipc=host' });
+      expect(job.steps?.some((step) => step.uses === './.github/actions/playwright-browsers')).toBe(true);
+      expect(job.steps?.find((step) => step.uses?.startsWith('actions/upload-artifact@'))).toMatchObject({
+        if: '${{ failure() }}',
+        with: {
+          name: name + '-${{ github.run_id }}-${{ github.run_attempt }}',
+          path: name === 'e2e' ? '.codex-artifacts/e2e' : '.codex-artifacts/validation',
+        },
+      });
+    }
+    const e2e = release.e2e;
+    expect(e2e['timeout-minutes']).toBe(30);
+    expect(e2e.steps?.find((step) => step.run === 'pnpm build:web')?.env?.BLACKBOX_PREORDER_PROJECTION).toBe(
+      '${{ github.workspace }}/e2e/preorder-projection.json',
+    );
+    expect(e2e.steps?.find((step) => step.run?.startsWith('pnpm test:e2e'))).toMatchObject({
+      run: 'pnpm test:e2e --project=chromium-desktop --project=chromium-mobile --project=webkit-mobile',
+      env: { BLACKBOX_E2E_PREVIEW: '1' },
+    });
+    expect(release['staff-previews'].steps?.find((step) => step.run?.startsWith('pnpm validate:editor'))).toMatchObject(
+      {
+        run: 'pnpm validate:editor --browser=chromium',
+        env: { PUBLIC_STAFF_ENVIRONMENT: 'prd', STAFF_PREVIEW_ENVIRONMENT: 'prd' },
+      },
+    );
+  });
+
   it('uses a root-owned HOME in every Playwright container step', () => {
     const containers = jobs.filter(({ job }) => job.container?.image?.startsWith('mcr.microsoft.com/playwright:'));
     expect(containers.length).toBeGreaterThan(0);
