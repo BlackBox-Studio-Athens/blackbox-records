@@ -2,7 +2,7 @@
 import Prose from '@/components/Prose.astro';
 import { getImage, Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import { tracklistGroups } from '@blackbox/content-model';
+import { formatDuration, tracklistGroups } from '@blackbox/content-model';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -235,8 +235,8 @@ const galleryImages =
                 <li class="grid grid-cols-[max-content_minmax(0,1fr)_auto] gap-3 border-t border-border/70 py-3 text-sm">
                   <span class="min-w-[3ch] text-muted-foreground tabular-nums">{track.position}</span>
                   <span class="min-w-0 [overflow-wrap:anywhere]">{track.title}</span>
-                  {track.duration && (
-                    <span class="text-right text-muted-foreground tabular-nums">{track.duration}</span>
+                  {track.duration !== undefined && (
+                    <span class="text-right text-muted-foreground tabular-nums">{formatDuration(track.duration)}</span>
                   )}
                 </li>
               ))}

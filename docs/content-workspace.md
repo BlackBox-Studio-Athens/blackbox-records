@@ -244,6 +244,8 @@ Start stocktake captures a fixed sequence from the selected group using bounded 
 
 EmDash's exported ContentRepository resolves editorial links in batches. Stock remains authoritative in the commerce repository. Artwork enrichment failure must not hide inventory. Browsing adds no schema writes: an administrator-only, same-origin POST to `/_emdash/api/blackbox/catalog-schema` prepares optional Distro Bandcamp/Tidal URL fields, the Distro group index, and title sorting through EmDash SchemaRegistry. Local startup performs this idempotent setup; UAT and PRD releases run the same setup with `cms:catalog-schema` after EmDash core migrations and before deploying the CMS. New databases receive the fields through the seed schema.
 
+The typed-value rollout uses `pnpm cms:migrate-typed-values --env local` to inspect changes, then `pnpm cms:migrate-typed-values --env local --apply` to stage private drafts. Prepare the catalog schema first and pause editorial writes while applying. The command reports records and fields it cannot convert; those records stay unchanged. A repeat stages no further drafts. Review and publish converted drafts through Content Publication. UAT and PRD runs retain their separate authorization gates; Show prices already use cents and are not migrated.
+
 Acceptance includes 250+ entries, real Local EmDash reads and Chromium/Firefox checks. Hosted validation and rollout remain separate.
 
 ## Website changes review (September 2026 refinement)

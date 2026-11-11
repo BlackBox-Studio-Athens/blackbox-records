@@ -1321,7 +1321,10 @@ else if (process.argv.includes('--orders-shipping')) {
       .locator('input[type=file]:enabled')
       .setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: pixels });
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
-    await page.getByLabel('Release stage', { exact: true }).selectOption('released');
+    await page
+      .getByRole('radiogroup', { name: 'Release stage', exact: true })
+      .getByText('Released', { exact: true })
+      .click();
     await page.getByLabel('Digital release date', { exact: true }).fill('2026-09-27');
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
     await page.reload();
@@ -1415,6 +1418,12 @@ else if (process.argv.includes('--orders-shipping')) {
     if (workspace && page.viewportSize().width < 768)
       assert.equal(workspace.scrollTop, 0, name + ' keeps the phone editor in its frame');
   }
+  // Phones keep the order filters, search included, behind the Filters toggle.
+  const filtersToggle = page.locator('.order-filters-toggle');
+  async function openOrderFilters() {
+    if ((await filtersToggle.isVisible()) && (await filtersToggle.getAttribute('aria-expanded')) !== 'true')
+      await filtersToggle.click();
+  }
   try {
     for (const width of [320, 390, 430]) {
       await page.setViewportSize({ width, height: 900 });
@@ -1430,10 +1439,10 @@ else if (process.argv.includes('--orders-shipping')) {
       const toggle = page.getByRole('switch', { name: /^Pre-order/ });
       await fits(toggle.locator('..'), 'Pre-order switch');
       await toggle.press('Space');
-      const kind = page.getByRole('combobox', { name: 'When it ships', exact: true });
+      const kind = page.getByRole('radiogroup', { name: 'When it ships', exact: true });
       const month = page.getByRole('combobox', { name: 'Month', exact: true });
-      const part = page.getByRole('combobox', { name: 'Part of the month', exact: true });
-      await part.selectOption('late');
+      const part = page.getByRole('radiogroup', { name: 'Part of the month', exact: true });
+      await part.getByText('Late', { exact: true }).click();
       for (const [control, name] of [
         [kind, 'Ship estimate kind'],
         [month, 'Month'],
@@ -1453,7 +1462,7 @@ else if (process.argv.includes('--orders-shipping')) {
         'staff-preorder-month-saved-' + width,
         page.getByRole('button', { name: 'Save pre-order', exact: true }),
       );
-      await kind.selectOption('date');
+      await kind.getByText('Exact date', { exact: true }).click();
       const date = page.getByLabel('Exact ship date', { exact: true });
       await fits(date, 'Exact ship date');
       const writes = state.requests.filter((request) => request.method === 'PATCH').length;
@@ -1479,14 +1488,18 @@ else if (process.argv.includes('--orders-shipping')) {
             })
             .waitFor();
           await capture('staff-preorder-recovery-' + status);
-          await kind.selectOption('date');
+          await kind.getByText('Exact date', { exact: true }).click();
           await date.fill(tomorrow);
           await fits(page.getByRole('button', { name: 'Save pre-order', exact: true }), 'Retry pre-order');
         }
       }
       await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
       await page.getByRole('button', { name: 'Saving pre-order…', exact: true }).waitFor();
-      assert.equal(await kind.isDisabled(), true, 'Stock controls disable during the immediate write');
+      assert.equal(
+        await kind.locator('button').first().isDisabled(),
+        true,
+        'Stock controls disable during the immediate write',
+      );
       await page.getByRole('status').filter({ hasText: 'Pre-order saved.' }).waitFor();
       assert.deepEqual(preorders.get('variant_retained').shipEstimate, { kind: 'date', date: tomorrow });
       await page.getByRole('button', { name: 'Copies arrived', exact: true }).click();
@@ -1537,6 +1550,8 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.goto(origin + '/orders/');
       await page.locator('.order-row').first().waitFor();
       await capture('staff-orders-' + width);
+      await fits(filtersToggle, 'Order filters');
+      await openOrderFilters();
       await fits(page.getByLabel('Search orders', { exact: true }), 'Order search');
       await fits(
         page.getByLabel('Awaiting stock', { exact: true }).locator('..').locator('..'),
@@ -1549,6 +1564,7 @@ else if (process.argv.includes('--orders-shipping')) {
       await capture('staff-order-detail-' + width);
       await page.locator('[data-staff-back]').click();
       await page.locator('.order-row').first().waitFor();
+      await openOrderFilters();
       await page.getByLabel('Search orders', { exact: true }).fill('no matching fixture order');
       await page.getByRole('heading', { name: 'No matching orders', exact: true }).waitFor();
       await fits(page.getByRole('button', { name: 'Clear filters', exact: true }), 'Clear filters');
@@ -1556,6 +1572,9 @@ else if (process.argv.includes('--orders-shipping')) {
     }
     await page.setViewportSize({ width: 390, height: 900 });
     await page.goto(origin + '/content/?collection=artists&id=artists-1');
+    const basics = page.locator('[data-editor-card="basics"]');
+    await basics.waitFor();
+    if ((await basics.getAttribute('open')) === null) await basics.locator('> summary').click();
     const title = page.getByLabel('Artist name', { exact: true });
     await title.waitFor();
     state.failSave = true;
@@ -1569,7 +1588,8 @@ else if (process.argv.includes('--orders-shipping')) {
     await page.getByRole('button', { name: 'Retry save', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
     assert.equal(publications.length, 0, 'Mobile editing and stock writes never publish content');
-    await page.setViewportSize({ width: 1440, height: 1000 });
+    // Menu keeps the header utilities below 1920px, so only the widest desktop has no Menu.
+    await page.setViewportSize({ width: 1920, height: 1000 });
     await page.goto(origin + '/content/?collection=releases&id=releases-retained&tab=selling');
     await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).isVisible(), false);
@@ -1850,14 +1870,23 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.getByRole('button', { name: media[0].filename, exact: true }).click();
       await page.getByLabel(/^Describe the artwork/).fill('Black and white cover');
       // Used proves the explicit choice is kept rather than replaced by a New default.
-      await page.getByLabel('Physical condition', { exact: true }).selectOption('used');
+      await page
+        .getByRole('radiogroup', { name: 'Physical condition', exact: true })
+        .getByText('Used', { exact: true })
+        .click();
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
       await page.getByLabel('Price (EUR)', { exact: true }).fill('15');
       await page.getByLabel(/^How many copies do you have/).fill('3');
       await page.reload();
       await page.getByRole('status').filter({ hasText: 'Changes saved privately' }).waitFor();
       assert.equal(await page.getByLabel('Title', { exact: true }).inputValue(), 'New draft for sale');
-      assert.equal(await page.getByLabel('Physical condition', { exact: true }).inputValue(), 'used');
+      assert.equal(
+        await page
+          .getByRole('radiogroup', { name: 'Physical condition', exact: true })
+          .getByText('Used', { exact: true })
+          .getAttribute('aria-checked'),
+        'true',
+      );
       await page.getByRole('button', { name: 'Continue', exact: true }).click();
       assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '15');
       assert.equal(await page.getByLabel(/^How many copies do you have/).inputValue(), '3');

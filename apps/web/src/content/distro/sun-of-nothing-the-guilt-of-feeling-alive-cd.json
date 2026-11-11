@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "The guilt of feeling alive",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Sun of Nothing",
   "image": "sun-of-nothing-the-guilt-of-feeling-alive-cd-front.jpg",
   "image_alt": "Front cover of Sun of Nothing's The Guilt of Feeling Alive CD",
@@ -13,7 +13,7 @@
   ],
   "summary": "Five-track avant-garde and post-black-metal album by Sun of Nothing, issued on CD.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 76,
   "release_date": "2010-12-01",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=3851536355/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/",

@@ -6,9 +6,9 @@
   "eyebrow": "",
   "order": 2,
   "artist_or_label": "Calf",
-  "format": "Vinyl 10-inch",
+  "format_override": "Vinyl 10-inch",
   "title": "—",
   "image": "calf-karditsa.jpg",
-  "group": "Vinyl 10-inch",
+  "format": "Vinyl 10-inch",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=3011091146/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"
 }

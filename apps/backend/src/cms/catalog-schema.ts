@@ -145,6 +145,43 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   }
   const group = await registry.getField('distro', 'group');
   if (group && !group.indexed) await registry.updateField('distro', 'group', { indexed: true });
+  const distroFormat = await registry.getField('distro', 'format');
+  if (!distroFormat)
+    await registry.createField('distro', {
+      slug: 'format',
+      label: 'Format',
+      type: 'string',
+      required: false,
+      indexed: true,
+    });
+  else if (distroFormat.type !== 'string') throw new Error('Unexpected field type: distro.format');
+  else if (!distroFormat.indexed) await registry.updateField('distro', 'format', { indexed: true });
+  const override = await registry.getField('distro', 'format_override');
+  if (!override)
+    await registry.createField('distro', {
+      slug: 'format_override',
+      label: 'Format display override',
+      type: 'string',
+      required: false,
+    });
+  else if (override.type !== 'string') throw new Error('Unexpected field type: distro.format_override');
+  const countries = await registry.getField('artists', 'country');
+  if (!countries)
+    await registry.createField('artists', { slug: 'country', label: 'Countries', type: 'json', required: false });
+  else if (countries.type === 'string' && countries.columnType.toUpperCase() === 'TEXT')
+    await runtime.db
+      .updateTable('_emdash_fields')
+      .set({ type: 'json' })
+      .where('id', '=', countries.id)
+      .where('type', '=', 'string')
+      .execute();
+  else if (countries.type !== 'json') throw new Error('Unexpected field type: artists.country');
+  if (await registry.getCollection('socials')) {
+    const visible = await registry.getField('socials', 'visible');
+    if (!visible)
+      await registry.createField('socials', { slug: 'visible', label: 'Visible', type: 'boolean', required: false });
+    else if (visible.type !== 'boolean') throw new Error('Unexpected field type: socials.visible');
+  }
   for (const slug of ['artists', 'releases', 'distro', 'news', 'shows']) {
     const collection = await registry.getCollection(slug);
     if (collection && collection.titleField !== 'title') await registry.updateCollection(slug, { titleField: 'title' });

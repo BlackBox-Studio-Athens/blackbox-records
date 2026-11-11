@@ -69,7 +69,7 @@ export const catalogItemSetupSchema = z
     (command) =>
       command.source.mode !== 'create' ||
       command.source.sourceKind !== 'distro' ||
-      command.source.data.group === command.itemType,
+      (command.source.data.group ?? command.source.data.format) === command.itemType,
     { path: ['itemType'], message: 'Item type must match the Distro source physical type.' },
   );
 const projectionSchema = z
@@ -157,7 +157,7 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
     if (operation.step === 'started' || operation.step === 'source_linked') {
       if (!active()) return current();
       const source = await deps.sources.ensureSource(command.source);
-      if (command.source.sourceKind === 'distro' && source.data.group !== command.itemType)
+      if (command.source.sourceKind === 'distro' && (source.data.group ?? source.data.format) !== command.itemType)
         throw new CatalogOperationConflictError('Item type differs from the Distro source.');
       if (operation.results.cmsSourceId && operation.results.cmsSourceId !== source.id)
         throw new CatalogOperationConflictError('CMS source identity changed.');

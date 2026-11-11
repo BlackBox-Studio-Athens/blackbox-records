@@ -67,7 +67,7 @@ type RawDistroInventorySource = {
 
 export type DistroContentIdentity = {
   artist_or_label: string;
-  group: string;
+  format: string;
   title: string;
 };
 
@@ -130,7 +130,7 @@ export function assertDistroContentCoveredByInventorySource(
   }
 
   const row = matches[0]!;
-  const contentType = normalizeDistroContentItemType(content.group);
+  const contentType = normalizeDistroContentItemType(content.format);
   if (row.itemType !== contentType) {
     throw new Error(
       `Distro Store Item ${content.sourceId} physical type mismatch: content ${contentType}, inventory ${row.itemType}.`,
@@ -205,7 +205,7 @@ function findDistroInventoryMatches(
   source: DistroInventorySource,
   content: DistroContentIdentity,
 ): DistroInventorySourceRow[] {
-  const contentType = normalizeDistroContentItemType(content.group);
+  const contentType = normalizeDistroContentItemType(content.format);
   const contentKey = createIdentityKey({
     artist: content.artist_or_label,
     itemType: contentType,

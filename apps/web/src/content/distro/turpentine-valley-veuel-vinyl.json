@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Veuel",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "artist_or_label": "Turpentine Valley",
   "image": "turpentine-valley-veuel-vinyl.webp",
   "image_alt": "Veuel Vinyl front mockup",
   "summary": "Ten-track instrumental post-metal and sludge album, pressed in two gatefold vinyl variants at dunk!pressing.",
   "eyebrow": "Distro",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "order": 49,
   "release_date": "2026-03-06",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=417978429/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

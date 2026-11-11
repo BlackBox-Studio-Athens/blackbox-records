@@ -71,7 +71,10 @@ async function prepare(deps: Dependencies, record: RuntimeCatalogRecord) {
   const saved = await deps.readSource(record);
   if (saved.source.slug !== record.sourceId || (record.cmsSourceId && saved.source.id !== record.cmsSourceId))
     throw new CatalogPriceConflictError('CMS source identity changed.');
-  const nativeType = record.sourceKind === 'distro' ? z.enum(DISTRO_GROUP_VALUES).parse(saved.source.data.group) : null;
+  const nativeType =
+    record.sourceKind === 'distro'
+      ? z.enum(DISTRO_GROUP_VALUES).parse(saved.source.data.group ?? saved.source.data.format)
+      : null;
   const itemType =
     record.itemType === null ? nativeType : catalogPriceInitializeSchema.shape.itemType.parse(record.itemType);
   const priceKind =

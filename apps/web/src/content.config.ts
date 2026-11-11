@@ -8,6 +8,9 @@ import {
   createNewsContentSchema,
   createShowsContentSchema,
   createDistroContentSchema,
+  formatArtistCountries,
+  projectDistroValues,
+  readDistroTracklist,
   distroPageContentSchema,
   navigationContentSchema,
   socialsContentSchema,
@@ -28,10 +31,15 @@ const storeIdentity = z
 const artists = defineCollection({
   loader: publicContentLoader('artists', '**/*.{md,mdx}', './src/content/artists'),
   schema: ({ image }) =>
-    createArtistsContentSchema(image).extend({
-      editorial_body: cmsBodySchema.optional(),
-      content_media: z.record(z.string(), image()).optional(),
-    }),
+    createArtistsContentSchema(image)
+      .extend({
+        editorial_body: cmsBodySchema.optional(),
+        content_media: z.record(z.string(), image()).optional(),
+      })
+      .transform((artist) => ({
+        ...artist,
+        country: artist.country ? formatArtistCountries(artist.country) : undefined,
+      })),
 });
 
 const releases = defineCollection({
@@ -65,7 +73,17 @@ const shows = defineCollection({
 
 const distro = defineCollection({
   loader: publicContentLoader('distro', '**/*.json', './src/content/distro'),
-  schema: ({ image }) => createDistroContentSchema(image).extend({ store_item: storeIdentity }),
+  schema: ({ image }) =>
+    createDistroContentSchema(image)
+      .extend({ store_item: storeIdentity })
+      .transform((data) => ({
+        ...data,
+        ...projectDistroValues(data),
+        group: data.format,
+        format:
+          data.format_override ?? (data.format === 'CDs' ? 'CD' : data.format === 'Tapes' ? 'Cassette' : data.format),
+        tracklist: readDistroTracklist(data.tracklist, data.format),
+      })),
 });
 
 const distroPage = defineCollection({

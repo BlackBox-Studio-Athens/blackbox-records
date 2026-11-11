@@ -5,6 +5,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { NativeSelect } from '../ui/native-select';
+import ChoiceChips from '../fields/ChoiceChips';
+import DateField from '../fields/DateField';
+import SegmentedChoice from '../fields/SegmentedChoice';
+import { withHttps } from '../fields/field-values';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../ui/field';
 
 type Safety = Record<string, unknown>;
@@ -12,7 +16,7 @@ type Spec = {
   label: string;
   hint?: string;
   missing: string;
-  kind?: 'textarea' | 'date' | 'select';
+  kind?: 'textarea' | 'date' | 'select' | 'segmented' | 'chips' | 'contact';
   options?: ReadonlyArray<readonly [string, string]>;
   lang?: string;
 };
@@ -23,15 +27,24 @@ const euCountryCodes: readonly string[] = productSafetyContentSchema.shape.respo
 const euCountries = countryOptions
   .filter(({ code }) => euCountryCodes.includes(code))
   .map(({ code, name }) => [code, name] as const);
-const contactHint = "An email address or a direct contact page (https://…). A homepage isn't enough.";
+const contactHint = "An email address, or a direct contact page. A homepage isn't enough.";
+const productTypes = [
+  '12-inch vinyl LP',
+  '7-inch vinyl single',
+  'CD in jewel case',
+  'CD in digipak',
+  'Cassette',
+  'T-shirt',
+];
 const contactMissing = 'Enter an email address or an https:// contact page.';
 const addressHint = 'Full address including postcode and country.';
 
 const specs: Record<string, Spec> = {
   product_type: {
     label: 'What is the product?',
-    hint: 'What the buyer gets, e.g. "12-inch vinyl LP", "CD in jewel case", "Cassette", "T-shirt".',
-    missing: 'Enter what the product is, e.g. 12-inch vinyl LP.',
+    hint: 'What the buyer gets. Choose one, or add another under Other.',
+    missing: 'Choose what the product is, e.g. 12-inch vinyl LP.',
+    kind: 'chips',
   },
   product_identifier: {
     label: 'Catalogue number or batch code',
@@ -40,14 +53,13 @@ const specs: Record<string, Spec> = {
   },
   operator_role: {
     label: 'Our role for this item',
-    hint: 'Pick what the order or invoice shows.',
+    hint: 'Manufacturer: we had it made under our name. Distributor: we bought finished copies in the EU. Importer: we brought it in from outside the EU. Pick what the order or invoice shows.',
     missing: 'Choose our role for this item.',
-    kind: 'select',
+    kind: 'segmented',
     options: [
-      ['', 'Choose…'],
-      ['manufacturer', 'We had it made under our name (manufacturer)'],
-      ['distributor', 'We bought finished copies in the EU (distributor)'],
-      ['importer', 'We brought it in from outside the EU (importer)'],
+      ['manufacturer', 'Manufacturer'],
+      ['distributor', 'Distributor'],
+      ['importer', 'Importer'],
     ],
   },
   'manufacturer.name': {
@@ -57,10 +69,10 @@ const specs: Record<string, Spec> = {
   },
   'manufacturer.establishment': {
     label: 'Where is the manufacturer based?',
+    hint: 'Leave unchosen while it is not known yet.',
     missing: 'Choose where the manufacturer is based.',
-    kind: 'select',
+    kind: 'segmented',
     options: [
-      ['', 'Not known yet'],
       ['eu', 'In the EU'],
       ['non_eu', 'Outside the EU'],
     ],
@@ -71,7 +83,12 @@ const specs: Record<string, Spec> = {
     missing: "Enter the manufacturer's full postal address.",
     kind: 'textarea',
   },
-  'manufacturer.electronic_address': { label: 'Email or contact page', hint: contactHint, missing: contactMissing },
+  'manufacturer.electronic_address': {
+    label: 'Email or contact page',
+    hint: contactHint,
+    missing: contactMissing,
+    kind: 'contact',
+  },
   'responsible_person.name': {
     label: 'Name',
     hint: 'The EU company named on the paperwork as responsible for this product.',
@@ -87,6 +104,7 @@ const specs: Record<string, Spec> = {
     label: 'Email or contact page',
     hint: contactHint,
     missing: contactMissing,
+    kind: 'contact',
   },
   'responsible_person.eu_country': {
     label: 'EU country',
@@ -97,12 +115,12 @@ const specs: Record<string, Spec> = {
   },
   'safety_information.status': {
     label: 'Does it need warnings or instructions?',
+    hint: 'Leave unchosen until you have checked. "Not needed" means you checked it is safe to use without them.',
     missing: 'Choose whether this product needs warnings.',
-    kind: 'select',
+    kind: 'segmented',
     options: [
-      ['', 'Not checked yet'],
-      ['provided', 'Yes, add them below'],
-      ['not_required', 'No, checked: safe to use without them'],
+      ['provided', 'Yes, add them'],
+      ['not_required', 'Not needed'],
     ],
   },
   'safety_information.text_el': {
@@ -151,11 +169,14 @@ export default function ProductSafetyFields({
   onChange,
   disabled = false,
   validationAttempt = 0,
+  inCard = false,
 }: {
   value: unknown;
   onChange(next: Safety): void;
   disabled?: boolean;
   validationAttempt?: number;
+  /** Inside an editor card the card supplies the heading and the open state. */
+  inCard?: boolean;
 }) {
   const data = isRecord(value) ? value : {};
   const saveIssues = (productSafetyContentSchema.safeParse(data).error?.issues ?? []).map((issue) => ({
@@ -228,6 +249,70 @@ export default function ProductSafetyFields({
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
         update(path, event.target.value),
     };
+    const stored = String(read(data, path) ?? '');
+    const markTouched = props.onBlur;
+    if (spec.kind === 'date')
+      return (
+        <DateField
+          key={path}
+          path={`product_safety.${path}`}
+          label={spec.label}
+          value={stored}
+          errors={errors}
+          disabled={disabled}
+          onChange={(next) => update(path, next ?? '')}
+          onBlur={markTouched}
+        />
+      );
+    if (spec.kind === 'chips')
+      return (
+        <div key={path} className="col-span-full min-w-0">
+          <ChoiceChips
+            path={`product_safety.${path}`}
+            label={spec.label}
+            single
+            options={productTypes}
+            value={stored ? [stored] : []}
+            maxLength={200}
+            description={spec.hint}
+            errors={errors}
+            disabled={disabled}
+            onChange={(next) => update(path, next[0] ?? '')}
+          />
+        </div>
+      );
+    if (spec.kind === 'segmented')
+      return (
+        <Field key={path} className="min-w-0" data-invalid={errors.length > 0}>
+          <SegmentedChoice
+            label={spec.label}
+            path={`product_safety.${path}`}
+            value={stored || undefined}
+            options={spec.options!.map(([option, label]) => ({ value: option, label }))}
+            disabled={disabled}
+            onChange={(next) => {
+              markTouched();
+              update(path, next);
+            }}
+          />
+          {spec.hint && <FieldDescription id={hintId}>{spec.hint}</FieldDescription>}
+          <FieldError id={errorId}>{errors.join(' ')}</FieldError>
+        </Field>
+      );
+    if (spec.kind === 'contact')
+      return (
+        <ContactAddress
+          key={path}
+          id={id}
+          label={spec.label}
+          hint={spec.hint}
+          stored={stored}
+          errors={errors}
+          disabled={disabled}
+          onBlur={markTouched}
+          onChange={(next) => update(path, next)}
+        />
+      );
     return (
       <Field
         key={path}
@@ -266,6 +351,71 @@ export default function ProductSafetyFields({
   }
 
   const count = missing.length;
+  const fields = (
+    <div className={inCard ? 'col-span-full grid min-w-0 gap-8' : 'mt-4 grid min-w-0 gap-8'}>
+      <p className="text-sm text-muted-foreground">
+        Fill this in from the paperwork for this exact edition. If you're unsure of a value, leave it empty: empty means
+        "not known yet", and shoppers see nothing until you mark it verified.
+      </p>
+      {unmapped.length > 0 && <FieldError>{unmapped.join(' ')}</FieldError>}
+      {group('Product', ['product_type', 'product_identifier', 'operator_role'])}
+      {group('Manufacturer (shown to shoppers)', [
+        'manufacturer.name',
+        'manufacturer.establishment',
+        'manufacturer.postal_address',
+        'manufacturer.electronic_address',
+      ])}
+      {(nonEu || data.responsible_person !== undefined) &&
+        group(
+          'EU contact person',
+          [
+            'responsible_person.name',
+            'responsible_person.postal_address',
+            'responsible_person.electronic_address',
+            'responsible_person.eu_country',
+          ],
+          'The company in the EU responsible for this product.',
+          shown('responsible_person') && issues.has('responsible_person') ? responsiblePersonMissing : undefined,
+        )}
+      {group('Safety warnings', ['safety_information.status', 'safety_information.text_el'])}
+      {group('Proof (private, never shown to shoppers)', [
+        'evidence.reference',
+        'evidence.checked_on',
+        'evidence.notes',
+      ])}
+      {!verified && (
+        <div className="grid gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-fit"
+            disabled={disabled || count > 0}
+            aria-describedby={count > 0 ? 'product-safety-verify-help' : undefined}
+            onClick={() => onChange({ ...data, review_status: 'verified' })}
+          >
+            <BadgeCheck className="size-4" aria-hidden="true" />
+            Mark details verified
+          </Button>
+          {count > 0 && (
+            <p id="product-safety-verify-help" className="text-sm text-muted-foreground">
+              Available once every required field above is filled.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+  if (inCard)
+    return (
+      <>
+        {count > 0 && (
+          <p className="col-span-full text-sm text-muted-foreground">
+            {count} {count === 1 ? 'detail' : 'details'} missing before this can be verified.
+          </p>
+        )}
+        {fields}
+      </>
+    );
   return (
     <details
       className="col-span-full border-y border-border py-4"
@@ -291,58 +441,71 @@ export default function ProductSafetyFields({
           )
         )}
       </summary>
-      <div className="mt-4 grid min-w-0 gap-8">
-        <p className="text-sm text-muted-foreground">
-          Fill this in from the paperwork for this exact edition. If you're unsure of a value, leave it empty: empty
-          means "not known yet", and shoppers see nothing until you mark it verified.
-        </p>
-        {unmapped.length > 0 && <FieldError>{unmapped.join(' ')}</FieldError>}
-        {group('Product', ['product_type', 'product_identifier', 'operator_role'])}
-        {group('Manufacturer (shown to shoppers)', [
-          'manufacturer.name',
-          'manufacturer.establishment',
-          'manufacturer.postal_address',
-          'manufacturer.electronic_address',
-        ])}
-        {(nonEu || data.responsible_person !== undefined) &&
-          group(
-            'EU contact person',
-            [
-              'responsible_person.name',
-              'responsible_person.postal_address',
-              'responsible_person.electronic_address',
-              'responsible_person.eu_country',
-            ],
-            'The company in the EU responsible for this product.',
-            shown('responsible_person') && issues.has('responsible_person') ? responsiblePersonMissing : undefined,
-          )}
-        {group('Safety warnings', ['safety_information.status', 'safety_information.text_el'])}
-        {group('Proof (private, never shown to shoppers)', [
-          'evidence.reference',
-          'evidence.checked_on',
-          'evidence.notes',
-        ])}
-        {!verified && (
-          <div className="grid gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-fit"
-              disabled={disabled || count > 0}
-              aria-describedby={count > 0 ? 'product-safety-verify-help' : undefined}
-              onClick={() => onChange({ ...data, review_status: 'verified' })}
-            >
-              <BadgeCheck className="size-4" aria-hidden="true" />
-              Mark details verified
-            </Button>
-            {count > 0 && (
-              <p id="product-safety-verify-help" className="text-sm text-muted-foreground">
-                Available once every required field above is filled.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      {fields}
     </details>
+  );
+}
+
+type ContactKind = 'email' | 'web';
+
+/** An email address or a contact page, chosen first so the input checks the right shape. */
+function ContactAddress({
+  id,
+  label,
+  hint,
+  stored,
+  errors,
+  disabled,
+  onBlur,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint?: string | undefined;
+  stored: string;
+  errors: string[];
+  disabled: boolean;
+  onBlur(): void;
+  onChange(next: string): void;
+}) {
+  const [kind, setKind] = useState<ContactKind>(() => (/^https?:/i.test(stored) ? 'web' : 'email'));
+  const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  return (
+    <Field className="min-w-0" data-invalid={errors.length > 0}>
+      <SegmentedChoice
+        label={label}
+        value={kind}
+        disabled={disabled}
+        options={[
+          { value: 'email', label: 'Email' },
+          { value: 'web', label: 'Contact page' },
+        ]}
+        onChange={(next) => {
+          setKind(next);
+          if (stored) onChange('');
+        }}
+      />
+      <Input
+        id={id}
+        data-content-path={id.replace(/^content-/, '')}
+        type={kind === 'email' ? 'email' : 'url'}
+        inputMode={kind === 'email' ? 'email' : 'url'}
+        aria-label={kind === 'email' ? `${label}: email address` : `${label}: contact page address`}
+        placeholder={kind === 'email' ? 'name@example.com' : 'https://example.com/contact'}
+        value={stored}
+        disabled={disabled}
+        aria-invalid={errors.length > 0 || undefined}
+        aria-describedby={[hint ? hintId : '', errors.length ? errorId : ''].filter(Boolean).join(' ') || undefined}
+        className="min-h-11 w-full min-w-0"
+        onBlur={(event) => {
+          if (kind === 'web' && event.target.value) onChange(withHttps(event.target.value));
+          onBlur();
+        }}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {hint && <FieldDescription id={hintId}>{hint}</FieldDescription>}
+      <FieldError id={errorId}>{errors.join(' ')}</FieldError>
+    </Field>
   );
 }

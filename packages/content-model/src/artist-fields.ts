@@ -21,10 +21,13 @@ export function parseCountryCode(input: unknown): CountryCode | null {
   return countryAliases.get(input.toLowerCase()) ?? null;
 }
 
-// Keep the existing CMS text format at the storage boundary, with ISO identities in the editor.
-export function parseArtistCountries(value: string): CountryCode[] | null {
-  if (!value.trim()) return [];
-  const codes = value.split('/').map((name) => countryAliases.get(name.trim().toLowerCase()));
+// Read both the legacy label and the ordered ISO-code form during migration.
+export function parseArtistCountries(value: string | readonly string[]): CountryCode[] | null {
+  if (typeof value === 'string' && !value.trim()) return [];
+  const codes =
+    typeof value === 'string'
+      ? value.split('/').map((name) => countryAliases.get(name.trim().toLowerCase()))
+      : value.map(parseCountryCode);
   if (codes.some((code) => !code) || new Set(codes).size !== codes.length) return null;
   return codes as CountryCode[];
 }
@@ -33,9 +36,12 @@ export function formatArtistCountries(codes: readonly CountryCode[]): string {
   return [...new Set(codes)].map((code) => countryOptions.find((option) => option.code === code)!.name).join(' / ');
 }
 
-export const artistCountriesSchema = z.string().refine((value) => parseArtistCountries(value) !== null, {
-  message: 'Choose countries from the list without duplicates.',
-});
+export const artistCountriesSchema = z
+  .array(z.string().refine((code) => parseCountryCode(code) === code))
+  .refine((value) => parseArtistCountries(value) !== null, {
+    message: 'Choose countries from the list without duplicates.',
+  })
+  .transform((value) => parseArtistCountries(value)!);
 
 export const artistLinkNames = [
   'Bandcamp',

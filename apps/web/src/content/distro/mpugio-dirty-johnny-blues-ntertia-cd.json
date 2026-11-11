@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Blues & Ντέρτια",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Μπουγιο & Dirty Johnny",
   "image": "mpugio-dirty-johnny-blues-ntertia-cd.jpg",
   "image_alt": "Blues & Ντέρτια CD front mockup",
   "summary": "Blues και ντέρτια collects Μπούγιο & Dirty Johnny tracks including «Ζάλη», «Με τα χάλια μου», and the title song.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 89,
   "release_date": "2015-06-05"
 }

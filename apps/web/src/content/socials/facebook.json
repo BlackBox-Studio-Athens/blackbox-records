@@ -2,5 +2,6 @@
   "$schema": "../../../.astro/collections/socials.schema.json",
   "title": "Facebook",
   "url": "https://www.facebook.com/profile.php?id=61553778939778",
+  "visible": true,
   "order": 2
 }

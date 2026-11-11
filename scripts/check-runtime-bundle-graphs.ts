@@ -45,8 +45,9 @@ const storeItemEagerGraphBudgetBytes = 104 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
   // Raised 5 KiB on 23 October 2026 (owner-approved) for radix-ui 1.8.1 (about 790 Brotli bytes in shared Staff chunks;
-  // openspec/changes/upgrade-dependencies-2026-10).
-  overview: { document: 'index.html', javascriptBudgetBytes: 126 * 1024 },
+  // openspec/changes/upgrade-dependencies-2026-10). Raised 1 KiB on 11 November 2026 (owner-approved): the structured
+  // editors split a shared chunk (129,029 Brotli bytes, raw size unchanged; openspec/changes/staff-structured-editors).
+  overview: { document: 'index.html', javascriptBudgetBytes: 127 * 1024 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
   // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets. Raised 1 KiB on
   // 7 October 2026 for the zero-stock state control (593 Brotli bytes over; openspec/changes/add-coming-soon-availability).

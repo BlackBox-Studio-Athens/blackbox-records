@@ -17,5 +17,6 @@ export * from './publication-review';
 
 export * from './tracklist';
 export * from './artist-fields';
+export * from './typed-values-migration';
 export * from './product-safety';
 export * from './product-condition';

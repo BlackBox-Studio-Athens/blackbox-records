@@ -1,4 +1,5 @@
 import { boxNowTrackingUrl } from '@coding-tree-io/boxnow-widget';
+import StaffLockerMap from './StaffLockerMap';
 import {
   CircleCheck,
   CircleX,
@@ -156,6 +157,7 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
   const [sendShippingEmail, setSendShippingEmail] = useState(true);
   const customerLocker = order.fulfillment.kind === 'current' ? order.fulfillment.shippingLocker : null;
   const [editingLocker, setEditingLocker] = useState(!customerLocker);
+  const [lockerEntry, setLockerEntry] = useState<'map' | 'manual'>('map');
   const [lockerName, setLockerName] = useState(customerLocker?.name ?? '');
   const [lockerId, setLockerId] = useState(customerLocker?.lockerId ?? '');
   const [parcelNumbers, setParcelNumbers] = useState(['']);
@@ -211,13 +213,25 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
             <span className="order-field__label" id="locker-used-label">
               Locker used
             </span>
-            {editingLocker ? (
+            {editingLocker && lockerEntry === 'map' ? (
+              <StaffLockerMap
+                onSelect={(locker) => {
+                  setCarrierError('');
+                  setLockerName(locker.name);
+                  setLockerId(locker.lockerId);
+                  setEditingLocker(false);
+                }}
+                onUnavailable={() => setLockerEntry('manual')}
+              />
+            ) : editingLocker ? (
               <div className="order-field__pair" role="group" aria-labelledby="locker-used-label">
+                <p className="order-muted">BOX NOW&apos;s map is not available. Enter the locker by hand.</p>
                 <label>
                   Locker name
                   <input
                     value={lockerName}
                     disabled={busy}
+                    maxLength={200}
                     onChange={(event) => {
                       setCarrierError('');
                       setLockerName(event.target.value);
@@ -230,9 +244,10 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
                     value={lockerId}
                     inputMode="numeric"
                     disabled={busy}
+                    maxLength={32}
                     onChange={(event) => {
                       setCarrierError('');
-                      setLockerId(event.target.value);
+                      setLockerId(event.target.value.replace(/\D/g, ''));
                     }}
                   />
                 </label>
@@ -242,7 +257,14 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
                 <span>
                   {lockerName} <code>{lockerId}</code>
                 </span>
-                <Button variant="ghost" disabled={busy} onClick={() => setEditingLocker(true)}>
+                <Button
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setLockerEntry('map');
+                    setEditingLocker(true);
+                  }}
+                >
                   Change
                 </Button>
               </div>
@@ -250,7 +272,7 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
             <small className="order-muted">
               {customerLocker
                 ? "The customer's choice. Change it only if Send parcel would not take it; the shipping email names this locker."
-                : 'No locker chosen at checkout. Enter the locker agreed with the customer.'}
+                : 'No locker chosen at checkout. Choose the locker agreed with the customer.'}
             </small>
           </div>
           {parcelNumbers.map((value, index) => (
@@ -264,15 +286,20 @@ function DispatchControl({ order, onSetDispatch }: { order: InternalOrder; onSet
                 value={value}
                 inputMode="numeric"
                 autoComplete="off"
-                maxLength={14}
+                maxLength={10}
                 disabled={busy}
-                aria-describedby="parcel-number-help"
-                aria-invalid={value.trim() !== '' && !PARCEL_NUMBER.test(value.trim())}
+                aria-describedby={`parcel-number-${index}-count parcel-number-help`}
+                aria-invalid={value !== '' && !PARCEL_NUMBER.test(value)}
                 onChange={(event) => {
                   setCarrierError('');
-                  setParcelNumbers((current) => current.map((item, at) => (at === index ? event.target.value : item)));
+                  // Only digits: a pasted number with spaces or dashes keeps its digits.
+                  const digits = event.target.value.replace(/\D/g, '').slice(0, 10);
+                  setParcelNumbers((current) => current.map((item, at) => (at === index ? digits : item)));
                 }}
               />
+              <small id={`parcel-number-${index}-count`} className="order-muted" aria-live="polite">
+                {value === '' ? '10 digits' : value.length === 10 ? '10 digits ✓' : `${value.length} of 10 digits`}
+              </small>
             </div>
           ))}
           {parcelNumbers.length < MAX_PARCELS && (

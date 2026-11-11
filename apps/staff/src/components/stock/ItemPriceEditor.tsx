@@ -3,14 +3,22 @@ import { Disc3, Euro, RefreshCw, Undo2 } from 'lucide-react';
 import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { EditorialApiError } from '../../lib/backend/editorial-api';
 import { createInternalStockApi, type CatalogSellingDetail } from '../../lib/backend/internal-stock-api';
+import MoneyInput, { euroText } from '../fields/MoneyInput';
+
+/** The editor's amount text as cents for MoneyInput; unreadable or empty text reads as no amount. */
+function centsOf(text: string): number | null {
+  try {
+    return text ? euroMinor(text) : null;
+  } catch {
+    return null;
+  }
+}
 import {
   clearPriceDraft,
   describePrice,
   euroMinor,
-  isEuroDraft,
   priceAmount,
   readPriceDraft,
   samePrice,
@@ -308,11 +316,11 @@ export default function ItemPriceEditor({
                 <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
                 Minimum (EUR)
               </span>
-              <Input
-                inputMode="decimal"
-                value={minimum}
-                aria-describedby="price-feedback"
-                onChange={(event) => isEuroDraft(event.target.value) && edit({ minimum: event.target.value })}
+              <MoneyInput
+                id="price-minimum"
+                value={centsOf(minimum)}
+                describedBy="price-feedback"
+                onChange={(cents) => edit({ minimum: euroText(cents) })}
               />
             </label>
           )}
@@ -321,13 +329,13 @@ export default function ItemPriceEditor({
               <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
               {kind === 'pay_what_you_want' ? 'Suggested price (EUR)' : 'Price (EUR)'}
             </span>
-            <Input
-              inputMode="decimal"
-              value={amount}
-              aria-invalid={error || undefined}
-              aria-describedby="price-feedback"
-              className={draft ? 'border-[var(--warning)]' : undefined}
-              onChange={(event) => isEuroDraft(event.target.value) && edit({ amount: event.target.value })}
+            <MoneyInput
+              id="price-amount"
+              value={centsOf(amount)}
+              invalid={!!error}
+              describedBy="price-feedback"
+              className={draft ? '[&_[data-slot=input-group]]:border-[var(--warning)]' : undefined}
+              onChange={(cents) => edit({ amount: euroText(cents) })}
               onBlur={() => {
                 if (timer.current) {
                   clearTimeout(timer.current);
@@ -343,11 +351,11 @@ export default function ItemPriceEditor({
                 <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
                 Maximum (EUR)
               </span>
-              <Input
-                inputMode="decimal"
-                value={maximum}
-                aria-describedby="price-feedback"
-                onChange={(event) => isEuroDraft(event.target.value) && edit({ maximum: event.target.value })}
+              <MoneyInput
+                id="price-maximum"
+                value={centsOf(maximum)}
+                describedBy="price-feedback"
+                onChange={(cents) => edit({ maximum: euroText(cents) })}
               />
             </label>
           )}

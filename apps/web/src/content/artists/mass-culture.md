@@ -2,7 +2,7 @@
 title: Afterwise
 slug: afterwise
 genre: Post Rock
-country: Greece
+country: [GR]
 image: 481665433_641184112172905_3870068485311478607_n.jpg
 image_alt: Afterwise performing live on a black-and-white stage
 bio: >-

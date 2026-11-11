@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Random Tapes",
-  "group": "Tapes",
+  "format": "Tapes",
   "artist_or_label": "The Vagina lips",
   "image": "the-vagina-lips-random-tapes-cassette-mockup.png",
   "image_alt": "The Vagina Lips red cassette in its clear case on a dark textured mockup background",
@@ -13,6 +13,6 @@
   ],
   "summary": "Cassette collection from Thessaloniki post-punk, shoegaze, and dream-pop project The Vagina Lips.",
   "eyebrow": "Distro",
-  "format": "Cassette",
+  "format_override": "Cassette",
   "order": 73
 }

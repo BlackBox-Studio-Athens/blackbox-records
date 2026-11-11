@@ -57,7 +57,7 @@ it('creates one release or distro source with an explicit EUR price and opening 
     expectedMonth: null,
   });
   const merch = setupCommand({ ...input, kind: 'merch', format: 'Clothes', quantity: '0' });
-  expect(merch).toMatchObject({ openingQuantity: 0, source: { sourceKind: 'distro', data: { group: 'Clothes' } } });
+  expect(merch).toMatchObject({ openingQuantity: 0, source: { sourceKind: 'distro', data: { format: 'Clothes' } } });
   expect(JSON.stringify(merch)).not.toContain('category');
 });
 
@@ -150,8 +150,9 @@ it('autosaves and restores only an explicit condition, never a default', () => {
 it('shows a blank Physical condition choice in the Add to catalog details', () => {
   const markup = renderToStaticMarkup(<ItemSetupApp backendBaseUrl="" />);
   expect(markup).toContain('Physical condition');
-  expect(markup).toMatch(/<select[^>]*id="setup-product-condition"[^>]*required=""/);
-  expect(markup).toMatch(/<option value="" selected="">Choose condition<\/option>/);
-  expect(markup).toContain('<option value="new">New</option><option value="used">Used</option>');
+  // New and Used are segmented choices with neither chosen.
+  const condition = markup.slice(markup.indexOf('Physical condition'));
+  expect(condition).toMatch(/aria-checked="false"[^>]*>New</);
+  expect(condition).toMatch(/aria-checked="false"[^>]*>Used</);
   expect(markup).not.toContain('setup-product-condition-error"');
 });

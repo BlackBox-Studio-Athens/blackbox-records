@@ -2,5 +2,6 @@
   "$schema": "../../../.astro/collections/socials.schema.json",
   "title": "Linktree",
   "url": "https://linktr.ee/blackboxstudio82",
+  "visible": true,
   "order": 3
 }

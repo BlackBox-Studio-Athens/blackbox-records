@@ -524,8 +524,10 @@ describe('Order dispatch', () => {
     const html = renderToStaticMarkup(<OrderDetail order={order} onSetDispatch={noop} />);
     expect(html).toContain('No locker chosen: BOX NOW&#x27;s map was unavailable at checkout.');
     expect(html).not.toContain('Copy locker id');
-    expect(html).toContain('Enter the locker agreed with the customer.');
-    expect(html).toContain('Locker name');
+    expect(html).toContain('Choose the locker agreed with the customer.');
+    // BOX NOW's map opens first; the manual fields remain a fallback.
+    expect(html).toContain('data-staff-locker-map');
+    expect(html).toContain('Enter it by hand');
   });
 
   it('offers locker used and parcel numbers before marking shipped', () => {

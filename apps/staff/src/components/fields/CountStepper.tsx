@@ -25,7 +25,7 @@ export default function CountStepper({
   label: string;
   value: number | null;
   min?: number;
-  max?: number;
+  max?: number | undefined;
   step?: number;
   /** Shows at least this many digits, for example 2 for minutes. */
   pad?: number;

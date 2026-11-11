@@ -86,6 +86,17 @@ export async function readStaffWorkspace(
   let { collection, id } = query.data;
   const { cursor, q, variantId, area, format, sort } = query.data;
   const limit = query.data.view === 'changes' ? Math.min(query.data.limit, 25) : query.data.limit;
+  let distroCursor: { cursor?: string; offset: number } = { cursor, offset: 0 };
+  if (cursor?.startsWith('df:')) {
+    try {
+      distroCursor = z
+        .object({ cursor: z.string().optional(), offset: z.number().int().min(0).max(50) })
+        .strict()
+        .parse(JSON.parse(atob(cursor.slice(3))));
+    } catch {
+      return problem(400, 'Invalid search cursor.');
+    }
+  }
   if (variantId) {
     const linked = await deps.commerce
       .prepare('SELECT cmsSourceId, sourceId, sourceKind FROM StoreItemOption WHERE variantId = ?')
@@ -248,6 +259,53 @@ export async function readStaffWorkspace(
                 (area === 'all' || (area === 'merch' ? value === 'Clothes' : value !== 'Clothes')),
             );
             if (section === 'distro' && !groups.length) return { section, items: [], nextCursor: undefined };
+            if (section === 'distro' && (format || area !== 'all')) {
+              const items: Awaited<ReturnType<ContentRepository['findMany']>>['items'] = [];
+              let position = distroCursor.cursor;
+              let offset = distroCursor.offset;
+              let nextCursor: string | undefined;
+              const encode = (nativeCursor: string | undefined, index: number) =>
+                `df:${btoa(JSON.stringify({ ...(nativeCursor ? { cursor: nativeCursor } : {}), offset: index }))}`;
+              // shortcut: scan at most 1,000 legacy rows per page, remove after all records use the format index.
+              for (let page = 0; page < 20; page++) {
+                const result = await deps.runtime.handleContentList(section, {
+                  limit: 50,
+                  cursor: position,
+                  q: catalogSearch ? undefined : q,
+                  orderBy: collection && sort === 'title' ? 'title' : 'updatedAt',
+                  order: sort === 'title' && collection ? 'asc' : 'desc',
+                });
+                if (!result.success) throw new Error('Content is unavailable.');
+                for (let index = offset; index < result.data.items.length; index++) {
+                  const item = result.data.items[index]!;
+                  const data = item.data;
+                  const group =
+                    data.format_override !== undefined &&
+                    data.format_override !== null &&
+                    DISTRO_GROUP_VALUES.includes(data.format as (typeof DISTRO_GROUP_VALUES)[number])
+                      ? data.format
+                      : (data.group ?? data.format);
+                  if (!groups.includes(group as (typeof DISTRO_GROUP_VALUES)[number])) continue;
+                  items.push(item);
+                  if (items.length === limit) {
+                    nextCursor =
+                      index + 1 < result.data.items.length
+                        ? encode(position, index + 1)
+                        : result.data.nextCursor
+                          ? encode(result.data.nextCursor, 0)
+                          : undefined;
+                    return { section, items, nextCursor };
+                  }
+                }
+                const next = result.data.nextCursor;
+                if (!next) return { section, items, nextCursor: undefined };
+                if (next === position) throw new Error('Content cursor did not advance.');
+                position = next;
+                offset = 0;
+                nextCursor = encode(position, 0);
+              }
+              return { section, items, nextCursor };
+            }
             const result = await deps.runtime.handleContentList(section, {
               limit: collection ? limit : 5,
               cursor,
@@ -257,15 +315,6 @@ export async function readStaffWorkspace(
                   ? 'title'
                   : 'updatedAt',
               order: sort === 'title' && collection ? 'asc' : 'desc',
-              ...(section === 'distro' && (format || area !== 'all')
-                ? {
-                    fieldFilters: {
-                      group: {
-                        in: groups,
-                      },
-                    },
-                  }
-                : {}),
             });
             if (!result.success) throw new Error('Content is unavailable.');
             return { section, ...result.data };

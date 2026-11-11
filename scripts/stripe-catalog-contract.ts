@@ -2,6 +2,7 @@
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { projectDistroValues } from '@blackbox/content-model';
 
 import type {
   DesiredCatalogEntry,
@@ -58,8 +59,8 @@ type ReleaseContent = {
 
 type DistroContent = {
   artist_or_label: string;
-  format?: string;
-  group: string;
+  format: string;
+  format_override?: string;
   image: string;
   order: number;
   summary?: string;
@@ -281,7 +282,7 @@ async function readDistroContracts(
         );
   const distro = contents.map(({ content, sourceId }) => {
     const inventoryRow = inventoryRowsBySourceId.get(sourceId)!;
-    const optionLabel = content.format ?? null;
+    const optionLabel = projectDistroValues(content).format ?? null;
     const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
     const expectedPrice = createExpectedSandboxPriceForDistroInventoryRow(inventoryRow);
 

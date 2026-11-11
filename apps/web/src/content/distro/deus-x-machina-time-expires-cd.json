@@ -1,12 +1,12 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Time Expires",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Deus X Machina",
   "image": "deus-x-machina-time-expires-cd.jpg",
   "image_alt": "Time Expires CD front mockup",
   "summary": "Deus Ex Machina's Time Expires on CD from The Lab Records.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 83
 }

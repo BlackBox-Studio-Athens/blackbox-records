@@ -5,9 +5,13 @@ import sharp from 'sharp';
 import {
   contentMediaIds,
   projectProseFields,
+  readSocialValues,
+  readEditorialBooleans,
+  readTypedValues,
   parseAcceptedContentSnapshot,
   sourceCollectionNames,
   type ContentSnapshot,
+  type CmsCollection,
 } from '@blackbox/content-model';
 
 export type SnapshotInput = { path: string; sha256: string; environment: 'local' | 'uat' | 'prd' };
@@ -73,8 +77,16 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
   return loaded.snapshot.records
     .filter((record) => sourceCollectionNames[record.collection as keyof typeof sourceCollectionNames] === collection)
     .map((record) => {
-      const { body, ...editorial } = projectProseFields(record.collection, record.data);
+      const { body, ...editorial } = projectProseFields(
+        record.collection,
+        readEditorialBooleans(record.collection as CmsCollection, readTypedValues(record.collection, record.data)),
+      );
       const data = field(editorial) as Record<string, unknown>;
+      if (record.collection === 'socials') {
+        const social = readSocialValues(data);
+        if (!Object.hasOwn(social, 'url')) delete data.url;
+        Object.assign(data, social);
+      }
       if (loaded.snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
         const item = storeItems.get(`${record.collection === 'releases' ? 'release' : 'distro'}/${record.slug}`);
         data.store_item = item ? { storeItemSlug: item.storeItemSlug, variantId: item.variantId } : null;

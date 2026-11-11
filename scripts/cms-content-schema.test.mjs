@@ -136,7 +136,8 @@ test('Artist activity retains legacy defaults and native false through draft and
     [0, false],
   ]) {
     const stored = { ...data, is_active };
-    assert.deepEqual(validateCmsDraft('artists', stored), []);
+    if (typeof is_active !== 'boolean') assert.ok(validateCmsDraft('artists', stored).length);
+    else assert.deepEqual(validateCmsDraft('artists', stored), []);
     assert.deepEqual(validateCmsContent('artists', stored), []);
     const accepted = parseContentSnapshot(
       JSON.stringify({ ...snapshot, records: [{ ...record, data: stored }] }),
@@ -527,7 +528,7 @@ test('structured issues cover URLs, email, dates, enums, arrays, media, and rela
   };
   const distro = {
     title: 'Item',
-    group: 'Unknown',
+    format: 'Unknown',
     artist_or_label: 'Label',
     image: { id: 'image-1' },
     image_alt: 'Cover',
@@ -541,7 +542,7 @@ test('structured issues cover URLs, email, dates, enums, arrays, media, and rela
   );
   assert.ok(paths('newsletter', newsletter).includes('placeholder'));
   assert.ok(paths('news', { ...news, date: '2026-02-30' }).includes('date'));
-  assert.ok(paths('distro', distro).includes('group'));
+  assert.ok(paths('distro', distro).includes('format'));
   assert.ok(paths('releases', { ...releases, formats: [''] }).includes('formats.0'));
   assert.deepEqual(paths('releases', releases), []);
   const partnerLink = { label: 'Bandcamp', url: 'https://sidus.bandcamp.com/album/lotus' };
@@ -581,7 +582,7 @@ describe('GPSR product safety', () => {
   });
   const source = {
     title: 'Fixture album',
-    group: 'Vinyl 12-inch',
+    format: 'Vinyl 12-inch',
     artist_or_label: 'Fixture artist',
     image: { id: 'cover' },
     image_alt: 'Fixture cover',

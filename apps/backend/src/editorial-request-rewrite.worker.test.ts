@@ -45,6 +45,15 @@ it.each([
     payload: { _rev: 'saved-revision', data: { title: 'Native release', artist: 'artist-one' } },
     expected: { _rev: 'saved-revision', data: { title: 'Native release' }, references: { artist: ['artist-one'] } },
   },
+  {
+    method: 'PUT',
+    path: '/_emdash/api/content/services/site',
+    payload: { _rev: 'saved-revision', data: { services: { items: [{ title: 'Vinyl Mastering' }] } } },
+    expected: {
+      _rev: 'saved-revision',
+      data: { services: { items: [{ title: 'Vinyl Mastering', id: 'vinyl-mastering' }] } },
+    },
+  },
 ])(
   'forwards native $method $path with rewritten JSON and retained request identity',
   async ({ method, path, payload, expected }) => {
@@ -103,7 +112,7 @@ it.each([
       body: JSON.stringify(expected),
     });
     expect(request.headers.get('Content-Length')).toBe(headers['Content-Length']);
-    if (method === 'PUT') expect(getField).toHaveBeenCalledExactlyOnceWith('releases', 'artist');
+    if (path.includes('/releases/')) expect(getField).toHaveBeenCalledExactlyOnceWith('releases', 'artist');
     else expect(getField).not.toHaveBeenCalled();
   },
 );

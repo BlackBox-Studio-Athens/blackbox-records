@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { readTypedValues } from './typed-values-migration';
+import { parseArtistCountries, validArtistLink } from './artist-fields';
+import { distroTracklistMatches } from './tracklist';
 import { catalogNumberSchema, catalogNumberMessage } from './catalog-number';
 import { productSafetyContentSchema } from './product-safety';
-import { validArtistLink } from './artist-fields';
 import {
   createArtistsContentSchema,
   createReleasesContentSchema,
@@ -14,6 +16,7 @@ import {
   distroPageContentSchema,
   navigationContentSchema,
   socialsContentSchema,
+  readSocialValues,
   settingsContentSchema,
   newsletterContentSchema,
 } from './schemas';
@@ -204,7 +207,10 @@ const nativeBooleanFields: Partial<Record<CmsCollection, readonly string[]>> = {
 };
 
 // EmDash stores booleans as INTEGER and returns 0/1; its own field schema accepts both forms.
-function nativeBooleans(collection: CmsCollection, data: Record<string, unknown>): Record<string, unknown> {
+export function readEditorialBooleans(
+  collection: CmsCollection,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
   const fields = nativeBooleanFields[collection];
   if (!fields) return data;
   const result = { ...data };
@@ -215,7 +221,8 @@ function nativeBooleans(collection: CmsCollection, data: Record<string, unknown>
 // EmDash stores absent optional columns as null. Validate that representation as
 // absent, while still rejecting unknown keys and null required fields.
 export function getCmsContentIssues(collection: CmsCollection, stored: Record<string, unknown>): CmsContentIssue[] {
-  const data = nativeBooleans(collection, stored);
+  const read = readTypedValues(collection, stored);
+  const data = collection === 'socials' ? readSocialValues(read) : readEditorialBooleans(collection, read);
   const schema = cmsContentSchemas[collection];
   const known =
     collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
@@ -233,6 +240,8 @@ export function getCmsContentIssues(collection: CmsCollection, stored: Record<st
       message: issue.message,
     }));
   const issues: CmsContentIssue[] = [];
+  if (collection === 'distro' && !distroTracklistMatches(normalized.format, normalized.tracklist))
+    issues.push({ path: ['tracklist'], message: 'The tracklist must match the item format.' });
   if (collection === 'releases' && normalized.release_stage !== 'upcoming' && !normalized.release_date)
     issues.push({
       path: ['release_date'],
@@ -296,8 +305,18 @@ const cmsDraftSchemas = Object.fromEntries(
 
 export function validateCmsDraft(collection: CmsCollection, data: Record<string, unknown>): string[] {
   if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
-  const result = cmsDraftSchemas[collection]!.safeParse(nativeBooleans(collection, data));
+  for (const field of collection === 'socials' ? ['visible'] : (nativeBooleanFields[collection] ?? []))
+    if (Object.hasOwn(data, field) && typeof data[field] !== 'boolean') return [`${field}: Use true or false.`];
+  if (collection === 'artists' && data.country !== undefined && data.country !== null && !Array.isArray(data.country))
+    return ['country: Choose countries from the list.'];
+  const result = cmsDraftSchemas[collection]!.safeParse(data);
   if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('./')}: ${issue.message}`);
+  if (collection === 'socials' && data.visible === true && !data.url)
+    return ['url: Enter a full HTTPS profile URL for a visible link.'];
+  if (collection === 'artists' && Array.isArray(data.country) && !parseArtistCountries(data.country))
+    return ['country: Choose countries from the list without duplicates.'];
+  if (collection === 'distro' && !distroTracklistMatches(data.format, data.tracklist))
+    return ['tracklist: The tracklist must match the item format.'];
   if (collection === 'shows') {
     const issues: string[] = [];
     if (Array.isArray(data.prices) && data.prices.length > 4) issues.push('prices: Enter up to four prices.');

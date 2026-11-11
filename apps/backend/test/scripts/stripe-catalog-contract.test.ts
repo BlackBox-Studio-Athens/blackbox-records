@@ -69,14 +69,14 @@ describe('stripe catalog contract projection', () => {
     expect(
       findDistroInventoryRowForContent(source, {
         artist_or_label: 'Skinny Peachfuzz',
-        group: 'Vinyl 7-inch',
+        format: 'Vinyl 7-inch',
         title: 'Magic Sleazeball Corrida',
       })?.id,
     ).toBe('skinny-peachfuzz-magic-sleazball-corrida-vinyl-7-inch');
     expect(
       findDistroInventoryRowForContent(source, {
         artist_or_label: 'Zebu / Dead Elephant',
-        group: 'Vinyl 7-inch',
+        format: 'Vinyl 7-inch',
         title: 'Crawl / Eat Them Dead Or Alive, Split 7"',
       })?.pricePolicy,
     ).toEqual({
@@ -94,17 +94,12 @@ describe('stripe catalog contract projection', () => {
       ['magic-sleazeball-corrida', 'crawl-eat-them-dead-or-alive-split-7', 'calf-vinyl-10-inch'].map(
         async (sourceId) =>
           JSON.parse(await readFile(path.join(contentRoot, `${sourceId}.json`), 'utf8')) as {
-            format?: string;
-            group: string;
+            format: string;
           },
       ),
     );
 
-    expect(records.map(({ format, group }) => ({ format, group }))).toEqual([
-      { format: 'Vinyl 7-inch', group: 'Vinyl 7-inch' },
-      { format: 'Vinyl 7-inch', group: 'Vinyl 7-inch' },
-      { format: 'Vinyl 10-inch', group: 'Vinyl 10-inch' },
-    ]);
+    expect(records.map(({ format }) => format)).toEqual(['Vinyl 7-inch', 'Vinyl 7-inch', 'Vinyl 10-inch']);
   });
 
   it('rejects non-bijective source matches before catalog projection', async () => {
@@ -123,7 +118,7 @@ describe('stripe catalog contract projection', () => {
         [
           {
             artist_or_label: 'Skinny Peachfuzz',
-            group: 'Vinyl 7-inch',
+            format: 'Vinyl 7-inch',
             sourceId: 'magic-sleazeball-corrida',
             title: 'Magic Sleazeball Corrida',
           },
@@ -153,7 +148,7 @@ describe('stripe catalog contract projection', () => {
         [
           {
             artist_or_label: row.sourceArtist,
-            group: row.itemType === 'CD' ? 'CDs' : row.itemType === 'Tape' ? 'Tapes' : row.itemType,
+            format: row.itemType === 'CD' ? 'CDs' : row.itemType === 'Tape' ? 'Tapes' : row.itemType,
             sourceId: row.id,
             title: row.sourceTitle,
           },
@@ -184,7 +179,7 @@ describe('stripe catalog contract projection', () => {
       reconcileDistroContentWithInventorySource(source, [
         {
           artist_or_label: 'Skinny Peachfuzz',
-          group: 'Vinyl 12-inch',
+          format: 'Vinyl 12-inch',
           sourceId: 'magic-sleazeball-corrida',
           title: 'Magic Sleazeball Corrida',
         },

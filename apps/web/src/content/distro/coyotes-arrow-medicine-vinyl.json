@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Medicine",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "artist_or_label": "Coyotes Arrow",
   "image": "coyotes-arrow-medicine-vinyl.webp",
   "image_alt": "Medicine Vinyl front mockup",
   "summary": "Nine-track Athens mix of punk, garage, heavy, and indie rock, issued on red vinyl.",
   "eyebrow": "Distro",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "order": 66,
   "release_date": "2024-06-13",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=2343701357/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

@@ -6,8 +6,14 @@ import {
   formatDayDate,
   formatDuration,
   formatEuro,
+  formatArtistCountries,
+  generateServiceIds,
+  convertTypedValues,
+  projectDistroValues,
+  readTypedValues,
   moneySchema,
   parseCountryCode,
+  parseArtistCountries,
   parseDuration,
   parseEuroAmount,
   parseHttpsUrl,
@@ -122,5 +128,84 @@ describe('shared editorial values', () => {
     expect(slugify('Αθήνα')).toBe('athina');
     expect(parseSlug(slugify('Vinyl Mastering'))).toBe('vinyl-mastering');
     expect(parseSlug('Upper Case')).toBeNull();
+  });
+
+  test('reads legacy country labels and ordered country codes with the same public labels', () => {
+    const legacy = parseArtistCountries('Greece / Cyprus');
+    const typed = parseArtistCountries(['GR', 'CY']);
+    expect(legacy).toEqual(typed);
+    expect(typed && formatArtistCountries(typed)).toBe('Greece / Cyprus');
+    expect(parseArtistCountries(['GR', 'GR'])).toBeNull();
+    expect(parseArtistCountries(['Greece'])).toBeNull();
+    expect(parseArtistCountries('Unknown place')).toBeNull();
+  });
+
+  test('generates unique service anchors while retaining existing ids', () => {
+    const data = {
+      services: {
+        items: [
+          { title: 'Old title', id: 'vinyl-mastering' },
+          { title: 'Vinyl Mastering' },
+          { title: 'Vinyl Mastering', id: '' },
+        ],
+      },
+    };
+    const generated = generateServiceIds(data);
+    expect(generated.services).toEqual({
+      items: [
+        { title: 'Old title', id: 'vinyl-mastering' },
+        { title: 'Vinyl Mastering', id: 'vinyl-mastering-2' },
+        { title: 'Vinyl Mastering', id: 'vinyl-mastering-3' },
+      ],
+    });
+    expect(generateServiceIds(generated)).toEqual(generated);
+    expect(data.services.items[1]).toEqual({ title: 'Vinyl Mastering' });
+  });
+
+  test('plans typed conversions atomically and can repeat them', () => {
+    const old = {
+      group: 'CDs',
+      format: 'CD',
+      tracklist: { format: 'cd', discs: [{ tracks: [{ title: 'Song', duration: '4:32' }] }] },
+    };
+    const converted = convertTypedValues('distro', old);
+    expect(converted).toEqual({
+      data: {
+        format: 'CDs',
+        format_override: 'CD',
+        tracklist: { discs: [{ tracks: [{ title: 'Song', duration: 272 }] }] },
+      },
+      problems: [],
+    });
+    expect(convertTypedValues('distro', converted.data)).toEqual(converted);
+    const mismatched = { group: 'CDs', format: 'CD', tracklist: { format: 'vinyl', sides: [] } };
+    expect(convertTypedValues('distro', mismatched)).toEqual({ data: mismatched, problems: ['tracklist.format'] });
+    const invalidDuration = {
+      group: 'CDs',
+      tracklist: { format: 'cd', discs: [{ tracks: [{ title: 'Song', duration: '4:99' }] }] },
+    };
+    expect(convertTypedValues('distro', invalidDuration)).toEqual({
+      data: invalidDuration,
+      problems: ['tracklist.0.0.duration'],
+    });
+    expect(convertTypedValues('artists', { country: 'Greece / Cyprus', is_active: 1 })).toEqual({
+      data: { country: ['GR', 'CY'], is_active: true },
+      problems: [],
+    });
+    const invalid = { country: 'Unknown place', is_active: 1 };
+    expect(convertTypedValues('artists', invalid)).toEqual({ data: invalid, problems: ['country'] });
+    expect(convertTypedValues('socials', { title: 'Bandcamp', url: '#', order: 4 })).toEqual({
+      data: { title: 'Bandcamp', visible: false, order: 4 },
+      problems: [],
+    });
+  });
+
+  test('projects legacy and typed Distro values to identical public labels and filters', () => {
+    const old = { group: 'CDs', format: 'CD' };
+    const typed = { format: 'CDs', format_override: 'CD' };
+    expect(projectDistroValues(old)).toMatchObject({ group: 'CDs', format: 'CD' });
+    expect(projectDistroValues(typed)).toMatchObject({ group: 'CDs', format: 'CD' });
+    expect(readTypedValues('artists', { country: 'Greece / Cyprus' }).country).toEqual(['GR', 'CY']);
+    expect(readTypedValues('artists', { country: ['GR', 'CY'] }).country).toEqual(['GR', 'CY']);
   });
 });

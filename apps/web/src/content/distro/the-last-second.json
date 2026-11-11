@@ -5,10 +5,10 @@
   "release_date": "2019-05-01",
   "order": 3,
   "artist_or_label": "Their Methlab",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "title": "The Last Second",
   "image": "their-methlab-the-last-second.jpg",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=2551223841/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/",
   "tidal_url": "https://tidal.com/album/104591962"
 }

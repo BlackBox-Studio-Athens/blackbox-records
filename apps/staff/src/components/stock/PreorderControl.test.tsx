@@ -35,8 +35,8 @@ describe('PreorderControl', () => {
     expect(html).toContain('When it ships');
     expect(html).toContain('About a month');
     expect(html).toContain('Exact date');
-    expect(html).toContain('Any time in the month');
-    for (const label of ['Early', 'Mid', 'Late']) expect(html).toContain('>' + label + '</option>');
+    for (const label of ['Any time', 'Early', 'Mid', 'Late'])
+      expect(html).toMatch(new RegExp(`role="radio"[^>]*>${label}<`));
     expect(html).toContain('Shoppers see &quot;ships around October 2026&quot;.');
     expect(html).toContain('Copies: enter the number you expect as the stock quantity.');
     expect(html).toContain('Save pre-order');
@@ -44,7 +44,7 @@ describe('PreorderControl', () => {
     expect(html).toContain(
       'Ends the pre-order now. If the plant slips, change the estimate instead: every waiting order gets an email.',
     );
-    expect(html.match(/<label[^>]*for=/g)).toHaveLength(3);
+    expect(html.match(/<label[^>]*for=/g)).toHaveLength(2);
   });
 
   it('retains a passed stored month with its warning and withheld preview', () => {

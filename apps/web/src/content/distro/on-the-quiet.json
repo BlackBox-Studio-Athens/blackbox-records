@@ -4,10 +4,10 @@
   "summary": "Ten-track Greek alternative-rock and post-hardcore album, available here on blue vinyl.",
   "order": 1,
   "artist_or_label": "One Leg Mary",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "title": "On The Quiet",
   "image": "onelegmary-on-the-quiet.jpg",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "release_date": "2017-02-01",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=1133527153/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/",
   "tidal_url": "https://tidal.com/album/416540162"

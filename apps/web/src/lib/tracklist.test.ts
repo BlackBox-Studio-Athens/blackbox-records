@@ -4,6 +4,8 @@ import {
   tracklistGroups,
   tracklistFormat,
   validateCmsDraft,
+  durationFromParts,
+  readDistroTracklist,
   type Tracklist,
 } from '@blackbox/content-model';
 
@@ -11,13 +13,13 @@ it('validates embedded format-specific values and renders only the matching popu
   const vinyl: Tracklist = {
     format: 'vinyl',
     sides: [
-      { label: 'A', tracks: [{ title: 'First', duration: '3:42' }] },
+      { label: 'A', tracks: [{ title: 'First', duration: durationFromParts(3, 42)! }] },
       { label: 'B', tracks: [{ title: 'Δεύτερο τραγούδι' }] },
     ],
   };
   expect(tracklistSchema.parse(vinyl)).toEqual(vinyl);
   expect(tracklistGroups(vinyl, 'Black vinyl LP')).toEqual([
-    { heading: 'Side A', tracks: [{ position: 'A1', title: 'First', duration: '3:42' }] },
+    { heading: 'Side A', tracks: [{ position: 'A1', title: 'First', duration: 222 }] },
     { heading: 'Side B', tracks: [{ position: 'B1', title: 'Δεύτερο τραγούδι' }] },
   ]);
   expect(tracklistGroups(vinyl, 'CD')).toEqual([]);
@@ -56,4 +58,12 @@ it('distinguishes disc numbering from cassette sides without inventing durations
     tracklistGroups({ format: 'cassette', sides: [{ label: 'B', tracks: [{ title: 'B-side' }] }] }, 'Cassette')[0]!
       .tracks[0]!.position,
   ).toBe('B1');
+});
+
+it('derives the Distro tracklist format from its item format', () => {
+  expect(readDistroTracklist({ discs: [{ tracks: [{ title: 'One' }] }] }, 'CDs')).toEqual({
+    format: 'cd',
+    discs: [{ tracks: [{ title: 'One' }] }],
+  });
+  expect(readDistroTracklist({ sides: [{ label: 'A', tracks: [] }] }, 'CDs')).toBeNull();
 });

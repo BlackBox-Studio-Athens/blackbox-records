@@ -6,7 +6,7 @@ import { createDistroContentSchema } from '@blackbox/content-model';
 const schema = createDistroContentSchema(() => z.string().min(1));
 const baseEntry = {
   artist_or_label: 'Fixture Artist',
-  group: 'CDs' as const,
+  format: 'CDs' as const,
   image: './fixture-cd-front.jpg',
   image_alt: 'Fixture CD front cover and case',
   order: 1,

@@ -28,7 +28,7 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
       type,
       // Native fields accept private incomplete work; the editorial hook validates safety and publication checks completeness.
       required: false,
-      ...(slug === 'distro' && name === 'group' ? { indexed: true } : {}),
+      ...(slug === 'distro' && name === 'format' ? { indexed: true } : {}),
       ...(type === 'reference' ? { options: { collection: 'artists' } } : {}),
     };
   });

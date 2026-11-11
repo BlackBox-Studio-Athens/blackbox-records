@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import ts from 'typescript';
 import { getPlatformProxy } from 'wrangler';
 import { z } from 'zod';
+import { readTypedValues } from '@blackbox/content-model';
 import {
   CatalogReconciler,
   type DesiredCatalogEntry,
@@ -92,7 +93,7 @@ export function readBackfillSources(
     const itemType =
       catalog.sourceKind === 'release'
         ? getPrimaryReleaseStoreFormat(z.array(z.string()).parse(record.data.formats))
-        : normalizeDistroContentItemType(z.string().min(1).parse(record.data.group));
+        : normalizeDistroContentItemType(z.string().min(1).parse(readTypedValues('distro', record.data).format));
     if (!itemType) throw new Error(`Physical item type is missing for ${catalog.storeItemSlug}.`);
     return { catalog, cmsSourceId: report.identities[identity], itemType };
   });

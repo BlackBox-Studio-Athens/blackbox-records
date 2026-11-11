@@ -1,5 +1,5 @@
 ---
-import { tracklistFormat, tracklistGroups } from '@blackbox/content-model';
+import { formatDuration, tracklistFormat, tracklistGroups } from '@blackbox/content-model';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
 import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
@@ -85,7 +85,7 @@ const galleryImages =
     : [];
 const trackGroups = tracklistGroups(
   sourceRelease?.data.tracklist ?? distroSource?.data.tracklist,
-  primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group,
+  primaryAvailability?.optionLabel || distroSource?.data.group || distroSource?.data.format,
 );
 const isVinyl =
   tracklistFormat(primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group) ===
@@ -299,7 +299,9 @@ const product = {
                   <li>
                     <span class="store-track-position">{track.position}</span>
                     <span>{track.title}</span>
-                    {track.duration && <span class="store-track-duration">{track.duration}</span>}
+                    {track.duration !== undefined && (
+                      <span class="store-track-duration">{formatDuration(track.duration)}</span>
+                    )}
                   </li>
                 ))}
               </ol>

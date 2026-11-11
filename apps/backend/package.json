@@ -46,6 +46,7 @@
     "cms:application-migrations:local": "node scripts/migrate-cms-application.mjs",
     "cms:application-migrations": "node scripts/migrate-cms-application.mjs",
     "cms:catalog-schema": "node --import tsx scripts/prepare-cms-catalog-schema.mjs",
+    "cms:migrate-typed-values": "node --import tsx scripts/prepare-cms-catalog-schema.mjs --migrate-typed-values",
     "test:staff-hosting": "node test/emdash/staff-smoke.mjs",
     "test:cms-content": "node --import tsx test/emdash/content-smoke.mjs",
     "test:cms-import": "node --import tsx test/emdash/import-smoke.mjs",

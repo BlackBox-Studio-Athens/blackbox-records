@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Idle Frenzy",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Celuta Red",
   "image": "celuta-red-idle-frenzy-cd.jpg",
   "image_alt": "Idle Frenzy CD front mockup",
   "summary": "Idle Frenzy is Celuta Red's seven-track 2018 alternative-rock album, produced by Ottomo and recorded and mixed at The New Fab Liquid Recording Studios.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 80,
   "release_date": "2018-05-11",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=2862293401/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

@@ -10,6 +10,7 @@ import {
 import { authenticate } from './cms/auth';
 import {
   contentMediaIds,
+  generateServiceIds,
   isCmsCollection,
   publicationReviewSchema,
   validateCmsDraft,
@@ -856,6 +857,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             Array.isArray(payload.data)
           )
             throw new Error('Invalid draft.');
+          if (editorialWrite[1] === 'services')
+            payload.data = generateServiceIds(payload.data as Record<string, unknown>);
           const draftData = payload.data as Record<string, unknown>;
           if (Object.hasOwn(draftData, 'body')) draftData.body = normalizeEditorialBody(draftData.body);
           const issues = validateCmsDraft(editorialWrite[1], draftData);

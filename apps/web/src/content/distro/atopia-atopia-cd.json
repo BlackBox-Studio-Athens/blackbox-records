@@ -1,12 +1,12 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Ατοπια",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Ατοπια",
   "image": "atopia-atopia-cd.jpg",
   "image_alt": "Ατοπια CD front mockup",
   "summary": "Ατοπια's 2012 self-titled album spans 11 tracks, from «Εισαγωγή» through «Υπέροχη Θέα».",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 33
 }

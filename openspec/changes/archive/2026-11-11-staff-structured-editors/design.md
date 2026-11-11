@@ -61,9 +61,18 @@ The owner approved direction B on 10 November 2026: grouped task cards with live
 
 5. **Stored-value migration** extends the existing idempotent preparation pattern (`prepareCatalogSchema`) with a content step that runs explicitly in each environment (`cms:migrate-typed-values`). It runs separately from schema preparation, writes drafts only, and reports unconvertible values. The converted live content then goes through normal review and Content Publication. Readers accept both forms during the transition window:
    - countries: names or codes
-   - socials: `#` or the visible flag
+   - socials: `#` reads as hidden with no address; otherwise the visible flag controls display. Hidden links may omit an address and retain one when supplied.
+   - native boolean columns: `readEditorialBooleans` maps the SQLite `0` and `1` read forms to booleans; editorial writes accept only booleans.
 
    Shows are unreleased: their prices use cents directly, with no dual read or Show price migration.
+
+   New service anchors use the title slug. If it is already taken, append `-2`, `-3` and so on. Existing nonempty anchors are never regenerated. A record with an unconvertible value is left entirely unchanged and reported for review.
+
+   The target Distro shape uses `format` from `DISTRO_GROUP_VALUES`, with an optional `format_override` for its existing public description. Distro tracklists omit their own format and follow `format`; Release tracklists keep their format. Tracks use `duration` in whole seconds. The target Artist shape uses `country: CountryCode[]`. Legacy labels and durations remain readable while the migration is pending.
+
+   The explicit catalog-schema setup registers the legacy Artist text column as JSON-compatible without rewriting its contents; SQLite retains the existing text column. Prepare schema before applying the migration and pause editorial writes while it stages drafts. A legacy Distro tracklist whose stored format conflicts with its item is reported for review and remains hidden on the public site.
+
+   During the transition, Staff Distro filters scan native pages in order and accept either stored format. Each request scans at most 1,000 records and returns a continuation when more remain. After legacy data is retired, use the indexed `format` field directly again.
 
    A follow-up removes the dual read after PRD migration.
 

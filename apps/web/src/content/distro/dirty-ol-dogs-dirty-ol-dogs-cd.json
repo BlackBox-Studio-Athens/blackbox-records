@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Dirty ol' dogs",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Dirty ol' dogs",
   "image": "dirty-ol-dogs-dirty-ol-dogs-cd.jpg",
   "image_alt": "Dirty ol' dogs CD front mockup",
   "summary": "Eight-track self-titled garage-punk album released in 2019.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 25,
   "release_date": "2019-03-09",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=3197892882/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

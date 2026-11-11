@@ -3,7 +3,7 @@ title: Chronoboros
 slug: chronoboros
 is_active: false
 genre: Hardcore
-country: Greece
+country: [GR]
 image: ./Chronoboros-band-logo.jpg
 image_alt: Black-and-white samurai mask illustration used for Chronoboros
 bio: |

@@ -1,23 +1,24 @@
 import { TRACK_SIDE_LABELS, type Track, type Tracklist } from '@blackbox/content-model';
-import { ArrowDown, ArrowUp, Clock, Disc3, ListMusic, Plus, Tag, Trash2, Type } from 'lucide-react';
+import { ArrowDown, ArrowUp, Disc3, ListMusic, Plus, Tag, Trash2, Type } from 'lucide-react';
+import DurationField from '../fields/DurationField';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { NativeSelect } from '../ui/native-select';
 import { Field, FieldLabel, FieldDescription, FieldError, FieldSet, FieldLegend } from '../ui/field';
 
-// Every prefix of a valid m:ss duration, so typing can only move towards a legal value.
-const durationDraft = /^\d{0,3}(?::[0-5]?\d?)?$/;
-
 export default function TracklistFields({
   value,
   onChange,
   formatHint,
+  lockFormat = false,
   errors = [],
   disabled = false,
 }: {
   value: Tracklist | null;
   onChange(value: Tracklist | null): void;
   formatHint: Tracklist['format'] | null;
+  /** The item's format decides the tracklist shape, so staff cannot change it here. */
+  lockFormat?: boolean;
   errors?: string[];
   disabled?: boolean;
 }) {
@@ -59,29 +60,31 @@ export default function TracklistFields({
         </Button>
       ) : (
         <>
-          <Field>
-            <FieldLabel htmlFor="tracklist-format" icon={Disc3}>
-              Tracklist format
-            </FieldLabel>
-            <NativeSelect
-              id="tracklist-format"
-              value={value.format}
-              onChange={(event) => changeFormat(event.target.value as Tracklist['format'])}
-            >
-              <option value="vinyl">Vinyl</option>
-              <option value="cassette">Cassette</option>
-              <option value="cd">CD</option>
-            </NativeSelect>
-            <FieldDescription>
-              Changing format keeps all tracks in the first side or disc. Review the order and side boundaries for that
-              edition.
-            </FieldDescription>
-            {formatHint && formatHint !== value.format && (
+          {!lockFormat && (
+            <Field>
+              <FieldLabel htmlFor="tracklist-format" icon={Disc3}>
+                Tracklist format
+              </FieldLabel>
+              <NativeSelect
+                id="tracklist-format"
+                value={value.format}
+                onChange={(event) => changeFormat(event.target.value as Tracklist['format'])}
+              >
+                <option value="vinyl">Vinyl</option>
+                <option value="cassette">Cassette</option>
+                <option value="cd">CD</option>
+              </NativeSelect>
               <FieldDescription>
-                This tracklist will not appear on the current {formatHint === 'cd' ? 'CD' : formatHint} Store Item.
+                Changing format keeps all tracks in the first side or disc. Review the order and side boundaries for
+                that edition.
               </FieldDescription>
-            )}
-          </Field>
+              {formatHint && formatHint !== value.format && (
+                <FieldDescription>
+                  This tracklist will not appear on the current {formatHint === 'cd' ? 'CD' : formatHint} Store Item.
+                </FieldDescription>
+              )}
+            </Field>
+          )}
           {groups.map((group, groupIndex) => (
             <FieldSet key={groupIndex} className="min-w-0 border-t border-border pt-4">
               <FieldLegend icon={Disc3}>
@@ -135,28 +138,20 @@ export default function TracklistFields({
                       }
                     />
                   </Field>
-                  <Field>
-                    <FieldLabel htmlFor={`duration-${groupIndex}-${trackIndex}`} icon={Clock}>
-                      Duration
-                    </FieldLabel>
-                    <Input
-                      id={`duration-${groupIndex}-${trackIndex}`}
-                      value={track.duration || ''}
-                      placeholder="3:42"
-                      aria-describedby={`duration-help-${groupIndex}-${trackIndex}`}
-                      onChange={(event) =>
-                        durationDraft.test(event.target.value) &&
-                        changeTracks(groupIndex, (tracks) =>
-                          tracks.map((current, index) => {
-                            if (index !== trackIndex) return current;
-                            const { duration: _duration, ...rest } = current;
-                            return event.target.value ? { ...rest, duration: event.target.value } : rest;
-                          }),
-                        )
-                      }
-                    />
-                    <FieldDescription id={`duration-help-${groupIndex}-${trackIndex}`}>Optional m:ss</FieldDescription>
-                  </Field>
+                  <DurationField
+                    label="Duration (optional)"
+                    path={`tracklist.${groupIndex}.${trackIndex}.duration`}
+                    value={track.duration}
+                    onChange={(duration) =>
+                      changeTracks(groupIndex, (tracks) =>
+                        tracks.map((current, index) => {
+                          if (index !== trackIndex) return current;
+                          const { duration: _duration, ...rest } = current;
+                          return duration === null ? rest : { ...rest, duration };
+                        }),
+                      )
+                    }
+                  />
                   <div className="flex flex-wrap gap-2 sm:col-span-full">
                     {[-1, 1].map((delta) => (
                       <Button

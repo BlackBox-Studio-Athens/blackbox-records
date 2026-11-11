@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { genreSuggestions } from '@blackbox/content-model';
-import { FileText, Plus, RefreshCw, Save, Tag, Type, Users, X } from 'lucide-react';
+import { FileText, Plus, RefreshCw, Save, Type, Users, X } from 'lucide-react';
 import { FieldLegend } from '../ui/field';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
+import ChoiceChips from '../fields/ChoiceChips';
 import { createEditorialDraft, editorialSlug, type EditorialRecord } from '../../lib/backend/editorial-api';
 
 type ArtistDraft = Parameters<typeof createEditorialDraft>[2];
@@ -39,6 +40,10 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
         'input,textarea,select',
       )) {
         if (!input.reportValidity()) return;
+      }
+      if (!genre.trim()) {
+        setMessage('Choose a genre for the new artist.');
+        return;
       }
     }
     setBusy(true);
@@ -93,23 +98,17 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
               </span>
               <Input required value={title} onChange={(event) => setTitle(event.target.value)} />
             </label>
-            <label className="grid gap-2">
-              <span className="flex items-center gap-2">
-                <Tag className="size-4 text-muted-foreground" aria-hidden="true" />
-                Genre
-              </span>
-              <Input
-                required
-                value={genre}
-                list="new-artist-genres"
-                onChange={(event) => setGenre(event.target.value)}
-              />
-              <datalist id="new-artist-genres">
-                {genreSuggestions.map((genre) => (
-                  <option key={genre} value={genre} />
-                ))}
-              </datalist>
-            </label>
+            <ChoiceChips
+              path="new-artist-genre"
+              label="Genre"
+              single
+              required
+              options={[...genreSuggestions]}
+              value={genre ? [genre] : []}
+              otherLabel="Other genre"
+              maxLength={100}
+              onChange={(next) => setGenre(next[0] ?? '')}
+            />
             <label className="grid gap-2">
               <span className="flex items-center gap-2">
                 <FileText className="size-4 text-muted-foreground" aria-hidden="true" />

@@ -29,7 +29,7 @@ export type MusicAlbumFacts = {
   labelUrl?: string;
   artist?: { name: string; url?: string | undefined } | undefined;
   releaseDate?: Date | null | undefined;
-  tracks?: { title: string; duration?: string | undefined }[];
+  tracks?: { title: string; duration?: number | string | undefined }[];
 };
 
 const context = 'https://schema.org';
@@ -141,8 +141,9 @@ export function createMusicGroupStructuredData(group: MusicGroupFacts): Entity {
   };
 }
 
-function trackDuration(duration: string) {
-  const [minutes, seconds] = duration.split(':').map(Number);
+function trackDuration(duration: string | number) {
+  const [minutes, seconds] =
+    typeof duration === 'number' ? [Math.floor(duration / 60), duration % 60] : duration.split(':').map(Number);
   return `PT${minutes}M${seconds}S`;
 }
 
@@ -179,7 +180,7 @@ export function createMusicAlbumStructuredData(album: MusicAlbumFacts): Entity {
           track: album.tracks.map((track) => ({
             '@type': 'MusicRecording',
             name: track.title,
-            ...(track.duration ? { duration: trackDuration(track.duration) } : {}),
+            ...(track.duration !== undefined ? { duration: trackDuration(track.duration) } : {}),
           })),
         }
       : {}),

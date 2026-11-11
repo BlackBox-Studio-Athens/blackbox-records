@@ -19,19 +19,25 @@ test('Show schema preparation creates missing fields, preserves content, repeats
   try {
     await runMigrations(scoped.db);
     const registry = new SchemaRegistry(scoped.db);
-    for (const slug of ['artists', 'releases', 'distro', 'news', 'settings', 'newsletter'])
+    for (const slug of ['artists', 'releases', 'distro', 'news', 'settings', 'newsletter', 'socials'])
       await registry.createCollection({ slug, label: slug, routable: false });
     for (const slug of ['artists', 'releases', 'distro', 'news'])
       await registry.createField(slug, { slug: 'title', label: 'Title', type: 'string' });
+    await registry.createField('artists', { slug: 'country', label: 'Country', type: 'string' });
     await env.TEST_CMS_DB.prepare(
-      "INSERT INTO ec_artists (id, slug, title) VALUES ('existing', 'existing', 'Keep me')",
+      "INSERT INTO ec_artists (id, slug, title, country) VALUES ('existing', 'existing', 'Keep me', 'Greece')",
     ).run();
     const content = async () =>
-      (await env.TEST_CMS_DB.prepare('SELECT id, slug, status, title, created_at, updated_at FROM ec_artists').all())
-        .results;
+      (
+        await env.TEST_CMS_DB.prepare(
+          'SELECT id, slug, status, title, country, created_at, updated_at FROM ec_artists',
+        ).all()
+      ).results;
     const before = await content();
     const runtime = { db: scoped.db } as EmDashRuntime;
     expect((await prepareCatalogSchema(runtime)).status).toBe(200);
+    expect((await registry.getField('artists', 'country'))?.type).toBe('json');
+    expect((await registry.getField('socials', 'visible'))?.type).toBe('boolean');
     const fields = await registry.listFields((await registry.getCollection('shows'))!.id);
     expect(Object.fromEntries(fields.map((field) => [field.slug, field.type]))).toEqual({
       title: 'string',

@@ -1,12 +1,16 @@
 import { z } from 'zod';
+import { parseDuration, type DurationSeconds } from './values';
 
 export const TRACK_SIDE_LABELS = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] as [string, ...string[]];
 export const trackSchema = z
   .object({
     title: z.string().trim().min(1, 'Enter the track title.').max(300),
     duration: z
-      .string()
-      .regex(/^\d{1,3}:[0-5]\d$/, 'Use minutes:seconds, such as 3:42.')
+      .number()
+      .int()
+      .min(0)
+      .max(Number.MAX_SAFE_INTEGER)
+      .transform((value) => value as DurationSeconds)
       .optional(),
   })
   .strict();
@@ -17,6 +21,30 @@ export const trackSideSchema = z
   })
   .strict();
 export const trackDiscSchema = z.object({ tracks: z.array(trackSchema).max(99) }).strict();
+export const distroTracklistSchema = z
+  .union([
+    z.object({ sides: z.array(trackSideSchema).max(26) }).strict(),
+    z.object({ discs: z.array(trackDiscSchema).max(26) }).strict(),
+  ])
+  .superRefine((tracklist, context) => {
+    if (!('sides' in tracklist)) return;
+    const labels = new Set<string>();
+    tracklist.sides.forEach((side, index) => {
+      if (labels.has(side.label))
+        context.addIssue({
+          code: 'custom',
+          path: ['sides', index, 'label'],
+          message: 'Each side needs a different letter.',
+        });
+      labels.add(side.label);
+    });
+  });
+
+/** Read a legacy duration without changing stored content. */
+export function readDuration(value: unknown): DurationSeconds | null {
+  if (typeof value === 'string') return parseDuration(value);
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? (value as DurationSeconds) : null;
+}
 export const tracklistSchema = z
   .discriminatedUnion('format', [
     z.object({ format: z.literal('vinyl'), sides: z.array(trackSideSchema).max(26) }).strict(),
@@ -47,6 +75,25 @@ export function tracklistFormat(format: string | null | undefined): Tracklist['f
   if (/\bcds?\b/i.test(format)) return 'cd';
   if (/\b(cassettes?|tapes?)\b/i.test(format)) return 'cassette';
   if (/\b(vinyl|lp)\b|\d+["″]|\binch\b/i.test(format)) return 'vinyl';
+  return null;
+}
+
+export function distroTracklistMatches(format: unknown, tracklist: unknown): boolean {
+  if (typeof format !== 'string' || !tracklist || typeof tracklist !== 'object') return true;
+  const type = tracklistFormat(format);
+  const value = tracklist as Record<string, unknown>;
+  if ('discs' in value) return type === 'cd';
+  if ('sides' in value) return type === 'vinyl' || type === 'cassette';
+  return true;
+}
+
+export function readDistroTracklist(tracklist: unknown, format: string): Tracklist | null {
+  const parsed = distroTracklistSchema.safeParse(tracklist);
+  if (!parsed.success) return null;
+  const type = tracklistFormat(format);
+  if ('discs' in parsed.data && type === 'cd') return { format: 'cd', discs: parsed.data.discs };
+  if ('sides' in parsed.data && (type === 'vinyl' || type === 'cassette'))
+    return { format: type, sides: parsed.data.sides };
   return null;
 }
 

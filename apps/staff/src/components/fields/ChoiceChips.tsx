@@ -39,7 +39,7 @@ export default function ChoiceChips({
   allowOther?: boolean;
   otherLabel?: string;
   maxLength?: number;
-  description?: string;
+  description?: string | undefined;
   errors?: string[];
   disabled?: boolean;
   onChange(value: string[]): void;

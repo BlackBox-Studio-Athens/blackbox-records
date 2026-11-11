@@ -36,7 +36,7 @@ export default function MoneyInput({
   onChange(cents: number | null): void;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   onBlur?(): void;
-  className?: string;
+  className?: string | undefined;
 }) {
   const [text, setText] = useState(() => euroText(value));
   const [message, setMessage] = useState('');

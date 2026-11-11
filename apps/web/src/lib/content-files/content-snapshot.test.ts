@@ -113,6 +113,14 @@ it('loads only checksum-bound content, maps stable references and rejects altere
         editorial_body: [],
       },
     });
+    const artistData = loaded.snapshot.records.find((record) => record.collection === 'artists')!.data;
+    for (const country of ['Greece / Cyprus', ['GR', 'CY']]) {
+      artistData.country = country;
+      expect(snapshotCollection(loaded, 'artists')[0]!.data.country).toEqual(['GR', 'CY']);
+      expect(publishedCollection(loaded.snapshot, 'artists', '/media/content')[0]!.data.country).toBe(
+        'Greece / Cyprus',
+      );
+    }
     expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toBeUndefined();
     expect(snapshotCollection(loaded, 'releases')[0]!.data.gallery).toEqual([
       { image: `./media/${digest(bytes)}.png`, image_alt: 'Back cover' },
@@ -172,8 +180,14 @@ it('loads only checksum-bound content, maps stable references and rejects altere
     expect(parseContentSnapshot(JSON.stringify(loaded.snapshot), 'local').records[1]!.data.tracklist).toEqual(
       tracklist,
     );
-    expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toEqual(tracklist);
-    expect(publishedCollection(loaded.snapshot, 'releases', '/media/content')[0]!.data.tracklist).toEqual(tracklist);
+    const projectedTracklist = {
+      ...tracklist,
+      sides: [{ label: 'A', tracks: [{ title: 'First song', duration: 200 }] }, tracklist.sides[1]],
+    };
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toEqual(projectedTracklist);
+    expect(publishedCollection(loaded.snapshot, 'releases', '/media/content')[0]!.data.tracklist).toEqual(
+      projectedTracklist,
+    );
     loaded.snapshot.records.push({
       collection: 'distro',
       id: 'distro',
@@ -193,7 +207,7 @@ it('loads only checksum-bound content, maps stable references and rejects altere
     expect(parseContentSnapshot(JSON.stringify(loaded.snapshot), 'local').records[2]!.data.tracklist).toEqual(
       tracklist,
     );
-    expect(snapshotCollection(loaded, 'distro')[0]!.data.tracklist).toEqual(tracklist);
+    expect(snapshotCollection(loaded, 'distro')[0]!.data.tracklist).toBeUndefined();
     expect(snapshotCollection(loaded, 'releases')[0]!.data.artist).toBe('stable-artist');
     expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toEqual({
       storeItemSlug: 'original-store-slug',

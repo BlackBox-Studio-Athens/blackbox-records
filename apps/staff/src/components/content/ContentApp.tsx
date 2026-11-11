@@ -91,6 +91,10 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 
+// Loaded on demand: the reader brings the content schemas, which the overview does not need.
+const typedValues = (collection: string, data: ContentData) =>
+  import('./typed-values').then(({ editorData }) => editorData(collection, data));
+
 type Document = { item: EditorialRecord; _rev: string };
 
 function contentSave(document: Document, data: ContentData) {
@@ -771,7 +775,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       const nextDocument = { ...loaded, item: nextItem };
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
-      setData(loaded.item.data);
+      setData(await typedValues(collection, loaded.item.data));
       setEditorReset((value) => value + 1);
       if (!['releases', 'distro'].includes(collection)) setItemTab('details');
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
@@ -797,6 +801,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setMessage('');
     try {
       const loaded = await editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`);
+      const typed = await typedValues(section, loaded.item.data);
       if (sequence !== editorSequence.current) return false;
       setDocument({
         ...loaded,
@@ -807,7 +812,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         },
       });
       if (!['releases', 'distro'].includes(section)) setItemTab('details');
-      setData(loaded.item.data);
+      // Show values saved before the typed-value migration in their new form; saving stores that form.
+      setData(typed);
       setDirty(false);
       setValidationAttempt(0);
       setConflict(false);
@@ -1154,7 +1160,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         await editorialRequest<Document>(
           base,
           `content/${collection}/${destination.item.id}`,
-          { _rev: saved._rev, data: { ...editorialWriteData(saved.item.data), order: destination.order } },
+          {
+            _rev: saved._rev,
+            data: { ...editorialWriteData(await typedValues(collection, saved.item.data)), order: destination.order },
+          },
           'PUT',
         );
       }

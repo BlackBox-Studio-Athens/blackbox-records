@@ -5,13 +5,24 @@ import type { ComponentProps } from 'react';
 import type * as InputModule from '../ui/input';
 import type * as ButtonModule from '../ui/button';
 import type * as NativeSelectModule from '../ui/native-select';
+import type * as SegmentedChoiceModule from '../fields/SegmentedChoice';
 import { getContentValidation } from '../publication/content-validation';
 
 const controls = vi.hoisted(() => ({
   inputs: [] as Array<ComponentProps<'input'> & { 'data-content-path'?: string }>,
   buttons: [] as Array<ComponentProps<'button'>>,
   selects: [] as Array<ComponentProps<(typeof NativeSelectModule)['NativeSelect']> & { 'data-content-path'?: string }>,
+  segments: [] as Array<{ label: string; path?: string; value?: string; onChange(value: string): void }>,
 }));
+vi.mock('../fields/SegmentedChoice', async (importOriginal) => {
+  const Actual = (await importOriginal<typeof SegmentedChoiceModule>()).default;
+  return {
+    default: (props: (typeof controls.segments)[number]) => {
+      controls.segments.push(props);
+      return <Actual {...(props as React.ComponentProps<typeof Actual>)} />;
+    },
+  };
+});
 vi.mock('../ui/native-select', async (importOriginal) => {
   const actual = await importOriginal<typeof NativeSelectModule>();
   return {
@@ -64,8 +75,21 @@ test('partner rows add, edit, reorder and remove without replacing other release
   };
   const initial = render();
   expect(data).toEqual({ title: 'Record', singles: [] });
-  expect(initial.indexOf('Singles')).toBeLessThan(initial.indexOf('Partner store links'));
-  expect(initial.indexOf('Partner store links')).toBeLessThan(initial.indexOf('Clips'));
+  // The editor is the ordered card stack, one exclusive group.
+  expect([...initial.matchAll(/data-editor-card="(\w+)"/g)].map((match) => match[1])).toEqual([
+    'basics',
+    'artwork',
+    'formats',
+    'listening',
+    'tracklist',
+    'credits',
+    'text',
+    'home',
+    'safety',
+  ]);
+  expect(initial).toMatch(/<details[^>]*name="release-new"/);
+  expect(initial.indexOf('Singles')).toBeLessThan(initial.indexOf('Clips'));
+  expect(initial.indexOf('Clips')).toBeLessThan(initial.indexOf('Partner store links'));
   // SSR captures the real controlled-form callbacks; the browser acceptance checks keyboard use.
   const click = (label: string, index = 0) => {
     const buttons = controls.buttons.filter((button) =>
@@ -76,8 +100,8 @@ test('partner rows add, edit, reorder and remove without replacing other release
     expect(buttons[index]?.disabled).not.toBe(true);
     handler!({} as Parameters<NonNullable<typeof handler>>[0]);
   };
-  // Photos and Singles precede the partner row control.
-  click('Add row', 2);
+  // Photos, Singles and Clips precede the partner row control.
+  click('Add row', 3);
   expect(data.partner_links).toEqual([{ label: '', url: '' }]);
   expect(render()).not.toContain('id="content-partner_links.0.label-error"');
   validationAttempt = 1;
@@ -103,7 +127,7 @@ test('partner rows add, edit, reorder and remove without replacing other release
   expect(getContentValidation('releases', data).issues.filter((issue) => issue.path[0] === 'partner_links')).toEqual(
     [],
   );
-  click('Add row', 2);
+  click('Add row', 3);
   render();
   for (const [key, value] of [
     ['label', 'Second shop'],
@@ -134,10 +158,11 @@ test('partner rows add, edit, reorder and remove without replacing other release
   expect(data.singles).toEqual([]);
 });
 
-test('Releases order stays optional, validates positive whole numbers and edits only the draft field', () => {
+test('Releases order is automatic until staff fix a position, and edits only the draft field', () => {
   let data: ComponentProps<typeof ContentFields>['data'] = { title: 'Record', release_stage: 'upcoming' };
   const render = () => {
     controls.inputs = [];
+    controls.segments = [];
     return renderToStaticMarkup(
       <ContentFields
         collection="releases"
@@ -153,24 +178,21 @@ test('Releases order stays optional, validates positive whole numbers and edits 
   };
   const html = render();
   expect(html).toContain('Releases order');
+  expect(html).toContain('Not on Home · automatic order');
   // Release stage describes the music only; physical copies belong to Selling.
-  expect(html).toContain(
-    'Upcoming means the music is not out yet. Physical copies are managed in Selling: pre-order, stock and the zero-stock state.',
-  );
-  expect(data.releases_priority).toBeUndefined();
-  const field = () => controls.inputs.find((input) => input['data-content-path'] === 'releases_priority')!;
-  expect(field().required).toBe(false);
-  expect(field().min).toBe(1);
-  for (const value of ['2', '0', '-1', '1.5', '']) {
-    field().onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
-    render();
-    expect(getContentValidation('releases', data).issues.some((issue) => issue.path[0] === 'releases_priority')).toBe(
-      !['2', ''].includes(value),
-    );
-    expect(data.title).toBe('Record');
-    expect(data.release_stage).toBe('upcoming');
-  }
+  expect(html).toContain('Upcoming means the music is not out yet. Physical copies are managed in Selling.');
+  const segment = (label: string) => controls.segments.find((props) => props.label === label)!;
+  expect(segment('Release stage').value).toBe('upcoming');
+  expect(segment('Order').value).toBe('automatic');
+  expect(controls.inputs.find((input) => input['data-content-path'] === 'releases_priority')).toBeUndefined();
+  segment('Order').onChange('fixed');
+  expect(data.releases_priority).toBe(1);
+  expect(render()).toContain('Not on Home · order 1');
+  expect(controls.inputs.find((input) => input['data-content-path'] === 'releases_priority')).toBeDefined();
+  segment('Order').onChange('automatic');
   expect(data.releases_priority).toBeNull();
+  expect(data.title).toBe('Record');
+  expect(data.release_stage).toBe('upcoming');
 });
 
 test('Catalog number takes digits only behind a fixed BBR# prefix and stores the canonical number', () => {
@@ -233,7 +255,7 @@ test.each(['http://example.com/record', '/record', 'javascript:alert(1)'])(
     );
     expect(validation.byPath['partner_links.0.url']).toBeDefined();
     expect(markup).toMatch(
-      /id="content-partner_links\.0\.url"[^>]*aria-invalid="true"[^>]*aria-describedby="content-partner_links\.0\.url-error"/,
+      /id="content-partner_links\.0\.url"[^>]*aria-invalid="true"[^>]*aria-describedby="content-partner_links\.0\.url-status content-partner_links\.0\.url-error"/,
     );
     expect(markup).toContain('id="content-partner_links.0.url-error"');
   },
@@ -351,7 +373,8 @@ test.each(['releases', 'distro'] as const)(
     const record = { title: 'Record' };
     const { markup, data } = renderSafety(collection, record);
     expect(data()).toBe(record);
-    expect(markup).toMatch(/<details(?![^>]*open)[^>]*><summary[^>]*>.*Product safety/);
+    // Releases keep Product safety in a closed card; Distro keeps its closed group.
+    expect(markup).toMatch(/<details(?![^>]*\sopen=)[^>]*>(?:(?!<\/details>)[\s\S])*Product safety/);
     expect(markup).toContain('Fill this in from the paperwork for this exact edition.');
     expect(markup).toContain('11 details missing before this can be verified.');
     expect(markup).toContain('Available once every required field above is filled.');
@@ -371,7 +394,8 @@ test('a verified claim with missing details opens the group with mapped field me
   const validation = getContentValidation('releases', record);
   expect(validation.byPath['product_safety.product_identifier']).toBeDefined();
   const { markup } = renderSafety('releases', record, 1);
-  expect(markup).toMatch(/<details[^>]*open=""/);
+  // The card reports the problem; Publish opens it at the first invalid field.
+  expect(markup).toMatch(/data-editor-card="safety" data-state="problem"/);
   expect(markup).toContain('Enter the catalogue number printed on this edition, e.g. BBX-014.');
   expect(markup).toContain('Enter the manufacturer&#x27;s name.');
   expect(markup).toContain('Say where the proof is kept.');
@@ -379,7 +403,7 @@ test('a verified claim with missing details opens the group with mapped field me
   expect(markup).toMatch(
     /id="content-product_safety\.product_identifier"[^>]*aria-invalid="true"[^>]*aria-describedby="content-product_safety\.product_identifier-hint content-product_safety\.product_identifier-error"/,
   );
-  expect(markup).not.toContain('Enter what the product is');
+  expect(markup).not.toContain('Choose what the product is');
 });
 
 test('Mark details verified is available only for complete details and writes only the review status', () => {
@@ -394,7 +418,7 @@ test('Mark details verified is available only for complete details and writes on
   expect(verifyButton()?.disabled).not.toBe(true);
   verifyButton()!.onClick!({} as Parameters<NonNullable<ComponentProps<'button'>['onClick']>>[0]);
   expect(ready.data()).toEqual({ title: 'Item', product_safety: { ...safetyComplete, review_status: 'verified' } });
-  expect(ready.render()).toContain('Verified · checked on 2026-10-01');
+  expect(ready.render()).toMatch(/data-editor-card="safety"[\s\S]*?>Verified</);
   expect(verifyButton()).toBeUndefined();
 });
 
@@ -422,8 +446,8 @@ test('editing verified product details resets review and empty inputs remove the
   });
   render();
   expect(verifyButton()?.disabled).not.toBe(true);
-  typeInto('product_type', '');
-  expect(data().product_safety).not.toHaveProperty('product_type');
+  typeInto('evidence.reference', '');
+  expect((data().product_safety as typeof safetyComplete).evidence).not.toHaveProperty('reference');
   render();
   typeInto('manufacturer.name', '');
   expect((data().product_safety as typeof safetyComplete).manufacturer).not.toHaveProperty('name');
@@ -434,6 +458,7 @@ function renderCondition(collection: 'releases' | 'distro', initial: Record<stri
   let data = initial;
   const render = () => {
     controls.selects = [];
+    controls.segments = [];
     return renderToStaticMarkup(
       <ContentFields
         collection={collection}
@@ -449,61 +474,44 @@ function renderCondition(collection: 'releases' | 'distro', initial: Record<stri
   };
   const markup = render();
   const select = () => controls.selects.find((props) => props['data-content-path'] === 'product_condition')!;
+  const segment = () => controls.segments.find((props) => props.path === 'product_condition')!;
   const choose = (value: string) =>
     select().onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'select'>['onChange']>>[0]);
-  return { markup, data: () => data, select, choose, render };
+  return { markup, data: () => data, select, segment, choose, render };
 }
 const conditionError = 'Choose New or Used for this physical product before publishing.';
 
 test.each([
   ['releases', { title: 'Record', formats: ['Vinyl 12-inch'] }],
   ['distro', { title: 'Tape', group: 'Tapes' }],
-] as const)('%s physical condition starts blank, required and never defaults to New', (collection, record) => {
-  const { markup, data, select } = renderCondition(collection, record);
-  expect(markup).toContain('Physical condition');
-  expect(markup).toMatch(/<option value="" selected="">Choose condition<\/option>/);
-  expect(select()).toMatchObject({ required: true, value: '' });
-  expect(markup).not.toContain('content-product_condition-description');
-  expect(data()).toEqual(record);
-  // The publication error appears only after a publish attempt, on the condition control.
-  expect(markup).not.toContain(conditionError);
-  const attempted = renderCondition(collection, record, 1);
-  expect(attempted.markup).toContain(conditionError);
-  expect(attempted.select()).toMatchObject({
-    'aria-invalid': true,
-    'aria-describedby': 'content-product_condition-error',
-  });
+] as const)('%s physical condition starts unchosen, required, and never defaults to New', (collection, record) => {
+  const view = renderCondition(collection, record);
+  expect(view.segment()).toMatchObject({ label: 'Physical condition', value: undefined });
+  expect(view.data()).toEqual(record);
+  // The publication error appears only after a publish attempt, beside the condition choice.
+  expect(view.markup).not.toContain(conditionError);
+  expect(renderCondition(collection, record, 1).markup).toContain(conditionError);
+  view.render();
+  view.segment().onChange('used');
+  // The choice changes only product_condition.
+  expect(view.data()).toEqual({ ...record, product_condition: 'used' });
 });
 
 test.each(['new', 'used'] as const)('existing %s condition stays selected and publishable', (condition) => {
   for (const collection of ['releases', 'distro'] as const) {
     const record = { title: 'Record', formats: ['Cassette'], group: 'Tapes', product_condition: condition };
-    const { markup, data, select } = renderCondition(collection, record, 1);
-    expect(select().value).toBe(condition);
-    expect(markup).not.toContain(conditionError);
-    expect(data()).toEqual(record);
+    const view = renderCondition(collection, record, 1);
+    expect(view.segment().value).toBe(condition);
+    expect(view.markup).not.toContain(conditionError);
+    expect(view.data()).toEqual(record);
   }
-});
-
-test('explicit condition choices change only product_condition and an explicit clear sends null', () => {
-  const record = { title: 'Tape', group: 'Tapes', summary: 'Kept' };
-  const view = renderCondition('distro', record);
-  view.choose('used');
-  expect(view.data()).toEqual({ ...record, product_condition: 'used' });
-  view.render();
-  view.choose('');
-  // The cleared field stays in the saved JSON as null, so saving clears the stored condition.
-  expect(JSON.parse(JSON.stringify(view.data()))).toEqual({ ...record, product_condition: null });
-  view.render();
-  expect(view.select().value).toBe('');
 });
 
 test.each([[[]], [['Digital']], [[' digital ', '']]])(
   'digital-only or editorial releases keep condition optional (%j)',
   (formats) => {
-    const { markup, select } = renderCondition('releases', { title: 'Record', formats }, 1);
-    expect(select()).toMatchObject({ required: false, 'aria-describedby': 'content-product_condition-description' });
-    expect(markup).toContain('Optional');
+    const { markup, segment } = renderCondition('releases', { title: 'Record', formats }, 1);
+    expect(segment().label).toBe('Physical condition (optional)');
     expect(markup).not.toContain(conditionError);
   },
 );
@@ -595,4 +603,82 @@ test('the Show form edits structured fields and reports missing facts', () => {
   expect(filled).toContain('Sat 05 Dec 2026 · doors 20:00');
   expect(filled).toContain('€10 / €12 / €15 · More.com');
   expect(filled).toContain('Remove €12');
+});
+
+function renderSection(
+  collection: ComponentProps<typeof ContentFields>['collection'],
+  initial: Record<string, unknown>,
+) {
+  let data = initial;
+  const render = () => {
+    controls.inputs = [];
+    controls.selects = [];
+    controls.buttons = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection={collection}
+        data={data}
+        base=""
+        validation={getContentValidation(collection, data)}
+        validationAttempt={0}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  return { markup: render(), data: () => data, render };
+}
+
+test('a social link reads a stored # as hidden and stores the visible flag instead', () => {
+  const view = renderSection('socials', { title: 'Bandcamp', url: '#', order: 3 });
+  expect(view.markup).toContain('Hidden on the website');
+  const toggle = /<input[^>]*data-content-path="visible"[^>]*>/.exec(view.markup)?.[0];
+  expect(toggle).toContain('role="switch"');
+  expect(toggle).not.toContain('checked');
+  expect(
+    renderSection('socials', { title: 'Instagram', url: 'https://instagram.com/blackbox', visible: true }).markup,
+  ).toContain('Shown on the website');
+});
+
+test('a new service takes its link name from the title until staff change it', () => {
+  const view = renderSection('services', { services: { items: [{ id: '', title: '' }] } });
+  expect(view.markup).toContain('/services#…');
+  controls.inputs.find((input) => input['data-content-path'] === 'services.items.0.title')!.onChange!({
+    target: { value: 'Vinyl Mastering' },
+  } as never);
+  expect((view.data().services as { items: Array<{ id: string }> }).items[0]!.id).toBe('vinyl-mastering');
+  view.render();
+  controls.inputs.find((input) => input['data-content-path'] === 'services.items.0.title')!.onChange!({
+    target: { value: 'Vinyl Mastering & Cutting' },
+  } as never);
+  expect((view.data().services as { items: Array<{ id: string }> }).items[0]!.id).toBe('vinyl-mastering-cutting');
+  // A hand-made link name stays when the title changes.
+  const kept = renderSection('services', { services: { items: [{ id: 'cutting-room', title: 'Cutting' }] } });
+  controls.inputs.find((input) => input['data-content-path'] === 'services.items.0.title')!.onChange!({
+    target: { value: 'Lacquer cutting' },
+  } as never);
+  expect((kept.data().services as { items: Array<{ id: string }> }).items[0]!.id).toBe('cutting-room');
+});
+
+test('each label fact can be chosen once', () => {
+  const view = renderSection('about', {
+    stats: {
+      items: [
+        { key: 'artists', label: 'Artists' },
+        { key: 'year', label: 'Year' },
+      ],
+    },
+  });
+  const options = (index: number) =>
+    String(
+      renderToStaticMarkup(
+        <>{controls.selects.find((s) => s['data-content-path'] === `stats.items.${index}.key`)!.children}</>,
+      ),
+    );
+  expect(options(0)).toContain('Number of artists');
+  expect(options(0)).not.toContain('Years active');
+  expect(options(1)).toContain('Years active');
+  expect(options(1)).not.toContain('Number of artists');
+  expect(view.markup).toContain('2 facts');
 });

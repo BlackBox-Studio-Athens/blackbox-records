@@ -81,6 +81,7 @@
       "site:dev:stop",
       "dev:clean",
       "cms:inventory",
+      "cms:migrate-typed-values",
       "launch:switch",
       "dev:backend",
       "dev:backend:mock",

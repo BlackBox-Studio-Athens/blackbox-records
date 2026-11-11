@@ -65,9 +65,11 @@ export async function getFooterNavigationItems() {
 
 export async function getSocialItems(): Promise<SiteSocialItem[]> {
   return (await getCollection('socials'))
+    .filter((item) => item.data.visible && !!item.data.url)
     .map((item) => ({
       id: item.id,
       ...item.data,
+      url: item.data.url!,
     }))
     .sort(sortByOrderAndTitle);
 }

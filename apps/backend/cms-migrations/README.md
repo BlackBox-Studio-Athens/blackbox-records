@@ -34,6 +34,14 @@ The calendar-date conversion above applies to environments upgrading from versio
 
 Version 0.41.0 adds core migrations `086_relations_structural` and `087_reference_field_relations`. They consolidate relation schemas and migrate eligible legacy reference fields to relation edges while preserving legacy columns. Retain the pre-upgrade backup and verify related Artist/Release reads and publication before any hosted rollout. Do not deploy older code against the upgraded schema.
 
+## EmDash 1.4.0 upgrade
+
+Core, Cloudflare and admin are pinned together to 1.4.0. Its core manifest has 90 migration names through `091_redirect_artifacts`, matching 1.3.1; its package fingerprint differs. Rebuild the artifact and use its fresh manifest. The existing application-before-core ordering, target fingerprint, verified backup and hosted release gates still apply.
+
+Rehearse a stopped, provenance-recorded 1.3.1 Local store with `pnpm --filter @blackbox/backend test:cms-upgrade --source-history 1.3.1 --source-state <stopped-1.3.1-store>`. The rehearsal copies its source and checks two starts. Migration history alone cannot prove the source package version. Do not downgrade code against migrated data.
+
+The core patch retains revision-fenced deletes, soft-delete version increments and save-after-delete conflicts; upstream's 1.4.0 competing-save fix addresses a separate race. The admin patch retains Staff's scoped uploads, image panel exports and block restrictions. Keep the compiled race checks and Staff browser acceptance. The existing scheduled maintenance now includes expired OAuth token and login-code cleanup; it adds database operations to the existing schedule, so reassess the Free budget before hosted work.
+
 ## EmDash 1.3.1 upgrade
 
 Core, Cloudflare and admin are pinned together to 1.3.1. The published 1.3.1 package and the 1.2.0 build have the same 90 core migration names through `091_redirect_artifacts`; their package-version fingerprints differ. A target already through 091 needs no new core SQL. Rebuild the combined artifact and retain its fresh manifest; older pending or unknown target histories still require the existing application-before-core, verified-backup and exact target-fingerprint checks.

@@ -177,6 +177,7 @@ try {
   assert.equal((await request('/media/import', 'POST', { url: 'https://foreign.invalid/image.png' })).status, 405);
   const manifest = await inventory();
   let artistId;
+  let releaseId;
   for (const [collection, sourceName] of Object.entries(sourceCollectionNames)) {
     const record = manifest.records.find((item) => item.collection === sourceName);
     if (!record) continue;
@@ -192,6 +193,19 @@ try {
         : value;
     });
     if (collection === 'artists') delete data.slug;
+    if (collection === 'shows') {
+      data.ticket_url = data.ticketUrl;
+      data.poster_alt = data.posterAlt;
+      if (data.facebookUrl) data.facebook_url = data.facebookUrl;
+      delete data.ticketUrl;
+      delete data.facebookUrl;
+      delete data.posterAlt;
+      data.lineup = data.lineup.map((entry) => ({
+        ...entry,
+        ...(entry.artist ? { artist: artistId } : {}),
+        ...(entry.release ? { release: releaseId } : {}),
+      }));
+    }
     if (['releases', 'news'].includes(collection)) data.artist = artistId;
     if (record.body.trim()) data.body = markdownTreeToPortableText(parseMarkdown(record.body));
     const path = '/content/' + collection;
@@ -202,6 +216,7 @@ try {
     const created = await request(path, 'POST', { slug: `schema-check-${Date.now()}`, data });
     assert.equal(created.status, 201, collection + ': ' + JSON.stringify(created));
     if (collection === 'artists') artistId = created.body.data.item.id;
+    if (collection === 'releases') releaseId = created.body.data.item.id;
     const idPath = path + '/' + created.body.data.item.id;
     let current = await request(idPath);
     if (collection === 'news') {
@@ -487,7 +502,7 @@ try {
     const data = {
       title: `Pagination fixture ${String(Math.floor(index / 3)).padStart(3, '0')}`,
       artist_or_label: 'Local fixture',
-      group: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length],
+      format: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length],
       image: { id: media.body.data.item.id },
       image_alt: 'Fixture',
       summary: '',
@@ -525,8 +540,8 @@ try {
     ]) {
       const expected = catalog.filter(
         (item) =>
-          (!format || item.data.group === format) &&
-          (area === 'all' || (area === 'merch') === (item.data.group === 'Clothes')),
+          (!format || item.data.format === format) &&
+          (area === 'all' || (area === 'merch') === (item.data.format === 'Clothes')),
       );
       const ids = [];
       const values = [];

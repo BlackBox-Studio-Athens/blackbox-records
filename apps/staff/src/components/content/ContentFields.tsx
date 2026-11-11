@@ -3,7 +3,16 @@ import LineupFields, { type LineupEntry } from './LineupFields';
 import BandcampField from './BandcampField';
 import CountryPicker from './CountryPicker';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
-import { requiresProductCondition, tracklistFormat, type Tracklist } from '@blackbox/content-model';
+import {
+  formatArtistCountries,
+  parseArtistCountries,
+  readDistroTracklist,
+  requiresProductCondition,
+  slugify,
+  tracklistFormat,
+  type LinkService,
+  type Tracklist,
+} from '@blackbox/content-model';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   ABOUT_STAT_KEYS,
@@ -26,25 +35,20 @@ import {
   FileText,
   Hash,
   ImageIcon,
-  LayoutTemplate,
   Link,
   ListOrdered,
   Mail,
-  Music2,
   Plus,
   Tag,
   Trash2,
   Type,
-  Users,
 } from 'lucide-react';
 import EditorialPicker from './EditorialPicker';
 import ProductSafetyFields from './ProductSafetyFields';
 import { Button } from '../ui/button';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../ui/field';
-import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
 import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
@@ -52,8 +56,27 @@ import CatalogNumberField from './CatalogNumberField';
 import EditorCards from './EditorCards';
 import PriceList from './PriceList';
 import { showCardSummaries, showCards, type ShowCardId } from './show-cards';
+import {
+  artistCardSummaries,
+  artistCards,
+  distroCardSummaries,
+  distroCards,
+  type DistroCardId,
+  type ArtistCardId,
+  newsCardSummaries,
+  newsCards,
+  releaseCardSummaries,
+  releaseCards,
+  websiteCardSummaries,
+  websiteCards,
+  type NewsCardId,
+  type ReleaseCardId,
+  type WebsiteSection,
+} from './collection-cards';
 import { useCollectionRecords } from './use-collection-records';
-import { SwitchTrack } from '../fields/Switch';
+import Switch from '../fields/Switch';
+import CountStepper from '../fields/CountStepper';
+import SegmentedChoice from '../fields/SegmentedChoice';
 import ChoiceChips from '../fields/ChoiceChips';
 import DateField from '../fields/DateField';
 import ProviderUrlField from '../fields/ProviderUrlField';
@@ -63,7 +86,7 @@ import { type ContentData, type ContentSection } from '../../lib/content-section
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 
 type ChoiceOption = string | { value: string; label: string };
-const conditionOptions = [
+const conditionOptions: { value: 'new' | 'used'; label: string }[] = [
   { value: 'new', label: 'New' },
   { value: 'used', label: 'Used' },
 ];
@@ -75,6 +98,24 @@ const statLabels: Record<AboutStatKey, string> = {
   year: 'Years active',
 };
 const unchanged = (text: string) => text;
+const defaultFormats = ['Vinyl', 'CD', 'Cassette', 'Digital'];
+const defaultContactLabels = ['General', 'Demo Submissions', 'Press', 'Tour Booking'];
+const artistLinkService: Record<string, LinkService> = {
+  Bandcamp: 'bandcamp',
+  Tidal: 'tidal',
+  Instagram: 'instagram',
+  Facebook: 'facebook',
+  YouTube: 'youtube',
+  SoundCloud: 'soundcloud',
+};
+const socialService: Record<string, LinkService> = {
+  Instagram: 'instagram',
+  Facebook: 'facebook',
+  Bandcamp: 'bandcamp',
+  Tidal: 'tidal',
+};
+const textList = (value: unknown) =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && !!item.trim()) : [];
 const youtubeWatchUrl = (id: string) =>
   id && youtubeVideoId(id) === id ? `https://www.youtube.com/watch?v=${id}` : id;
 // Keeps a link name in lowercase-hyphen form while it is typed.
@@ -123,29 +164,16 @@ export default function ContentFields({
   onAddUpcomingRelease?: (() => Promise<void>) | undefined;
 }) {
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
-  const [openSections, setOpenSections] = useState<string[]>([]);
-  // Show cards read artist names for the Lineup summary and earlier venues for the Where choices.
-  const artistRecords = useCollectionRecords(base, collection === 'shows' ? 'artists' : null);
+  // Cards read artist names for summaries, and earlier records for the choices used before.
+  const artistRecords = useCollectionRecords(
+    base,
+    ['shows', 'releases', 'news'].includes(collection) ? 'artists' : null,
+  );
   const showRecords = useCollectionRecords(base, collection === 'shows' ? 'shows' : null);
-  useEffect(() => {
-    if (validationAttempt > 0) setOpenSections(['music', 'credits', 'text', 'presentation']);
-  }, [validationAttempt]);
-  function section(id: 'music' | 'credits' | 'text' | 'presentation', label: string, children: React.ReactNode) {
-    const Icon = { music: Music2, credits: Users, text: FileText, presentation: LayoutTemplate }[id];
-    return (
-      <AccordionItem value={id}>
-        <AccordionTrigger>
-          <span className="flex items-center gap-2">
-            {Icon && <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
-            {label}
-          </span>
-        </AccordionTrigger>
-        <AccordionContent forceMount className="data-[state=closed]:hidden">
-          <div className="grid min-w-0 gap-6 @2xl:grid-cols-2">{children}</div>
-        </AccordionContent>
-      </AccordionItem>
-    );
-  }
+  const releaseRecords = useCollectionRecords(base, collection === 'releases' ? 'releases' : null);
+  const newsRecords = useCollectionRecords(base, collection === 'news' ? 'news' : null);
+  const distroRecords = useCollectionRecords(base, collection === 'distro' ? 'distro' : null);
+  const artistNames = new Map(artistRecords.map((record) => [record.id, String(record.data.title ?? record.slug)]));
   function touch(path: string) {
     setTouched((current) => (current.has(path) ? current : new Set(current).add(path)));
   }
@@ -297,26 +325,6 @@ export default function ContentFields({
       </Field>
     );
   }
-  function check(path: string, label: string) {
-    const fieldErrors = errors(path);
-    const errorId = `content-${path}-error`;
-    return (
-      <Field orientation="horizontal" className="min-h-11" data-invalid={fieldErrors.length > 0}>
-        <Checkbox
-          id={`content-${path}`}
-          data-content-path={path}
-          checked={value(path) === true || value(path) === 1}
-          disabled={disabled}
-          aria-invalid={fieldErrors.length > 0 || undefined}
-          aria-describedby={fieldErrors.length ? errorId : undefined}
-          onBlur={() => touch(path)}
-          onCheckedChange={(checked) => set(path, checked === true)}
-        />
-        <FieldLabel htmlFor={`content-${path}`}>{label}</FieldLabel>
-        <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
-      </Field>
-    );
-  }
   /** `clearToNull` stores an explicit blank choice as null, so saving clears the stored enum value. */
   function choice(
     path: string,
@@ -363,11 +371,63 @@ export default function ContentFields({
       </Field>
     );
   }
-  function condition() {
-    return choice('product_condition', 'Physical condition', 'Choose condition', conditionOptions, {
-      required: requiresProductCondition(collection, data),
-      clearToNull: true,
-    });
+  function edit(path: string) {
+    return (next: unknown) => {
+      touch(path);
+      set(path, next);
+    };
+  }
+  /** A link checked against its service; optional top-level links store null when cleared. */
+  function linkField(path: string, label: string, service: LinkService | 'any', required = false) {
+    return (
+      <ProviderUrlField
+        key={path}
+        path={path}
+        label={label}
+        service={service}
+        value={value(path)}
+        required={required}
+        anyMessage="Paste the full page address, starting with https://"
+        errors={errors(path)}
+        disabled={disabled}
+        onChange={(next) => edit(path)(next ?? (required || path.includes('.') ? '' : null))}
+        onBlur={() => touch(path)}
+      />
+    );
+  }
+  function conditionChoice() {
+    const fieldErrors = errors('product_condition');
+    const required = requiresProductCondition(collection, data);
+    return (
+      <Field className="min-w-0" data-invalid={fieldErrors.length > 0}>
+        <SegmentedChoice
+          label={required ? 'Physical condition' : 'Physical condition (optional)'}
+          path="product_condition"
+          value={
+            data.product_condition === 'new' || data.product_condition === 'used' ? data.product_condition : undefined
+          }
+          options={conditionOptions}
+          disabled={disabled}
+          onChange={edit('product_condition')}
+        />
+        <FieldError>{fieldErrors.join(' ')}</FieldError>
+      </Field>
+    );
+  }
+  function websiteEditor(section: WebsiteSection, bodies: Record<string, React.ReactNode>) {
+    const summaries = websiteCardSummaries(section, data);
+    return (
+      <EditorCards
+        name={`${section}-${recordId ?? 'page'}`}
+        data={data}
+        validation={validation}
+        cards={websiteCards[section].map((card) => ({
+          ...card,
+          summary: summaries[card.id] ?? '',
+          content: bodies[card.id],
+        }))}
+      />
+    );
   }
   /** `inCard` drops the section rule and shows the description field openly, for use inside an editor card. */
   function image(path: string, alt: string, label: string, { inCard = false }: { inCard?: boolean } = {}) {
@@ -577,289 +637,442 @@ export default function ContentFields({
       </FieldGroup>
     </FieldSet>
   );
-  const productSafety = (
-    <ProductSafetyFields
-      key={editorIdentity}
-      value={data.product_safety}
-      disabled={disabled}
-      validationAttempt={validationAttempt}
-      onChange={(next) => set('product_safety', next)}
-    />
-  );
-  const isActiveArtist = data.is_active !== false && data.is_active !== 0;
-  if (collection === 'artists')
-    return (
-      <>
-        {field('title', 'Artist name')}
-        <Field className="col-span-full" data-invalid={errors('is_active').length > 0}>
-          <label className="flex min-h-11 items-center justify-between gap-4" htmlFor="content-is_active">
-            <span className="grid gap-1">
-              <span id="content-is_active-label" className="font-medium">
-                Active artist
-              </span>
-              <span className="text-sm text-muted-foreground">{isActiveArtist ? 'Active' : 'Inactive'}</span>
-            </span>
-            <input
+  if (collection === 'artists') {
+    const isActiveArtist = data.is_active !== false && data.is_active !== 0;
+    const genre = typeof data.genre === 'string' ? data.genre : '';
+    const bodies: Record<ArtistCardId, React.ReactNode> = {
+      basics: (
+        <>
+          {field('title', 'Artist name')}
+          <div className="col-span-full">
+            <Switch
               id="content-is_active"
-              data-content-path="is_active"
-              type="checkbox"
-              role="switch"
-              className="peer sr-only"
+              path="is_active"
+              label="Active artist"
+              onLabel="Active"
+              offLabel="Inactive"
+              description="Inactive artists appear last on the website after you publish changes."
               checked={isActiveArtist}
               disabled={disabled}
-              aria-labelledby="content-is_active-label"
-              aria-invalid={errors('is_active').length > 0 || undefined}
-              aria-describedby={
-                errors('is_active').length
-                  ? 'content-is_active-description content-is_active-error'
-                  : 'content-is_active-description'
-              }
-              onBlur={() => touch('is_active')}
-              onChange={(event) => set('is_active', event.currentTarget.checked)}
+              onChange={edit('is_active')}
             />
-            <SwitchTrack />
-          </label>
-          <FieldDescription id="content-is_active-description">
-            Inactive artists appear last on the website after you publish changes.
-          </FieldDescription>
-          <FieldError id="content-is_active-error">{errors('is_active').join(' ')}</FieldError>
-        </Field>
-        {field('genre', 'Genre', { list: 'artist-genre-suggestions' })}
-        <datalist id="artist-genre-suggestions">
-          {genreSuggestions.map((genre) => (
-            <option key={genre} value={genre} />
-          ))}
-        </datalist>
-        <CountryPicker
-          value={String(data.country ?? '')}
-          onChange={(country) => set('country', country)}
-          error={errors('country').join(' ') || undefined}
-        />
-        <h2 className="col-span-full text-lg font-semibold">Photography</h2>
-        {image('image', 'image_alt', 'Artist image')}
-        <p className="col-span-full text-sm text-muted-foreground">
-          Artist photos fit inside a 3:4 portrait frame without cutting anyone off; any space left around them shows a
-          blurred copy of the photo. Recommended: 1800 × 2400 px; minimum: 1200 × 1600 px. Originals are preserved.
-        </p>
-        <h2 className="col-span-full text-lg font-semibold">Biography</h2>
-        {field('bio', 'Short biography', { multiline: true })}
-        {rows('profile_links', 'Artist links', { label: 'Bandcamp', url: '' }, (path) => (
+          </div>
+          <div className="col-span-full min-w-0">
+            <ChoiceChips
+              path="genre"
+              label="Genre"
+              single
+              required
+              options={[...genreSuggestions]}
+              value={genre ? [genre] : []}
+              otherLabel="Other genre"
+              maxLength={100}
+              errors={errors('genre')}
+              disabled={disabled}
+              onChange={(next) => edit('genre')(next[0] ?? '')}
+            />
+          </div>
+          <CountryPicker
+            value={Array.isArray(data.country) ? formatArtistCountries(data.country) : String(data.country ?? '')}
+            onChange={(country) => set('country', parseArtistCountries(country) ?? [])}
+            error={errors('country').join(' ') || undefined}
+          />
+          <FieldSet className="col-span-full gap-3">
+            <FieldLegend icon={Disc3}>Releases</FieldLegend>
+            <FieldDescription>
+              Create an upcoming release with its own artwork. Keep the same release when it comes out.
+            </FieldDescription>
+            {!!data.upcoming_release && (
+              <p className="text-sm text-muted-foreground">
+                Previous announcement: {String(data.upcoming_release)}. Move its details into the release record.
+              </p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              disabled={disabled || !String(data.title ?? '').trim()}
+              onClick={() => void onAddUpcomingRelease?.()}
+            >
+              <Plus className="size-4" aria-hidden="true" />
+              Add upcoming release
+            </Button>
+            <a href="/content/?collection=releases" className="text-sm underline">
+              Manage existing releases
+            </a>
+          </FieldSet>
+        </>
+      ),
+      photo: (
+        <>
+          {image('image', 'image_alt', 'Artist image', { inCard: true })}
+          <p className="col-span-full text-sm text-muted-foreground">
+            Artist photos fit inside a 3:4 portrait frame without cutting anyone off; any space left around them shows a
+            blurred copy of the photo. Recommended: 1800 × 2400 px; minimum: 1200 × 1600 px.
+          </p>
+        </>
+      ),
+      links: rows('profile_links', 'Artist links', { label: 'Bandcamp', url: '' }, (path) => {
+        const label = String(value(`${path}.label`) ?? '');
+        return (
           <>
-            <Field>
-              <FieldLabel htmlFor={`content-${path}-service`} required icon={Link}>
-                Service
-              </FieldLabel>
-              <NativeSelect
-                id={`content-${path}-service`}
-                aria-required="true"
-                value={
-                  artistLinkNames.includes(value(`${path}.label`) as (typeof artistLinkNames)[number])
-                    ? String(value(`${path}.label`))
-                    : 'Other'
-                }
-                onChange={(event) => set(`${path}.label`, event.target.value === 'Other' ? '' : event.target.value)}
-              >
-                {artistLinkNames.map((name) => (
-                  <option key={name}>{name}</option>
-                ))}
-                <option>Other</option>
-              </NativeSelect>
-            </Field>
-            {!artistLinkNames.includes(value(`${path}.label`) as (typeof artistLinkNames)[number]) &&
-              field(`${path}.label`, 'Custom link name')}
-            {field(`${path}.url`, 'Website address', { type: 'url' })}
+            <div className="col-span-full min-w-0">
+              <ChoiceChips
+                path={`${path}.label`}
+                label="Service"
+                single
+                required
+                options={[...artistLinkNames]}
+                value={label ? [label] : []}
+                otherLabel="Other"
+                maxLength={60}
+                errors={exactErrors(`${path}.label`)}
+                disabled={disabled}
+                onChange={(next) => edit(`${path}.label`)(next[0] ?? '')}
+              />
+            </div>
+            {linkField(
+              `${path}.url`,
+              label ? `${label} address` : 'Website address',
+              artistLinkService[label] ?? 'any',
+              true,
+            )}
           </>
-        ))}
-        {rows('videos', 'Videos', { title: '', youtube_video_id: '' }, (path) => (
+        );
+      }),
+      videos: rows('videos', 'Videos', { title: '', youtube_video_id: '' }, (path) => {
+        const id = String(value(`${path}.youtube_video_id`) ?? '');
+        return (
           <>
             {field(`${path}.title`, 'Video title')}
             {youtube(`${path}.youtube_video_id`)}
+            {id && youtubeVideoId(id) === id && (
+              <img
+                src={`https://i.ytimg.com/vi/${id}/mqdefault.jpg`}
+                alt=""
+                loading="lazy"
+                width={320}
+                height={180}
+                className="aspect-video w-full max-w-80 rounded-md border border-border object-cover"
+              />
+            )}
             {field(`${path}.description`, 'Description', { multiline: true, required: false })}
           </>
-        ))}
-        <FieldSet className="col-span-full gap-3">
-          <FieldLegend icon={Disc3}>Releases</FieldLegend>
-          <FieldDescription>
-            Create an upcoming release with its own artwork. Keep the same release when it comes out.
-          </FieldDescription>
-          {!!data.upcoming_release && (
-            <p className="text-sm text-muted-foreground">
-              Previous announcement: {String(data.upcoming_release)}. Move its details into the release record.
-            </p>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled || !String(data.title ?? '').trim()}
-            onClick={() => void onAddUpcomingRelease?.()}
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Add upcoming release
-          </Button>
-          <a href="/content/?collection=releases" className="text-sm underline">
-            Manage existing releases
-          </a>
-        </FieldSet>
-        {body}
-      </>
-    );
-  if (collection === 'releases')
+        );
+      }),
+      story: (
+        <>
+          {field('bio', 'Short biography', { multiline: true })}
+          {body}
+        </>
+      ),
+    };
+    const summaries = artistCardSummaries(data);
     return (
-      <>
-        {field('title', 'Release title')}
-        <EditorialPicker
-          base={base}
-          collection="artists"
-          label="Artist"
-          path="artist"
-          value={String(data.artist ?? '')}
-          error={errors('artist').join(' ') || undefined}
-          onBlur={() => touch('artist')}
-          onSelect={(item) => set('artist', item.id)}
-        />
-        <CatalogNumberField
-          base={base}
-          value={data.catalog_number}
-          recordId={recordId}
-          errors={errors('catalog_number')}
-          disabled={disabled}
-          onChange={(next) => set('catalog_number', next)}
-          onBlur={() => touch('catalog_number')}
-        />
-        <Field>
-          <FieldLabel htmlFor="content-release_stage" icon={CalendarDays}>
-            Release stage
-          </FieldLabel>
-          <NativeSelect
-            id="content-release_stage"
-            data-content-path="release_stage"
-            value={String(data.release_stage || 'released')}
-            onChange={(event) => set('release_stage', event.target.value)}
-          >
-            <option value="upcoming">Upcoming</option>
-            <option value="released">Released</option>
-          </NativeSelect>
-          <FieldDescription>
-            Upcoming means the music is not out yet. Physical copies are managed in Selling: pre-order, stock and the
-            zero-stock state.
-          </FieldDescription>
-        </Field>
-        {field('release_date', 'Digital release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
-        {field('releases_priority', 'Releases order', { type: 'number', required: false, min: 1, step: 1 })}
-        <FieldDescription className="col-span-full">
-          Optional. Lower numbers lead on Releases when the physical edition is available to buy. Leave empty for
-          automatic order. Publish changes to apply this choice; stock and pre-order remain in Selling.
-        </FieldDescription>
-        <label className="col-span-full flex min-h-11 cursor-pointer items-center justify-between gap-4">
-          <span className="grid min-w-0 gap-1">
-            <span id="content-show_on_home-label" className="font-medium">
-              Show on Home
-            </span>
-            <span id="content-show_on_home-description" className="text-sm text-muted-foreground">
-              {openPreorder
-                ? 'This release is on an open pre-order, so Home shows it automatically. This switch takes over when the pre-order closes.'
-                : 'Keeps this release as a full-width chapter on Home, with its video when one is prepared. A chapter shows only while the item is in stock or sold out. Publish changes to apply this choice.'}
-            </span>
-          </span>
-          <input
-            id="content-show_on_home"
-            data-content-path="show_on_home"
-            type="checkbox"
-            role="switch"
-            // EmDash returns its native boolean as 1 once saved.
-            checked={openPreorder || data.show_on_home === true || data.show_on_home === 1}
-            disabled={disabled || openPreorder}
-            aria-labelledby="content-show_on_home-label"
-            aria-describedby="content-show_on_home-description"
-            className="peer sr-only"
-            onChange={(event) => set('show_on_home', event.currentTarget.checked)}
+      <EditorCards
+        name={`artist-${recordId ?? 'new'}`}
+        data={data}
+        validation={validation}
+        cards={artistCards.map((card) => ({ ...card, summary: summaries[card.id], content: bodies[card.id] }))}
+      />
+    );
+  }
+  if (collection === 'releases') {
+    const usedFormats = [
+      ...new Set([...defaultFormats, ...releaseRecords.flatMap((record) => textList(record.data.formats))]),
+    ];
+    const roleCounts = new Map<string, number>();
+    for (const record of releaseRecords)
+      for (const credit of Array.isArray(record.data.credits) ? record.data.credits : []) {
+        const role = typeof credit?.role === 'string' ? credit.role.trim() : '';
+        if (role) roleCounts.set(role, (roleCounts.get(role) ?? 0) + 1);
+      }
+    const usedRoles = [...roleCounts]
+      .sort((a, b) => b[1] - a[1])
+      .map(([role]) => role)
+      .slice(0, 12);
+    const priority = typeof data.releases_priority === 'number' ? data.releases_priority : null;
+    const bodies: Record<ReleaseCardId, React.ReactNode> = {
+      basics: (
+        <>
+          {field('title', 'Release title')}
+          <EditorialPicker
+            base={base}
+            collection="artists"
+            label="Artist"
+            path="artist"
+            value={String(data.artist ?? '')}
+            error={errors('artist').join(' ') || undefined}
+            onBlur={() => touch('artist')}
+            onSelect={(item) => set('artist', item.id)}
           />
-          <SwitchTrack />
-        </label>
-        {image('cover_image', 'cover_image_alt', 'Cover image')}
-        {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
-          image(`${path}.image`, `${path}.image_alt`, 'Photo'),
-        )}
-        {field('summary', 'Short description', { multiline: true, required: false })}
-        <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="col-span-full">
-          {section(
-            'music',
-            'Music & listening links',
-            <>
-              {rows('singles', 'Singles', { title: '', url: '' }, (path) => (
-                <>
-                  {field(`${path}.title`, 'Single title')}
-                  {field(`${path}.url`, 'Listening link', { type: 'url' })}
-                </>
-              ))}
-              {rows('partner_links', 'Partner store links', { label: '', url: '' }, (path) => (
-                <>
-                  {field(`${path}.label`, 'Store name')}
-                  {field(`${path}.url`, 'Store link', { type: 'url' })}
-                </>
-              ))}
-              {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
-                <>
-                  {field(`${path}.title`, 'Clip title')}
-                  {youtube(`${path}.youtube_video_id`)}
-                </>
-              ))}
-              <TracklistFields
-                disabled={disabled}
-                value={(data.tracklist as Tracklist | null) ?? null}
-                formatHint={tracklistFormat(
-                  (data.formats as string[] | undefined)?.find((format) => tracklistFormat(format)),
-                )}
-                onChange={(next) => set('tracklist', next)}
-                errors={errors('tracklist')}
-              />
-              {field('merch_url', 'Merchandise link', { required: false })}
-              {bandcamp}
-              {field('tidal_url', 'Tidal link', { required: false })}
-            </>,
+          <CatalogNumberField
+            base={base}
+            value={data.catalog_number}
+            recordId={recordId}
+            errors={errors('catalog_number')}
+            disabled={disabled}
+            onChange={(next) => set('catalog_number', next)}
+            onBlur={() => touch('catalog_number')}
+          />
+          <Field>
+            <SegmentedChoice
+              label="Release stage"
+              path="release_stage"
+              value={data.release_stage === 'upcoming' ? 'upcoming' : 'released'}
+              options={[
+                { value: 'upcoming', label: 'Upcoming' },
+                { value: 'released', label: 'Released' },
+              ]}
+              disabled={disabled}
+              onChange={edit('release_stage')}
+            />
+            <FieldDescription>
+              Upcoming means the music is not out yet. Physical copies are managed in Selling.
+            </FieldDescription>
+          </Field>
+          <DateField
+            path="release_date"
+            label="Digital release date"
+            value={data.release_date}
+            required={data.release_stage !== 'upcoming'}
+            errors={errors('release_date')}
+            disabled={disabled}
+            onChange={edit('release_date')}
+            onBlur={() => touch('release_date')}
+          />
+        </>
+      ),
+      artwork: (
+        <>
+          {image('cover_image', 'cover_image_alt', 'Cover image', { inCard: true })}
+          {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
+            image(`${path}.image`, `${path}.image_alt`, 'Photo', { inCard: true }),
           )}
-          {section(
-            'credits',
-            'Formats & credits',
+        </>
+      ),
+      formats: (
+        <>
+          <div className="col-span-full min-w-0">
+            <ChoiceChips
+              path="formats"
+              label="Formats"
+              options={usedFormats}
+              value={textList(data.formats)}
+              maxLength={100}
+              description="Choose every edition of this release, or add another under Other."
+              errors={exactErrors('formats')}
+              disabled={disabled}
+              onChange={edit('formats')}
+            />
+          </div>
+          {conditionChoice()}
+        </>
+      ),
+      listening: (
+        <>
+          {bandcamp}
+          {linkField('tidal_url', 'Tidal link', 'tidal')}
+          {rows('singles', 'Singles', { title: '', url: '' }, (path) => (
             <>
-              {rows('formats', 'Formats', '', (path) => field(path, 'Format'))}
-              {condition()}
-              {rows('credits', 'Credits', { role: '', name: '' }, (path) => (
-                <>
-                  {field(`${path}.role`, 'Role')}
-                  {field(`${path}.name`, 'Name')}
-                </>
-              ))}
-            </>,
-          )}
-          {section('text', 'Full text', body)}
-        </Accordion>
-        {productSafety}
-      </>
-    );
-  if (collection === 'news')
-    return (
-      <>
-        {field('title', 'News title')}
-        <EditorialPicker
-          base={base}
-          collection="artists"
-          label="Artist"
-          path="artist"
-          value={String(data.artist ?? '')}
-          required={false}
-          error={errors('artist').join(' ') || undefined}
-          onBlur={() => touch('artist')}
-          onSelect={(item) => set('artist', item.id)}
-          onClear={() => set('artist', null)}
+              {field(`${path}.title`, 'Single title')}
+              {linkField(`${path}.url`, 'Listening link', 'any', true)}
+            </>
+          ))}
+          {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
+            <>
+              {field(`${path}.title`, 'Clip title')}
+              {youtube(`${path}.youtube_video_id`)}
+            </>
+          ))}
+          {rows('partner_links', 'Partner store links', { label: '', url: '' }, (path) => (
+            <>
+              {field(`${path}.label`, 'Store name')}
+              {linkField(`${path}.url`, 'Store link', 'any', true)}
+            </>
+          ))}
+          {linkField('merch_url', 'Merchandise link', 'any')}
+        </>
+      ),
+      tracklist: (
+        <TracklistFields
+          disabled={disabled}
+          value={(data.tracklist as Tracklist | null) ?? null}
+          formatHint={tracklistFormat(textList(data.formats).find((format) => tracklistFormat(format)))}
+          onChange={(next) => set('tracklist', next)}
+          errors={errors('tracklist')}
         />
-        {field('date', 'Date', { type: 'date' })}
-        {field('summary', 'Short description', { multiline: true })}
-        {image('image', 'image_alt', 'News image')}
-        {field('section_label', 'Section label', { required: false })}
-        {body}
-      </>
+      ),
+      credits: rows('credits', 'Credits', { role: '', name: '' }, (path) => {
+        const role = value(`${path}.role`);
+        return (
+          <>
+            <div className="col-span-full min-w-0">
+              <ChoiceChips
+                path={`${path}.role`}
+                label="Role"
+                single
+                required
+                options={usedRoles}
+                value={typeof role === 'string' && role ? [role] : []}
+                otherLabel="Other role"
+                maxLength={200}
+                errors={exactErrors(`${path}.role`)}
+                disabled={disabled}
+                onChange={(next) => edit(`${path}.role`)(next[0] ?? '')}
+              />
+            </div>
+            {field(`${path}.name`, 'Name')}
+          </>
+        );
+      }),
+      text: (
+        <>
+          {field('summary', 'Short description', { multiline: true, required: false })}
+          {body}
+        </>
+      ),
+      home: (
+        <>
+          <div className="col-span-full">
+            <Switch
+              id="content-show_on_home"
+              path="show_on_home"
+              label="Show on Home"
+              // EmDash returns its native boolean as 1 once saved.
+              checked={openPreorder || data.show_on_home === true || data.show_on_home === 1}
+              disabled={disabled || openPreorder}
+              description={
+                openPreorder
+                  ? 'This release is on an open pre-order, so Home shows it automatically. This switch takes over when the pre-order closes.'
+                  : 'Keeps this release as a full-width chapter on Home, with its video when one is prepared. A chapter shows only while the item is in stock or sold out.'
+              }
+              onChange={edit('show_on_home')}
+            />
+          </div>
+          <FieldSet className="col-span-full min-w-0 gap-3" data-invalid={errors('releases_priority').length > 0}>
+            <FieldLegend variant="label">Releases order</FieldLegend>
+            <FieldDescription id="content-releases_priority-help">
+              Lower numbers lead on Releases while the physical edition is available to buy.
+            </FieldDescription>
+            <SegmentedChoice
+              label="Order"
+              value={priority === null ? 'automatic' : 'fixed'}
+              options={[
+                { value: 'automatic', label: 'Automatic' },
+                { value: 'fixed', label: 'Fixed position' },
+              ]}
+              disabled={disabled}
+              onChange={(next) => edit('releases_priority')(next === 'automatic' ? null : (priority ?? 1))}
+            />
+            {priority !== null && (
+              <CountStepper
+                id="content-releases_priority"
+                path="releases_priority"
+                label="position"
+                value={priority}
+                min={1}
+                max={99}
+                disabled={disabled}
+                invalid={errors('releases_priority').length > 0}
+                describedBy="content-releases_priority-help"
+                onChange={edit('releases_priority')}
+              />
+            )}
+            <FieldError>{errors('releases_priority').join(' ')}</FieldError>
+          </FieldSet>
+        </>
+      ),
+      safety: (
+        <ProductSafetyFields
+          key={editorIdentity}
+          inCard
+          value={data.product_safety}
+          disabled={disabled}
+          validationAttempt={validationAttempt}
+          onChange={(next) => set('product_safety', next)}
+        />
+      ),
+    };
+    const summaries = releaseCardSummaries(data, artistNames);
+    return (
+      <EditorCards
+        name={`release-${recordId ?? 'new'}`}
+        data={data}
+        validation={validation}
+        cards={releaseCards.map((card) => ({ ...card, summary: summaries[card.id], content: bodies[card.id] }))}
+      />
     );
+  }
+  if (collection === 'news') {
+    const sectionLabels = [
+      ...new Set(
+        newsRecords
+          .map((record) => record.data.section_label)
+          .filter((label): label is string => typeof label === 'string' && !!label.trim()),
+      ),
+    ];
+    const sectionLabel = typeof data.section_label === 'string' ? data.section_label : '';
+    const bodies: Record<NewsCardId, React.ReactNode> = {
+      basics: (
+        <>
+          {field('title', 'News title')}
+          <EditorialPicker
+            base={base}
+            collection="artists"
+            label="Artist"
+            path="artist"
+            value={String(data.artist ?? '')}
+            required={false}
+            error={errors('artist').join(' ') || undefined}
+            onBlur={() => touch('artist')}
+            onSelect={(item) => set('artist', item.id)}
+            onClear={() => set('artist', null)}
+          />
+          <DateField
+            path="date"
+            label="Date"
+            value={data.date}
+            errors={errors('date')}
+            disabled={disabled}
+            onChange={edit('date')}
+            onBlur={() => touch('date')}
+          />
+          <div className="col-span-full min-w-0">
+            <ChoiceChips
+              path="section_label"
+              label="Section label"
+              single
+              options={sectionLabels}
+              value={sectionLabel ? [sectionLabel] : []}
+              otherLabel="New label"
+              maxLength={100}
+              description="Optional small heading above the title. Choose one used before, or add a new one."
+              errors={errors('section_label')}
+              disabled={disabled}
+              onChange={(next) => edit('section_label')(next[0] ?? null)}
+            />
+          </div>
+        </>
+      ),
+      image: image('image', 'image_alt', 'News image', { inCard: true }),
+      text: (
+        <>
+          {field('summary', 'Short description', { multiline: true })}
+          {body}
+        </>
+      ),
+    };
+    const summaries = newsCardSummaries(data, artistNames);
+    return (
+      <EditorCards
+        name={`news-${recordId ?? 'new'}`}
+        data={data}
+        validation={validation}
+        cards={newsCards.map((card) => ({ ...card, summary: summaries[card.id], content: bodies[card.id] }))}
+      />
+    );
+  }
   if (collection === 'shows') {
     const prices = Array.isArray(data.prices) ? data.prices.filter((price) => typeof price === 'number') : [];
     const venue = typeof data.venue === 'string' ? data.venue : '';
@@ -870,10 +1083,6 @@ export default function ContentFields({
           .filter((used): used is string => typeof used === 'string' && !!used),
       ),
     ];
-    const edit = (path: string) => (next: unknown) => {
-      touch(path);
-      set(path, next);
-    };
     const bodies: Record<ShowCardId, React.ReactNode> = {
       title: (
         <>
@@ -965,10 +1174,7 @@ export default function ContentFields({
         />
       ),
     };
-    const summaries = showCardSummaries(
-      data,
-      new Map(artistRecords.map((record) => [record.id, String(record.data.title ?? record.slug)])),
-    );
+    const summaries = showCardSummaries(data, artistNames);
     return (
       <EditorCards
         name={`show-${recordId ?? 'new'}`}
@@ -978,279 +1184,600 @@ export default function ContentFields({
       />
     );
   }
-  if (collection === 'distro')
-    return (
-      <>
-        {field('title', 'Item title')}
-        {field('artist_or_label', 'Artist or label')}
-        {choice('group', 'Physical format', 'Choose a physical format', DISTRO_GROUP_VALUES)}
-        {condition()}
-        {image('image', 'image_alt', 'Item image')}
-        {field('summary', 'Short description', { multiline: true })}
-        {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
-          image(`${path}.image`, `${path}.image_alt`, 'Photo'),
-        )}
-        <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="col-span-full">
-          {section(
-            'music',
-            'Music & listening links',
-            <>
-              <TracklistFields
-                disabled={disabled}
-                value={(data.tracklist as Tracklist | null) ?? null}
-                formatHint={tracklistFormat(String(data.format || data.group || ''))}
-                onChange={(next) => set('tracklist', next)}
-                errors={errors('tracklist')}
-              />
-              {bandcamp}
-              {field('tidal_url', 'Tidal link', { required: false })}
-            </>,
-          )}
-          {section(
-            'presentation',
-            'More item details',
-            <>
-              {field('eyebrow', 'Small heading', { required: false })}
-              {field('format', 'Format description', { required: false })}
-              {field('release_date', 'Release date', { type: 'date', required: false })}
-              {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
-            </>,
-          )}
-        </Accordion>
-        {productSafety}
-      </>
-    );
-  if (collection === 'home')
-    return (
-      <>
-        <h2 className="col-span-full text-lg font-semibold">Opening content</h2>
-        {field('hero.tagline', 'Opening text', { multiline: true })}
-        {image('hero.image', 'hero.image_alt', 'Home image')}
-        <details className="col-span-full">
-          <summary className="min-h-11 cursor-pointer">News — currently hidden on the website</summary>
-          <div className="grid gap-6">
-            {field('news.title', 'News heading')}
-            {field('news.link_text', 'News link text')}
-            {choice('news.link_url', 'News link', 'Choose a page', pageOptions)}
+  if (collection === 'distro') {
+    const format = typeof data.format === 'string' ? data.format : '';
+    const eyebrow = typeof data.eyebrow === 'string' ? data.eyebrow : '';
+    const eyebrows = [
+      ...new Set(
+        distroRecords
+          .map((record) => record.data.eyebrow)
+          .filter((used): used is string => typeof used === 'string' && !!used.trim()),
+      ),
+    ];
+    const order = typeof data.order === 'number' ? data.order : null;
+    const bodies: Record<DistroCardId, React.ReactNode> = {
+      basics: (
+        <>
+          {field('title', 'Item title')}
+          {field('artist_or_label', 'Artist or label')}
+          <div className="col-span-full min-w-0">
+            <ChoiceChips
+              path="format"
+              label="Physical format"
+              single
+              required
+              allowOther={false}
+              options={[...DISTRO_GROUP_VALUES]}
+              value={format ? [format] : []}
+              errors={errors('format')}
+              disabled={disabled}
+              onChange={(next) => edit('format')(next[0] ?? '')}
+            />
           </div>
-        </details>
-        <h2 className="col-span-full text-lg font-semibold">Artist promotion</h2>
-        {field('artists.title', 'Artists heading')}
-        {field('artists.button_text', 'Artists button text')}
-        {choice('artists.button_link', 'Artists button link', 'Choose a page', pageOptions)}
-      </>
-    );
-  if (collection === 'about')
+          {conditionChoice()}
+        </>
+      ),
+      image: (
+        <>
+          {image('image', 'image_alt', 'Item image', { inCard: true })}
+          {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
+            image(`${path}.image`, `${path}.image_alt`, 'Photo', { inCard: true }),
+          )}
+        </>
+      ),
+      listening: (
+        <>
+          {bandcamp}
+          {linkField('tidal_url', 'Tidal link', 'tidal')}
+        </>
+      ),
+      tracklist: (
+        <TracklistFields
+          disabled={disabled}
+          lockFormat
+          value={readDistroTracklist(data.tracklist, format)}
+          formatHint={tracklistFormat(format)}
+          onChange={(next) => {
+            // Distro stores only sides or discs; the item format gives the tracklist format.
+            if (!next) return set('tracklist', null);
+            const { format: _format, ...stored } = next;
+            set('tracklist', stored);
+          }}
+          errors={errors('tracklist')}
+        />
+      ),
+      text: field('summary', 'Short description', { multiline: true }),
+      display: (
+        <>
+          <div className="col-span-full min-w-0">
+            <ChoiceChips
+              path="eyebrow"
+              label="Small heading"
+              single
+              options={eyebrows}
+              value={eyebrow ? [eyebrow] : []}
+              otherLabel="New heading"
+              maxLength={80}
+              description="Optional. Choose one used before, or add a new one."
+              errors={errors('eyebrow')}
+              disabled={disabled}
+              onChange={(next) => edit('eyebrow')(next[0] ?? null)}
+            />
+          </div>
+          {field('format_override', 'Format shown instead', { required: false })}
+          <DateField
+            path="release_date"
+            label="Release date"
+            value={data.release_date}
+            required={false}
+            errors={errors('release_date')}
+            disabled={disabled}
+            onChange={edit('release_date')}
+            onBlur={() => touch('release_date')}
+          />
+          <Field className="min-w-0" data-invalid={errors('order').length > 0}>
+            <FieldLabel htmlFor="content-order" required icon={ListOrdered}>
+              Display order
+            </FieldLabel>
+            <CountStepper
+              id="content-order"
+              path="order"
+              label="position"
+              value={order}
+              min={0}
+              disabled={disabled}
+              invalid={errors('order').length > 0}
+              onChange={edit('order')}
+            />
+            <FieldError>{errors('order').join(' ')}</FieldError>
+          </Field>
+        </>
+      ),
+      safety: (
+        <ProductSafetyFields
+          key={editorIdentity}
+          inCard
+          value={data.product_safety}
+          disabled={disabled}
+          validationAttempt={validationAttempt}
+          onChange={(next) => set('product_safety', next)}
+        />
+      ),
+    };
+    const summaries = distroCardSummaries(data);
     return (
-      <>
-        {field('hero.section_label', 'Section label')}
-        {field('hero.title', 'Page title')}
-        {image('hero.image', 'hero.image_alt', 'Who we are image')}
-        {field('lead.text', 'Opening text', { multiline: true })}
-        <h2 className="col-span-full text-lg font-semibold">Our story</h2>
-        {field('story.title', 'Story heading')}
-        {rows('story.paragraphs', 'Story', '', (path) => field(path, 'Paragraph', { multiline: true }))}
-        <h2 className="col-span-full text-lg font-semibold">Quote</h2>
-        {data.quote ? (
-          <>
-            {field('quote.text', 'Quote', { multiline: true })}
-            {field('quote.cite', 'Quote author')}
-            <Button type="button" variant="outline" onClick={() => set('quote', null)}>
-              <Trash2 className="size-4" aria-hidden="true" />
-              Remove quote
-            </Button>
-          </>
-        ) : (
-          <Button type="button" variant="outline" onClick={() => set('quote', { text: '', cite: '' })}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add quote
+      <EditorCards
+        name={`distro-${recordId ?? 'new'}`}
+        data={data}
+        validation={validation}
+        cards={distroCards.map((card) => ({ ...card, summary: summaries[card.id], content: bodies[card.id] }))}
+      />
+    );
+  }
+  if (collection === 'home')
+    return websiteEditor('home', {
+      opening: (
+        <>
+          {field('hero.tagline', 'Opening text', { multiline: true })}
+          {image('hero.image', 'hero.image_alt', 'Home image', { inCard: true })}
+        </>
+      ),
+      artists: (
+        <>
+          {field('artists.title', 'Artists heading')}
+          {field('artists.button_text', 'Artists button text')}
+          {choice('artists.button_link', 'Artists button link', 'Choose a page', pageOptions)}
+        </>
+      ),
+      news: (
+        <>
+          {field('news.title', 'News heading')}
+          {field('news.link_text', 'News link text')}
+          {choice('news.link_url', 'News link', 'Choose a page', pageOptions)}
+        </>
+      ),
+    });
+  if (collection === 'about') {
+    const contactItems = Array.isArray(value('contact.items')) ? (value('contact.items') as ContentData[]) : [];
+    const contactLabels = [
+      ...new Set([
+        ...defaultContactLabels,
+        ...contactItems.map((item) => (typeof item.label === 'string' ? item.label.trim() : '')).filter(Boolean),
+      ]),
+    ];
+    const facts = Array.isArray(value('stats.items')) ? (value('stats.items') as ContentData[]) : [];
+    return websiteEditor('about', {
+      opening: (
+        <>
+          {field('hero.section_label', 'Section label')}
+          {field('hero.title', 'Page title')}
+          {image('hero.image', 'hero.image_alt', 'Who we are image', { inCard: true })}
+          {field('lead.text', 'Opening text', { multiline: true })}
+        </>
+      ),
+      story: (
+        <>
+          {field('story.title', 'Story heading')}
+          {rows('story.paragraphs', 'Story', '', (path) => field(path, 'Paragraph', { multiline: true }))}
+        </>
+      ),
+      quote: data.quote ? (
+        <>
+          {field('quote.text', 'Quote', { multiline: true })}
+          {field('quote.cite', 'Quote author')}
+          <Button type="button" variant="outline" className="w-fit" onClick={() => set('quote', null)}>
+            <Trash2 className="size-4" aria-hidden="true" />
+            Remove quote
           </Button>
-        )}
-        <h2 className="col-span-full text-lg font-semibold">Contact</h2>
-        {field('contact.title', 'Contact heading')}
-        {field('contact.intro', 'Contact introduction', { multiline: true })}
-        {rows('contact.items', 'Contact details', { label: '', value: '' }, (path) => (
-          <>
-            {field(`${path}.label`, 'Label')}
-            {field(`${path}.value`, 'Email address', { type: 'email' })}
-          </>
-        ))}
-        {rows('stats.items', 'Label facts', { key: '', label: '' }, (path) => (
+        </>
+      ) : (
+        <Button type="button" variant="outline" className="w-fit" onClick={() => set('quote', { text: '', cite: '' })}>
+          <Plus className="size-4" aria-hidden="true" />
+          Add quote
+        </Button>
+      ),
+      contact: (
+        <>
+          {field('contact.title', 'Contact heading')}
+          {field('contact.intro', 'Contact introduction', { multiline: true })}
+          {rows('contact.items', 'Contact details', { label: '', value: '' }, (path) => {
+            const label = value(`${path}.label`);
+            return (
+              <>
+                <div className="col-span-full min-w-0">
+                  <ChoiceChips
+                    path={`${path}.label`}
+                    label="What it is for"
+                    single
+                    required
+                    options={contactLabels}
+                    value={typeof label === 'string' && label ? [label] : []}
+                    otherLabel="Other"
+                    maxLength={80}
+                    errors={exactErrors(`${path}.label`)}
+                    disabled={disabled}
+                    onChange={(next) => edit(`${path}.label`)(next[0] ?? '')}
+                  />
+                </div>
+                {field(`${path}.value`, 'Email address', { type: 'email' })}
+              </>
+            );
+          })}
+        </>
+      ),
+      facts: rows(
+        'stats.items',
+        'Label facts',
+        { key: ABOUT_STAT_KEYS.find((key) => !facts.some((fact) => fact.key === key)) ?? '', label: '' },
+        (path, index) => (
           <>
             {choice(
               `${path}.key`,
               'Fact',
               'Choose a fact',
-              ABOUT_STAT_KEYS.map((key) => ({ value: key, label: statLabels[key] })),
+              ABOUT_STAT_KEYS.filter(
+                (key) => key === facts[index]?.key || !facts.some((fact, other) => other !== index && fact.key === key),
+              ).map((key) => ({ value: key, label: statLabels[key] })),
             )}
             {field(`${path}.label`, 'Description')}
           </>
-        ))}
-      </>
-    );
-  if (collection === 'services')
-    return (
-      <>
-        {field('hero.title', 'Page title')}
-        {field('hero.intro', 'Introduction', { multiline: true })}
-        {field('hero.cta_text', 'Contact button text')}
-        {rows(
-          'services.items',
-          'Services',
-          { id: '', title: '', image: null, image_alt: '', summary: '', bullets: ['', ''], contact_note: '' },
-          (path) => (
-            <>
-              {field(`${path}.id`, 'Link name (lowercase words separated by hyphens)', { normalize: linkNameInput })}
-              {field(`${path}.title`, 'Service title')}
-              {image(`${path}.image`, `${path}.image_alt`, 'Service image')}
-              {field(`${path}.summary`, 'Summary', { multiline: true })}
-              {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail', { prose: true }), {
-                min: 2,
-                max: 12,
-              })}
-              {field(`${path}.contact_note`, 'Contact note', { prose: true })}
-              {field(`${path}.partner_name`, 'Partner name', { required: false })}
-              {field(`${path}.partner_url`, 'Partner website', { type: 'url', required: false })}
-            </>
-          ),
-        )}
-        <h2 className="col-span-full text-lg font-semibold">How we work</h2>
-        {field('process.title', 'Process heading')}
-        {field('process.intro', 'Process introduction', { multiline: true })}
-        {rows(
-          'process.steps',
-          'Process steps',
-          { title: '', body: '' },
-          (path) => (
-            <>
-              {field(`${path}.title`, 'Step title')}
-              {field(`${path}.body`, 'Step text', { multiline: true })}
-            </>
-          ),
-          { min: 3, max: 12 },
-        )}
-        <h2 className="col-span-full text-lg font-semibold">Contact form</h2>
-        {field('inquiry.title', 'Contact form heading')}
-        {field('inquiry.intro', 'Contact form introduction', { multiline: true })}
-        {field('inquiry.email', 'Contact email', { type: 'email' })}
-        {field('inquiry.submit_text', 'Send button text')}
-      </>
-    );
+        ),
+        { max: ABOUT_STAT_KEYS.length },
+      ),
+    });
+  }
   if (collection === 'navigation')
-    return (
-      <>
-        {field('title', 'Link text')}
-        {choice('url', 'Page link', 'Choose a page', pageOptions)}
-        <p className="col-span-full text-sm text-muted-foreground">
-          Use Move up or Move down in the link list to change its position.
-        </p>
-        {check('show_in_header', 'Show in the main menu (top of the site and the phone Menu)')}
-        {check('show_in_footer', 'Show at the bottom of the site')}
-      </>
-    );
-  if (collection === 'socials')
-    return (
-      <>
-        {choice('title', 'Platform', 'Choose a platform', SOCIAL_PLATFORMS)}
-        <Field orientation="horizontal" className="min-h-11">
-          <Checkbox
-            id="content-url-hidden"
-            checked={data.url === '#'}
+    return websiteEditor('navigation', {
+      link: (
+        <>
+          {field('title', 'Link text')}
+          {choice('url', 'Page link', 'Choose a page', pageOptions)}
+          <p className="col-span-full text-sm text-muted-foreground">
+            Use Move up or Move down in the link list to change its position.
+          </p>
+        </>
+      ),
+      placement: (
+        <>
+          <Switch
+            id="content-show_in_header"
+            path="show_in_header"
+            label="Main menu"
+            onLabel="Shown"
+            offLabel="Hidden"
+            description="The top of the site and the phone Menu."
+            checked={value('show_in_header') === true || value('show_in_header') === 1}
             disabled={disabled}
-            onCheckedChange={(checked) => set('url', checked === true ? '#' : '')}
+            onChange={edit('show_in_header')}
           />
-          <FieldLabel htmlFor="content-url-hidden">Hide this link on the website</FieldLabel>
-        </Field>
-        {data.url !== '#' && field('url', 'Profile link', { type: 'url' })}
-        <p className="col-span-full text-sm text-muted-foreground">
-          Use Move up or Move down in the link list to change its position.
-        </p>
-      </>
-    );
+          <Switch
+            id="content-show_in_footer"
+            path="show_in_footer"
+            label="Bottom of the site"
+            onLabel="Shown"
+            offLabel="Hidden"
+            checked={value('show_in_footer') === true || value('show_in_footer') === 1}
+            disabled={disabled}
+            onChange={edit('show_in_footer')}
+          />
+        </>
+      ),
+    });
   if (collection === 'newsletter')
-    return (
-      <>
-        {field('section_label', 'Section label')}
-        {field('title', 'Heading')}
-        {field('description', 'Description', { multiline: true })}
-        {field('placeholder', 'Example email', { type: 'email' })}
-        {field('button_label', 'Button text')}
-        {field('note', 'Small print', { multiline: true })}
-      </>
-    );
-  if (collection === 'settings')
-    return (
-      <>
-        {field('footer_text', 'Footer text', { required: false })}
-        <FieldDescription className="col-span-full">
-          The description below the logo at the bottom of every page. Leave blank to use the default label description.
-        </FieldDescription>
-        {field('label_name', 'Label name')}
-        {field('established_year', 'Year established', { type: 'number', min: 1900, max: 2100, step: 1 })}
-        <details className="col-span-full">
-          <summary className="min-h-11 cursor-pointer">Search engines and label metadata</summary>
-          <p className="mb-4 text-sm text-muted-foreground">
+    return websiteEditor('newsletter', {
+      text: (
+        <>
+          {field('section_label', 'Section label')}
+          {field('title', 'Heading')}
+          {field('description', 'Description', { multiline: true })}
+        </>
+      ),
+      form: (
+        <>
+          {field('placeholder', 'Example email', { type: 'email' })}
+          {field('button_label', 'Button text')}
+          {field('note', 'Small print', { multiline: true })}
+        </>
+      ),
+    });
+  if (collection === 'settings') {
+    const year = typeof data.established_year === 'number' ? data.established_year : null;
+    return websiteEditor('settings', {
+      label: (
+        <>
+          {field('label_name', 'Label name')}
+          <Field className="min-w-0" data-invalid={errors('established_year').length > 0}>
+            <FieldLabel htmlFor="content-established_year" required icon={CalendarDays}>
+              Year established
+            </FieldLabel>
+            <CountStepper
+              id="content-established_year"
+              path="established_year"
+              label="year"
+              value={year}
+              min={1900}
+              max={new Date().getFullYear()}
+              limitMessage="The year cannot be in the future."
+              disabled={disabled}
+              invalid={errors('established_year').length > 0}
+              onChange={edit('established_year')}
+            />
+            <FieldError>{errors('established_year').join(' ')}</FieldError>
+          </Field>
+          {field('footer_text', 'Footer text', { required: false })}
+          <FieldDescription className="col-span-full">
+            The description below the logo at the bottom of every page. Leave blank to use the default label
+            description.
+          </FieldDescription>
+        </>
+      ),
+      search: (
+        <>
+          <p className="col-span-full text-sm text-muted-foreground">
             These details describe the label to search engines; they do not change the visible page copy.
           </p>
-          <div className="grid gap-6">
-            {field('url', 'Label website', { type: 'url' })}
-            {field('logo', 'Logo path')}
-            {field('location.locality', 'City')}
-            <CountryPicker
-              single
-              path="location.country"
-              value={String(value('location.country') ?? '')}
-              onChange={(country) => set('location.country', country)}
-              error={errors('location.country').join(' ') || undefined}
+          {linkField('url', 'Label website', 'any', true)}
+          {field('logo', 'Logo path')}
+          {field('location.locality', 'City')}
+          <CountryPicker
+            single
+            path="location.country"
+            value={String(value('location.country') ?? '')}
+            onChange={(country) => set('location.country', country)}
+            error={errors('location.country').join(' ') || undefined}
+          />
+        </>
+      ),
+    });
+  }
+  if (collection === 'distro_page')
+    return websiteEditor('distro_page', {
+      opening: (
+        <>
+          {field('hero.title', 'Page title')}
+          {field('hero.intro', 'Introduction', { multiline: true })}
+        </>
+      ),
+      groups: (
+        <>
+          {DISTRO_INTRO_FIELDS.map(({ name, label }) => field(`group_intros.${name}`, label, { multiline: true }))}
+          {Object.keys((data.group_intros as object) ?? {})
+            .filter((key) => !DISTRO_INTRO_FIELDS.some(({ name }) => name === key))
+            .map((key) => field(`group_intros.${key}`, key.replaceAll('_', ' '), { multiline: true }))}
+        </>
+      ),
+    });
+  if (collection === 'purchase_information') {
+    const wording = (group: 'terms' | 'privacy') =>
+      (group === 'terms'
+        ? ['dispatch', 'delivery', 'returns', 'damaged_items', 'uncollected_parcels']
+        : ['purposes', 'recipients', 'retention', 'rights', 'contact']
+      ).map((section) => (
+        <div className="col-span-full grid gap-4" key={section}>
+          {field(`content.${group}.${section}.summary`, section.replaceAll('_', ' ') + ' summary', {
+            multiline: true,
+          })}
+          {rows(
+            `content.${group}.${section}.paragraphs`,
+            'Full wording',
+            '',
+            (path) => field(path, 'Paragraph', { multiline: true }),
+            { min: 1 },
+          )}
+        </div>
+      ));
+    return websiteEditor('purchase_information', {
+      approval: (
+        <>
+          <Field className="min-w-0" data-invalid={errors('publication').length > 0}>
+            <SegmentedChoice
+              label="Public wording approval"
+              path="publication"
+              value={data.publication === 'approved' ? 'approved' : 'pending'}
+              options={[
+                { value: 'pending', label: 'Awaiting review' },
+                { value: 'approved', label: 'Approved' },
+              ]}
+              disabled={disabled}
+              onChange={edit('publication')}
+            />
+            <FieldError>{errors('publication').join(' ')}</FieldError>
+          </Field>
+          <DateField
+            path="content.revision"
+            label="Date of wording"
+            value={value('content.revision')}
+            errors={errors('content.revision')}
+            disabled={disabled}
+            onChange={edit('content.revision')}
+            onBlur={() => touch('content.revision')}
+          />
+        </>
+      ),
+      seller: (
+        <>
+          {field('content.seller.name', 'Seller name')}
+          {field('content.seller.support_email', 'Support email', { type: 'email' })}
+          {field('content.seller.address', 'Seller address', { multiline: true })}
+        </>
+      ),
+      terms: wording('terms'),
+      privacy: wording('privacy'),
+    });
+  }
+  if (collection === 'services')
+    return websiteEditor('services', {
+      opening: (
+        <>
+          {field('hero.title', 'Page title')}
+          {field('hero.cta_text', 'Contact button text')}
+          {field('hero.intro', 'Introduction', { multiline: true })}
+        </>
+      ),
+      services: rows(
+        'services.items',
+        'Services',
+        { id: '', title: '', image: null, image_alt: '', summary: '', bullets: ['', ''], contact_note: '' },
+        (path) => (
+          <>
+            <Field className="min-w-0" data-invalid={exactErrors(`${path}.title`).length > 0}>
+              <FieldLabel htmlFor={`content-${path}.title`} required icon={Type}>
+                Service title
+              </FieldLabel>
+              <Input
+                id={`content-${path}.title`}
+                data-content-path={`${path}.title`}
+                value={String(value(`${path}.title`) ?? '')}
+                disabled={disabled}
+                aria-invalid={exactErrors(`${path}.title`).length > 0 || undefined}
+                onBlur={() => touch(`${path}.title`)}
+                onChange={(event) => {
+                  const previous = String(value(`${path}.title`) ?? '');
+                  const id = String(value(`${path}.id`) ?? '');
+                  // The link name follows the title until staff change it themselves.
+                  const follows = !id || id === slugify(previous);
+                  setFields({
+                    [`${path}.title`]: event.target.value,
+                    ...(follows ? { [`${path}.id`]: slugify(event.target.value) } : {}),
+                  });
+                }}
+              />
+              <FieldError>{exactErrors(`${path}.title`).join(' ')}</FieldError>
+            </Field>
+            <ServiceLinkName
+              path={`${path}.id`}
+              stored={String(value(`${path}.id`) ?? '')}
+              errors={exactErrors(`${path}.id`)}
+              disabled={disabled}
+              onChange={(next) => edit(`${path}.id`)(linkNameInput(next))}
+            />
+            {image(`${path}.image`, `${path}.image_alt`, 'Service image', { inCard: true })}
+            {field(`${path}.summary`, 'Summary', { multiline: true })}
+            {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail', { prose: true }), {
+              min: 2,
+              max: 12,
+            })}
+            {field(`${path}.contact_note`, 'Contact note', { prose: true })}
+            {field(`${path}.partner_name`, 'Partner name', { required: false })}
+            {linkField(`${path}.partner_url`, 'Partner website', 'any')}
+          </>
+        ),
+      ),
+      process: (
+        <>
+          {field('process.title', 'Process heading')}
+          {field('process.intro', 'Process introduction', { multiline: true })}
+          {rows(
+            'process.steps',
+            'Process steps',
+            { title: '', body: '' },
+            (path) => (
+              <>
+                {field(`${path}.title`, 'Step title')}
+                {field(`${path}.body`, 'Step text', { multiline: true })}
+              </>
+            ),
+            { min: 3, max: 12 },
+          )}
+        </>
+      ),
+      inquiry: (
+        <>
+          {field('inquiry.title', 'Contact form heading')}
+          {field('inquiry.email', 'Contact email', { type: 'email' })}
+          {field('inquiry.intro', 'Contact form introduction', { multiline: true })}
+          {field('inquiry.submit_text', 'Send button text')}
+        </>
+      ),
+    });
+  if (collection === 'socials') {
+    // Transition read: a stored "#" means hidden.
+    const visible = data.visible === undefined ? data.url !== '#' : data.visible === true || data.visible === 1;
+    const platform = typeof data.title === 'string' ? data.title : '';
+    return websiteEditor('socials', {
+      platform: (
+        <div className="col-span-full min-w-0">
+          <ChoiceChips
+            path="title"
+            label="Platform"
+            single
+            required
+            allowOther={false}
+            options={[...SOCIAL_PLATFORMS]}
+            value={platform ? [platform] : []}
+            errors={errors('title')}
+            disabled={disabled}
+            onChange={(next) => edit('title')(next[0] ?? '')}
+          />
+        </div>
+      ),
+      link: (
+        <>
+          <div className="col-span-full">
+            <Switch
+              id="content-visible"
+              path="visible"
+              label="Show on the website"
+              onLabel="Shown"
+              offLabel="Hidden"
+              description="Use Move up or Move down in the link list to change its position."
+              checked={visible}
+              disabled={disabled}
+              onChange={(checked) => setFields({ visible: checked, ...(data.url === '#' ? { url: '' } : {}) })}
             />
           </div>
-        </details>
-      </>
-    );
-  if (collection === 'distro_page')
-    return (
-      <>
-        {field('hero.title', 'Page title')}
-        {field('hero.intro', 'Introduction', { multiline: true })}
-        {DISTRO_INTRO_FIELDS.map(({ name, label }) => field(`group_intros.${name}`, label, { multiline: true }))}
-        {Object.keys((data.group_intros as object) ?? {})
-          .filter((key) => !DISTRO_INTRO_FIELDS.some(({ name }) => name === key))
-          .map((key) => field(`group_intros.${key}`, key.replaceAll('_', ' '), { multiline: true }))}
-      </>
-    );
+          {linkField('url', 'Profile link', socialService[platform] ?? 'any', visible)}
+        </>
+      ),
+    });
+  }
+  return null;
+}
+
+/** The service's link name: shown as the page address, editable only after Change. */
+function ServiceLinkName({
+  path,
+  stored,
+  errors,
+  disabled,
+  onChange,
+}: {
+  path: string;
+  stored: string;
+  errors: string[];
+  disabled: boolean;
+  onChange(value: string): void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const id = `content-${path}`;
   return (
-    <>
-      {choice('publication', 'Public wording approval', 'Choose approval state', [
-        { value: 'pending', label: 'Awaiting review' },
-        { value: 'approved', label: 'Approved by the label' },
-      ])}
-      {field('content.revision', 'Date of wording', { type: 'date' })}
-      {field('content.seller.name', 'Seller name')}
-      {field('content.seller.address', 'Seller address', { multiline: true })}
-      {field('content.seller.support_email', 'Support email', { type: 'email' })}
-      {(['terms', 'privacy'] as const).map((group) => (
-        <section className="col-span-full grid gap-6" key={group}>
-          <h2 className="text-2xl font-semibold">{group === 'terms' ? 'Purchase terms' : 'Privacy'}</h2>
-          {(group === 'terms'
-            ? ['dispatch', 'delivery', 'returns', 'damaged_items', 'uncollected_parcels']
-            : ['purposes', 'recipients', 'retention', 'rights', 'contact']
-          ).map((section) => (
-            <div className="grid gap-4" key={section}>
-              {field(`content.${group}.${section}.summary`, section.replaceAll('_', ' ') + ' summary', {
-                multiline: true,
-              })}
-              {rows(
-                `content.${group}.${section}.paragraphs`,
-                'Full wording',
-                '',
-                (path) => field(path, 'Paragraph', { multiline: true }),
-                { min: 1 },
-              )}
-            </div>
-          ))}
-        </section>
-      ))}
-    </>
+    <Field className="min-w-0" data-invalid={errors.length > 0}>
+      <FieldLabel htmlFor={editing ? id : undefined} icon={Link}>
+        Link name
+      </FieldLabel>
+      {editing ? (
+        <Input
+          id={id}
+          data-content-path={path}
+          value={stored}
+          disabled={disabled}
+          aria-describedby={`${id}-help`}
+          aria-invalid={errors.length > 0 || undefined}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      ) : (
+        <div className="flex min-h-11 flex-wrap items-center gap-2">
+          <code className="text-sm">/services#{stored || '…'}</code>
+          <Button type="button" variant="ghost" disabled={disabled} onClick={() => setEditing(true)}>
+            Change
+          </Button>
+        </div>
+      )}
+      <FieldDescription id={`${id}-help`}>
+        Made from the service title. Changing it breaks links that people already shared.
+      </FieldDescription>
+      <FieldError>{errors.join(' ')}</FieldError>
+    </Field>
   );
 }
 

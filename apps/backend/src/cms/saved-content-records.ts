@@ -1,10 +1,13 @@
 import { ContentRepository, RevisionRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
 
-export async function* readSavedContentRecords(db: EmDashRuntime['db'], collection: 'releases' | 'distro') {
+export async function* readSavedContentRecords(
+  db: EmDashRuntime['db'],
+  collection: 'artists' | 'releases' | 'distro' | 'navigation' | 'socials' | 'services',
+) {
   const content = new ContentRepository(db);
   const revisions = new RevisionRepository(db);
-  const label = collection === 'releases' ? 'Release' : 'Distro item';
+  const label = collection === 'releases' ? 'Release' : collection === 'distro' ? 'Distro item' : collection;
   let cursor: string | undefined;
   do {
     const page = await content.findMany(collection, { limit: 100, ...(cursor ? { cursor } : {}) });
@@ -14,7 +17,7 @@ export async function* readSavedContentRecords(db: EmDashRuntime['db'], collecti
       if (revisionId && (!revision || revision.entryId !== item.id || revision.collection !== collection))
         throw new Error(`${label} "${item.slug}" has an unavailable saved revision.`);
       if (!item.slug) throw new Error(`${label} ${item.id} has no stable slug.`);
-      yield { collection, id: item.id, slug: item.slug, data: revision?.data ?? item.data };
+      yield { collection, id: item.id, slug: item.slug, data: revision?.data ?? item.data, revisionId };
     }
     cursor = page.nextCursor;
   } while (cursor);

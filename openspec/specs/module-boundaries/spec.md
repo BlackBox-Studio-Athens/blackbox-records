@@ -64,14 +64,14 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 
 ### Requirement: Closed module boundaries
 
+The system SHALL treat application modules as closed by default with explicit provided interfaces and named interfaces.
+
 #### Scenario: Merchant products are synchronized
 
 - **WHEN** the existing backend schedule synchronizes Merchant products
 - **THEN** `merchant-sync` owns pure accepted-product mapping and bounded reconciliation through its root interface, `google-merchant` owns the provider adapter, and `commerce-persistence` owns the native D1 scan state through `d1-merchant-sync-repository.ts`
 - **AND** `cms-runtime` exposes `published-merchant-catalog.ts` for complete accepted inventory reads; `backend-runtime` composes these interfaces with checkout, catalog, Stripe and commerce-domain public interfaces
 - **AND** checkout and editorial mutations have no Merchant dependency, and no browser module receives provider credentials or persistence access.
-
-The system SHALL treat application modules as closed by default with explicit provided interfaces and named interfaces.
 
 #### Scenario: Code imports another module
 
@@ -357,13 +357,14 @@ The public web app SHALL expose one Lenis runtime through its existing module la
 
 ### Requirement: Staff frontend is composed of closed feature modules
 
-The `staff-frontend` composition root SHALL consume closed `staff-*` modules for the shared UI primitives, platform helpers, order, stats, publication, shell, stock and content features. Each module MUST declare its root, task inputs and test target in its own Nx `project.json`, and module dependencies MUST stay acyclic.
+The `staff-frontend` composition root SHALL consume closed `staff-*` modules for the shared UI primitives, the typed field kit, platform helpers, order, stats, publication, shell, stock and content features. Each module MUST declare its root, task inputs and test target in its own Nx `project.json`, and module dependencies MUST stay acyclic.
 
 #### Scenario: Staff modules are layered
 
 - **WHEN** boundary validation runs
 - **THEN** layering runs `staff-ui` ← `staff-platform` ← {`staff-orders`, `staff-stats`, `staff-publication`} ← {`staff-shell`, `staff-stock`} ← `staff-content` ← `staff-frontend`
 - **AND** `staff-ui` has no staff dependencies, `staff-platform` may use `staff-ui`, and `staff-orders`, `staff-stats` and `staff-publication` may use `staff-ui` and `staff-platform`
+- **AND** `staff-fields` may use `staff-ui` only, and `staff-orders`, `staff-shell`, `staff-stock` and `staff-content` may use `staff-fields`
 - **AND** `staff-shell` and `staff-stock` may use `staff-ui`, `staff-platform` and `staff-publication`
 - **AND** `staff-content` may use `staff-ui`, `staff-platform`, `staff-publication` and `staff-stock`
 - **AND** `staff-frontend` may use every staff module, and declares them as implicit Nx dependencies because Astro imports are invisible to static analysis.

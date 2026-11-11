@@ -9,6 +9,7 @@ import {
   parseCatalogNumber,
   proseBlocks,
   proseText,
+  readTypedValues,
   requiresProductCondition,
   resolveProse,
   type Prose,
@@ -26,18 +27,20 @@ import {
   FileText,
   Package,
   RefreshCw,
-  Tag,
   Type,
   Users,
 } from 'lucide-react';
-import { Field, FieldError, FieldLabel, FieldLegend } from '../ui/field';
-import { NativeSelect } from '../ui/native-select';
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend } from '../ui/field';
+import SegmentedChoice from '../fields/SegmentedChoice';
+import Switch from '../fields/Switch';
+import CountStepper from '../fields/CountStepper';
+import MoneyInput, { euroText } from '../fields/MoneyInput';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import ProductSafetyFields from './ProductSafetyFields';
-import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
+import { euroMinor } from '../../lib/item-commerce';
 import CatalogNumberField from './CatalogNumberField';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
@@ -50,6 +53,17 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 
+// Distro items saved before the typed-value migration still store the format as `group`.
+const distroFormat = (data: Record<string, unknown>) => readTypedValues('distro', data).format;
+
+/** The stored setup amount as cents for MoneyInput; unreadable or empty text reads as no amount. */
+function centsOf(text: string): number | null {
+  try {
+    return text ? euroMinor(text) : null;
+  } catch {
+    return null;
+  }
+}
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 const maxOpeningStock = 2_147_483_647; // Matches the item setup API bound.
 
@@ -143,7 +157,7 @@ export function setupCommand(input: {
   if (!title) throw new Error('Enter an item title.');
   const itemType =
     sourceKind === 'distro' && input.existing
-      ? (input.existing.data.group as CatalogSetupCommand['itemType'])
+      ? (distroFormat(input.existing.data) as CatalogSetupCommand['itemType'])
       : input.format;
   if (!DISTRO_GROUP_VALUES.includes(itemType)) throw new Error('Choose a supported format.');
   if (input.kind === 'merch' && itemType !== 'Clothes') throw new Error('Choose clothing for Merch.');
@@ -169,7 +183,6 @@ export function setupCommand(input: {
                   ...descriptionFields(input.summary),
                   image: { id: input.image },
                   image_alt: input.alt.trim(),
-                  group: itemType,
                   format: itemType,
                   order: 0,
                   ...conditionData,
@@ -277,7 +290,6 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           ...descriptionFields(summary),
           image: image ? { id: image } : null,
           image_alt: alt,
-          group: format,
           format,
           order: 0,
           ...conditionData,
@@ -428,7 +440,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               .then((result) => {
                 draftDocument.current = result;
                 const data = result.item.data;
-                setKind(saved.collection === 'releases' ? 'release' : data.group === 'Clothes' ? 'merch' : 'distro');
+                setKind(
+                  saved.collection === 'releases' ? 'release' : distroFormat(data) === 'Clothes' ? 'merch' : 'distro',
+                );
                 setTitle(String(data.title ?? ''));
                 setArtist(String(data.artist ?? ''));
                 setCatalogNumber(String(data.catalog_number ?? ''));
@@ -440,7 +454,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 const artwork = (data.cover_image ?? data.image) as { id?: string } | null;
                 setImage(artwork?.id ?? '');
                 setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
-                const restoredFormat = Array.isArray(data.formats) ? data.formats[0] : data.group;
+                const restoredFormat = Array.isArray(data.formats) ? data.formats[0] : distroFormat(data);
                 setFormat((current) => DISTRO_GROUP_VALUES.find((group) => group === restoredFormat) ?? current);
                 setCondition(storedProductCondition(data));
                 if (data.product_safety && typeof data.product_safety === 'object')
@@ -741,41 +755,37 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               </select>
             </label>
           )}
-          {existing && kind !== 'release' && <p>Format: {String(existing.data.group)}</p>}
+          {existing && kind !== 'release' && <p>Format: {String(distroFormat(existing.data) ?? '')}</p>}
           {mode === 'new' && (
             <Field data-invalid={!!conditionError}>
-              <FieldLabel htmlFor="setup-product-condition" required={conditionRequired} icon={Tag}>
-                Physical condition
-              </FieldLabel>
-              <NativeSelect
-                id="setup-product-condition"
-                className="min-h-11 w-full min-w-0"
-                value={condition ?? ''}
-                required={conditionRequired}
-                aria-invalid={!!conditionError || undefined}
-                aria-describedby={conditionError ? 'setup-product-condition-error' : undefined}
-                onBlur={() => setConditionChecked(true)}
-                onChange={(event) => setCondition((event.target.value || null) as ProductCondition)}
-              >
-                <option value="">Choose condition</option>
-                <option value="new">New</option>
-                <option value="used">Used</option>
-              </NativeSelect>
+              <SegmentedChoice
+                label={conditionRequired ? 'Physical condition' : 'Physical condition (optional)'}
+                path="product_condition"
+                value={condition ?? undefined}
+                options={[
+                  { value: 'new', label: 'New' },
+                  { value: 'used', label: 'Used' },
+                ]}
+                onChange={(next) => {
+                  setConditionChecked(true);
+                  setCondition(next as ProductCondition);
+                }}
+              />
               <FieldError id="setup-product-condition-error">{conditionError}</FieldError>
             </Field>
           )}
           {kind === 'release' && mode === 'new' && (
-            <label className="flex min-h-11 items-center gap-3">
-              <input
-                type="checkbox"
-                checked={sellRelease}
-                onChange={(event) => {
-                  setSellRelease(event.target.checked);
-                  retainSetup({ sellRelease: event.target.checked });
-                }}
-              />
-              Sell this release in the shop
-            </label>
+            <Switch
+              id="setup-sell-release"
+              label="Sell this release in the shop"
+              onLabel="Yes"
+              offLabel="No, website only"
+              checked={sellRelease}
+              onChange={(checked) => {
+                setSellRelease(checked);
+                retainSetup({ sellRelease: checked });
+              }}
+            />
           )}
           {mode === 'new' && (
             <ProductSafetyFields value={productSafety} disabled={locked} onChange={setProductSafety} />
@@ -790,92 +800,83 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             <FieldLegend className="staff-section-title mb-4 text-xl font-semibold" icon={Package}>
               Price & starting stock
             </FieldLegend>
-            <label className="flex min-h-11 items-center gap-3">
-              <input
-                type="checkbox"
-                checked={custom}
-                onChange={(event) => {
-                  setCustom(event.target.checked);
-                  retainSetup({ custom: event.target.checked });
-                }}
-              />
-              Let buyers choose what to pay
-            </label>
+            <SegmentedChoice
+              label="Price"
+              value={custom ? 'custom' : 'fixed'}
+              options={[
+                { value: 'fixed', label: 'Fixed price' },
+                { value: 'custom', label: 'Buyers choose' },
+              ]}
+              onChange={(next) => {
+                setCustom(next === 'custom');
+                retainSetup({ custom: next === 'custom' });
+              }}
+            />
             {custom && (
-              <label className="grid gap-2">
-                <span className="flex items-center gap-2">
-                  <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
-                  Minimum price (EUR)
-                </span>
-                <Input
-                  required
-                  inputMode="decimal"
-                  value={minimum}
-                  onChange={(event) => {
-                    if (!isEuroDraft(event.target.value)) return;
-                    setMinimum(event.target.value);
-                    retainSetup({ minimum: event.target.value });
+              <Field className="min-w-0">
+                <FieldLabel htmlFor="setup-minimum" required icon={Euro}>
+                  Minimum price
+                </FieldLabel>
+                <MoneyInput
+                  id="setup-minimum"
+                  value={centsOf(minimum)}
+                  onChange={(cents) => {
+                    setMinimum(euroText(cents));
+                    retainSetup({ minimum: euroText(cents) });
                   }}
                 />
-              </label>
+              </Field>
             )}
-            <label className="grid gap-2">
-              <span className="flex items-center gap-2">
-                <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
-                {custom ? 'Suggested price (EUR)' : 'Price (EUR)'}
-              </span>
-              <Input
-                required
-                inputMode="decimal"
-                placeholder="e.g. 25,00"
-                value={amount}
-                onChange={(event) => {
-                  if (!isEuroDraft(event.target.value)) return;
-                  setAmount(event.target.value);
-                  retainSetup({ amount: event.target.value });
+            <Field className="min-w-0">
+              <FieldLabel htmlFor="setup-amount" required icon={Euro}>
+                {custom ? 'Suggested price' : 'Price'}
+              </FieldLabel>
+              <MoneyInput
+                id="setup-amount"
+                value={centsOf(amount)}
+                onChange={(cents) => {
+                  setAmount(euroText(cents));
+                  retainSetup({ amount: euroText(cents) });
                 }}
               />
-            </label>
+            </Field>
             {custom && (
-              <label className="grid gap-2">
-                <span className="flex items-center gap-2">
-                  <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
-                  Maximum price (EUR)
-                </span>
-                <Input
-                  required
-                  inputMode="decimal"
-                  value={maximum}
-                  onChange={(event) => {
-                    if (!isEuroDraft(event.target.value)) return;
-                    setMaximum(event.target.value);
-                    retainSetup({ maximum: event.target.value });
+              <Field className="min-w-0">
+                <FieldLabel htmlFor="setup-maximum" required icon={Euro}>
+                  Maximum price
+                </FieldLabel>
+                <MoneyInput
+                  id="setup-maximum"
+                  value={centsOf(maximum)}
+                  onChange={(cents) => {
+                    setMaximum(euroText(cents));
+                    retainSetup({ maximum: euroText(cents) });
                   }}
                 />
-              </label>
+              </Field>
             )}
-            <label className="grid gap-2">
-              <span className="flex items-center gap-2">
-                <Package className="size-4 text-muted-foreground" aria-hidden="true" />
+            <Field className="min-w-0">
+              <FieldLabel htmlFor="setup-quantity" required icon={Package}>
                 How many {kind === 'merch' ? 'units' : 'copies'} do you have?
-              </span>
-              <Input
-                required
-                type="number"
+              </FieldLabel>
+              <CountStepper
+                id="setup-quantity"
+                label={kind === 'merch' ? 'units' : 'copies'}
+                value={/^\d+$/.test(quantity) ? Number(quantity) : null}
                 min={0}
                 max={maxOpeningStock}
-                step={1}
-                value={quantity}
-                onChange={(event) => {
-                  setQuantity(event.target.value);
-                  retainSetup({ quantity: event.target.value });
+                limitMessage={`Start with at most ${maxOpeningStock}.`}
+                describedBy="setup-quantity-help"
+                onChange={(count) => {
+                  setQuantity(String(count));
+                  retainSetup({ quantity: String(count) });
                 }}
               />
-              <span className="text-sm text-muted-foreground">
+              <FieldDescription id="setup-quantity-help">
                 These {kind === 'merch' ? 'units' : 'copies'} will also be available to buy online when the item is
                 published.
-              </span>
-            </label>
+              </FieldDescription>
+            </Field>
             <ZeroStockStateControl
               idPrefix="setup"
               value={zeroStockState}
@@ -914,7 +915,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </p>
             {sell && !pending && (
               <label className="flex min-h-11 items-center gap-3">
-                <input type="checkbox" required />I confirm this price and starting stock
+                <input type="checkbox" className="size-5" required />I confirm this price and starting stock
               </label>
             )}
           </section>

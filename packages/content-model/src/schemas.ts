@@ -1,6 +1,6 @@
-import { tracklistSchema } from './tracklist';
+import { distroTracklistSchema, tracklistSchema } from './tracklist';
 import { catalogNumberSchema } from './catalog-number';
-import { moneySchema, timeOfDaySchema } from './values';
+import { moneySchema, slugify, timeOfDaySchema } from './values';
 import { productSafetyOfferSchema } from './product-safety';
 import { artistCountriesSchema, parseArtistCountries, validArtistLink } from './artist-fields';
 import { z } from 'zod';
@@ -13,7 +13,6 @@ import {
   isHttpsUrl,
   isInternalOrHttpsUrl,
   isPublicImagePath,
-  isSocialProfileUrl,
   SITE_PAGE_PATHS,
   SOCIAL_PLATFORMS,
   youtubeVideoIdPatternSource,
@@ -180,7 +179,8 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
   return z.object({
     title: requiredText,
     product_condition: z.enum(['new', 'used']).optional(),
-    group: z.enum(DISTRO_GROUP_VALUES),
+    format: z.enum(DISTRO_GROUP_VALUES),
+    format_override: z.string().optional(),
     artist_or_label: requiredText,
     image: image(),
     image_alt: requiredAltText,
@@ -192,13 +192,12 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
         }),
       )
       .optional(),
-    tracklist: tracklistSchema.nullish(),
+    tracklist: distroTracklistSchema.nullish(),
     summary: requiredText,
     summary_rich: richTextSchema.nullish(),
     bandcamp_embed_url: bandcampEmbedUrlSchema.optional(),
     tidal_url: tidalUrlSchema.optional(),
     eyebrow: z.string().optional(),
-    format: z.string().optional(),
     release_date: z.coerce.date().optional(),
     order: z.number().int().nonnegative(),
     product_safety: productSafetyOfferSchema.optional(),
@@ -227,11 +226,27 @@ export const navigationContentSchema = z
     message: 'Home is always in the main menu, so it cannot be added again.',
   });
 
-export const socialsContentSchema = z.object({
-  title: z.enum(SOCIAL_PLATFORMS, { error: 'Choose a platform from the list.' }),
-  url: z.string().refine(isSocialProfileUrl, { message: 'Use a full HTTPS profile URL or # to hide the link.' }),
-  order: z.number().int().nonnegative(),
-});
+export const socialsContentSchema = z
+  .object({
+    title: z.enum(SOCIAL_PLATFORMS, { error: 'Choose a platform from the list.' }),
+    url: z.union([httpsUrl, z.literal('')]).optional(),
+    visible: z.boolean(),
+    order: z.number().int().nonnegative(),
+  })
+  .refine((social) => !social.visible || !!social.url, {
+    path: ['url'],
+    message: 'Enter a full HTTPS profile URL for a visible link.',
+  });
+
+export function readSocialValues(data: Record<string, unknown>): Record<string, unknown> {
+  if (data.url === '#') {
+    const { url: _url, ...rest } = data;
+    return { ...rest, visible: false };
+  }
+  if (data.visible === undefined || data.visible === null) return { ...data, visible: true };
+  if (data.visible === 0 || data.visible === 1) return { ...data, visible: data.visible === 1 };
+  return data;
+}
 
 export const settingsContentSchema = z.object({
   label_name: requiredText,
@@ -257,6 +272,37 @@ export const newsletterContentSchema = z.object({
   note: requiredText,
   note_rich: richTextSchema.nullish(),
 });
+
+/** Preserve existing anchors and generate unique anchors for newly titled services. */
+export function generateServiceIds(data: Record<string, unknown>): Record<string, unknown> {
+  const services = data.services;
+  if (!services || typeof services !== 'object' || Array.isArray(services)) return data;
+  const section = services as Record<string, unknown>;
+  if (!Array.isArray(section.items)) return data;
+  const used = new Set(
+    section.items.flatMap((item: unknown) =>
+      item && typeof item === 'object' && typeof (item as Record<string, unknown>).id === 'string'
+        ? [(item as Record<string, string>).id]
+        : [],
+    ),
+  );
+  const items = section.items.map((item: unknown) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+    const service = item as Record<string, unknown>;
+    if (
+      (service.id !== undefined && service.id !== null && service.id !== '') ||
+      typeof service.title !== 'string' ||
+      !service.title.trim()
+    )
+      return item;
+    const base = slugify(service.title);
+    let id: string = base;
+    for (let suffix = 2; used.has(id); suffix++) id = `${base}-${suffix}`;
+    used.add(id);
+    return { ...service, id };
+  });
+  return { ...data, services: { ...section, items } };
+}
 
 export function createHomeContentSchema<TImage extends z.ZodType>(image: () => TImage) {
   return z.object({

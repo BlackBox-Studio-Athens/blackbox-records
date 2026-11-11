@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Omonoia",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "artist_or_label": "Allochiria",
   "image": "allochiria-omonoia-vinyl.webp",
   "image_alt": "Omonoia Vinyl front mockup",
   "summary": "Seven-track Athens post-sludge and post-metal album, pressed on 180-gram vinyl for its tenth anniversary.",
   "eyebrow": "Distro",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "order": 58,
   "release_date": "2014-01-04",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=614922088/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

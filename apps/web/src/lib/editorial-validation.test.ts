@@ -21,11 +21,41 @@ import {
   isPublicImagePath,
   isSocialProfileUrl,
   navigationContentSchema,
+  readSocialValues,
+  readEditorialBooleans,
   settingsContentSchema,
   socialsContentSchema,
   tidalContentUrlPatternSource,
   youtubeVideoIdPatternSource,
 } from '@blackbox/content-model';
+
+describe('social visibility', () => {
+  it('reads old hidden links and validates new visible and hidden forms', () => {
+    const legacy = { title: 'Bandcamp', url: '#', order: 4 };
+    expect(readSocialValues(legacy)).toEqual({ title: 'Bandcamp', visible: false, order: 4 });
+    expect(socialsContentSchema.safeParse(readSocialValues(legacy)).success).toBe(true);
+    expect(socialsContentSchema.safeParse({ title: 'Bandcamp', visible: true, order: 4 }).success).toBe(false);
+    expect(socialsContentSchema.safeParse({ title: 'Bandcamp', visible: false, order: 4 }).success).toBe(true);
+    expect(socialsContentSchema.safeParse({ ...legacy, visible: false }).success).toBe(false);
+    expect(validateCmsDraft('socials', { visible: true, url: '' })).toContain(
+      'url: Enter a full HTTPS profile URL for a visible link.',
+    );
+  });
+});
+
+describe('editorial booleans', () => {
+  it('rejects numeric writes while reading legacy integer values', () => {
+    expect(validateCmsDraft('releases', { show_on_home: 1 })).not.toEqual([]);
+    expect(validateCmsDraft('navigation', { show_in_header: 0 })).not.toEqual([]);
+    expect(validateCmsDraft('releases', { show_on_home: '' })).not.toEqual([]);
+    expect(validateCmsDraft('releases', { show_on_home: null })).not.toEqual([]);
+    expect(validateCmsDraft('releases', { show_on_home: true })).toEqual([]);
+    expect(readEditorialBooleans('navigation', { show_in_header: 0, show_in_footer: 1 })).toEqual({
+      show_in_header: false,
+      show_in_footer: true,
+    });
+  });
+});
 
 describe('Release catalog numbers', () => {
   it('parses only canonical positive padded strings and formats plain JSON', () => {

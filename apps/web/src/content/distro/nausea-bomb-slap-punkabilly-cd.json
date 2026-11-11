@@ -1,12 +1,12 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Slap punkabilly",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Nausea Bomb",
   "image": "nausea-bomb-slap-punkabilly-cd-front-mockup.jpg",
   "image_alt": "Slap punkabilly CD front mockup",
   "summary": "Punk and psychobilly release by Paris band Nausea Bomb.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 74
 }

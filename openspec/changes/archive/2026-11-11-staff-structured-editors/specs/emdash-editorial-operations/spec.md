@@ -22,12 +22,17 @@ Artist countries SHALL be stored as an ordered list of unique ISO 3166-1 alpha-2
 
 ### Requirement: Hidden social links use a visible flag
 
-Each social link SHALL store an HTTPS profile address and a visible flag. A hidden link SHALL keep its address with visible set to false. The `#` placeholder SHALL NOT be stored.
+Each social link SHALL store a visible flag. A visible link SHALL have an HTTPS profile address. A hidden link MAY omit its address or leave it empty; if it has an address, hiding SHALL preserve it. The `#` placeholder SHALL NOT be stored in new values. During the transition, a stored `#` SHALL read as hidden with no address.
 
 #### Scenario: Hide YouTube
 
 - **WHEN** staff switch YouTube to hidden
 - **THEN** the record keeps its YouTube address with visible false, and the public footer omits YouTube.
+
+#### Scenario: Legacy hidden link without an address
+
+- **WHEN** a stored social link has `#` as its address
+- **THEN** migration stores it with visible false and no address, without inventing one.
 
 ### Requirement: Distro items store one format
 

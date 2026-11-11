@@ -9,7 +9,7 @@ it('links reviewed CMS source identities and existing physical type policy', asy
   const identity = `distro/${catalog.sourceId}`;
   const plan = {
     target: 'http://127.0.0.1:8787',
-    records: [{ identity, collection: 'distro', slug: catalog.sourceId, data: { group: 'CDs' } }],
+    records: [{ identity, collection: 'distro', slug: catalog.sourceId, data: { format: 'CDs' } }],
   };
   const report = {
     target: plan.target,
@@ -21,6 +21,14 @@ it('links reviewed CMS source identities and existing physical type policy', asy
   expect(readBackfillSources('local', [catalog], plan, report)).toEqual([
     { catalog, cmsSourceId: 'cms-source', itemType: 'CD' },
   ]);
+  expect(
+    readBackfillSources(
+      'local',
+      [catalog],
+      { ...plan, records: [{ ...plan.records[0], data: { group: 'CDs', format: 'CD' } }] },
+      report,
+    )[0].itemType,
+  ).toBe('CD');
   expect(() => readBackfillSources('uat', [catalog], plan, report)).toThrow('different target');
   expect(() => readBackfillSources('local', [catalog], plan, { ...report, identities: {} })).toThrow('incomplete');
   expect(() =>

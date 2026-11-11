@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { useId, useState } from 'react';
-import { CalendarDays, Clock, PackageCheck, Save, Truck } from 'lucide-react';
+import { CalendarDays, PackageCheck, Save } from 'lucide-react';
 import type { InternalStockDetail } from '../../lib/backend/internal-stock-api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { SwitchTrack } from '../fields/Switch';
+import Switch from '../fields/Switch';
+import SegmentedChoice from '../fields/SegmentedChoice';
 import { athensToday, preorderPreview, shipEstimateText, type ShipEstimate } from './preorder-preview';
 
 interface PreorderControlProps {
@@ -59,47 +60,30 @@ export default function PreorderControl({
     >
       <fieldset disabled={disabled || busy} aria-busy={busy ? 'true' : undefined} className="grid min-w-0 gap-4">
         <legend className="sr-only">Pre-order settings</legend>
-        <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
-          <span className="grid min-w-0 gap-1">
-            <span className="font-medium">Pre-order</span>
-            <span id={id + '-description'} className="text-sm text-muted-foreground">
-              Take orders before the copies are on the shelf. Release stage describes the music only: released music can
-              still have physical copies on pre-order or read Coming Soon.
-            </span>
-          </span>
-          <input
-            type="checkbox"
-            role="switch"
-            checked={enabled}
-            aria-describedby={id + '-description'}
-            className="peer sr-only"
-            onChange={(event) => {
-              if (!event.currentTarget.checked && preorder?.open) void onSave(null);
-              else setEnabled(event.currentTarget.checked);
-            }}
-          />
-          <SwitchTrack />
-        </label>
+        <Switch
+          id={id + '-switch'}
+          label="Pre-order"
+          checked={enabled}
+          description="Take orders before the copies are on the shelf. Release stage describes the music only: released music can still have physical copies on pre-order or read Coming Soon."
+          onChange={(checked) => {
+            if (!checked && preorder?.open) void onSave(null);
+            else setEnabled(checked);
+          }}
+        />
         {enabled && (
           <>
             <p className="text-sm text-muted-foreground">
               Copies: enter the number you expect as the stock quantity. Count the stock again when they arrive.
             </p>
-            <label className="grid min-w-0 gap-2" htmlFor={id + '-kind'}>
-              <span className="flex items-center gap-2">
-                <Truck className="size-4 text-muted-foreground" aria-hidden="true" />
-                When it ships
-              </span>
-              <select
-                id={id + '-kind'}
-                className={selectClass}
-                value={kind}
-                onChange={(event) => setKind(event.currentTarget.value as ShipEstimate['kind'])}
-              >
-                <option value="month">About a month</option>
-                <option value="date">Exact date</option>
-              </select>
-            </label>
+            <SegmentedChoice
+              label="When it ships"
+              value={kind}
+              options={[
+                { value: 'month', label: 'About a month' },
+                { value: 'date', label: 'Exact date' },
+              ]}
+              onChange={(next) => setKind(next as ShipEstimate['kind'])}
+            />
             {kind === 'month' ? (
               <>
                 <label className="grid min-w-0 gap-2" htmlFor={id + '-month'}>
@@ -122,23 +106,17 @@ export default function PreorderControl({
                     ))}
                   </select>
                 </label>
-                <label className="grid min-w-0 gap-2" htmlFor={id + '-part'}>
-                  <span className="flex items-center gap-2">
-                    <Clock className="size-4 text-muted-foreground" aria-hidden="true" />
-                    Part of the month
-                  </span>
-                  <select
-                    id={id + '-part'}
-                    className={selectClass}
-                    value={part ?? ''}
-                    onChange={(event) => setPart((event.currentTarget.value as typeof part) || null)}
-                  >
-                    <option value="">Any time in the month</option>
-                    <option value="early">Early</option>
-                    <option value="mid">Mid</option>
-                    <option value="late">Late</option>
-                  </select>
-                </label>
+                <SegmentedChoice
+                  label="Part of the month"
+                  value={part ?? 'any'}
+                  options={[
+                    { value: 'any', label: 'Any time' },
+                    { value: 'early', label: 'Early' },
+                    { value: 'mid', label: 'Mid' },
+                    { value: 'late', label: 'Late' },
+                  ]}
+                  onChange={(next) => setPart(next === 'any' ? null : (next as NonNullable<typeof part>))}
+                />
                 <p id={id + '-help'} className="text-sm text-muted-foreground">
                   {!monthPassed && (
                     <>Shoppers see &quot;ships {shipEstimateText({ kind: 'month', month, part })}&quot;. </>

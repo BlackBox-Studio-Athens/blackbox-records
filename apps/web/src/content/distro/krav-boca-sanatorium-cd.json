@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Sanatorium",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Krav Boca",
   "image": "krav-boca-sanatorium-cd.jpg",
   "image_alt": "Sanatorium CD front mockup",
   "summary": "Ten-track reissue of Sanatorium, adding two songs to the original eight-track album.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 90,
   "release_date": "2015-05-16",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=3965682816/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Heavy Huge and Rotten",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "Dead Elephant",
   "image": "dead-elephant-heavy-huge-and-rotten-cd.jpg",
   "image_alt": "Heavy Huge and Rotten CD front mockup",
   "summary": "Heavy, Huge and Rotten is Dead Elephant's six-track 2016 Athens doom and sludge album.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 26,
   "release_date": "2016-02-13",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=2631004761/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

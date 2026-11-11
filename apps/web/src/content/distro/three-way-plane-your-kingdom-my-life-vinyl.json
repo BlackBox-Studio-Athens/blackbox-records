@@ -1,13 +1,13 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "Your Kingdom, my life",
-  "group": "Vinyl 12-inch",
+  "format": "Vinyl 12-inch",
   "artist_or_label": "Three Way plane",
   "image": "three-way-plane-your-kingdom-my-life-vinyl.webp",
   "image_alt": "Your Kingdom, my life Vinyl front mockup",
   "summary": "Nine-track Athens post-hardcore and post-rock album, issued on vinyl in 2018 by four collaborating labels.",
   "eyebrow": "Distro",
-  "format": "Vinyl",
+  "format_override": "Vinyl",
   "order": 67,
   "release_date": "2018-06-22",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=513457289/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/"

@@ -96,11 +96,23 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
   const entries = Array.from({ length: 251 }, (_, index) => ({
     id: `paging-${index}`,
     slug: `paging-${index}`,
-    data: { title: `Title ${Math.floor(index / 3)}`, group: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length] },
+    data: {
+      title: `Title ${Math.floor(index / 3)}`,
+      ...(index % 2
+        ? { format: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length] }
+        : { group: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length] }),
+    },
     updatedAt: '2026-09-22T00:00:00Z',
   }));
-  // This proves adapter forwarding only. content-smoke exercises real native cursors.
-  const list = vi.fn();
+  // Native pages contain both legacy and typed forms, in their original order.
+  const list = vi.fn().mockImplementation(async (_section, options) => {
+    const offset = options.cursor ? Number(/^opaque\/(\d+)$/.exec(options.cursor)?.[1]) : 0;
+    const next = offset + options.limit;
+    return {
+      success: true,
+      data: { items: entries.slice(offset, next), nextCursor: next < entries.length ? `opaque/${next}` : undefined },
+    };
+  });
   const deps = {
     runtime: { handleContentList: list } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
@@ -115,16 +127,12 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
         const groups = DISTRO_GROUP_VALUES.filter(
           (group) => (!format || group === format) && (area === 'all' || (area === 'merch') === (group === 'Clothes')),
         );
-        const matching = entries.filter((item) => groups.includes(item.data.group));
+        const matching = entries.filter((item) =>
+          groups.includes(('group' in item.data ? item.data.group : item.data.format)!),
+        );
         const seen: string[] = [];
         let cursor: string | undefined;
-        let offset = 0;
         do {
-          const nextCursor = offset + 25 < matching.length ? `opaque/+${offset + 25}==` : undefined;
-          list.mockResolvedValueOnce({
-            success: true,
-            data: { items: matching.slice(offset, offset + 25), nextCursor },
-          });
           const params = new URLSearchParams({ collection: 'distro', q: 'Title', area, sort, limit: '25' });
           if (format) params.set('format', format);
           if (cursor) params.set('cursor', cursor);
@@ -134,20 +142,18 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
           };
           expect(response.status).toBe(200);
           if (groups.length) {
-            expect(list).toHaveBeenLastCalledWith('distro', {
-              limit: 25,
-              cursor,
-              q: undefined,
-              orderBy: sort === 'title' ? 'title' : 'updatedAt',
-              order: sort === 'title' ? 'asc' : 'desc',
-              ...(format || area !== 'all' ? { fieldFilters: { group: { in: groups } } } : {}),
-            });
-            expect(page.data.nextCursor).toBe(nextCursor);
-          } else list.mockReset();
+            expect(list).toHaveBeenLastCalledWith(
+              'distro',
+              expect.objectContaining({
+                q: undefined,
+                orderBy: sort === 'title' ? 'title' : 'updatedAt',
+                order: sort === 'title' ? 'asc' : 'desc',
+              }),
+            );
+          }
           expect(page.data.items.every((item) => item.selling === null)).toBe(true);
           seen.push(...page.data.items.map((item) => item.id));
           cursor = page.data.nextCursor;
-          offset += 25;
         } while (cursor);
         expect(seen).toEqual(matching.map((item) => item.id));
         expect(new Set(seen).size).toBe(seen.length);

@@ -69,6 +69,8 @@ import {
   AlertDialogAction,
 } from '../ui/alert-dialog';
 
+import CountStepper from '../fields/CountStepper';
+import SegmentedChoice from '../fields/SegmentedChoice';
 import ZeroStockStateControl, { type ZeroStockState } from './ZeroStockStateControl';
 
 const PreorderControl = lazy(() => import('./PreorderControl'));
@@ -1206,36 +1208,28 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         onSubmit={handleStockChange}
                         aria-busy={submittingIntent === 'stockChange' ? 'true' : undefined}
                       >
-                        <label htmlFor="stock-change-direction" className="flex items-center gap-2">
-                          <ArrowDownUp className="size-4 text-muted-foreground" aria-hidden="true" />
-                          What changed?
-                        </label>
-                        <select
-                          id="stock-change-direction"
-                          className="min-h-11 border border-border bg-background p-2"
+                        <SegmentedChoice
+                          label="What changed?"
+                          path="stock-change-direction"
                           disabled={!selectedStockDetail || isSubmitting}
                           value={stockDirection}
-                          onChange={(event) => setStockDirection(event.target.value as 'remove' | 'add')}
-                        >
-                          <option value="remove">Remove stock</option>
-                          <option value="add">Add stock</option>
-                        </select>
+                          options={[
+                            { value: 'remove', label: 'Remove stock' },
+                            { value: 'add', label: 'Add stock' },
+                          ]}
+                          onChange={(next) => setStockDirection(next as 'add' | 'remove')}
+                        />
                         <label htmlFor="stock-change-delta" className="flex items-center gap-2">
                           <Hash className="size-4 text-muted-foreground" aria-hidden="true" />
                           How many?
                         </label>
-                        <Input
-                          className="border-input bg-background"
-                          disabled={!selectedStockDetail || isSubmitting}
+                        <CountStepper
                           id="stock-change-delta"
-                          name="delta"
-                          onChange={(event) => setChangeDelta(event.target.value)}
-                          placeholder="For example, 2"
-                          min="1"
-                          step="1"
-                          required
-                          type="number"
-                          value={changeDelta}
+                          label={stockDirection === 'remove' ? 'copies to remove' : 'copies to add'}
+                          disabled={!selectedStockDetail || isSubmitting}
+                          value={/^\d+$/.test(changeDelta) ? Number(changeDelta) : null}
+                          min={1}
+                          onChange={(count) => setChangeDelta(String(count))}
                         />
                         <label htmlFor="stock-change-reason" className="flex items-center gap-2">
                           <Tag className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -1334,40 +1328,36 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           <Package className="size-4 text-muted-foreground" aria-hidden="true" />
                           Physical stock counted
                         </label>
-                        <Input
-                          className="border-input bg-background"
-                          disabled={!selectedStockDetail || isSubmitting}
+                        <CountStepper
                           id="stock-count-counted-quantity"
-                          min="0"
-                          name="countedQuantity"
-                          onChange={(event) => {
-                            setCountedQuantity(event.target.value);
+                          label="counted copies"
+                          disabled={!selectedStockDetail || isSubmitting}
+                          value={/^\d+$/.test(countedQuantity) ? Number(countedQuantity) : null}
+                          min={0}
+                          onChange={(count) => {
+                            setCountedQuantity(String(count));
+                            // Online copies can never exceed what is on the shelf.
+                            if (/^\d+$/.test(onlineQuantity) && Number(onlineQuantity) > count)
+                              setOnlineQuantity(String(count));
                             setCountEdited(true);
                           }}
-                          placeholder="Counted Stock"
-                          required
-                          type="number"
-                          value={countedQuantity}
                         />
                         <label htmlFor="stock-count-online-quantity" className="flex items-center gap-2">
                           <ShoppingBag className="size-4 text-muted-foreground" aria-hidden="true" />
                           Allocated online
                         </label>
-                        <Input
-                          className="border-input bg-background"
-                          disabled={!selectedStockDetail || isSubmitting}
+                        <CountStepper
                           id="stock-count-online-quantity"
-                          min="0"
-                          max={countedQuantity || undefined}
-                          name="onlineQuantity"
-                          onChange={(event) => {
-                            setOnlineQuantity(event.target.value);
+                          label="online copies"
+                          disabled={!selectedStockDetail || isSubmitting}
+                          value={/^\d+$/.test(onlineQuantity) ? Number(onlineQuantity) : null}
+                          min={0}
+                          max={/^\d+$/.test(countedQuantity) ? Number(countedQuantity) : undefined}
+                          limitMessage="Online copies cannot be more than the copies counted."
+                          onChange={(count) => {
+                            setOnlineQuantity(String(count));
                             setCountEdited(true);
                           }}
-                          placeholder="OnlineStock"
-                          required
-                          type="number"
-                          value={onlineQuantity}
                         />
                         <label htmlFor="stock-count-notes" className="flex items-center gap-2">
                           <FileText className="size-4 text-muted-foreground" aria-hidden="true" />

@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/distro.schema.json",
   "title": "I, a Seawolf, a Madman",
-  "group": "CDs",
+  "format": "CDs",
   "artist_or_label": "One leg Mary",
   "image": "one-leg-mary-i-a-seawolf-a-madman-cd-front.jpg",
   "image_alt": "I, a Seawolf, a Madman limited CD digipak front",
@@ -17,7 +17,7 @@
   ],
   "summary": "Eight-track alternative and noise-rock album by One Leg Mary, issued as a limited digipak CD.",
   "eyebrow": "Distro",
-  "format": "CD",
+  "format_override": "CD",
   "order": 37,
   "release_date": "2014-12-27",
   "bandcamp_embed_url": "https://bandcamp.com/EmbeddedPlayer/album=1347520763/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/",

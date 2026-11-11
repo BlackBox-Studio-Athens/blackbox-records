@@ -17,6 +17,7 @@
     "site:dev:stop": "pnpm --filter @blackbox/web dev:stop",
     "dev:clean": "pnpm --filter @blackbox/web dev:clean",
     "cms:inventory": "node scripts/inventory-cms-content.mjs",
+    "cms:migrate-typed-values": "pnpm --filter @blackbox/backend cms:migrate-typed-values",
     "dev:backend": "pnpm --filter @blackbox/backend dev",
     "dev:backend:mock": "pnpm --filter @blackbox/backend dev:mock",
     "dev:backend:mock-api": "pnpm --filter @blackbox/backend dev:mock-api",

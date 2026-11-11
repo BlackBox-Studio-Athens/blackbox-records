@@ -1,7 +1,16 @@
-import { contentMediaIds, normalizeEditorialBody, sourceCollectionNames } from './emdash-content';
+import {
+  contentMediaIds,
+  normalizeEditorialBody,
+  readEditorialBooleans,
+  sourceCollectionNames,
+  type CmsCollection,
+} from './emdash-content';
 import { parseContentSnapshot, type ContentSnapshot } from './content-snapshot';
 import { projectProseFields } from './prose';
 import { productSafetyOfferInformation } from './product-safety';
+import { readSocialValues } from './schemas';
+import { projectDistroValues, readTypedValues } from './typed-values-migration';
+import { formatArtistCountries, parseArtistCountries } from './artist-fields';
 
 /** Render input can contain transient editor records; only saved snapshots carry revisions. */
 export type PublicContent = Pick<ContentSnapshot, 'media' | 'storeItems'> & {
@@ -97,15 +106,28 @@ export function publishedCollection(
   return snapshot.records
     .filter((record) => sourceCollectionNames[record.collection as keyof typeof sourceCollectionNames] === collection)
     .map((record) => {
-      const { body, ...editorial } = projectProseFields(record.collection, record.data);
+      const { body, ...editorial } = projectProseFields(
+        record.collection,
+        readEditorialBooleans(record.collection as CmsCollection, readTypedValues(record.collection, record.data)),
+      );
       if (record.collection === 'releases' || record.collection === 'distro') {
         const safety = productSafetyOfferInformation(editorial.product_safety);
         if (safety) editorial.product_safety = safety;
         else delete editorial.product_safety;
       }
       const data = field(editorial) as Record<string, unknown>;
+      if (record.collection === 'distro') Object.assign(data, projectDistroValues(data));
+      if (record.collection === 'socials') {
+        const social = readSocialValues(data);
+        if (!Object.hasOwn(social, 'url')) delete data.url;
+        Object.assign(data, social);
+      }
       if (record.collection === 'artists') {
         data.slug = record.slug;
+        if (Array.isArray(data.country)) {
+          const countries = parseArtistCountries(data.country);
+          if (countries) data.country = formatArtistCountries(countries);
+        }
         data.is_active = data.is_active === 0 ? false : data.is_active === 1 ? true : (data.is_active ?? true);
       }
       if (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) {

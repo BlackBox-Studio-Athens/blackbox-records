@@ -121,6 +121,7 @@ function createArtistEntry(id: string, title: string, is_active = true): Collect
       slug: id,
       title,
       is_active,
+      country: undefined,
       genre: 'Rock',
       bio: 'Biography',
       image: createTestImage(`/${id}.jpg`),
@@ -353,6 +354,7 @@ describe('StoreItem projection contract', () => {
       image_alt: 'Shared Distro cover',
       order: 1,
       summary: 'Shared Distro summary.',
+      tracklist: null,
       tidal_url,
       title: 'Shared Distro item',
     });
@@ -462,6 +464,7 @@ describe('StoreItem projection contract', () => {
         release_date: new Date('2021-06-07T00:00:00.000Z'),
         summary: 'Small-run cassette.',
         title: 'Afterglow Tape',
+        tracklist: null,
       }),
     );
 
@@ -487,6 +490,7 @@ describe('StoreItem projection contract', () => {
         order: 1,
         summary: 'Small-run cassette.',
         title: 'Afterglow Tape',
+        tracklist: null,
       }),
     );
 
