@@ -1,5 +1,5 @@
 name: Verify Playwright image
-description: Check that the installed Playwright package matches the browser image.
+description: Check the Playwright image version and trust the checked-out workspace for Git.
 runs:
   using: composite
   steps:
@@ -12,3 +12,6 @@ runs:
           echo "::error::Playwright package version $package_version does not match image version $image_version. Update the package and image together."
           exit 1
         fi
+    - name: Trust the Git workspace
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
