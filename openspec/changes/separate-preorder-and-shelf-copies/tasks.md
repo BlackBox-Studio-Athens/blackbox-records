@@ -13,5 +13,5 @@
 
 ## 3. Acceptance
 
-- [ ] 3.1 `pnpm validate` passes and the staff journey covers arrival and recount.
-- [ ] 3.2 A Release run on main passes every job.
+- [x] 3.1 `pnpm validate` passes and the staff journey covers arrival and recount.
+- [x] 3.2 A Release run on main passes every job. Release run 43113915525 on 6147eee7 passed every job and deployed UAT.
