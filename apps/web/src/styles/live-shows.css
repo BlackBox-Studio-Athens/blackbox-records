@@ -70,6 +70,17 @@
   --header-height: calc(80px + 36px);
 }
 
+/* Short screens such as landscape phones keep their height for content (owner choice B, 11 November 2026). */
+@media (max-height: 29.99rem) {
+  .show-strip {
+    display: none;
+  }
+
+  :root:has([data-show-strip]) {
+    --header-height: 80px;
+  }
+}
+
 .show-strip > * {
   flex-shrink: 0;
 }
@@ -198,6 +209,13 @@
 }
 
 @media (max-width: 47.99rem) {
+  /* Phone label text keeps the site's 12px floor. */
+  .show-kick,
+  .home-show__lineup .show-kick,
+  .home-show__facts dt {
+    font-size: 0.75rem;
+  }
+
   .home-show {
     grid-template-columns: 1fr;
     gap: 1.5rem;

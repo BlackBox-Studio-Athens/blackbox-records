@@ -1780,9 +1780,16 @@ else if (process.argv.includes('--orders-shipping')) {
       if (request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'))
         posts.push(request.postDataJSON());
     });
+    // Artist name lives in the Basics card, which each load opens closed.
+    async function openBasics() {
+      const basics = page.locator('[data-editor-card="basics"]');
+      await basics.waitFor();
+      if ((await basics.getAttribute('open')) === null) await basics.locator('> summary').click();
+    }
     try {
       state.publication = 'live';
       await page.goto(`${origin}/content/?collection=artists&id=${original.id}`);
+      await openBasics();
       const title = page.getByRole('textbox', { name: 'Artist name', exact: true });
       await title.fill('Immediate publication');
       await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
@@ -1795,12 +1802,14 @@ else if (process.argv.includes('--orders-shipping')) {
       await page.screenshot({ path: resolve(artifacts, 'direct-publication-mobile.png') });
 
       await page.goto(`${origin}/content/?collection=artists&id=${original.id}`);
+      await openBasics();
       await title.fill('Still a private draft');
       await page
         .getByText(/Changes saved/)
         .first()
         .waitFor();
       await page.reload();
+      await openBasics();
       await title.waitFor();
       assert.equal(await title.inputValue(), 'Still a private draft');
       assert.equal(posts.length, 1, 'Reopening an autosaved draft never publishes');
