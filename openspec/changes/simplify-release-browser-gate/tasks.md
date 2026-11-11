@@ -18,5 +18,5 @@
 ## 4. Acceptance
 
 - [x] 4.1 The touched specs pass twice in a row locally against the built preview: 269 passed, 1 WebKit player-continuity failure on the second repeat (footer Store tap did not navigate), which then passed 6 of 6 alone.
-- [ ] 4.2 A Release run on main passes every job.
-- [ ] 4.3 `promote-prd` accepts that run and PRD serves it.
+- [x] 4.2 A Release run on main passes every job: run 43105614689 (0b3be798), all seven jobs on attempt 1. The first run, 43090837640, failed staff-previews on staff-editor drift, fixed in 0b3be798.
+- [x] 4.3 `promote-prd` accepts that run and PRD serves it: run 43107015670 verified the PRD Worker and hosted release at 0b3be798, run 43105614689.
