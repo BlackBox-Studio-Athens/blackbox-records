@@ -6,8 +6,20 @@ import { describe, expect, it } from 'vitest';
 
 // Shape-free release invariants. Job names, step order and wiring belong to the workflows, not to this test.
 type Concurrency = { group?: string; 'cancel-in-progress'?: boolean };
-type Step = { name?: string; uses?: string; run?: string; with?: Record<string, unknown> };
-type Job = { environment?: unknown; concurrency?: Concurrency; steps?: Step[] };
+type Step = {
+  name?: string;
+  uses?: string;
+  run?: string;
+  with?: Record<string, unknown>;
+  env?: Record<string, unknown>;
+};
+type Job = {
+  environment?: unknown;
+  concurrency?: Concurrency;
+  steps?: Step[];
+  env?: Record<string, unknown>;
+  container?: { image?: string; env?: Record<string, unknown> };
+};
 const directory = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
 const workflows = readdirSync(directory)
   .filter((file) => file.endsWith('.yml'))
@@ -27,6 +39,16 @@ const promotion = workflows.find(({ file }) => file === 'promote-prd.yml')!;
 const releaseLocks = ['release-uat', 'release-prd', 'blackbox-release'];
 
 describe('Release workflow invariants', () => {
+  it('uses a root-owned HOME in every Playwright container step', () => {
+    const containers = jobs.filter(({ job }) => job.container?.image?.startsWith('mcr.microsoft.com/playwright:'));
+    expect(containers.length).toBeGreaterThan(0);
+    for (const { id, job } of containers) {
+      expect(job.env?.HOME, id).toBe('/root');
+      expect(job.container?.env?.HOME, id).toBeUndefined();
+      for (const step of job.steps ?? []) expect(step.env?.HOME, id).toBeUndefined();
+    }
+  });
+
   it('rejects a Playwright package that differs from the browser image', () => {
     const action = parse(
       readFileSync(new URL('../.github/actions/playwright-browsers/action.yml', import.meta.url), 'utf8'),

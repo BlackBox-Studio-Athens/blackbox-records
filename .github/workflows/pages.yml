@@ -71,8 +71,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
-      env:
-        HOME: /root
+    env:
+      HOME: /root
     timeout-minutes: 30
     steps:
       - *checkout
@@ -108,8 +108,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
-      env:
-        HOME: /root
+    env:
+      HOME: /root
     timeout-minutes: 30
     steps:
       - *checkout
@@ -148,8 +148,8 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
-      env:
-        HOME: /root
+    env:
+      HOME: /root
     timeout-minutes: 25
     steps:
       - *checkout
@@ -208,11 +208,10 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
-      env:
-        HOME: /root
     environment: catalog-promotion-uat
     timeout-minutes: 40
     env:
+      HOME: /root
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
       UAT_ACCESS_CLIENT_ID: ${{ secrets.UAT_ACCESS_CLIENT_ID }}
       UAT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_ACCESS_CLIENT_SECRET }}
