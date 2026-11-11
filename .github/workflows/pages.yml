@@ -68,17 +68,19 @@ jobs:
       group: ci-${{ github.ref }}-e2e-${{ matrix.shard }}
       cancel-in-progress: true
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+      env:
+        HOME: /root
     timeout-minutes: 30
     steps:
       - *checkout
       - *pnpm
       - *node
       - *install
-      - name: Install public end-to-end browsers
+      - name: Verify Playwright image
         uses: ./.github/actions/playwright-browsers
-        timeout-minutes: 5
-        with:
-          browsers: chromium firefox
       - name: Build Local production fixture for end-to-end tests
         env:
           BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
@@ -86,7 +88,7 @@ jobs:
       - name: Run the whole end-to-end suite
         env:
           BLACKBOX_E2E_PREVIEW: '1'
-        # webkit-mobile runs in e2e-webkit, which installs WebKit and its system libraries.
+        # webkit-mobile runs in e2e-webkit.
         run: pnpm test:e2e --shard=${{ matrix.shard }}/4 '--project=chromium-*' '--project=firefox-*'
       - name: Upload end-to-end evidence
         if: ${{ failure() }}
@@ -103,17 +105,19 @@ jobs:
       group: ci-${{ github.ref }}-e2e-webkit
       cancel-in-progress: true
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+      env:
+        HOME: /root
     timeout-minutes: 30
     steps:
       - *checkout
       - *pnpm
       - *node
       - *install
-      - name: Install WebKit and its system libraries
+      - name: Verify Playwright image
         uses: ./.github/actions/playwright-browsers
-        timeout-minutes: 8
-        with:
-          browsers: webkit
       - name: Build Local production fixture for end-to-end tests
         env:
           BLACKBOX_PREORDER_PROJECTION: ${{ github.workspace }}/e2e/preorder-projection.json
@@ -131,7 +135,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
   # Builds the PRD staff app and checks the previews, one browser per leg, beside the deploy; offline, so it holds no
-  # credential. Both legs install both browsers: the chromium leg's preview policy checks both engines.
+  # credential. The chromium leg's preview policy checks both engines.
   staff-previews:
     strategy:
       fail-fast: false
@@ -141,17 +145,19 @@ jobs:
       group: ci-${{ github.ref }}-staff-previews-${{ matrix.browser }}
       cancel-in-progress: true
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+      env:
+        HOME: /root
     timeout-minutes: 25
     steps:
       - *checkout
       - *pnpm
       - *node
       - *install
-      - name: Install preview test browsers
+      - name: Verify Playwright image
         uses: ./.github/actions/playwright-browsers
-        timeout-minutes: 5
-        with:
-          browsers: chromium firefox
       - name: Verify staff previews in ${{ matrix.browser }}
         env:
           PUBLIC_STAFF_ENVIRONMENT: prd
@@ -199,6 +205,11 @@ jobs:
       group: release-uat
       cancel-in-progress: false
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+      env:
+        HOME: /root
     environment: catalog-promotion-uat
     timeout-minutes: 40
     env:
@@ -210,6 +221,8 @@ jobs:
       - *pnpm
       - *node
       - *install
+      - name: Verify Playwright image
+        uses: ./.github/actions/playwright-browsers
       - name: Download UAT release
         uses: actions/download-artifact@v8.0.1
         with:
@@ -256,11 +269,6 @@ jobs:
           pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
           node scripts/release-candidate.mjs verify-hosted uat
       # Smokes the UAT this run just deployed. A red smoke fails the run, and promotion refuses a failed run.
-      - name: Install Chromium for the smoke
-        uses: ./.github/actions/playwright-browsers
-        timeout-minutes: 5
-        with:
-          browsers: chromium
       - name: Run UAT static smoke
         run: pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
       - name: Require UAT to still serve this run

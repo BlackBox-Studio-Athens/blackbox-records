@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
@@ -26,6 +27,27 @@ const promotion = workflows.find(({ file }) => file === 'promote-prd.yml')!;
 const releaseLocks = ['release-uat', 'release-prd', 'blackbox-release'];
 
 describe('Release workflow invariants', () => {
+  it('rejects a Playwright package that differs from the browser image', () => {
+    const action = parse(
+      readFileSync(new URL('../.github/actions/playwright-browsers/action.yml', import.meta.url), 'utf8'),
+    );
+    const run = (image: string, installed: string) =>
+      spawnSync(
+        'bash',
+        [
+          '-e',
+          '-c',
+          `node() { printf '%s' "$IMAGE_VERSION"; }\npnpm() { printf 'Version %s\\n' "$PACKAGE_VERSION"; }\n${action.runs.steps[0].run}`,
+        ],
+        { encoding: 'utf8', env: { ...process.env, IMAGE_VERSION: image, PACKAGE_VERSION: installed } },
+      );
+    expect(run('1.63.0', '1.63.0').status).toBe(0);
+    const mismatch = run('1.63.0', '1.63.1');
+    expect(mismatch.status).toBe(1);
+    expect(mismatch.stdout).toContain('Playwright package version 1.63.1 does not match image version 1.63.0');
+    expect(run('', '1.63.0').status).toBe(1);
+  });
+
   it('binds the PRD environment only in the manual promotion workflow', () => {
     for (const { id, job } of jobs)
       if (JSON.stringify(job.environment ?? '').includes('catalog-promotion-prd'))

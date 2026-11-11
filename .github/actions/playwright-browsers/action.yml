@@ -1,53 +1,14 @@
-name: Playwright browsers
-description: Restores Playwright's browser builds from the cache and downloads them only on a miss; apt only for Firefox's decoder and WebKit's libraries.
-inputs:
-  browsers:
-    description: Space-separated Playwright browsers, such as `chromium` or `chromium firefox`.
-    required: true
+name: Verify Playwright image
+description: Check that the installed Playwright package matches the browser image.
 runs:
   using: composite
   steps:
-    - name: Read the Playwright version
-      id: playwright
-      shell: bash
-      env:
-        BROWSERS: ${{ inputs.browsers }}
-      run: |
-        version="$(pnpm exec playwright --version | awk '{print $2}')"
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-        echo "cache-key=playwright-$RUNNER_OS-$version-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
-    - name: Restore Playwright browsers
-      id: cache
-      uses: actions/cache@v6.1.0
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ steps.playwright.outputs.cache-key }}
-    # No --with-deps or install-deps: apt can wait without bound while the runner's own package manager holds the
-    # lock at boot. Callers pin ubuntu-24.04, whose image ships Chrome and Firefox and so already has the system
-    # libraries Playwright's Chromium and Firefox builds need, except Firefox's H.264 decoder (next step).
-    - name: Download Playwright browsers
-      if: steps.cache.outputs.cache-hit != 'true'
-      shell: bash
-      env:
-        BROWSERS: ${{ inputs.browsers }}
-      run: pnpm exec playwright install $BROWSERS
-    # The runner's Azure mirror can stall DNS resolution for each package before apt tries its fallback.
-    - name: Configure apt for browser dependencies
-      if: contains(inputs.browsers, 'firefox') || contains(inputs.browsers, 'webkit')
+    - name: Check Playwright image version
       shell: bash
       run: |
-        sudo sed -i '\|^http://azure\.archive\.ubuntu\.com/ubuntu/|d' /etc/apt/apt-mirrors.txt
-        printf 'DPkg::Lock::Timeout "60";\nAcquire::Retries "1";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/zzzz-playwright > /dev/null
-    # Firefox needs the system H.264 decoder, which is absent from the runner image.
-    - name: Install Firefox's H.264 decoder
-      if: contains(inputs.browsers, 'firefox')
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends libavcodec60
-    # The runner image ships no WebKit, so its libraries come from Playwright's own list.
-    - name: Install WebKit's system libraries
-      if: contains(inputs.browsers, 'webkit')
-      shell: bash
-      run: |
-        pnpm exec playwright install-deps webkit
+        image_version="$(node -p "JSON.parse(require('fs').readFileSync('/ms-playwright/.docker-info', 'utf8')).driverVersion")"
+        package_version="$(pnpm exec playwright --version | awk '{print $2}')"
+        if [[ -z "$image_version" || "$package_version" != "$image_version" ]]; then
+          echo "::error::Playwright package version $package_version does not match image version $image_version. Update the package and image together."
+          exit 1
+        fi

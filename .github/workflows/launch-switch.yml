@@ -61,6 +61,11 @@ jobs:
     needs: request
     if: needs.request.outputs.execute == 'true'
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host -v /usr/bin/gh:/usr/local/bin/gh:ro
+      env:
+        HOME: /root
     environment: prd-launch
     timeout-minutes: 30
     steps:
@@ -81,11 +86,10 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.BOXNOW_PACKAGES_TOKEN }}
-      - name: Install Chromium
+      - name: Verify Playwright image
         uses: ./.github/actions/playwright-browsers
-        timeout-minutes: 5
-        with:
-          browsers: chromium
+      - name: Verify GitHub CLI
+        run: gh --version
       - name: Write Stripe Dashboard review
         env:
           STRIPE_DASHBOARD_REVIEW: ${{ vars.STRIPE_DASHBOARD_REVIEW }}

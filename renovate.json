@@ -116,9 +116,20 @@
       "allowedVersions": "<1.64.0"
     },
     {
+      "description": "Keep the Playwright image below 1.64.0 with the npm package.",
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "allowedVersions": "/^v(?:0\\.\\d+\\.\\d+|1\\.(?:[0-5]?\\d|6[0-3])\\.\\d+)-noble$/"
+    },
+    {
       "description": "Group test and browser automation packages.",
       "matchManagers": ["npm"],
       "matchPackageNames": ["vitest", "msw", "playwright"],
+      "groupName": "Test and browser automation packages",
+      "groupSlug": "test-browser-automation"
+    },
+    {
+      "description": "Group the Playwright image with its npm package.",
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
       "groupName": "Test and browser automation packages",
       "groupSlug": "test-browser-automation"
     },
