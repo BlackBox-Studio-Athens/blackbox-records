@@ -82,9 +82,7 @@ export async function importCmsContent({
     throw new Error('This importer currently supports the local CMS only.');
   const manifest = await inventory();
   assert.deepEqual(manifest.anomalies, [], 'Resolve source anomalies before importing.');
-  const retainedAssets = manifest.media.filter(
-    (media) => media.path === 'apps/web/public/assets/vendor/stripe/powered-by-stripe.svg',
-  );
+  const retainedAssets = manifest.media.filter((media) => media.format === 'svg' && media.references.length === 0);
   assert.ok(retainedAssets.every((media) => media.references.length === 0));
   const importMedia = manifest.media.filter((media) => !retainedAssets.includes(media));
   const collectionNames = Object.fromEntries(

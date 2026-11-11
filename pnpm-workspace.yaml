@@ -13,13 +13,13 @@ allowBuilds:
   workerd: true
 minimumReleaseAgeExclude:
   - '@cloudflare/workers-types@5.20260926.1'
-  - '@emdash-cms/admin@1.3.1'
-  - '@emdash-cms/auth@1.3.1'
-  - '@emdash-cms/blocks@1.3.1'
-  - '@emdash-cms/cloudflare@1.3.1'
-  - '@emdash-cms/gutenberg-to-portable-text@1.3.1'
+  - '@emdash-cms/admin@1.4.0'
+  - '@emdash-cms/auth@1.4.0'
+  - '@emdash-cms/blocks@1.4.0'
+  - '@emdash-cms/cloudflare@1.4.0'
+  - '@emdash-cms/gutenberg-to-portable-text@1.4.0'
   - '@types/node@24.19.0'
-  - emdash@1.3.1
+  - emdash@1.4.0
   - miniflare@5.20260925.0-alpha || 5.20261019.2-beta
   - resend@6.30.0
   - wrangler@4.141.0 || 4.152.0
@@ -31,6 +31,6 @@ minimumReleaseAgeExclude:
   - stripe@23.0.1
   - '@coding-tree-io/boxnow-widget'
 patchedDependencies:
-  '@emdash-cms/admin@1.3.1': patches/@emdash-cms__admin@1.3.1.patch
+  '@emdash-cms/admin@1.4.0': patches/@emdash-cms__admin@1.4.0.patch
   '@mswjs/interceptors@0.45.9': patches/@mswjs__interceptors@0.45.9.patch
-  emdash@1.3.1: patches/emdash@1.3.1.patch
+  emdash@1.4.0: patches/emdash@1.4.0.patch

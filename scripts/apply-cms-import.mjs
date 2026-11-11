@@ -97,7 +97,11 @@ export async function applyCmsImport(
       form.set('width', String(media.width));
       form.set('height', String(media.height));
       form.set('thumbnail', thumbnail, 'thumbnail.png');
-      saved = await request('/media', 'POST', form);
+      try {
+        saved = await request('/media', 'POST', form);
+      } catch (error) {
+        throw new Error(`Media import failed for ${media.path}`, { cause: error });
+      }
     }
     const downloadUrl = new URL(saved.item.url, target);
     check(

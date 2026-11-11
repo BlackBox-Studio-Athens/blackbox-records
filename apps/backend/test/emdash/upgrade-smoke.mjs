@@ -12,8 +12,8 @@ const { values } = parseArgs({
   options: { 'source-state': { type: 'string' }, 'source-history': { type: 'string', default: 'auto' } },
 });
 assert.ok(
-  ['auto', 'current', 'legacy', '1.1.0', '1.2.0'].includes(values['source-history']),
-  'Select auto, current (1.0.1), legacy, 1.1.0 or 1.2.0 source history',
+  ['auto', 'current', 'legacy', '1.1.0', '1.2.0', '1.3.1'].includes(values['source-history']),
+  'Select auto, current (1.0.1), legacy, 1.1.0, 1.2.0 or 1.3.1 source history',
 );
 const targetMigrations = await getCoreMigrationIdentity();
 // Copy only a stopped Local store. The supplied source is never opened by Wrangler or modified.
@@ -113,11 +113,11 @@ async function createPendingReleaseDraft() {
         values['source-history'] === 'legacy',
         'Supplied store must match the selected source history',
       );
-    // 1.1.0 and 1.2.0 share this schema; their version label comes from the source artifact's provenance.
+    // These versions share this schema; their version label comes from the source artifact's provenance.
     if (values['source-history'] !== 'auto')
       assert.equal(
         through091,
-        ['1.1.0', '1.2.0'].includes(values['source-history']),
+        ['1.1.0', '1.2.0', '1.3.1'].includes(values['source-history']),
         'Supplied store must match the selected migration history',
       );
     if (!legacy)
