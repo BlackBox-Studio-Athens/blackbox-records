@@ -13,6 +13,18 @@
 | ouranopithecus-montagu-loop.mp4         | 890459  | `1a5c5278abb952818045fde1c856ed10b40163083ea71f5099728f5b929cd87e` |
 | ouranopithecus-montagu.jpg              | 21682   | `c33b9192f9076ac016dd1787025589848dfd1d3299f195e371f1f1debd61e1ac` |
 
+## Brightness regrade (12 November 2026)
+
+The owner found the PRD loop too dark next to Sidus and Afterwise. Mean luma (signalstats, 2 fps): Sidus 84.9, Afterwise 64.3, Montagu 40.4 with highlights at 61.7. The same montage was rebuilt from the source (it reproduced 40.4 exactly) and graded with `curves=all='0/0 0.06/0.075 0.157/0.31 0.25/0.52 0.5/0.8 1/1',eq=saturation=1.25,unsharp=5:5:0.5`. The grade keeps the black point and lifts mid-tones, so faces and drums read without a milky gamma lift. Encode settings are unchanged; the poster is the graded opening frame.
+
+| File                                    | Bytes   | SHA-256                                                            |
+| --------------------------------------- | ------- | ------------------------------------------------------------------ |
+| ouranopithecus-montagu-loop-desktop.mp4 | 3556720 | `68dc0d7ed8b66658cc88c8e188eeb1097f209b0c650b8365b6dc48aa462abc74` |
+| ouranopithecus-montagu-loop.mp4         | 888761  | `c76c877839bbaa415a515d1c3dca216ebb00c27d155d186349a5d1b46d8fcc65` |
+| ouranopithecus-montagu.jpg              | 53856   | `ad2ee9ae9c9060e45cc3f7ab39b320678592506cfb3869056a580eee857d547c` |
+
+Both loops stay inside the showcase budgets (900,000 bytes small, 4 MiB desktop).
+
 ## Checks
 
 - `pnpm test apps/web/src/pages/_preorder-showcase.test.ts` passed, including the 900 kB and 4 MiB budgets for the new loops.
