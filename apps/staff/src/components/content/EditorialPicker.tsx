@@ -87,7 +87,12 @@ function RecordPicker({
       const params = new URLSearchParams({ limit: '25' });
       if (query.trim()) params.set('q', query.trim());
       if (next) params.set('cursor', next);
-      const page = await editorialRequest<EditorialList<Choice>>(base, `content/${collection}?${params}`);
+      // The native list carries a release's published Artist; the Staff workspace list carries the saved one.
+      const path =
+        collection === 'releases'
+          ? `blackbox/workspace?collection=releases&${params}`
+          : `content/${collection}?${params}`;
+      const page = await editorialRequest<EditorialList<Choice>>(base, path);
       if (request !== requestSequence.current) return;
       const pageItems = filter ? page.items.filter(filter) : page.items;
       setItems((previous) => (next ? [...previous, ...pageItems] : pageItems));

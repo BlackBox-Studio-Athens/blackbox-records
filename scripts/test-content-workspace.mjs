@@ -3299,8 +3299,9 @@ else if (process.argv.includes('--orders-shipping')) {
     );
     await page.setViewportSize({ width: 1600, height: 900 });
     state.failSave = false;
-    await page.getByRole('button', { name: 'Retry save', exact: true }).click();
+    await artistName.fill('Edit after failed save');
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    assert.equal(records.artists[0].data.title, 'Edit after failed save', 'An edit after a failed save saves again');
     await page.context().setOffline(true);
     await artistName.fill('Offline typing');
     await page.getByRole('button', { name: 'Retry save', exact: true }).waitFor();

@@ -20,6 +20,7 @@ export function useDraftAutosave<T>({
   const latest = useRef({ identity, value, dirty, enabled, blocked, save, saved });
   latest.current = { identity, value, dirty, enabled, blocked, save, saved };
   const inFlight = useRef<Promise<boolean> | null>(null);
+  const failedValue = useRef('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const flush = useCallback(async (): Promise<boolean> => {
@@ -31,6 +32,7 @@ export function useDraftAutosave<T>({
     if (current.blocked) return false;
     if (!current.dirty) return true;
     if (!current.enabled || !navigator.onLine) {
+      failedValue.current = JSON.stringify(current.value);
       setError('Not saved. Reconnect or resolve the issue below, then retry.');
       return false;
     }
@@ -46,8 +48,10 @@ export function useDraftAutosave<T>({
         }
         return true;
       } catch (cause) {
-        if (latest.current.identity === current.identity)
+        if (latest.current.identity === current.identity) {
+          failedValue.current = JSON.stringify(current.value);
           setError(cause instanceof Error ? cause.message : 'Your changes were not saved. Retry.');
+        }
         return false;
       } finally {
         inFlight.current = null;
@@ -64,7 +68,9 @@ export function useDraftAutosave<T>({
     if (!dirty) setError('');
   }, [identity, dirty]);
   useEffect(() => {
-    if (!dirty || !enabled || blocked || error) return;
+    if (!dirty || !enabled || blocked) return;
+    // A failed value waits for Retry; a later edit may fix what the server rejected, so it saves again.
+    if (error && JSON.stringify(value) === failedValue.current) return;
     const timer = window.setTimeout(() => {
       void flush();
     }, 1500);
