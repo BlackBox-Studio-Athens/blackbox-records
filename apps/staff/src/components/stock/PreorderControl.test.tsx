@@ -33,7 +33,7 @@ describe('PreorderControl', () => {
     expect(html).not.toContain('Copies arrived');
   });
 
-  it('offers eighteen Athens months with native labelled month and part selectors', () => {
+  it('offers eighteen Athens months with a native labelled month selector and no part of the month', () => {
     const html = render(preorder);
     expect(html.match(/value="20\d{2}-\d{2}"/g)).toHaveLength(18);
     expect(html).toContain('value="2026-10" selected=""');
@@ -42,8 +42,7 @@ describe('PreorderControl', () => {
     expect(html).toContain('When it ships');
     expect(html).toContain('About a month');
     expect(html).toContain('Exact date');
-    for (const label of ['Any time', 'Early', 'Mid', 'Late'])
-      expect(html).toMatch(new RegExp(`role="radio"[^>]*>${label}<`));
+    expect(html).not.toContain('Part of the month');
     expect(html).toContain('Shoppers see &quot;ships around October 2026&quot;.');
     expect(html).toContain('For sale is how many people can pre-order.');
     expect(html).toContain('Save pre-order');

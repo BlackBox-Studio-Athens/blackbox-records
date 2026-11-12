@@ -57,6 +57,41 @@ async function seedStockedPreorder(suffix: string) {
 afterEach(() => vi.restoreAllMocks());
 
 describe('open pre-order projection push', () => {
+  it('records pre-order copies in stock history without calling them a delivery', async () => {
+    const seeded = await seedStockedPreorder(crypto.randomUUID());
+    const bindings = { ...env, PRODUCT_ENVIRONMENT: 'LOCAL' as const, LOCAL_OPERATOR_EMAIL: 'operator@example.com' };
+    const app = createHttpApp();
+    try {
+      const response = await app.request(
+        `http://127.0.0.1/api/internal/variants/${seeded.variantId}/stock/changes`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta: 3, reason: 'preorder' }),
+        },
+        bindings,
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        entry: { quantityDelta: 3, reason: 'preorder' },
+        stock: { quantity: 5 },
+      });
+
+      const history = await app.request(
+        `http://127.0.0.1/api/internal/variants/${seeded.variantId}/stock/history`,
+        undefined,
+        bindings,
+      );
+      expect(history.status).toBe(200);
+      expect(await history.json()).toMatchObject({
+        entries: expect.arrayContaining([expect.objectContaining({ quantityDelta: 3, reason: 'preorder' })]),
+      });
+    } finally {
+      await env.COMMERCE_DB.prepare('DELETE FROM "StockChange" WHERE "variantId" = ?').bind(seeded.variantId).run();
+      await seeded.cleanup();
+    }
+  });
+
   it('pushes a closed pre-order into Home offers, then the last copy selling into sold out', async () => {
     const seeded = await seedStockedPreorder(crypto.randomUUID());
     const projections: OpenPreorderProjection[] = [];

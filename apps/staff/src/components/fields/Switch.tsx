@@ -34,7 +34,8 @@ export default function Switch({
 }) {
   return (
     <div className="grid gap-1">
-      <label className="flex min-h-11 items-center justify-between gap-4" htmlFor={id}>
+      {/* relative: keeps the hidden checkbox beside its track, so focusing it never scrolls the editor. */}
+      <label className="relative flex min-h-11 items-center justify-between gap-4" htmlFor={id}>
         <span className="grid gap-1">
           <span id={`${id}-label`} className="font-medium">
             {label}

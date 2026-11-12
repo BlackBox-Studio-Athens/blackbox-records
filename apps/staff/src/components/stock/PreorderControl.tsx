@@ -35,9 +35,6 @@ export default function PreorderControl({
   const [month, setMonth] = useState(
     preorder?.shipEstimate.kind === 'month' ? preorder.shipEstimate.month : today.slice(0, 7),
   );
-  const [part, setPart] = useState<Extract<ShipEstimate, { kind: 'month' }>['part']>(
-    preorder?.shipEstimate.kind === 'month' ? preorder.shipEstimate.part : null,
-  );
   const [date, setDate] = useState(preorder?.shipEstimate.kind === 'date' ? preorder.shipEstimate.date : '');
   const months = Array.from({ length: 18 }, (_, index) => {
     const value = new Date(today.slice(0, 7) + '-01T00:00:00Z');
@@ -47,7 +44,7 @@ export default function PreorderControl({
   if (!months.includes(month)) months.unshift(month);
   const tomorrow = new Date(today + 'T00:00:00Z');
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  const estimate: ShipEstimate = kind === 'month' ? { kind, month, part } : { kind, date };
+  const estimate: ShipEstimate = kind === 'month' ? { kind, month, part: null } : { kind, date };
   const rows = enabled && (kind === 'month' || date) ? preorderPreview(estimate, today) : ['Not on pre-order'];
   const monthPassed = kind === 'month' && month < today.slice(0, 7);
   const monthLabel = (value: string) =>
@@ -109,20 +106,9 @@ export default function PreorderControl({
                     ))}
                   </select>
                 </label>
-                <SegmentedChoice
-                  label="Part of the month"
-                  value={part ?? 'any'}
-                  options={[
-                    { value: 'any', label: 'Any time' },
-                    { value: 'early', label: 'Early' },
-                    { value: 'mid', label: 'Mid' },
-                    { value: 'late', label: 'Late' },
-                  ]}
-                  onChange={(next) => setPart(next === 'any' ? null : (next as NonNullable<typeof part>))}
-                />
                 <p id={id + '-help'} className="text-sm text-muted-foreground">
                   {!monthPassed && (
-                    <>Shoppers see &quot;ships {shipEstimateText({ kind: 'month', month, part })}&quot;. </>
+                    <>Shoppers see &quot;ships {shipEstimateText({ kind: 'month', month, part: null })}&quot;. </>
                   )}
                   The pre-order stays open until you press Copies arrived.
                 </p>

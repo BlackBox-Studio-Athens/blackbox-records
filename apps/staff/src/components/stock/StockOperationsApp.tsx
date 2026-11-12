@@ -151,6 +151,16 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const selectedStockDetail = canSubmitStockMutation(selectedVariantId, stockDetail) ? stockDetail : null;
   const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading && !otherPending;
   const preorderOpen = selectedStockDetail?.stock.preorder?.open ?? false;
+  // Copies added during a pre-order have not arrived, so the untouched default becomes Pre-order copies.
+  useEffect(() => {
+    setChangeReason((reason) =>
+      preorderOpen && reason === 'manual_adjustment'
+        ? 'preorder'
+        : !preorderOpen && reason === 'preorder'
+          ? 'manual_adjustment'
+          : reason,
+    );
+  }, [preorderOpen]);
   const unit = copyWord(selectedStockDetail?.itemType);
   const soldNotSent = selectedStockDetail?.owedQuantity ?? 0;
   const countValid = /^\d+$/.test(countedQuantity);
@@ -1339,11 +1349,13 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           required
                           value={changeReason}
                         >
-                          {Object.entries(stockChangeReasons).map(([reason, label]) => (
-                            <option key={reason} value={reason}>
-                              {label}
-                            </option>
-                          ))}
+                          {Object.entries(stockChangeReasons)
+                            .filter(([reason]) => preorderOpen || reason !== 'preorder')
+                            .map(([reason, label]) => (
+                              <option key={reason} value={reason}>
+                                {label}
+                              </option>
+                            ))}
                         </select>
                         <label htmlFor="stock-change-notes" className="flex items-center gap-2">
                           <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -1743,7 +1755,7 @@ function StockFlagSwitch({
   return (
     <label
       className={cn(
-        'flex items-center justify-between gap-4 border-t border-border pt-4',
+        'relative flex items-center justify-between gap-4 border-t border-border pt-4',
         disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
       )}
       aria-busy={busy ? 'true' : undefined}

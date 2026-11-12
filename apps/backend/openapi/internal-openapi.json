@@ -2194,7 +2194,8 @@
               "manual_adjustment",
               "show_sale",
               "delivery",
-              "gift"
+              "gift",
+              "preorder"
             ]
           }
         },

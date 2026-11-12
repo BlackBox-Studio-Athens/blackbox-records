@@ -1474,20 +1474,23 @@ else if (process.argv.includes('--orders-shipping')) {
       await toggle.press('Space');
       const kind = page.getByRole('radiogroup', { name: 'When it ships', exact: true });
       const month = page.getByRole('combobox', { name: 'Month', exact: true });
-      const part = page.getByRole('radiogroup', { name: 'Part of the month', exact: true });
-      await part.getByText('Late', { exact: true }).click();
+      assert.equal(
+        await page.getByRole('radiogroup', { name: 'Part of the month' }).count(),
+        0,
+        'No part of the month',
+      );
       for (const [control, name] of [
         [kind, 'Ship estimate kind'],
         [month, 'Month'],
-        [part, 'Month part'],
       ])
         await fits(control, name);
-      await page.getByText(/^Pre-order · ships around late/).waitFor();
+      await page.getByText(/^Pre-order · ships around /).waitFor();
       await capture('staff-preorder-month-start-' + width, toggle.locator('..'));
       await capture('staff-preorder-month-' + width, page.getByRole('button', { name: 'Save pre-order', exact: true }));
       await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
       await page.getByRole('status').filter({ hasText: 'Pre-order saved.' }).waitFor();
-      assert.equal(preorders.get('variant_retained').shipEstimate.part, 'late');
+      assert.equal(preorders.get('variant_retained').shipEstimate.part, null);
+      await page.waitForFunction(() => document.querySelector('#stock-change-reason')?.value === 'preorder');
       await fits(page.getByRole('button', { name: 'Copies arrived', exact: true }), 'Copies arrived');
       await page.getByRole('button', { name: 'Save pre-order', exact: true }).press('Tab');
       assert.equal(await page.locator(':focus').innerText(), 'Copies arrived', 'Keyboard reaches arrival action');

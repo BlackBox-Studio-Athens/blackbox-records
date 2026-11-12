@@ -7,6 +7,7 @@ export const stockChangeReasons: Record<StockChangeReason, string> = {
   show_sale: 'Sold at a show',
   delivery: 'New delivery',
   gift: 'Gift or promo copy',
+  preorder: 'Pre-order copies',
 };
 
 export const stocktakeSchema = z

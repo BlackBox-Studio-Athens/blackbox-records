@@ -750,7 +750,7 @@ export type components = {
             delta: number;
             notes?: string | null;
             /** @enum {string} */
-            reason: "manual_adjustment" | "show_sale" | "delivery" | "gift";
+            reason: "manual_adjustment" | "show_sale" | "delivery" | "gift" | "preorder";
         };
         InternalStockChangeEntry: {
             /** Format: email */

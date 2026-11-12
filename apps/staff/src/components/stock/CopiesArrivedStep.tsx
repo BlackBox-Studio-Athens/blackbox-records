@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PackageCheck } from 'lucide-react';
 import CountStepper from '../fields/CountStepper';
 import { Button } from '../ui/button';
@@ -26,6 +26,8 @@ export default function CopiesArrivedStep({
   const [have, setHave] = useState<number | null>(planned);
   const [stopping, setStopping] = useState(false);
   const split = splitCopies(have ?? 0, soldNotSent);
+  // The step opens below the pre-order form, often off screen: move focus (and the view) to it.
+  useEffect(() => document.getElementById('copies-arrived-have')?.focus(), []);
 
   if (stopping)
     return (
