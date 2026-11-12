@@ -22,7 +22,7 @@ const volOne = {
   },
 };
 
-vi.mock('astro:content', () => ({
+vi.mock('@/lib/content-reader', () => ({
   getCollection: vi.fn(async (name: string) => (name === 'shows' ? [volOne] : [])),
 }));
 

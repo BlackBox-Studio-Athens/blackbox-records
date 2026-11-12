@@ -1,5 +1,7 @@
-import { getCollection, type CollectionEntry } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
 import { formatEuro } from '@blackbox/content-model';
+// The runtime renderer swaps content-reader for the published snapshot; astro:content holds the content-free build.
+import { getCollection } from '@/lib/content-reader';
 import { createArtistDetailPath, listArtistProfiles, listReleaseCatalog } from '@/lib/catalog-data';
 import { selectUpcomingShow } from '@/lib/upcoming-show';
 
