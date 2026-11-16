@@ -121,7 +121,7 @@
     "@blackbox/content-model": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@t3-oss/env-core": "0.13.11",
-    "dependency-cruiser": "18.7.0",
+    "dependency-cruiser": "18.7.2",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
