@@ -56,7 +56,7 @@
     "test:cms-publication": "node --import tsx ../../scripts/test-local-content-publication.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "14.4.2",
+    "@astrojs/cloudflare": "14.4.8",
     "@astrojs/react": "7.1.1",
     "@blackbox/api-client": "workspace:*",
     "@blackbox/content-model": "workspace:*",
