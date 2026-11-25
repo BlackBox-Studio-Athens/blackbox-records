@@ -89,6 +89,45 @@ it('recovers a committed source after losing its creation response without anoth
   }
 });
 
+it('creates and replays a Distro source when EmDash supplies an empty legacy group', async () => {
+  const selection = {
+    mode: 'create',
+    sourceKind: 'distro',
+    slug: 'new-distro',
+    data: { title: 'New record', format: 'Vinyl 12-inch' },
+  } as const;
+  const item = { id: 'distro-one', slug: selection.slug, data: { ...selection.data, group: '' } };
+  const reply = (item: object) => Response.json({ data: { item } });
+  let saved = false;
+  const methods: string[] = [];
+  const fetch = vi.fn(async (input: RequestInfo | URL) => {
+    const request = input as Request;
+    methods.push(request.method);
+    if (request.method === 'GET') return saved ? reply(item) : new Response(null, { status: 404 });
+    expect(await request.json()).toEqual({ slug: selection.slug, data: selection.data });
+    saved = true;
+    return reply(item);
+  });
+  const gateway = createCmsItemSourceGateway({ fetch }, operator);
+  await expect(gateway.ensureSource(selection)).resolves.toEqual(item);
+  await expect(gateway.ensureSource(selection)).resolves.toEqual(item);
+  expect(methods).toEqual(['GET', 'POST', 'GET']);
+
+  for (const data of [
+    { ...item.data, group: 'CDs' },
+    { ...item.data, summary: '' },
+  ]) {
+    fetch.mockResolvedValueOnce(reply({ ...item, data }));
+    await expect(gateway.ensureSource(selection)).rejects.toThrow('Source content differs');
+  }
+  fetch.mockResolvedValueOnce(reply(item));
+  await expect(gateway.ensureSource({ ...selection, data: { ...selection.data, group: 'CDs' } })).rejects.toThrow(
+    'Source content differs',
+  );
+  fetch.mockResolvedValueOnce(reply(item));
+  await expect(gateway.ensureSource({ ...selection, sourceKind: 'release' })).rejects.toThrow('Source content differs');
+});
+
 it('selects an existing source by exact ID without rewriting its content', async () => {
   const fetch = vi.fn(async () => reply());
   const gateway = createCmsItemSourceGateway({ fetch }, operator);

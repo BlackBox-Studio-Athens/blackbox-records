@@ -69,11 +69,16 @@ export function createCmsItemSourceGateway(
         return existing;
       }
       const source = existing ?? (await request(collection, { slug: selection.slug, data: selection.data }));
+      // EmDash supplies a cleared legacy group for Distro rows even when create omits it.
+      const expectedData =
+        selection.sourceKind === 'distro' && source?.data.group === '' && !Object.hasOwn(selection.data, 'group')
+          ? { ...selection.data, group: '' }
+          : selection.data;
       if (
         !source ||
         source.slug !== selection.slug ||
-        createStripeCatalogRequestShapeFingerprint(normalize(source.data, selection.data)) !==
-          createStripeCatalogRequestShapeFingerprint(selection.data)
+        createStripeCatalogRequestShapeFingerprint(normalize(source.data, expectedData)) !==
+          createStripeCatalogRequestShapeFingerprint(expectedData)
       )
         throw new CatalogOperationConflictError(
           'Source content differs; select the existing source or choose another slug.',

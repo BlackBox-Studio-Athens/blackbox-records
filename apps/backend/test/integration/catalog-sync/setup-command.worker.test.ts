@@ -9,11 +9,14 @@ import {
 } from '../../../src/infrastructure/persistence/prisma';
 import { createStockChangeDelta, parseStripePriceId, parseVariantId } from '../../../src/domain/commerce';
 
-it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete', 'distro-empty-group'] as const)(
+const distroScenarios = ['distro-empty-group', 'distro-create-retry'] as const;
+
+it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete', ...distroScenarios] as const)(
   'completes full setup for %s',
   async (scenario) => {
-    const isDistro = scenario === 'distro-empty-group';
-    const interruption = isDistro ? 'none' : scenario;
+    const existingDistro = scenario === 'distro-empty-group';
+    const createDistro = scenario === 'distro-create-retry';
+    const interruption = existingDistro ? 'none' : createDistro ? 'source' : scenario;
     const db = createPrismaClient(env);
     const journal = new D1CatalogOperationRepository(env.COMMERCE_DB);
     const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
@@ -25,17 +28,23 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete', '
         throw new Error('Lost response');
       }
     };
+    const distroData = { title: 'Record', format: 'Vinyl 12-inch' };
     const source = {
       id: `cms-command-${scenario}`,
       slug: `setup-command-${scenario}`,
-      data: isDistro ? { title: 'Record', group: '', format: 'Vinyl 12-inch' } : { title: 'Record' },
+      data: existingDistro || createDistro ? { ...distroData, group: '' } : { title: 'Record' },
     };
     const command = {
       operationId: source.slug,
       storeItemSlug: source.slug,
-      source: isDistro
+      source: existingDistro
         ? { mode: 'existing', sourceKind: 'distro', id: source.id }
-        : { mode: 'create', sourceKind: 'release', slug: source.slug, data: source.data },
+        : {
+            mode: 'create',
+            sourceKind: createDistro ? 'distro' : 'release',
+            slug: source.slug,
+            data: createDistro ? distroData : source.data,
+          },
       itemType: 'Vinyl 12-inch',
       price: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2200 },
       openingQuantity: 10,
@@ -145,8 +154,10 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete', '
         actorEmail: 'operator@example.com',
       });
       const calls = gateway.ensureSetupProduct.mock.calls.length;
+      const sourceCalls = ensureSource.mock.calls.length;
       expect(await setupCatalogItem(deps, 'operator@example.com', command)).toEqual(result);
       expect(gateway.ensureSetupProduct).toHaveBeenCalledTimes(calls);
+      expect(ensureSource).toHaveBeenCalledTimes(sourceCalls);
       expect(await db.stock.findUnique({ where: { variantId: result.variantId } })).toMatchObject({
         quantity: 8,
         onlineQuantity: 8,
