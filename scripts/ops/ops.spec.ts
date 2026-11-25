@@ -37,11 +37,15 @@ function harness(fetcher: typeof fetch) {
 
 void test('validates the environment, command flags, prices, copies and IDs', () => {
   assert.deepEqual(parseCommand(['login', 'uat']), { action: 'login', env: 'uat' });
-  assert.throws(() => parseCommand(['login', 'local']), /login <uat\|prd>/);
-  assert.throws(() => parseCommand(['whoami', '--env', 'http://staff.example']), /Choose --env/);
-  assert.throws(() => parseCommand(stockArgs), /Choose --env/);
+  assert.deepEqual(parseCommand(['whoami', '--env=prd']), { action: 'whoami', env: 'prd' });
+  assert.throws(() => parseCommand(['login', 'local']), /Allowed choices are uat, prd/);
+  assert.throws(() => parseCommand(['whoami', '--env', 'http://staff.example']), /Allowed choices are uat, prd/);
+  assert.throws(() => parseCommand(stockArgs), /required option '--env/);
   assert.throws(() => parseCommand([...stockArgs, '--env', 'uat', '--env', 'prd']), /repeated option/);
-  assert.throws(() => parseCommand([...stockArgs, '--env', 'uat', '--publish']), /Invalid/);
+  assert.throws(() => parseCommand([...stockArgs, '--env', 'uat', '--yes', '--yes']), /repeated option --yes/);
+  assert.throws(() => parseCommand([...stockArgs, '--env', 'uat', '--publish']), /unknown option/);
+  assert.throws(() => parseCommand(['whoami', '--env', 'uat', '--yes']), /unknown option/);
+  assert.throws(() => parseCommand(['login', 'uat', 'prd']), /too many arguments/);
   assert.throws(
     () => parseCommand(['stock', 'set', '--env', 'uat', '--variant', '../variant_x', '--copies', '3']),
     /variant ID/,
@@ -59,6 +63,29 @@ void test('validates the environment, command flags, prices, copies and IDs', ()
     () => parseCommand(['distro', 'setup', '--env', 'uat', '--id', '../distro_01J8', '--copies', '4', '--price', '25']),
     /CMS record or media ID/,
   );
+});
+
+void test('prints generated help and usage errors without starting an operation', async () => {
+  const mock = harness(() => assert.fail('No requests for help or usage errors'));
+  for (const args of [[], ['--help']]) {
+    assert.equal(await runOps(args, mock), 0);
+    assert.match(
+      mock.output.pop()!,
+      /Usage: pnpm ops .*\n[\s\S]*login <uat\|prd>[\s\S]*whoami[\s\S]*distro[\s\S]*stock/,
+    );
+  }
+  assert.equal(await runOps(['distro', '--help'], mock), 0);
+  assert.match(mock.output.pop()!, /Usage: pnpm ops distro .*\n[\s\S]*create[\s\S]*setup/);
+  assert.equal(await runOps(['distro', 'create', '--help'], mock), 0);
+  assert.match(
+    mock.output.pop()!,
+    /Usage: pnpm ops distro create .*\n[\s\S]*--env <uat\|prd>[\s\S]*--yes[\s\S]*--confirm-live[\s\S]*--title/,
+  );
+  const errors: string[] = [];
+  assert.equal(await runOps(['stock', 'set', '--bad'], { ...mock, reportError: (line) => errors.push(line) }), 1);
+  assert.match(errors.join('\n'), /required option|unknown option/);
+  assert.deepEqual(mock.output, []);
+  assert.deepEqual(mock.cloudflaredCalls, []);
 });
 
 void test('accepts only the selected HTTPS Staff origin and protected paths', async () => {
@@ -154,7 +181,9 @@ void test('PRD writes need apply, live confirmation and an exact interactive ans
     await runOps(apply, {
       ...mock,
       prompt: async (question) => {
-        assert.equal(JSON.parse(mock.output.at(-1)!).mode, 'apply');
+        const plan = JSON.parse(mock.output.at(-1)!);
+        assert.equal(plan.mode, 'apply');
+        assert.equal(plan.confirmation, 'typed');
         assert.match(question, /Type PRD/);
         return 'PRD';
       },
@@ -162,6 +191,36 @@ void test('PRD writes need apply, live confirmation and an exact interactive ans
     0,
   );
   assert.equal(mock.cloudflaredCalls.length, 2);
+});
+
+void test('applies with --yes without a terminal or prompt and still requires explicit PRD confirmation', async () => {
+  for (const env of ['uat', 'prd'] as const) {
+    const mock = harness(async (input, init) => {
+      assert.equal(new URL(String(input)).origin, env === 'uat' ? uat : prd);
+      const plan = JSON.parse(mock.output.at(-1)!);
+      assert.equal(plan.mode, 'apply');
+      assert.equal(plan.confirmation, '--yes');
+      assert.equal(plan.confirmLive, env === 'prd');
+      return init?.method === 'POST'
+        ? Response.json({ variantId: variant, entry: { type: 'count', id: 'count_yes' }, shortfall: null })
+        : Response.json({ variantId: variant, stock: { revision: null }, owedQuantity: 0 });
+    });
+    const deps = { ...mock, interactive: false, prompt: () => assert.fail('--yes must never prompt') };
+    const args = [...stockArgs, '--env', env, '--yes'];
+    assert.equal(await runOps(args, deps), 0);
+    const dryRun = JSON.parse(mock.output.at(-1)!);
+    assert.equal(dryRun.mode, 'dry run');
+    assert.equal(dryRun.confirmation, 'typed');
+    assert.deepEqual(mock.cloudflaredCalls, []);
+    if (env === 'prd') {
+      assert.equal(await runOps([...args, '--apply'], deps), 1);
+      assert.match(mock.output.at(-1)!, /requires --confirm-live/);
+      assert.deepEqual(mock.cloudflaredCalls, []);
+    }
+    const apply = env === 'prd' ? [...args, '--apply', '--confirm-live'] : [...args, '--apply'];
+    assert.equal(await runOps(apply, deps), 0, mock.output.join('\n'));
+    assert.equal(mock.cloudflaredCalls.length, 2);
+  }
 });
 
 void test('creates Distro with Staff fields, artwork and revision-checked publication', async (context) => {
@@ -286,6 +345,9 @@ void test('creates Distro with Staff fields, artwork and revision-checked public
     /supported Distro format/,
   );
   assert.throws(() => parseCommand(args.map((value) => (value === 'new' ? 'mint' : value))), /--condition/);
+  const altIndex = args.indexOf('--alt');
+  assert.throws(() => parseCommand(args.toSpliced(altIndex + 1, 1, '--yes')), /Supply --alt/);
+  assert.deepEqual(parseCommand(args.toSpliced(altIndex, 2, '--alt=--yes')), { ...parseCommand(args), alt: '--yes' });
   assert.equal(await runOps(args, mock), 0, mock.output.join('\n'));
   assert.deepEqual(requests, [
     '/_emdash/api/media',

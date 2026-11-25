@@ -11,8 +11,10 @@ Run an operator's existing Staff operations from one local command. Preserve the
 ## Decisions
 
 - Pin UAT and PRD to their HTTPS Staff origins. Acquire a human Access token from cloudflared for each request. Capture subprocess output and reject redirects before reading any response body. For `whoami`, ask the Worker to authorize a one-variant read and then display the verified JWT email. This avoids EmDash user provisioning during identity checks.
-- Validate arguments before remote work. Print the write plan before asking for the environment name. A dry run makes no remote requests. Use the same-origin and request marker headers for each API.
+- Use Commander for command routing, generated help and environment choices. Retain the domain validators and reject repeated options.
+- Print the JSON plan before remote work and include the confirmation mode. A dry run makes no remote requests. Applying requires typed confirmation in an interactive terminal or explicit `--yes`. PRD requires `--confirm-live` in both cases. Use the same-origin and request marker headers for each API.
 - Create Distro artwork through EmDash's multipart media route with the original and a bounded PNG thumbnail. Use the media identity for create-mode setup. Read the saved Distro title and format for existing-mode setup.
+- During Distro create and replay, the CMS source gateway accepts the empty legacy `group` EmDash adds when the request omits it. The gateway compares all other fields using the existing normalization and retains the stored source data.
 - After completed setup, use the variant publication detail and POST its reviewed catalog and CMS revisions. For stock, read the current revision and subtract copies owed from the requested physical count to get the online quantity.
 - Retry a transient, replayable request once with the same body and identity. Deduplicate uploads using the existing media option. Report the relevant operation ID and status without printing raw service responses or stock idempotency keys.
 

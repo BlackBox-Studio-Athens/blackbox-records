@@ -43,12 +43,16 @@ For repeated failures, update the existing command, instruction or fixture owner
 
 Run `pnpm ops login uat` or `pnpm ops login prd` with cloudflared installed. Complete Access sign-in in the browser it opens. Cloudflared manages the Access session. Use `pnpm ops whoami --env uat` (or `--env prd`) to check the verified Staff identity.
 
+Use `pnpm ops --help` to list commands and `pnpm ops distro create --help` to see the options for a command.
+
 ```powershell
 pnpm ops distro create --env uat --title "Example record" --artist "Example artist" --format "Vinyl 12-inch" --price 25.00 --copies 4 --image ".\cover.webp" --alt "Front cover" --summary "Vinyl edition." --condition new
 pnpm ops distro setup --env uat --id CMS_RECORD_ID --price 25.00 --copies 4
 pnpm ops stock set --env uat --variant variant_example_standard --copies 4
 ```
 
-Each write starts with a dry-run plan. Add `--apply` and type `UAT` or `PRD` exactly in an interactive terminal. For PRD, also pass `--confirm-live`. Add `--publish` to Distro create or setup to request shop publication after setup completes. The usual publication checks still apply. Stock counts deduct copies owed from the physical count when setting the online quantity.
+The CLI prints a JSON plan before each write. Add `--apply` and type `UAT` or `PRD` exactly in an interactive terminal. Add `--yes` with `--apply` to skip the prompt and terminal requirement. All PRD writes also require `--confirm-live`. The plan reports `"confirmation": "typed"` or `"confirmation": "--yes"`. A command without `--apply` stays a dry run, even with `--yes`.
+
+Add `--publish` to Distro create or setup to request shop publication after setup completes. The usual publication checks still apply. Stock counts deduct copies owed from the physical count when setting the online quantity.
 
 The CLI retries a transient write once with the same request identity. If setup or publication remains unconfirmed, use the reported operation ID to check the item. For an unconfirmed stock count, check the variant's stock history. A new invocation starts a new operation.

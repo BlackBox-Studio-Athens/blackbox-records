@@ -1,9 +1,10 @@
-import { parseArgs, type ParseArgsOptionsConfig } from 'node:util';
 import { DISTRO_GROUP_VALUES, type DistroGroupName } from '@blackbox/content-model';
+import { Argument, Command, Option, type OutputConfiguration } from 'commander';
 
 export class OpsError extends Error {}
 
-export type OperatorEnvironment = 'uat' | 'prd';
+const environments = ['uat', 'prd'] as const;
+export type OperatorEnvironment = (typeof environments)[number];
 export type EuroMinor = number & { readonly unit: 'EuroMinor' };
 export type Copies = number & { readonly unit: 'Copies' };
 export type CmsId = string & { readonly kind: 'CmsId' };
@@ -48,7 +49,7 @@ export function distroFormatOf(value: unknown): DistroGroupName {
   return format;
 }
 
-type WriteOptions = { env: OperatorEnvironment; apply: boolean; confirmLive: boolean };
+type WriteOptions = { env: OperatorEnvironment; apply: boolean; confirmLive: boolean; yes: boolean };
 type DistroOptions = WriteOptions & { price: EuroMinor; copies: Copies; publish: boolean };
 export type DistroCreate = DistroOptions & {
   action: 'distro create';
@@ -63,46 +64,24 @@ export type DistroCreate = DistroOptions & {
 export type DistroSetup = DistroOptions & { action: 'distro setup'; id: CmsId };
 export type StockSet = WriteOptions & { action: 'stock set'; variant: VariantId; copies: Copies };
 export type WriteCommand = DistroCreate | DistroSetup | StockSet;
-type Command =
-  | WriteCommand
-  | { action: 'login'; env: OperatorEnvironment }
-  | { action: 'whoami'; env: OperatorEnvironment }
-  | { action: 'help' };
-
-const stringOption = { type: 'string' } as const;
-const booleanOption = { type: 'boolean' } as const;
-const envOptions = { env: stringOption };
-const writeOptions = { ...envOptions, apply: booleanOption, 'confirm-live': booleanOption };
-const distroOptions = { ...writeOptions, price: stringOption, copies: stringOption, publish: booleanOption };
-
-function parseOptions(args: string[], options: ParseArgsOptionsConfig) {
-  try {
-    const parsed = parseArgs({ args, options, tokens: true });
-    const seen = new Set<string>();
-    for (const token of parsed.tokens) {
-      if (token.kind !== 'option' || seen.has(token.name)) throw new Error();
-      seen.add(token.name);
-    }
-    return parsed.values;
-  } catch {
-    throw new OpsError('Invalid or repeated option. Run pnpm ops --help.');
-  }
-}
+type OpsCommand =
+  WriteCommand | { action: 'login'; env: OperatorEnvironment } | { action: 'whoami'; env: OperatorEnvironment };
 
 function required(value: unknown, flag: string): string {
   if (typeof value !== 'string' || !value.trim()) throw new OpsError(`--${flag} is required.`);
   return value;
 }
 
-function writeFlags(values: ReturnType<typeof parseOptions>): WriteOptions {
+function writeFlags(values: Record<string, unknown>): WriteOptions {
   return {
     env: environmentOf(values.env),
     apply: values.apply === true,
-    confirmLive: values['confirm-live'] === true,
+    confirmLive: values.confirmLive === true,
+    yes: values.yes === true,
   };
 }
 
-function distroFlags(values: ReturnType<typeof parseOptions>): DistroOptions {
+function distroFlags(values: Record<string, unknown>): DistroOptions {
   return {
     ...writeFlags(values),
     price: euroMinorOf(required(values.price, 'price').trim()),
@@ -111,53 +90,117 @@ function distroFlags(values: ReturnType<typeof parseOptions>): DistroOptions {
   };
 }
 
-export function parseCommand(args: string[]): Command {
-  const [group, action, ...options] = args;
-  if (!args.length || (group === '--help' && args.length === 1)) return { action: 'help' };
-  if (group === 'login' && args.length === 2) {
-    if (action !== 'uat' && action !== 'prd') throw new OpsError('Use pnpm ops login <uat|prd>.');
-    return { action: 'login', env: environmentOf(action) };
-  }
-  if (group === 'whoami') {
-    return { action: 'whoami', env: environmentOf(parseOptions(args.slice(1), envOptions).env) };
-  }
-  if (group === 'stock' && action === 'set') {
-    const values = parseOptions(options, { ...writeOptions, variant: stringOption, copies: stringOption });
-    return {
-      action: 'stock set',
-      ...writeFlags(values),
-      variant: variantIdOf(values.variant),
-      copies: copiesOf(required(values.copies, 'copies')),
-    };
-  }
-  if (group === 'distro' && action === 'setup') {
-    const values = parseOptions(options, { ...distroOptions, id: stringOption });
-    return { action: 'distro setup', ...distroFlags(values), id: cmsIdOf(values.id) };
-  }
-  if (group === 'distro' && action === 'create') {
-    const values = parseOptions(options, {
-      ...distroOptions,
-      title: stringOption,
-      artist: stringOption,
-      format: stringOption,
-      image: stringOption,
-      alt: stringOption,
-      summary: stringOption,
-      condition: stringOption,
+function environmentOption(): Option {
+  return new Option('--env <uat|prd>', 'Staff environment.').choices(environments).makeOptionMandatory();
+}
+
+function writeOptions(command: Command): Command {
+  return command
+    .addOption(environmentOption())
+    .requiredOption('--copies <n>', 'Physical copies, from 0 to 2147483647.')
+    .option('--apply', 'Apply the write. Without this flag, show a dry-run plan.')
+    .option('--yes', 'Skip typed confirmation and the terminal requirement when applying.')
+    .option('--confirm-live', 'Required when applying to PRD.');
+}
+
+function distroOptions(command: Command): Command {
+  return writeOptions(command)
+    .requiredOption('--price <EUR>', 'Positive EUR amount with up to two decimal places.')
+    .option('--publish', 'Request shop publication after setup completes.');
+}
+
+export function parseCommand(
+  args: string[],
+  output: OutputConfiguration = { writeOut: () => {}, writeErr: () => {} },
+): OpsCommand {
+  let command: OpsCommand | undefined;
+  const program = new Command()
+    .name('pnpm ops')
+    .description('Run Staff operations for UAT or PRD.')
+    .configureOutput(output)
+    .exitOverride();
+
+  program
+    .command('login')
+    .description('Sign in to Staff Access through cloudflared.')
+    .addArgument(new Argument('<uat|prd>', 'Staff environment.').choices(environments))
+    .action((env: string) => {
+      command = { action: 'login', env: environmentOf(env) };
     });
-    const condition = values.condition;
-    if (condition !== 'new' && condition !== 'used') throw new OpsError('Choose --condition new or --condition used.');
-    return {
-      action: 'distro create',
-      ...distroFlags(values),
-      title: required(values.title, 'title').trim(),
-      artist: required(values.artist, 'artist').trim(),
-      format: distroFormatOf(values.format),
-      image: required(values.image, 'image'),
-      alt: required(values.alt, 'alt').trim(),
-      summary: required(values.summary, 'summary').trim(),
-      condition,
-    };
+  const whoami = program
+    .command('whoami')
+    .description('Check the verified Staff identity.')
+    .addOption(environmentOption())
+    .action((values: Record<string, unknown>) => {
+      command = { action: 'whoami', env: environmentOf(values.env) };
+    });
+
+  const distro = program.command('distro').description('Set up Distro items.');
+  const create = distroOptions(distro.command('create').description('Create a Distro item and set up its commerce.'))
+    .requiredOption('--title <title>', 'Release title.')
+    .requiredOption('--artist <artist>', 'Artist or label.')
+    .requiredOption('--format <format>', `Distro format (${DISTRO_GROUP_VALUES.join(', ')}).`)
+    .requiredOption('--image <file>', 'Path to the artwork file.')
+    .requiredOption('--alt <text>', 'Artwork alternative text.')
+    .requiredOption('--summary <text>', 'Item description.')
+    .addOption(new Option('--condition <new|used>', 'Item condition.').choices(['new', 'used']).makeOptionMandatory())
+    .action((values: Record<string, unknown>) => {
+      const condition = values.condition;
+      if (condition !== 'new' && condition !== 'used')
+        throw new OpsError('Choose --condition new or --condition used.');
+      command = {
+        action: 'distro create',
+        ...distroFlags(values),
+        title: required(values.title, 'title').trim(),
+        artist: required(values.artist, 'artist').trim(),
+        format: distroFormatOf(values.format),
+        image: required(values.image, 'image'),
+        alt: required(values.alt, 'alt').trim(),
+        summary: required(values.summary, 'summary').trim(),
+        condition,
+      };
+    });
+  const setup = distroOptions(distro.command('setup').description('Set up commerce for an existing Distro item.'))
+    .requiredOption('--id <id>', 'CMS record ID.')
+    .action((values: Record<string, unknown>) => {
+      command = { action: 'distro setup', ...distroFlags(values), id: cmsIdOf(values.id) };
+    });
+
+  const stock = program.command('stock').description('Record stock counts.');
+  const set = writeOptions(stock.command('set').description('Record the physical count for a variant.'))
+    .requiredOption('--variant <id>', 'Variant ID.')
+    .action((values: Record<string, unknown>) => {
+      command = {
+        action: 'stock set',
+        ...writeFlags(values),
+        variant: variantIdOf(values.variant),
+        copies: copiesOf(required(values.copies, 'copies')),
+      };
+    });
+
+  for (const leaf of [whoami, create, setup, set]) {
+    for (const option of leaf.options) {
+      const flag = option.long;
+      if (!flag) continue;
+      let seen = false;
+      leaf.on(`option:${option.name()}`, (value: unknown) => {
+        if (seen) throw new OpsError(`Invalid or repeated option ${flag}.`);
+        seen = true;
+        // Commander can consume a following flag as a required value. Keep dash-prefixed values explicit.
+        if (
+          option.required &&
+          typeof value === 'string' &&
+          value.length > 1 &&
+          value.startsWith('-') &&
+          args.includes(flag)
+        ) {
+          throw new OpsError(`Supply ${flag} values beginning with a dash as ${flag}=value.`);
+        }
+      });
+    }
   }
-  throw new OpsError('Unknown command. Run pnpm ops --help.');
+
+  program.parse(args.length ? args : ['--help'], { from: 'user' });
+  if (!command) throw new OpsError('Unknown command. Run pnpm ops --help.');
+  return command;
 }

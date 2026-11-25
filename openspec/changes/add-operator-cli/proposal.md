@@ -7,7 +7,9 @@ Staff operators need to set up Distro items and record physical stock counts fro
 ## What Changes
 
 - Add `pnpm ops` commands for Access login, identity verification, Distro setup and publication, and stock counts.
-- Show each write plan and require interactive confirmation. PRD writes also require a live confirmation flag.
+- Use Commander to validate command arguments and generate command help.
+- Show each write plan and require `--apply` plus typed confirmation or explicit `--yes`. PRD writes also require the live confirmation flag.
+- Let Distro create and retry accept an omitted legacy `group` when EmDash returns the default empty value.
 - Verify the CLI with mocked cloudflared and HTTP requests.
 
 ## Capabilities
@@ -22,4 +24,4 @@ None.
 
 ## Impact
 
-The root workspace owns the local TypeScript command and focused tests. The CLI uses existing Staff, EmDash and commerce HTTP contracts.
+The root workspace owns the local TypeScript command, pinned Commander dependency and focused tests. The backend CMS source gateway owns Distro create identity checks. The CLI uses existing Staff, EmDash and commerce HTTP contracts.
