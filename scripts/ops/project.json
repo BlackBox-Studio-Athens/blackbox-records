@@ -1,0 +1,10 @@
+{
+  "name": "ops-tooling",
+  "tags": ["tooling"],
+  "targets": {
+    "test": {
+      "command": "node --import tsx --test scripts/ops/ops.spec.ts",
+      "inputs": ["default", "^default", "{workspaceRoot}/package.json"]
+    }
+  }
+}

@@ -35,6 +35,7 @@
     "store:listing-readiness:verify": "tsx scripts/verify-store-listing-readiness.ts",
     "catalog:readiness:generate": "tsx scripts/generate-catalog-readiness.ts --write",
     "catalog:checkout:pause": "tsx scripts/pause-catalog-checkout.ts",
+    "ops": "tsx scripts/ops/cli.ts",
     "runtime:config:verify": "tsx scripts/verify-runtime-config.ts",
     "environment:model:verify": "tsx scripts/verify-environment-model.ts",
     "email:previews": "tsx scripts/render-paid-order-email-previews.ts",
