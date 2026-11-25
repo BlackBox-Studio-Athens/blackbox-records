@@ -35,7 +35,7 @@ function harness(fetcher: typeof fetch) {
   };
 }
 
-test('validates the environment, command flags, prices, copies and IDs', () => {
+void test('validates the environment, command flags, prices, copies and IDs', () => {
   assert.deepEqual(parseCommand(['login', 'uat']), { action: 'login', env: 'uat' });
   assert.throws(() => parseCommand(['login', 'local']), /login <uat\|prd>/);
   assert.throws(() => parseCommand(['whoami', '--env', 'http://staff.example']), /Choose --env/);
@@ -61,7 +61,7 @@ test('validates the environment, command flags, prices, copies and IDs', () => {
   );
 });
 
-test('accepts only the selected HTTPS Staff origin and protected paths', async () => {
+void test('accepts only the selected HTTPS Staff origin and protected paths', async () => {
   assert.equal(staffOrigin('uat'), uat);
   assert.equal(staffOrigin('prd'), prd);
   const mock = harness(async () => {
@@ -82,7 +82,7 @@ test('accepts only the selected HTTPS Staff origin and protected paths', async (
   assert.deepEqual(mock.cloudflaredCalls, []);
 });
 
-test('login captures cloudflared output and whoami proves identity with a protected commerce read', async () => {
+void test('login captures cloudflared output and whoami proves identity with a protected commerce read', async () => {
   const mock = harness(async (input, init) => {
     assert.equal(String(input), `${prd}/api/internal/variants?limit=1`);
     assert.equal(init?.method, 'GET');
@@ -99,7 +99,7 @@ test('login captures cloudflared output and whoami proves identity with a protec
   assert.doesNotMatch(mock.output.join('\n'), /fixture/);
 });
 
-test('stops at redirects and hides tokens in response and subprocess errors', async () => {
+void test('stops at redirects and hides tokens in response and subprocess errors', async () => {
   let requests = 0;
   const redirect = harness(async (_input, init) => {
     requests++;
@@ -135,7 +135,7 @@ test('stops at redirects and hides tokens in response and subprocess errors', as
   assert.doesNotMatch(error.output.join('\n'), /fixture/);
 });
 
-test('PRD writes need apply, live confirmation and an exact interactive answer after the plan', async () => {
+void test('PRD writes need apply, live confirmation and an exact interactive answer after the plan', async () => {
   const mock = harness(async (input) => {
     assert.equal(new URL(String(input)).origin, prd);
     if (String(input).endsWith('/counts')) {
@@ -164,7 +164,7 @@ test('PRD writes need apply, live confirmation and an exact interactive answer a
   assert.equal(mock.cloudflaredCalls.length, 2);
 });
 
-test('creates Distro with Staff fields, artwork and revision-checked publication', async (context) => {
+void test('creates Distro with Staff fields, artwork and revision-checked publication', async (context) => {
   const dir = await mkdtemp(join(tmpdir(), 'blackbox-ops-'));
   context.after(() => rm(dir, { recursive: true, force: true }));
   const image = join(dir, 'cover.webp');
@@ -300,7 +300,7 @@ test('creates Distro with Staff fields, artwork and revision-checked publication
   assert.match(mock.output.join('\n'), /status completed \(website live\)/);
 });
 
-test('replays the existing-source setup body and stops if setup needs review', async () => {
+void test('replays the existing-source setup body and stops if setup needs review', async () => {
   const setupBodies: string[] = [];
   const mock = harness(async (input, init) => {
     if (String(input).endsWith('/content/distro/distro_01J8')) {
@@ -323,7 +323,7 @@ test('replays the existing-source setup body and stops if setup needs review', a
   assert.match(mock.output.join('\n'), /Distro setup operationId .* status needs_review/);
 });
 
-test('records physical stock with the current revision and keeps retry keys private', async () => {
+void test('records physical stock with the current revision and keeps retry keys private', async () => {
   const requests: { body: unknown; key: string | null }[] = [];
   const mock = harness(async (input, init) => {
     const path = new URL(String(input)).pathname;
