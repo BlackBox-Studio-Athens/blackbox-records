@@ -216,4 +216,22 @@ describe('shared editorial values', () => {
     expect(readTypedValues('artists', { country: 'Greece / Cyprus' }).country).toEqual(['GR', 'CY']);
     expect(readTypedValues('artists', { country: ['GR', 'CY'] }).country).toEqual(['GR', 'CY']);
   });
+
+  test('reads an empty legacy Distro group as cleared', () => {
+    const typed = {
+      format: 'Vinyl 12-inch',
+      format_override: 'LP',
+      tracklist: { format: 'vinyl', sides: [{ label: 'A', tracks: [{ title: 'Song', duration: '4:32' }] }] },
+    };
+    const stored = { ...typed, group: '' };
+    const cleared = { ...typed, group: null };
+    expect(convertTypedValues('distro', stored)).toEqual(convertTypedValues('distro', cleared));
+    expect(readTypedValues('distro', stored)).toEqual(readTypedValues('distro', cleared));
+    expect(projectDistroValues(stored)).toEqual(projectDistroValues(cleared));
+    expect(projectDistroValues(stored)).toMatchObject({
+      group: 'Vinyl 12-inch',
+      format: 'LP',
+      tracklist: { format: 'vinyl', sides: [{ label: 'A', tracks: [{ title: 'Song', duration: 272 }] }] },
+    });
+  });
 });

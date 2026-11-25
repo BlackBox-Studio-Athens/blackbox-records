@@ -1,10 +1,25 @@
+import { proseBlocks } from '@blackbox/content-model';
 import { expect, test } from 'vitest';
-import { draftDistroTracklist, newsCardSummaries, releaseCardSummaries, safetySummary } from './collection-cards';
+import {
+  distroCardSummaries,
+  draftDistroTracklist,
+  newsCardSummaries,
+  releaseCardSummaries,
+  safetySummary,
+} from './collection-cards';
 
 test('a Distro tracklist keeps an unfinished track while staff type it', () => {
   const sides = [{ label: 'A', tracks: [{ title: '' }] }];
   expect(draftDistroTracklist({ sides }, 'Tapes')).toEqual({ format: 'cassette', sides });
   expect(draftDistroTracklist({ sides }, 'CDs')).toBeNull();
+});
+
+test('the Distro Text card reads rich descriptions and respects a cleared description', () => {
+  expect(distroCardSummaries({ summary: '', summary_rich: proseBlocks('Vinyl edition.') }).text).toBe(
+    'Short description',
+  );
+  expect(distroCardSummaries({ summary: 'Legacy description', summary_rich: [] }).text).toBe('Description missing');
+  expect(distroCardSummaries({ summary: 'Legacy description', summary_rich: null }).text).toBe('Short description');
 });
 
 test('release summaries read the stored values in plain language', () => {

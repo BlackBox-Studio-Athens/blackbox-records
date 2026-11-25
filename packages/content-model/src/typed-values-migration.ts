@@ -39,6 +39,7 @@ export function convertTypedValues(collection: string, input: Record<string, unk
   }
   if (collection === 'socials' && data.visible === true && (typeof data.url !== 'string' || !isHttpsUrl(data.url)))
     problems.push('url');
+  if (collection === 'distro' && data.group === '') data.group = null;
   if (collection === 'distro' && data.group !== undefined && data.group !== null) {
     if (!DISTRO_GROUP_VALUES.includes(data.group as (typeof DISTRO_GROUP_VALUES)[number])) problems.push('group');
     // EmDash publishes only the revision's keys, so `group` is written as null to clear the old column.
@@ -115,7 +116,7 @@ export function readTypedValues(collection: string, data: Record<string, unknown
   if (collection === 'distro') {
     // Readers drop the cleared legacy column; writers keep `group: null` so EmDash clears it.
     const { group, ...rest } = converted;
-    return group === null ? rest : converted;
+    return group === null || group === '' ? rest : converted;
   }
   return data;
 }

@@ -2,6 +2,7 @@ import {
   formatArtistCountries,
   formatDayDate,
   parseIsoDate,
+  projectProseFields,
   tracklistFormat,
   type Tracklist,
 } from '@blackbox/content-model';
@@ -163,7 +164,7 @@ export function distroCardSummaries(data: ContentData): Record<DistroCardId, str
         .filter(Boolean)
         .join(', ') || 'No listening links',
     tracklist: tracks ? count(tracks, 'track') : 'No tracklist',
-    text: text(data.summary) ? 'Short description' : 'Description missing',
+    text: text(projectProseFields('distro', data).summary) ? 'Short description' : 'Description missing',
     display:
       [
         text(data.eyebrow),

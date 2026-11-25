@@ -309,7 +309,13 @@ export function validateCmsDraft(collection: CmsCollection, data: Record<string,
     if (Object.hasOwn(data, field) && typeof data[field] !== 'boolean') return [`${field}: Use true or false.`];
   if (collection === 'artists' && data.country !== undefined && data.country !== null && !Array.isArray(data.country))
     return ['country: Choose countries from the list.'];
-  const result = cmsDraftSchemas[collection]!.safeParse(data);
+  let draft = data;
+  if (collection === 'distro' && data.group === null) {
+    // EmDash needs the explicit null in the revision to clear the legacy column on publish.
+    draft = { ...data };
+    delete draft.group;
+  }
+  const result = cmsDraftSchemas[collection]!.safeParse(draft);
   if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('./')}: ${issue.message}`);
   if (collection === 'socials' && data.visible === true && !data.url)
     return ['url: Enter a full HTTPS profile URL for a visible link.'];
