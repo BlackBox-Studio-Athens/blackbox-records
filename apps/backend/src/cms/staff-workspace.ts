@@ -284,7 +284,7 @@ export async function readStaffWorkspace(
                     data.format_override !== null &&
                     DISTRO_GROUP_VALUES.includes(data.format as (typeof DISTRO_GROUP_VALUES)[number])
                       ? data.format
-                      : (data.group ?? data.format);
+                      : data.group || data.format;
                   if (!groups.includes(group as (typeof DISTRO_GROUP_VALUES)[number])) continue;
                   items.push(item);
                   if (items.length === limit) {

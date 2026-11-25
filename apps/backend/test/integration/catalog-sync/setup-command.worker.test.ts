@@ -9,9 +9,11 @@ import {
 } from '../../../src/infrastructure/persistence/prisma';
 import { createStockChangeDelta, parseStripePriceId, parseVariantId } from '../../../src/domain/commerce';
 
-it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete'] as const)(
-  'resumes full setup after %s acknowledgement loss',
-  async (interruption) => {
+it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete', 'distro-empty-group'] as const)(
+  'completes full setup for %s',
+  async (scenario) => {
+    const isDistro = scenario === 'distro-empty-group';
+    const interruption = isDistro ? 'none' : scenario;
     const db = createPrismaClient(env);
     const journal = new D1CatalogOperationRepository(env.COMMERCE_DB);
     const stock = new D1OperatorStockRepository(env.COMMERCE_DB);
@@ -24,14 +26,16 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete'] a
       }
     };
     const source = {
-      id: `cms-command-${interruption}`,
-      slug: `setup-command-${interruption}`,
-      data: { title: 'Record' },
+      id: `cms-command-${scenario}`,
+      slug: `setup-command-${scenario}`,
+      data: isDistro ? { title: 'Record', group: '', format: 'Vinyl 12-inch' } : { title: 'Record' },
     };
     const command = {
       operationId: source.slug,
       storeItemSlug: source.slug,
-      source: { mode: 'create', sourceKind: 'release', slug: source.slug, data: source.data },
+      source: isDistro
+        ? { mode: 'existing', sourceKind: 'distro', id: source.id }
+        : { mode: 'create', sourceKind: 'release', slug: source.slug, data: source.data },
       itemType: 'Vinyl 12-inch',
       price: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2200 },
       openingQuantity: 10,
@@ -48,11 +52,11 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete'] a
       return source;
     });
     const preparePresentation = vi.fn(async () => presentation);
-    const priceId = parseStripePriceId(`price_command_${interruption}`);
+    const priceId = parseStripePriceId(`price_command_${scenario}`);
     const gateway = {
       ensureSetupProduct: vi.fn(async () => {
         interrupt('product');
-        return { productId: `prod_command_${interruption}`, active: true, name: 'Record', metadata: {} };
+        return { productId: `prod_command_${scenario}`, active: true, name: 'Record', metadata: {} };
       }),
       createReplacementPrice: vi.fn(async () => {
         interrupt('price');
@@ -95,7 +99,12 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete'] a
       await expect(
         setupCatalogItem(deps, 'operator@example.com', {
           ...command,
-          source: { ...command.source, sourceKind: 'distro', data: { ...source.data, group: 'Clothes' } },
+          source: {
+            mode: 'create',
+            sourceKind: 'distro',
+            slug: source.slug,
+            data: { ...source.data, group: 'Clothes' },
+          },
         }),
       ).rejects.toThrow('physical type');
       await expect(setupCatalogItem({ ...deps, environment: 'prd' }, 'operator@example.com', command)).rejects.toThrow(
@@ -119,6 +128,7 @@ it.each(['none', 'source', 'product', 'price', 'binding', 'stock', 'complete'] a
       );
       const item = await db.storeItemOption.findUnique({ where: { variantId: result.variantId } });
       expect(item).toMatchObject({
+        itemType: 'Vinyl 12-inch',
         catalogRevision: 1,
         catalogAvailability: 'withheld',
         productProjection: presentation,
