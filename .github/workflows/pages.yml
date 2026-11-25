@@ -65,7 +65,7 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     env:
       HOME: /root
@@ -101,7 +101,7 @@ jobs:
       cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     env:
       HOME: /root
@@ -161,7 +161,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     environment: catalog-promotion-uat
     timeout-minutes: 40
