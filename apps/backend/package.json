@@ -67,7 +67,7 @@
     "@openfeature/server-sdk": "1.23.0",
     "@prisma/adapter-d1": "^7.10.1",
     "@prisma/client": "^7.10.1",
-    "astro": "7.4.2",
+    "astro": "7.4.7",
     "emdash": "1.4.0",
     "hono": "4.13.13",
     "jose": "6.2.13",
