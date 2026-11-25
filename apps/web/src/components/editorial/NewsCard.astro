@@ -4,7 +4,7 @@ import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { Card, CardContent } from '@/components/ui/card';
-import { publicTitleClass } from '@/components/ui/utils';
+import { publicTitleClass, publicTitleLang } from '@/components/ui/utils';
 import { formatMonthYear } from '@/utils/content';
 import { getEntry } from '@/lib/content-reader';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
@@ -59,7 +59,12 @@ const newsCardImageSizes = {
           </span>
         )}
       </div>
-      <h3 class:list={['brand-card-title text-foreground', publicTitleClass(item.data.title)]}>{item.data.title}</h3>
+      <h3
+        class:list={['brand-card-title text-foreground', publicTitleClass(item.data.title)]}
+        lang={publicTitleLang(item.data.title)}
+      >
+        {item.data.title}
+      </h3>
       {showSummary && (
         <Prose
           class="text-sm leading-relaxed text-muted-foreground"

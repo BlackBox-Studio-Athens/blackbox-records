@@ -1,4 +1,5 @@
 ---
+import { displayUppercase } from '@/components/ui/utils';
 import Prose from '@/components/Prose.astro';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
@@ -50,7 +51,7 @@ const {
 
           {aboutStory && (
             <>
-              <h2>{aboutStory.title.toUpperCase()}</h2>
+              <h2>{displayUppercase(aboutStory.title)}</h2>
               {aboutStory.paragraphs.map((paragraph) => (
                 <Prose value={paragraph} />
               ))}
@@ -66,7 +67,7 @@ const {
 
           {aboutContact && (
             <section class="about-contact" aria-labelledby="about-contact-title">
-              <h2 id="about-contact-title">{aboutContact.title.toUpperCase()}</h2>
+              <h2 id="about-contact-title">{displayUppercase(aboutContact.title)}</h2>
               <Prose class="about-contact__intro" value={aboutContact.intro} data-content-path="contact.intro" />
               <ul class="about-contact__list">
                 {aboutContact.items.map((item, itemIndex) => (

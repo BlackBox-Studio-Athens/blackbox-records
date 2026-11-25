@@ -7,7 +7,7 @@ import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { Disc3 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { publicTitleClass } from '@/components/ui/utils';
+import { displayUppercase, publicTitleClass, publicTitleLang } from '@/components/ui/utils';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
 import ReleaseFormats from './ReleaseFormats.astro';
 import {
@@ -240,14 +240,15 @@ const dataAttributes = embeddedPlayerData
           isPrincipal && 'releases-feature__title',
           publicTitleClass(release.data.title),
         ]}
+        lang={publicTitleLang(release.data.title)}
         data-release-title={isReleaseShowcase ? true : undefined}
       >
         {isReleaseShowcase ? (
           <a class="release-card-title-link" href={detailPath} data-release-detail data-astro-prefetch>
-            {release.data.title.toUpperCase()}
+            {displayUppercase(release.data.title)}
           </a>
         ) : (
-          release.data.title.toUpperCase()
+          displayUppercase(release.data.title)
         )}
       </HeadingTag>
       {isArtistDiscography ? (

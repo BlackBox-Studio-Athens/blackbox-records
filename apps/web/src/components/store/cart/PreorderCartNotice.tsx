@@ -1,3 +1,4 @@
+import { displayUppercase } from '@/components/ui/utils';
 import * as React from 'react';
 
 import { latestShipEstimate, shipEstimateText } from '@/platform/lib/preorder-estimate';
@@ -17,7 +18,7 @@ export function PreorderCartNotice({
   const expected = estimate ? shipEstimateText(estimate) : null;
   const isDrawer = presentation === 'drawer';
   const availableCount = lines.length - estimates.length;
-  const preorderTitles = lines.flatMap((line) => (line.preorder && line.title ? [line.title.toUpperCase()] : []));
+  const preorderTitles = lines.flatMap((line) => (line.preorder && line.title ? [displayUppercase(line.title)] : []));
   const waitingFor =
     preorderTitles.length === estimates.length
       ? preorderTitles.join(', ')

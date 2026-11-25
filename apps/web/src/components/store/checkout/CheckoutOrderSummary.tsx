@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingInline } from '@/components/ui/loading-feedback';
-import { cn, publicTitleClass } from '@/components/ui/utils';
+import { cn, publicTitleClass, publicTitleLang } from '@/components/ui/utils';
 import {
   decrementCartLineQuantityByVariant,
   createCartQuantity,
@@ -176,7 +176,10 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
               </div>
 
               <div className="checkout-summary__identity">
-                <h3 className={cn('brand-cart-line-title text-foreground', publicTitleClass(line.title))}>
+                <h3
+                  className={cn('brand-cart-line-title text-foreground', publicTitleClass(line.title))}
+                  lang={publicTitleLang(line.title)}
+                >
                   {line.title}
                 </h3>
                 <p className="checkout-summary__metadata">

@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSPrope
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
-import { cn, publicTitleClass } from '@/components/ui/utils';
+import { cn, publicTitleClass, publicTitleLang, displayUppercase } from '@/components/ui/utils';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
 import type { ChapterOffer } from '@/lib/preorder-showcase';
 import { createProjectRelativeUrl } from '@/platform/config/site';
@@ -337,8 +337,7 @@ function PreorderChapter({
       context.font = `${style.fontWeight} 100px ${style.fontFamily}`;
       const spacing = parseFloat(style.letterSpacing) / parseFloat(style.fontSize) || 0;
       const width = Math.max(
-        ...item.title
-          .toUpperCase()
+        ...displayUppercase(item.title)
           .split(/\s+/)
           .map((word) => context.measureText(word).width / 100 + spacing * word.length),
       );
@@ -577,6 +576,7 @@ function PreorderChapter({
                 ref={filmTitle}
                 id={chapterId + '-title'}
                 className={cn('home-preorders__film-title', publicTitleClass(item.title))}
+                lang={publicTitleLang(item.title)}
               >
                 {item.title.split(/\s+/).map((word, index) => (
                   <span key={index}>
@@ -672,7 +672,11 @@ function PreorderChapter({
               <figure className="home-preorders__still-art">{cover}</figure>
               <div className="home-preorders__identity">
                 {artist}
-                <h3 id={chapterId + '-title'} className={publicTitleClass(item.title)}>
+                <h3
+                  id={chapterId + '-title'}
+                  className={publicTitleClass(item.title)}
+                  lang={publicTitleLang(item.title)}
+                >
                   {item.title}
                 </h3>
                 {badgeList}

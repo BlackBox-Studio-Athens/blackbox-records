@@ -2,7 +2,7 @@
 import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import { buttonVariants } from '@/components/ui/button';
-import { publicTitleClass } from '@/components/ui/utils';
+import { publicTitleClass, publicTitleLang } from '@/components/ui/utils';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { resolveLinkAttributes } from '@/platform/config/site';
 import { getServicesContent } from '@/lib/site-data';
@@ -29,6 +29,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
           'services-page-intro__title internal-page-hero__title',
           publicTitleClass(servicesContent.hero.title),
         ]}
+        lang={publicTitleLang(servicesContent.hero.title)}
       >
         {servicesContent.hero.title}
       </h1>
@@ -64,7 +65,12 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
                 <p class="services-tile__index" aria-hidden="true">
                   {stepIndex(index)}
                 </p>
-                <h2 class:list={['brand-card-title', publicTitleClass(service.title)]}>{service.title}</h2>
+                <h2
+                  class:list={['brand-card-title', publicTitleClass(service.title)]}
+                  lang={publicTitleLang(service.title)}
+                >
+                  {service.title}
+                </h2>
                 <div class="services-tile__summary">
                   <Prose value={service.summary} />
                   {service.partner_name && partnerLinkAttributes && (
@@ -132,6 +138,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
         <div class="services-process__header">
           <h2
             class:list={['services-section-title', publicTitleClass(processSection.title)]}
+            lang={publicTitleLang(processSection.title)}
             id="services-process-title"
           >
             {processSection.title}
@@ -157,6 +164,7 @@ const stepIndex = (index: number) => String(index + 1).padStart(2, '0');
         <div class="services-inquiry__header">
           <h2
             class:list={['services-section-title', publicTitleClass(inquirySection.title)]}
+            lang={publicTitleLang(inquirySection.title)}
             id="services-inquiry-title"
           >
             {inquirySection.title}

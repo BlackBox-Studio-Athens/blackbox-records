@@ -9,7 +9,7 @@ import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamin
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/platform/config/site';
 import { createReleaseDetailPath, listReleaseCatalogByArtistId } from '@/lib/catalog-data';
-import { cn, publicTitleClass } from '@/components/ui/utils';
+import { cn, publicTitleClass, publicTitleLang } from '@/components/ui/utils';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
@@ -111,7 +111,9 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           )}
         </div>
       )}
-      <h1 class:list={['artist-detail-title', publicTitleClass(artistName)]}>{artistName}</h1>
+      <h1 class:list={['artist-detail-title', publicTitleClass(artistName)]} lang={publicTitleLang(artistName)}>
+        {artistName}
+      </h1>
 
       {hasArtistBody ? (
         <div class="artist-detail-prose artist-detail-prose--story editorial-prose">
@@ -180,6 +182,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           href={latestReleaseHref}
           data-astro-prefetch
           class:list={['artist-latest-release-panel__title', publicTitleClass(latestRelease.data.title)]}
+          lang={publicTitleLang(latestRelease.data.title)}
         >
           {latestRelease.data.title}
         </a>
@@ -313,7 +316,10 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
               quality={editorialImageQuality}
             />
             <span class="artist-previous-release__copy">
-              <span class:list={['artist-previous-release__title', publicTitleClass(release.data.title)]}>
+              <span
+                class:list={['artist-previous-release__title', publicTitleClass(release.data.title)]}
+                lang={publicTitleLang(release.data.title)}
+              >
                 {release.data.title}
               </span>
               <span class="artist-previous-release__meta">
