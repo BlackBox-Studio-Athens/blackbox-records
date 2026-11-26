@@ -310,8 +310,8 @@ export function validateCmsDraft(collection: CmsCollection, data: Record<string,
   if (collection === 'artists' && data.country !== undefined && data.country !== null && !Array.isArray(data.country))
     return ['country: Choose countries from the list.'];
   let draft = data;
-  if (collection === 'distro' && data.group === null) {
-    // EmDash needs the explicit null in the revision to clear the legacy column on publish.
+  if (collection === 'distro' && (data.group === '' || data.group === null)) {
+    // EmDash needs the explicit cleared value in the revision to clear the legacy column on publish.
     draft = { ...data };
     delete draft.group;
   }

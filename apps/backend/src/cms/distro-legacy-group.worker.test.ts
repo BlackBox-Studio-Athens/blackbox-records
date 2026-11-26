@@ -43,7 +43,7 @@ test('a Distro draft that clears the legacy group publishes into the NOT NULL co
   const publish = () => new ContentRepository(scoped.db, contexts).publish('distro', 'record');
   try {
     await expect(publish()).rejects.toThrow(/NOT NULL constraint failed: ec_distro.group/);
-    await storeClearedDistroGroup(db, 'record');
+    await storeClearedDistroGroup(db, { entryId: 'record' });
     await publish();
     expect(await db.prepare('SELECT title, "group", live_revision_id FROM ec_distro').first()).toEqual({
       title: 'New title',

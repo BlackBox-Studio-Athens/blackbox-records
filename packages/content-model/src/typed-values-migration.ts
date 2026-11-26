@@ -42,7 +42,7 @@ export function convertTypedValues(collection: string, input: Record<string, unk
   if (collection === 'distro' && data.group === '') data.group = null;
   if (collection === 'distro' && data.group !== undefined && data.group !== null) {
     if (!DISTRO_GROUP_VALUES.includes(data.group as (typeof DISTRO_GROUP_VALUES)[number])) problems.push('group');
-    // EmDash publishes only the revision's keys, so `group` is written as null to clear the old column.
+    // EmDash publishes only the revision's keys, so the revision clears the old column explicitly (see below).
     else if (typeof data.format_override === 'string') data.group = null;
     else {
       const legacyLabel = data.format;
@@ -63,6 +63,8 @@ export function convertTypedValues(collection: string, input: Record<string, unk
     !DISTRO_GROUP_VALUES.includes(data.format as (typeof DISTRO_GROUP_VALUES)[number])
   )
     problems.push('format');
+  // ec_distro.group is NOT NULL DEFAULT '': a cleared group is written as that empty value, never null.
+  if (collection === 'distro' && data.group === null) data.group = '';
   if (['releases', 'distro'].includes(collection) && data.tracklist && typeof data.tracklist === 'object') {
     const tracklist = data.tracklist as Record<string, unknown>;
     if (
@@ -114,7 +116,7 @@ export function readTypedValues(collection: string, data: Record<string, unknown
   if (collection === 'artists') return { ...data, country: converted.country };
   if (collection === 'releases') return { ...data, tracklist: converted.tracklist };
   if (collection === 'distro') {
-    // Readers drop the cleared legacy column; writers keep `group: null` so EmDash clears it.
+    // Readers drop the cleared legacy column; writers keep `group: ''` so EmDash clears it.
     const { group, ...rest } = converted;
     return group === null || group === '' ? rest : converted;
   }

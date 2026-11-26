@@ -389,7 +389,8 @@ export async function processRuntimePublication(deps: Dependencies) {
         if ('collection' in intent) {
           const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
           if (record.item.liveRevisionId !== intent.revisionId) {
-            if (intent.collection === 'distro') await storeClearedDistroGroup(deps.db, intent.recordId);
+            if (intent.collection === 'distro')
+              await storeClearedDistroGroup(deps.db, { revisionId: intent.revisionId });
             successful(
               await deps.runtime.handleContentPublish(intent.collection, intent.recordId, {
                 _rev: intent.expectedRevision,

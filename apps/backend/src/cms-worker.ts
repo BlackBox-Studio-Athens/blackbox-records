@@ -976,7 +976,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         if (lifecycle) return lifecycle;
         const distroPublish = /^\/_emdash\/api\/content\/distro\/([A-Za-z0-9_-]+)\/publish$/.exec(url.pathname);
         if (distroPublish && request.method === 'POST')
-          await storeClearedDistroGroup(bindings.CMS_DB, distroPublish[1]);
+          await storeClearedDistroGroup(bindings.CMS_DB, { entryId: distroPublish[1] });
       }
       if (url.pathname.startsWith('/_emdash/api/media')) {
         if (url.pathname.replace(/\/+$/, '') !== '/_emdash/api/media' || request.method !== 'POST') {

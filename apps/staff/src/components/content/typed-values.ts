@@ -7,8 +7,8 @@ import { isCmsCollection, readEditorialBooleans, readTypedValues } from '@blackb
  */
 export function editorData(collection: string, data: Record<string, unknown>) {
   const typed = readTypedValues(collection, data);
-  // EmDash publishes only the saved keys, so a Distro save writes `group: null` to clear the legacy column.
+  // EmDash publishes only the saved keys, so a Distro save clears the legacy NOT NULL column with its empty value.
   if (collection === 'distro' && data.group !== undefined && data.group !== null && typed.group === undefined)
-    typed.group = null;
+    typed.group = '';
   return isCmsCollection(collection) ? readEditorialBooleans(collection, typed) : typed;
 }

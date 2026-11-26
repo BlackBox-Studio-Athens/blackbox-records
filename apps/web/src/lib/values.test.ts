@@ -171,7 +171,7 @@ describe('shared editorial values', () => {
     const converted = convertTypedValues('distro', old);
     expect(converted).toEqual({
       data: {
-        group: null,
+        group: '',
         format: 'CDs',
         format_override: 'CD',
         tracklist: { discs: [{ tracks: [{ title: 'Song', duration: 272 }] }] },
@@ -181,7 +181,7 @@ describe('shared editorial values', () => {
     expect(convertTypedValues('distro', converted.data)).toEqual(converted);
     // A published typed record still reads its old `group` column; only the column is cleared.
     expect(convertTypedValues('distro', { group: 'CDs', format: 'CDs', format_override: 'CD' }).data).toEqual({
-      group: null,
+      group: '',
       format: 'CDs',
       format_override: 'CD',
     });

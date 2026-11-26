@@ -1486,14 +1486,20 @@ test('publishes selling-linked editorial details without changing price, stock o
       variantId,
     });
     expect(runtime.handleMediaGet).not.toHaveBeenCalled();
-    // Distro publication first stores a cleared legacy group in the native draft revision.
+    // Distro publication first stores a cleared legacy group in the selected native revision.
     await deps.db.batch([
-      deps.db.prepare('CREATE TABLE ec_distro (id TEXT PRIMARY KEY, draft_revision_id TEXT)'),
       deps.db.prepare('CREATE TABLE revisions (id TEXT PRIMARY KEY, collection TEXT, data TEXT)'),
+      deps.db.prepare(
+        `INSERT INTO revisions VALUES ('selected', 'distro', '{"title":"Reviewed distro title","group":null}')`,
+      ),
     ]);
     await acceptSelectedPublication({ ...input, collection: 'distro' }, 'editor@example.com', deps);
     await processRuntimePublication(deps);
     expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+    expect(
+      await deps.db.prepare(`SELECT json_quote(json_extract(data, '$.group')) AS grp FROM revisions`).first(),
+    ).toEqual({ grp: '""' });
+    expect(runtime.handleContentPublish).toHaveBeenCalled();
     expect(
       await Promise.all([
         db.storeItemOption.findUnique({ where: { variantId } }),
@@ -1502,10 +1508,7 @@ test('publishes selling-linked editorial details without changing price, stock o
       ]),
     ).toEqual(before);
   } finally {
-    await deps.db.batch([
-      deps.db.prepare('DROP TABLE IF EXISTS ec_distro'),
-      deps.db.prepare('DROP TABLE IF EXISTS revisions'),
-    ]);
+    await deps.db.prepare('DROP TABLE IF EXISTS revisions').run();
     await db.variantStripeMapping.delete({ where: { variantId } });
     await db.stock.delete({ where: { variantId } });
     await db.storeItemOption.delete({ where: { variantId } });

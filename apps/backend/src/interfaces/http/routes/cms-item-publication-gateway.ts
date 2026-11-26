@@ -65,6 +65,19 @@ export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, ope
   }
   const fingerprint = (source: Awaited<ReturnType<typeof read>>) =>
     createStripeCatalogRequestShapeFingerprint({ slug: source.item.slug, data: source.item.data });
+  // A cleared Distro group is null in older drafts and '' once stored for publication; both are the same content.
+  const sameSource = (source: Awaited<ReturnType<typeof read>>, approved: string) => {
+    const { group } = source.item.data;
+    if (fingerprint(source) === approved) return true;
+    return (
+      (group === null || group === '') &&
+      [null, ''].some(
+        (cleared) =>
+          fingerprint({ ...source, item: { ...source.item, data: { ...source.item.data, group: cleared } } }) ===
+          approved,
+      )
+    );
+  };
   const gateway = {
     async readSetup(record: RuntimeCatalogRecord) {
       // Native EmDash lookup accepts an id or a unique slug; always verify the resolved identity.
@@ -113,7 +126,7 @@ export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, ope
     },
     async publish(record, revision, sourceFingerprint) {
       const source = await read(record);
-      if (fingerprint(source) !== sourceFingerprint)
+      if (!sameSource(source, sourceFingerprint))
         throw new CatalogPriceConflictError('CMS content changed after artwork approval.');
       if (source._rev !== revision) {
         if (
