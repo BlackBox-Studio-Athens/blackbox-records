@@ -7,10 +7,13 @@
 
 @source '..';
 
-/* The approved Greek exception must survive each surface's display shorthand and listing weight. */
+/* The approved Greek exception must survive each surface's display shorthand and listing weight. The display faces
+   draw Latin as capitals even where a surface sets text-transform: none, so Greek in Inter is uppercased here; with
+   the title's lang="el" the browser drops the tonos (χρόνια becomes ΧΡΟΝΙΑ). */
 .public-title--greek {
   font-family: var(--font-sans) !important;
   font-weight: 600 !important;
+  text-transform: uppercase !important;
 }
 
 @font-face {
