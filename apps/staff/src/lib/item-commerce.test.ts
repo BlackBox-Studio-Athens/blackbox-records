@@ -7,6 +7,8 @@ import {
   itemPublicationCommerce,
   planItemPublication,
   PriceConflictError,
+  readItemPublication,
+  startItemPublication,
   shopIntent,
   samePrice,
   type PriceDraft,
@@ -235,6 +237,44 @@ test('a retained operation stops with the server reason instead of pointing at a
     'Finish the retained operation before starting another change.',
   );
   expect(changePrice).not.toHaveBeenCalled();
+});
+
+test('an item publication that requested no website update ends as failed instead of polling forever', async () => {
+  const detail = {
+    expectedRevision: 2,
+    cmsRevision: 'rev',
+    requiresLiveConfirmation: true,
+    availability: 'published',
+    operationStatus: 'pending',
+    publicationStatus: null,
+    pending: {
+      operationId: 'op-1',
+      expectedRevision: 2,
+      cmsRevision: 'rev',
+      confirmLivePublication: true,
+      retryPublication: false,
+    },
+  };
+  const api = {
+    readPublication: vi.fn(async () => detail),
+    // A claim held by an interrupted attempt answers pending with no publication requested.
+    publishItem: vi.fn(async () => ({ operationId: 'op-1', variantId: 'variant', status: 'pending' })),
+  };
+  await expect(startItemPublication('', api as never, 'variant')).resolves.toBe('failed');
+  await expect(readItemPublication('', api as never, 'variant')).resolves.toBe('failed');
+  api.publishItem.mockResolvedValueOnce({
+    ...(await api.publishItem()),
+    publicationId: 'pub-1',
+    publicationStatus: 'pending',
+  } as never);
+  await expect(startItemPublication('', api as never, 'variant')).resolves.toBe('pending');
+  await expect(
+    readItemPublication(
+      '',
+      { readPublication: async () => ({ ...detail, publicationStatus: 'pending' }) } as never,
+      'variant',
+    ),
+  ).resolves.toBe('pending');
 });
 
 test('accepts only keystrokes that can still become a valid EUR amount', () => {

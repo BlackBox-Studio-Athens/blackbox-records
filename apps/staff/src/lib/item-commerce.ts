@@ -257,7 +257,9 @@ export async function startItemPublication(
     });
     if (result.status === 'completed') localStorage.removeItem(key);
     if (result.status === 'needs_review') return 'needs_review';
-    return result.status === 'completed' ? 'live' : result.publicationStatus === 'failed' ? 'failed' : 'pending';
+    if (result.status === 'completed') return 'live';
+    // Only a requested website publication keeps going without this page; otherwise Retry must resume it.
+    return result.publicationId && result.publicationStatus !== 'failed' ? 'pending' : 'failed';
   } catch (error) {
     if (error instanceof InternalStockApiError && error.status === 409) {
       localStorage.removeItem(key);
@@ -275,6 +277,8 @@ export async function readItemPublication(
   const detail = await api.readPublication(variantId);
   if (detail.operationStatus === 'needs_review') return 'needs_review';
   if (detail.publicationStatus === 'failed') return 'failed';
+  // A pending operation without a requested publication has no server work left to wait for.
+  if (detail.operationStatus === 'pending' && !detail.publicationStatus) return 'failed';
   if (!detail.pending && detail.availability === 'published') {
     localStorage.removeItem(itemPublicationKey(base, variantId));
     return 'live';

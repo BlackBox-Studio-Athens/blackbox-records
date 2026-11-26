@@ -59,7 +59,7 @@ it.each(['none', 'product', 'content', 'request', 'complete', 'unpublish'] as co
       productTaxCode: projection.taxCode,
       priceId: parseStripePriceId(`price_publish_${failure}`),
     };
-    let time = new Date();
+    const time = new Date();
     let lost = false;
     const interrupt = (step: string) => {
       if (step === failure && !lost) {
@@ -133,7 +133,8 @@ it.each(['none', 'product', 'content', 'request', 'complete', 'unpublish'] as co
         await expect(publishCatalogItem(deps, item.variantId, 'operator@example.com', command)).rejects.toThrow(
           'Lost response',
         );
-        time = new Date(time.getTime() + 120_000);
+        // No lease wait: a failed attempt frees its claim, so an immediate Retry resumes the work.
+        expect(await journal.find(command.operationId)).toMatchObject({ claimToken: null, leaseUntil: null });
       }
       const pending = await publishCatalogItem(deps, item.variantId, 'operator@example.com', command);
       expect(pending).toMatchObject({ status: 'pending', publicationStatus: 'pending' });

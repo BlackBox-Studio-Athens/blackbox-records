@@ -203,6 +203,8 @@ export async function publishCatalogItem(deps: Dependencies, variant: string, ac
       await deps.journal.markNeedsReview(operation, 'identity_conflict', now());
       return response((await deps.journal.find(existing.id))!);
     }
+    // Free the claim so Retry resumes now; a held lease made Retry answer "pending" with nothing left running.
+    await deps.journal.release(operation).catch(() => {});
     throw error;
   }
 }
