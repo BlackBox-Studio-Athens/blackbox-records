@@ -71,6 +71,8 @@ test('resolves Ethos and Hail from agreeing metadata without forwarding staff cr
 test('an exact search match resolves without reading the challenged page', async () => {
   const fetchPage = bandcamp(challenge, [
     { type: 'a', id: 999, item_url_path: 'https://othermisty.bandcamp.com/album/ethos' },
+    // A track result at an album address is not the album.
+    { type: 't', id: 1718987398, item_url_path: ethos },
     { type: 'a', id: 2345223781, item_url_path: ethos },
   ]);
   const response = await handleBandcampResolution(post(), { role: 30 }, fetchPage);
@@ -87,7 +89,7 @@ test('an exact search match resolves without reading the challenged page', async
   });
 });
 
-test('a missing page is not_found, with the same address on one related subdomain as the suggestion', async () => {
+test('only a missing page is not_found; a related page on one subdomain is a suggestion', async () => {
   const wrong = 'https://thebruce.bandcamp.com/album/resurrection';
   const right = 'https://jointhebruce.bandcamp.com/album/resurrection';
   const missing = () => new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/html' } });
@@ -100,7 +102,11 @@ test('a missing page is not_found, with the same address on one related subdomai
     ]),
   );
   expect(suggested).toEqual({ status: 'not_found', suggestion: page(right) });
-  // Hosted Workers get a challenge for every page; an unrelated or ambiguous match is no suggestion.
+  // Hosted Workers get a challenge for every page: the link may exist, so a related page is only a suggestion.
+  expect(
+    await resolveBandcampPage(page(wrong), bandcamp(challenge, [{ type: 'a', id: 4125362881, item_url_path: right }])),
+  ).toEqual({ status: 'provider_blocked', suggestion: page(right) });
+  // An unrelated or ambiguous match is no suggestion.
   const ambiguous = bandcamp(challenge, [
     { type: 'a', id: 4125362881, item_url_path: right },
     { type: 'a', id: 5, item_url_path: 'https://thebrucetribute.bandcamp.com/album/resurrection' },

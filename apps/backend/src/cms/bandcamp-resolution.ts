@@ -24,11 +24,13 @@ const searchSchema = z.object({
   }),
 });
 
-/** What a lookup established: a player, a page Bandcamp does not have, or no answer because of its browser check. */
+/**
+ * What a lookup established: a player, a page Bandcamp answered 404 for, or no answer because of its browser check.
+ * Either failure may carry the same address on one related subdomain as a suggestion.
+ */
 export type BandcampResolution =
   | { status: 'resolved'; recording: BandcampRecording }
-  | { status: 'not_found'; suggestion?: BandcampPage }
-  | { status: 'provider_blocked' };
+  | { status: 'not_found' | 'provider_blocked'; suggestion?: BandcampPage };
 
 class BandcampChallengeError extends Error {}
 class BandcampNotFoundError extends Error {}
@@ -115,7 +117,7 @@ async function searchBandcamp(text: string, kind: BandcampPage['kind'], fetchPag
         kind: result.type === 'a' ? 'album' : 'track',
         id: String(result.id),
       });
-      return found && recording && ['a', 't'].includes(result.type) && found.kind === kind
+      return found && recording && ['a', 't'].includes(result.type) && found.kind === kind && recording.kind === kind
         ? [{ page: found, recording }]
         : [];
     });
@@ -164,7 +166,7 @@ export async function resolveBandcampPage(
         (host.includes(subdomain) || subdomain.includes(host))
       );
     });
-    return related.length === 1 ? { status: 'not_found', suggestion: related[0]!.page } : outcome;
+    return related.length === 1 ? { status: outcome.status, suggestion: related[0]!.page } : outcome;
   };
   const readPage = async () => {
     let current = page;
@@ -249,7 +251,7 @@ export async function handleBandcampResolution(
     const data =
       result.status === 'resolved'
         ? { status: result.status, recording: result.recording.toJSON() }
-        : result.status === 'not_found' && result.suggestion
+        : result.suggestion
           ? { status: result.status, suggestion: result.suggestion.url }
           : { status: result.status };
     return Response.json({ success: true, data }, { headers: { 'Cache-Control': 'private, no-store' } });
