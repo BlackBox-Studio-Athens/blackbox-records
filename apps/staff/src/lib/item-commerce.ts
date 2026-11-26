@@ -10,6 +10,7 @@ import {
 import {
   InternalStockApiError,
   type CatalogItemPublishCommand,
+  type CatalogItemPublishDetail,
   type createInternalStockApi,
 } from './backend/internal-stock-api';
 
@@ -269,19 +270,23 @@ export async function startItemPublication(
   }
 }
 
+/** What a publication detail says about the item's retained shop update. */
+export function itemPublicationStatus(
+  detail: Pick<CatalogItemPublishDetail, 'operationStatus' | 'publicationStatus' | 'pending' | 'availability'>,
+): ItemPublicationStatus {
+  if (detail.operationStatus === 'needs_review') return 'needs_review';
+  if (detail.publicationStatus === 'failed') return 'failed';
+  // Only a requested website publication keeps going without this page; otherwise Retry must resume it.
+  if (detail.operationStatus === 'pending') return detail.publicationStatus ? 'pending' : 'failed';
+  return detail.availability === 'published' ? 'live' : 'failed';
+}
+
 export async function readItemPublication(
   base: string,
   api: Pick<StockApi, 'readPublication'>,
   variantId: string,
 ): Promise<ItemPublicationStatus> {
-  const detail = await api.readPublication(variantId);
-  if (detail.operationStatus === 'needs_review') return 'needs_review';
-  if (detail.publicationStatus === 'failed') return 'failed';
-  // A pending operation without a requested publication has no server work left to wait for.
-  if (detail.operationStatus === 'pending' && !detail.publicationStatus) return 'failed';
-  if (!detail.pending && detail.availability === 'published') {
-    localStorage.removeItem(itemPublicationKey(base, variantId));
-    return 'live';
-  }
-  return 'pending';
+  const status = itemPublicationStatus(await api.readPublication(variantId));
+  if (status === 'live') localStorage.removeItem(itemPublicationKey(base, variantId));
+  return status;
 }
