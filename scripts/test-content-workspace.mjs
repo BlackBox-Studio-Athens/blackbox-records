@@ -3509,7 +3509,10 @@ else if (process.argv.includes('--orders-shipping')) {
             contentType: 'application/json',
             body: JSON.stringify({
               success: true,
-              data: { kind: 'album', id: url.endsWith('/album/stale') ? '123' : '2345223781' },
+              data: {
+                status: 'resolved',
+                recording: { kind: 'album', id: url.endsWith('/album/stale') ? '123' : '2345223781' },
+              },
             }),
           })
           .catch(() => {});

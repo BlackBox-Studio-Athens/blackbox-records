@@ -1,9 +1,15 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { BandcampPage } from '@blackbox/content-model';
-import { bandcampResolutionPath, handleBandcampResolution, resolveBandcampPage } from './bandcamp-resolution';
+import {
+  bandcampResolutionPath,
+  handleBandcampResolution,
+  resolveBandcampPage,
+  type BandcampResolution,
+} from './bandcamp-resolution';
 
 const ethos = 'https://mistyroute.bandcamp.com/album/ethos';
 const hail = 'https://mistyroute.bandcamp.com/track/hail';
+const searchUrl = 'https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic';
 const headers = { Origin: 'https://staff.example', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' };
 const post = (url = ethos, customHeaders: HeadersInit = headers, extra = {}) =>
   new Request('https://staff.example' + bandcampResolutionPath, {
@@ -12,6 +18,8 @@ const post = (url = ethos, customHeaders: HeadersInit = headers, extra = {}) =>
     body: JSON.stringify({ url, ...extra }),
   });
 const htmlResponse = (html: string) => new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+const challenge = () =>
+  htmlResponse('<!doctype html><title>Client Challenge</title><script src="/_fs-ch-1/challenge.js"></script>');
 // Minimal public metadata captured from Ethos and Hail on 12 October 2026.
 const metadata = (
   kind = 'album',
@@ -19,6 +27,18 @@ const metadata = (
 ) => `<meta property="og:video:secure_url" content="https://bandcamp.com/EmbeddedPlayer/v=2/${kind}=${id}/size=large/tracklist=false/artwork=small/">
 <script data-tralbum="${JSON.stringify({ id, item_type: kind, current: { id, type: kind, ...(kind === 'track' ? { album_id: 2345223781 } : {}) } }).replaceAll('"', '&quot;')}"></script>`;
 const page = (url = ethos) => BandcampPage.parse(url)!;
+type SearchItem = { type: string; id: number; item_url_path: string };
+// Routes Bandcamp search to `results` and every page read to `readPage`.
+const bandcamp = (readPage: (url: string) => Response | Promise<Response>, results: SearchItem[] = []) =>
+  vi.fn<typeof fetch>(async (input) =>
+    String(input) === searchUrl ? Response.json({ auto: { results } }) : readPage(String(input)),
+  );
+const pageReads = (fetchPage: ReturnType<typeof bandcamp>) =>
+  fetchPage.mock.calls.filter(([input]) => String(input) !== searchUrl);
+const recordingOf = (result: BandcampResolution) => {
+  if (result.status !== 'resolved') throw new Error(result.status);
+  return result.recording;
+};
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -29,7 +49,7 @@ test('resolves Ethos and Hail from agreeing metadata without forwarding staff cr
     [ethos, 'album', 2345223781],
     [hail, 'track', 1718987398],
   ] as const) {
-    const fetchPage = vi.fn<typeof fetch>().mockResolvedValue(htmlResponse(metadata(kind, id)));
+    const fetchPage = bandcamp(() => htmlResponse(metadata(kind, id)));
     const response = await handleBandcampResolution(
       post(url, { ...headers, Cookie: 'private', Authorization: 'secret' }),
       { role: 30 },
@@ -37,37 +57,76 @@ test('resolves Ethos and Hail from agreeing metadata without forwarding staff cr
     );
     expect(response.status).toBe(200);
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
-    expect(await response.json()).toEqual({ success: true, data: { kind, id: String(id) } });
-    expect(fetchPage).toHaveBeenCalledExactlyOnceWith(
-      url,
-      expect.objectContaining({ redirect: 'manual', headers: { Accept: 'text/html' } }),
-    );
+    expect(await response.json()).toEqual({
+      success: true,
+      data: { status: 'resolved', recording: { kind, id: String(id) } },
+    });
+    expect(pageReads(fetchPage)).toEqual([
+      [url, expect.objectContaining({ redirect: 'manual', headers: { Accept: 'text/html' } })],
+    ]);
+    expect(JSON.stringify(fetchPage.mock.calls)).not.toMatch(/private|secret/);
   }
+});
+
+test('an exact search match resolves without reading the challenged page', async () => {
+  const fetchPage = bandcamp(challenge, [
+    { type: 'a', id: 999, item_url_path: 'https://othermisty.bandcamp.com/album/ethos' },
+    { type: 'a', id: 2345223781, item_url_path: ethos },
+  ]);
+  const response = await handleBandcampResolution(post(), { role: 30 }, fetchPage);
+  expect(await response.json()).toEqual({
+    success: true,
+    data: { status: 'resolved', recording: { kind: 'album', id: '2345223781' } },
+  });
+  expect(pageReads(fetchPage)).toHaveLength(0);
+  expect(JSON.parse(String(fetchPage.mock.calls[0]![1]!.body))).toEqual({
+    search_text: 'mistyroute ethos',
+    search_filter: 'a',
+    full_page: false,
+    fan_id: null,
+  });
+});
+
+test('a missing page is not_found, with the same address on one related subdomain as the suggestion', async () => {
+  const wrong = 'https://thebruce.bandcamp.com/album/resurrection';
+  const right = 'https://jointhebruce.bandcamp.com/album/resurrection';
+  const missing = () => new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/html' } });
+  expect(await resolveBandcampPage(page(wrong), bandcamp(missing))).toEqual({ status: 'not_found' });
+  const suggested = await resolveBandcampPage(
+    page(wrong),
+    bandcamp(missing, [
+      { type: 'a', id: 4125362881, item_url_path: right },
+      { type: 'a', id: 1781970648, item_url_path: 'https://therealneckclippa.bandcamp.com/album/resurrection' },
+    ]),
+  );
+  expect(suggested).toEqual({ status: 'not_found', suggestion: page(right) });
+  // Hosted Workers get a challenge for every page; an unrelated or ambiguous match is no suggestion.
+  const ambiguous = bandcamp(challenge, [
+    { type: 'a', id: 4125362881, item_url_path: right },
+    { type: 'a', id: 5, item_url_path: 'https://thebrucetribute.bandcamp.com/album/resurrection' },
+  ]);
+  expect(await resolveBandcampPage(page(wrong), ambiguous)).toEqual({ status: 'provider_blocked' });
 });
 
 test('falls back to structured metadata and supports numeric HTML entities', async () => {
   const structured = metadata()
     .replace(/<meta[^>]+>/, '')
     .replaceAll('&quot;', '&#34;');
-  const result = await resolveBandcampPage(page(), vi.fn<typeof fetch>().mockResolvedValue(htmlResponse(structured)));
-  expect(result.toJSON()).toEqual({ kind: 'album', id: '2345223781' });
+  const result = await resolveBandcampPage(
+    page(),
+    bandcamp(() => htmlResponse(structured)),
+  );
+  expect(recordingOf(result).toJSON()).toEqual({ kind: 'album', id: '2345223781' });
 });
 
-test('recognizes an HTTP 200 browser challenge and directs staff to Share/Embed without retrying', async () => {
+test('reports an HTTP 200 browser challenge as provider_blocked without retrying the page', async () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-  const fetchPage = vi
-    .fn<typeof fetch>()
-    .mockResolvedValue(
-      htmlResponse('<!doctype html><title>Client Challenge</title><script src="/_fs-ch-1/challenge.js"></script>'),
-    );
+  const fetchPage = bandcamp(challenge);
   const response = await handleBandcampResolution(post(), { role: 30 }, fetchPage);
-  expect(response.status).toBe(422);
+  expect(response.status).toBe(200);
   expect(response.headers.get('Cache-Control')).toBe('private, no-store');
-  expect(await response.json()).toMatchObject({
-    detail:
-      'Bandcamp is blocking automatic lookup from this server. Open the album or track on Bandcamp and paste its Share/Embed code.',
-  });
-  expect(fetchPage).toHaveBeenCalledTimes(1);
+  expect(await response.json()).toEqual({ success: true, data: { status: 'provider_blocked' } });
+  expect(pageReads(fetchPage)).toHaveLength(1);
   expect(warn).toHaveBeenCalledWith(expect.objectContaining({ safeReason: 'provider_challenge' }));
 });
 
@@ -92,7 +151,10 @@ test.each([
   // Invalid structured metadata alone is ignored, so remove the valid advertised player in that case.
   if (html.includes('&quot;id&quot;:0')) html = html.replace(/<meta[^>]+>/, '');
   await expect(
-    resolveBandcampPage(page(), vi.fn<typeof fetch>().mockResolvedValue(htmlResponse(html))),
+    resolveBandcampPage(
+      page(),
+      bandcamp(() => htmlResponse(html)),
+    ),
   ).rejects.toThrow();
 });
 
@@ -117,10 +179,10 @@ test('enforces authorization, same-origin JSON and request bounds before externa
 
 test('allows bounded recording redirects but rejects escapes, loops and a fourth redirect', async () => {
   const redirected = vi
-    .fn<typeof fetch>()
+    .fn<(url: string) => Promise<Response>>()
     .mockResolvedValueOnce(new Response(null, { status: 302, headers: { Location: '/album/ethos-2?ref=share' } }))
     .mockResolvedValueOnce(htmlResponse(metadata()));
-  expect((await resolveBandcampPage(page(), redirected)).id).toBe('2345223781');
+  expect(recordingOf(await resolveBandcampPage(page(), bandcamp(redirected))).id).toBe('2345223781');
   expect(redirected.mock.calls[1]?.[0]).toBe('https://mistyroute.bandcamp.com/album/ethos-2');
   for (const destination of [
     'http://mistyroute.bandcamp.com/album/ethos',
@@ -128,20 +190,16 @@ test('allows bounded recording redirects but rejects escapes, loops and a fourth
     'https://mistyroute.bandcamp.com/track/hail',
     ethos,
   ]) {
-    const fetchPage = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response(null, { status: 302, headers: { Location: destination } }));
+    const fetchPage = bandcamp(() => new Response(null, { status: 302, headers: { Location: destination } }));
     await expect(resolveBandcampPage(page(), fetchPage)).rejects.toThrow();
-    expect(fetchPage).toHaveBeenCalledTimes(1);
+    expect(pageReads(fetchPage)).toHaveLength(1);
   }
   let n = 0;
-  const endless = vi
-    .fn<typeof fetch>()
-    .mockImplementation(
-      async () => new Response(null, { status: 302, headers: { Location: '/album/redirect-' + ++n } }),
-    );
+  const endless = bandcamp(
+    async () => new Response(null, { status: 302, headers: { Location: '/album/redirect-' + ++n } }),
+  );
   await expect(resolveBandcampPage(page(), endless)).rejects.toThrow('too many');
-  expect(endless).toHaveBeenCalledTimes(4);
+  expect(pageReads(endless)).toHaveLength(4);
 });
 
 test('rejects upstream errors, non-HTML and oversized decoded bodies', async () => {
@@ -153,7 +211,7 @@ test('rejects upstream errors, non-HTML and oversized decoded bodies', async () 
     const result = await handleBandcampResolution(
       post(),
       { role: 30 },
-      vi.fn<typeof fetch>().mockResolvedValue(response),
+      bandcamp(() => response),
     );
     expect(result.status).toBe(422);
     expect(result.headers.get('Cache-Control')).toBe('private, no-store');

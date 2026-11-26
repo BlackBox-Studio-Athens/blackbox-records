@@ -1,6 +1,15 @@
-import { expect, test } from 'vitest';
+import type * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { expect, test, vi } from 'vitest';
 import { BandcampPage, BandcampRecording, buildBandcampEmbedUrl } from '@blackbox/content-model';
-import { bandcampInput, bandcampInputPending } from './BandcampField';
+import BandcampField, { bandcampInput, bandcampInputPending, type BandcampInput } from './BandcampField';
+
+// The lookup runs in an effect, which static rendering skips, so the test seeds the field state.
+const seeded = vi.hoisted(() => ({ input: undefined as unknown }));
+vi.mock('react', async (importOriginal) => {
+  const react = await importOriginal<typeof React>();
+  return { ...react, useState: (initial: unknown) => react.useState(seeded.input ?? initial) };
+});
 
 const ethos = 'https://mistyroute.bandcamp.com/album/ethos';
 test('validates immutable page values and strips harmless query and fragment parts', () => {
@@ -55,4 +64,38 @@ test('unresolved pages and malformed text block saving while empty and official 
   expect(bandcampInputPending(bandcampInput('invalid'))).toBe(true);
   expect(bandcampInputPending(bandcampInput(''))).toBe(false);
   expect(bandcampInput('https://mistyroute.bandcamp.com/track/hail').status).toBe('editing');
+});
+
+test('a failed page lookup links to the Bandcamp page with one recovery instruction', () => {
+  const url = 'https://thebruce.bandcamp.com/album/resurrection';
+  seeded.input = {
+    status: 'failed',
+    text: url,
+    message: 'Bandcamp is blocking automatic lookup.',
+  } satisfies BandcampInput;
+  const html = renderToStaticMarkup(
+    <BandcampField stored="" base="" disabled={false} errors={[]} onChange={() => undefined} />,
+  );
+  seeded.input = undefined;
+  expect(html).toContain(`href="${url}" target="_blank" rel="noopener noreferrer"`);
+  expect(html).toContain('Open on Bandcamp');
+  expect(html).toContain('id="content-bandcamp_embed_url-recovery"');
+  expect(html).toContain('content-bandcamp_embed_url-error content-bandcamp_embed_url-recovery"');
+  expect(html).not.toContain('Resolve, revert or clear');
+});
+
+test('a page Bandcamp does not have offers the suggested address as one action', () => {
+  const suggestion = BandcampPage.parse('https://jointhebruce.bandcamp.com/album/resurrection')!;
+  seeded.input = {
+    status: 'failed',
+    text: 'https://thebruce.bandcamp.com/album/resurrection',
+    message: 'Bandcamp has no album or track at this link.',
+    suggestion,
+  } satisfies BandcampInput;
+  const html = renderToStaticMarkup(
+    <BandcampField stored="" base="" disabled={false} errors={[]} onChange={() => undefined} />,
+  );
+  seeded.input = undefined;
+  expect(html.replaceAll('<wbr/>', '')).toContain('Use jointhebruce.bandcamp.com/album/resurrection');
+  expect(html).toContain('Bandcamp has no album or track at this link.');
 });

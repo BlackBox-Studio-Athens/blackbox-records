@@ -12,7 +12,26 @@ const tralbumSchema = z.object({
   current: z.object({ id: z.number().int().positive().safe(), type: z.enum(['album', 'track']) }),
 });
 
+// Bandcamp's public search answers hosted Workers, whose album/track page fetches get a Client Challenge.
+const bandcampSearchUrl = 'https://bandcamp.com/api/bcsearch_public_api/1/autocomplete_elastic';
+const searchSchema = z.object({
+  auto: z.object({
+    results: z
+      .array(
+        z.object({ type: z.string(), id: z.number().int().positive().safe(), item_url_path: z.string().optional() }),
+      )
+      .max(200),
+  }),
+});
+
+/** What a lookup established: a player, a page Bandcamp does not have, or no answer because of its browser check. */
+export type BandcampResolution =
+  | { status: 'resolved'; recording: BandcampRecording }
+  | { status: 'not_found'; suggestion?: BandcampPage }
+  | { status: 'provider_blocked' };
+
 class BandcampChallengeError extends Error {}
+class BandcampNotFoundError extends Error {}
 
 function decodeAttribute(value: string) {
   const named: Record<string, string> = { quot: '"', amp: '&', apos: "'", lt: '<', gt: '>' };
@@ -58,29 +77,96 @@ async function recordingFromHtml(html: string, page: BandcampPage): Promise<Band
     .transform(new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }))
     .body?.pipeTo(new WritableStream());
   const recording = recordings[0];
-  if (!recording && title.trim() === 'Client Challenge')
-    throw new BandcampChallengeError(
-      'Bandcamp is blocking automatic lookup from this server. Open the album or track on Bandcamp and paste its Share/Embed code.',
-    );
+  if (!recording && title.trim() === 'Client Challenge') throw new BandcampChallengeError();
   if (
     !recording ||
     recording.kind !== page.kind ||
     recordings.some((other) => other.kind !== recording.kind || other.id !== recording.id)
   )
-    throw new Error('Bandcamp did not provide a consistent player identity. Paste its Share/Embed code, or retry.');
+    throw new Error('Bandcamp did not provide a consistent player identity. Retry.');
   return recording;
 }
 
-export async function resolveBandcampPage(page: BandcampPage, fetchPage: typeof fetch = fetch) {
+async function searchBandcamp(text: string, kind: BandcampPage['kind'], fetchPage: typeof fetch, signal: AbortSignal) {
+  try {
+    const response = await fetchPage(bandcampSearchUrl, {
+      method: 'POST',
+      redirect: 'manual',
+      signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        search_text: text,
+        search_filter: kind === 'album' ? 'a' : 't',
+        full_page: false,
+        fan_id: null,
+      }),
+    });
+    if (
+      !response.ok ||
+      response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'application/json'
+    ) {
+      await response.body?.cancel();
+      return [];
+    }
+    const results = searchSchema.parse(JSON.parse(await readBoundedText(response.body, 512 * 1024))).auto.results;
+    return results.flatMap((result) => {
+      const found = BandcampPage.parse(result.item_url_path ?? '');
+      const recording = BandcampRecording.parse({
+        kind: result.type === 'a' ? 'album' : 'track',
+        id: String(result.id),
+      });
+      return found && recording && ['a', 't'].includes(result.type) && found.kind === kind
+        ? [{ page: found, recording }]
+        : [];
+    });
+  } catch (error) {
+    if (signal.aborted) throw error;
+    // Search only adds evidence; the page fetch still decides when search is unavailable.
+    return [];
+  }
+}
+
+export async function resolveBandcampPage(
+  page: BandcampPage,
+  fetchPage: typeof fetch = fetch,
+): Promise<BandcampResolution> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
       controller.abort();
-      reject(new Error('Bandcamp lookup timed out. Retry or paste its Share/Embed code.'));
+      reject(new Error('Bandcamp lookup timed out. Retry.'));
     }, 10_000);
   });
-  const lookup = async () => {
+  const [, subdomain = '', slug = ''] =
+    /^https:\/\/([^.]+)\.bandcamp\.com\/(?:album|track)\/(.+)$/.exec(page.url) ?? [];
+  const words = slug.replaceAll('-', ' ');
+  const search = (text: string) => searchBandcamp(text, page.kind, fetchPage, controller.signal);
+  const lookup = async (): Promise<BandcampResolution> => {
+    // Only the exact page address identifies the same recording.
+    const exact = (await search(`${subdomain} ${words}`)).find((result) => result.page.url === page.url);
+    if (exact) return { status: 'resolved', recording: exact.recording };
+    let outcome: BandcampResolution;
+    try {
+      outcome = { status: 'resolved', recording: await readPage() };
+    } catch (error) {
+      if (error instanceof BandcampNotFoundError) outcome = { status: 'not_found' };
+      else if (error instanceof BandcampChallengeError) outcome = { status: 'provider_blocked' };
+      else throw error;
+    }
+    if (outcome.status === 'resolved') return outcome;
+    // Suggest the same address on a related subdomain (thebruce, jointhebruce) only when exactly one exists.
+    const related = (await search(words)).filter(({ page: other }) => {
+      const host = new URL(other.url).hostname.split('.')[0]!;
+      return (
+        other.url.endsWith(`/${page.kind}/${slug}`) &&
+        host !== subdomain &&
+        (host.includes(subdomain) || subdomain.includes(host))
+      );
+    });
+    return related.length === 1 ? { status: 'not_found', suggestion: related[0]!.page } : outcome;
+  };
+  const readPage = async () => {
     let current = page;
     const visited = new Set<string>();
     for (let redirects = 0; redirects <= 3; redirects++) {
@@ -101,9 +187,13 @@ export async function resolveBandcampPage(page: BandcampPage, fetchPage: typeof 
         current = next;
         continue;
       }
+      if (response.status === 404 || response.status === 410) {
+        await response.body?.cancel();
+        throw new BandcampNotFoundError();
+      }
       if (!response.ok || response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() !== 'text/html') {
         await response.body?.cancel();
-        throw new Error('Bandcamp could not be read. Retry or paste its Share/Embed code.');
+        throw new Error('Bandcamp could not be read. Retry.');
       }
       const html = await readBoundedText(response.body, 2 * 1024 * 1024);
       return recordingFromHtml(html, current);
@@ -148,25 +238,28 @@ export async function handleBandcampResolution(
   }
   if (!page) return reject(400, 'Use an HTTPS artist.bandcamp.com album or track URL.');
   try {
-    const recording = await resolveBandcampPage(page, fetchPage);
-    return Response.json(
-      { success: true, data: recording.toJSON() },
-      { headers: { 'Cache-Control': 'private, no-store' } },
-    );
+    const result = await resolveBandcampPage(page, fetchPage);
+    if (result.status === 'provider_blocked')
+      createWorkerLogger().warn({
+        event: 'bandcamp_resolution_failed',
+        path: bandcampResolutionPath,
+        safeReason: 'provider_challenge',
+        status: 200,
+      });
+    const data =
+      result.status === 'resolved'
+        ? { status: result.status, recording: result.recording.toJSON() }
+        : result.status === 'not_found' && result.suggestion
+          ? { status: result.status, suggestion: result.suggestion.url }
+          : { status: result.status };
+    return Response.json({ success: true, data }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
-    const challenged = error instanceof BandcampChallengeError;
     createWorkerLogger().warn({
       event: 'bandcamp_resolution_failed',
       path: bandcampResolutionPath,
       ...normalizeUnknownError(error),
-      ...(challenged ? { safeReason: 'provider_challenge' } : {}),
       status: 422,
     });
-    return reject(
-      422,
-      challenged
-        ? error.message
-        : 'Could not resolve this Bandcamp player. Retry, revert, clear, or paste its Share/Embed code.',
-    );
+    return reject(422, 'Could not resolve this Bandcamp player. Retry, revert or clear.');
   }
 }
