@@ -18,3 +18,10 @@
 
 - Bandcamp search for the reported wrong address: `thebruce resurrection` and `resurrection` searches do not return `jointhebruce.bandcamp.com`, so that example yields `provider_blocked` on hosted Workers, not a suggestion. The suggestion appears only when search returns the same slug on one related subdomain.
 - The PRD Retry on the Bruce. item is left to the owner.
+
+## Release
+
+- Commits `0833e23b`, `1891bf74`, `01f4d4a6`, `db77b5a5`, `11025502` on `main`.
+- UAT: push run [45808039209](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/45808039209) succeeded (checks, e2e, staff-previews, deploy-uat). The UAT Worker reports `X-Release-SHA: 1102550238c731d4a8558ae0d67b86fe72b6e4ce`, run 683.
+- PRD: promotion [45809739916](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/45809739916) succeeded on attempt 1. `release.json` and the Worker report the same SHA and run 683; the accepted publication `f6776926` and snapshot `165e8b1b…` are unchanged. The PRD Store search "200" shows 200 ΧΡΟΝΙΑ ΠΡΟΤΕΚΤΟΡΑΤΟ in Inter with `text-transform: uppercase`.
+- PRD operation `7a768a58` is still `pending` at `product_projected` with an expired lease, and its draft still stores `group: null`; the owner's Retry exercises the fix. No hosted write was made by this work.

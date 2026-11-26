@@ -10,6 +10,6 @@
 ## 2. Acceptance
 
 - [x] 2.1 Focused tests, Local screenshots at 1440 and 390 px.
-- [ ] 2.2 `pnpm validate` on the final tree.
-- [ ] 2.3 UAT release run and read-only UAT checks.
+- [x] 2.2 `pnpm validate` on the final tree.
+- [x] 2.3 UAT release run and read-only UAT checks.
 - [ ] 2.4 PRD promotion and read-only PRD checks; the member's Retry on the Bruce. item stays with the owner.
