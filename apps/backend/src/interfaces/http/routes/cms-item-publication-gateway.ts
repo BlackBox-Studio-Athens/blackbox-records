@@ -21,6 +21,12 @@ const sourceSchema = z.object({
   }),
 });
 
+export class CmsPublicationRequestError extends Error {
+  constructor(readonly upstreamStatus: number) {
+    super(`CMS publication request failed (${upstreamStatus}).`);
+  }
+}
+
 export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, operatorRequest: Request) {
   const origin = new URL(operatorRequest.url).origin;
   const headers = new Headers({ 'Content-Type': 'application/json', 'X-EmDash-Request': '1', Origin: origin });
@@ -38,7 +44,7 @@ export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, ope
     if (!response.ok) {
       await response.body?.cancel();
       if (response.status === 409) throw new CatalogPriceConflictError('CMS revision changed.');
-      throw new Error(`CMS publication request failed (${response.status}).`);
+      throw new CmsPublicationRequestError(response.status);
     }
     return response.json();
   }

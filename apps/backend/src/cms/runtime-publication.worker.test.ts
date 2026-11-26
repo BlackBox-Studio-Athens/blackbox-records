@@ -1486,6 +1486,11 @@ test('publishes selling-linked editorial details without changing price, stock o
       variantId,
     });
     expect(runtime.handleMediaGet).not.toHaveBeenCalled();
+    // Distro publication first stores a cleared legacy group in the native draft revision.
+    await deps.db.batch([
+      deps.db.prepare('CREATE TABLE ec_distro (id TEXT PRIMARY KEY, draft_revision_id TEXT)'),
+      deps.db.prepare('CREATE TABLE revisions (id TEXT PRIMARY KEY, collection TEXT, data TEXT)'),
+    ]);
     await acceptSelectedPublication({ ...input, collection: 'distro' }, 'editor@example.com', deps);
     await processRuntimePublication(deps);
     expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
@@ -1497,6 +1502,10 @@ test('publishes selling-linked editorial details without changing price, stock o
       ]),
     ).toEqual(before);
   } finally {
+    await deps.db.batch([
+      deps.db.prepare('DROP TABLE IF EXISTS ec_distro'),
+      deps.db.prepare('DROP TABLE IF EXISTS revisions'),
+    ]);
     await db.variantStripeMapping.delete({ where: { variantId } });
     await db.stock.delete({ where: { variantId } });
     await db.storeItemOption.delete({ where: { variantId } });

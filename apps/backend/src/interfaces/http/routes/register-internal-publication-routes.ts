@@ -25,7 +25,8 @@ import {
   operatorAccessErrorResponses,
   problemContent,
 } from '../../../platform/interfaces/http/responses';
-import { createCmsItemPublicationGateway } from './cms-item-publication-gateway';
+import { CmsPublicationRequestError, createCmsItemPublicationGateway } from './cms-item-publication-gateway';
+import { normalizeUnknownError, requestLogger } from '../../../platform/observability';
 
 const resultSchema = z
   .object({
@@ -208,7 +209,14 @@ export function registerInternalPublicationRoutes(app: AppOpenApi) {
         );
         return jsonNoStore(context.json(addHypermedia(resultSchema.parse(result), publicationLinks(variantId)), 200));
       } catch (error) {
-        return error instanceof CatalogPriceConflictError || error instanceof CatalogOperationConflictError
+        const conflict = error instanceof CatalogPriceConflictError || error instanceof CatalogOperationConflictError;
+        if (!conflict)
+          requestLogger(context).warn({
+            event: 'item_publication_failed',
+            ...normalizeUnknownError(error),
+            ...(error instanceof CmsPublicationRequestError ? { upstreamStatus: error.upstreamStatus } : {}),
+          });
+        return conflict
           ? jsonError(context, {
               code: 'catalog_conflict',
               message: 'Item or content changed. Reload before publishing.',

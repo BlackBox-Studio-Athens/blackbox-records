@@ -43,5 +43,6 @@ export {
   staffThumbnailRoutePrefix,
 } from './staff-thumbnails';
 export { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
+export { storeClearedDistroGroup } from './distro-legacy-group';
 export { previewInputSchema, previewPath, readBoundedText } from './preview-content';
 export { projectArtistReference, readRevisionContent, showLineupReferenceIssues } from './publication-projection';

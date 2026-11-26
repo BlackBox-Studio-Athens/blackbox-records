@@ -23,6 +23,7 @@ import {
 import { storeSnapshotMedia } from './snapshot-storage';
 import { validateImage } from './media-upload';
 import { guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
+import { storeClearedDistroGroup } from './distro-legacy-group';
 import { publicationSummary, readPublication } from './publication-journal';
 import { reviewPublication } from './publication-review';
 import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
@@ -387,12 +388,14 @@ export async function processRuntimePublication(deps: Dependencies) {
           throw new InvalidPublication('Incomplete drafts cannot be published.');
         if ('collection' in intent) {
           const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
-          if (record.item.liveRevisionId !== intent.revisionId)
+          if (record.item.liveRevisionId !== intent.revisionId) {
+            if (intent.collection === 'distro') await storeClearedDistroGroup(deps.db, intent.recordId);
             successful(
               await deps.runtime.handleContentPublish(intent.collection, intent.recordId, {
                 _rev: intent.expectedRevision,
               }),
             );
+          }
         }
         const recordState = successful(await deps.runtime.handleContentGet(revision.collection, revision.entryId));
         if (recordState.item.liveRevisionId !== revision.id || recordState.item.status !== 'published')
